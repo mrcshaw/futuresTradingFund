@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Futures desk</title>
+  <link rel="stylesheet" href="/static/styles.css?v=8" />
+</head>
+<body>
+  <div class="app">
+    <aside class="rail">
+      <div class="brand">
+        <span class="mark">FT</span>
+        <div>
+          <strong>Futures desk</strong>
+            <small>Futures book</small>
+        </div>
+      </div>
+      <nav id="channels"></nav>
+    </aside>
+    <main>
+      <header class="top">
+        <div>
+          <p class="kicker" id="channel-team">Floor</p>
+          <h1 id="channel-title"># headquarters</h1>
+          <p class="role" id="channel-role">Every desk, in one feed.</p>
+        </div>
+        <div class="top-side">
+          <div class="desk-clock" id="desk-clock">
+            <strong id="clock-time">--:--:-- ET</strong>
+            <small id="clock-date">Meeting 8:00am</small>
+          </div>
+          <div class="run-pill" id="run-pill">Idle</div>
+        </div>
+      </header>
+      <section class="now" id="now">
+        <div>
+          <p class="now-kicker">On the floor</p>
+          <p class="now-text" id="now-text">Nobody is working. Send a contract when you are ready.</p>
+        </div>
+        <button type="button" id="stop" class="stop" hidden>Stop analysis</button>
+      </section>
+      <section class="floor" id="floor"></section>
+      <section class="lead" id="lead" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Headquarters script</p>
+            <h2 id="lead-title">No strategy script yet</h2>
+            <p class="role" id="lead-note">The most profitable rule the researchers have cleared stays here. Every desk can read this script.</p>
+          </div>
+        </div>
+        <pre class="report-body pine" id="lead-pine"></pre>
+      </section>
+      <section class="feed" id="feed"></section>
+      <section class="book" id="engine" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Trading engine</p>
+            <h2>Last research results</h2>
+            <p class="role" id="engine-note">Each rule the developer runs in a meeting is listed here, with the profit, drawdown, and trade count from that test.</p>
+          </div>
+          <button type="button" id="lab-run">Run the engine</button>
+        </div>
+        <p class="hint" id="engine-status"></p>
+        <h3>Accepted for the next meeting</h3>
+        <div id="engine-accepted"></div>
+        <h2>Playbook</h2>
+        <div id="engine-playbook"></div>
+        <h3>Scrapped</h3>
+        <div id="engine-scrapped"></div>
+        <h3>Recent trials</h3>
+        <table id="engine-trials"><thead><tr><th>Rule</th><th>Profit</th><th>Drawdown</th><th>Trades</th><th>Result</th></tr></thead><tbody></tbody></table>
+      </section>
+      <section class="book" id="rnd" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">R&amp;D</p>
+            <h2>Research board</h2>
+            <p class="role">Research lands here, including the playbook of rules that reached the profit target without touching the trailing floor. The meeting votes on the ones that pass.</p>
+          </div>
+          <button type="button" id="rnd-run">Start research</button>
+        </div>
+        <div id="rnd-feed" class="feed"></div>
+      </section>
+      <section class="book" id="book" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Prop book</p>
+            <h2 id="mode">Orders wait for a rating</h2>
+            <p class="role" id="meeting-note">8:00am and 3:00pm re-test the rules against the interval alerts. They keep, refine, or replace the strategy.</p>
+          </div>
+          <button type="button" id="review">Hold the strategy meeting</button>
+        </div>
+        <p class="hint" id="settings-note"></p>
+        <h3>Strategies</h3>
+        <p class="report-body" id="strategy-card">No strategy yet. Upload a TradingView bar file with the account size and profit target.</p>
+        <div id="strategy-list"></div>
+        <pre class="report-body pine" id="pine-view"></pre>
+        <h3>TradingView alert</h3>
+        <pre class="report-body" id="alert-sample"></pre>
+        <h3>Interval log</h3>
+        <table id="intervals"><thead><tr><th>When</th><th>Price</th><th>Action</th><th>Held</th><th>Target</th><th>Result</th></tr></thead><tbody></tbody></table>
+        <h3>Positions</h3>
+        <table id="positions"><thead><tr><th>Account</th><th>Contract</th><th>Qty</th><th>Avg</th><th>Last</th><th>P&amp;L</th></tr></thead><tbody></tbody></table>
+        <h3>Orders</h3>
+        <table id="orders"><thead><tr><th>When</th><th>Account</th><th>Contract</th><th>Rating</th><th>Side</th><th>Result</th></tr></thead><tbody></tbody></table>
+      </section>
+      <form class="chat-dock" id="chat">
+        <div class="chat-log" id="chat-log"></div>
+        <div class="chat-row">
+          <input name="message" maxlength="2000" placeholder="Message the portfolio manager" required />
+          <button type="submit" id="chat-send">Send</button>
+        </div>
+      </form>
+      <form class="composer" id="composer">
+        <div class="fields">
+          <label>Contract <input name="contract" value="MES" required maxlength="40" /></label>
+          <label>Timeframe
+            <select name="timeframe">
+              <option>1m</option>
+              <option>5m</option>
+              <option selected>15m</option>
+              <option>30m</option>
+              <option>1h</option>
+              <option>4h</option>
+              <option>1D</option>
+            </select>
+          </label>
+          <label>Prop account <input name="account" required maxlength="64" placeholder="Assigned prop account" /></label>
+          <label>Account size <input name="account_size" type="number" min="1" step="1" value="50000" required /></label>
+          <label>Profit target <input name="profit_target" type="number" min="1" step="1" value="3000" required /></label>
+          <label>TradingView bars <input name="file" type="file" accept=".csv,text/csv" required /></label>
+        </div>
+        <div class="actions">
+          <button type="submit" id="send">Develop strategy and backtest</button>
+          <p class="hint" id="hint">Export the chart from TradingView as a CSV. Point the strategy alert at this desk, not at CrossTrade, and leave the secret key out of the message. This desk sends the CrossTrade order only when the active strategies agree.</p>
+        </div>
+      </form>
+    </main>
+    <aside class="report">
+      <h2>Latest report</h2>
+      <div id="report-body" class="report-body">Pick a desk to read its report.</div>
+    </aside>
+  </div>
+  <script type="module" src="/static/app.js?v=17"></script>
+</body>
+</html>
