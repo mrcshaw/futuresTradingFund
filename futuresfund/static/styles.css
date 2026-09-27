@@ -55,7 +55,7 @@ body {
   background: var(--accent);
   color: var(--accent-text);
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 nav { padding: 8px; }
@@ -72,7 +72,7 @@ nav { padding: 8px; }
   border: 0;
   background: transparent;
   color: var(--text);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 10px;
   display: flex;
   gap: 8px;
@@ -88,7 +88,7 @@ nav { padding: 8px; }
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 0;
   background: GrayText;
   flex: none;
 }
@@ -124,7 +124,7 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
 .desk-clock small { color: var(--muted); }
 .run-pill {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 6px 12px;
   color: var(--accent);
   background: var(--panel);
@@ -151,16 +151,26 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
   background: var(--panel);
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
-  border-radius: 12px;
+  border-radius: 0;
 }
 .now-kicker { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .now-text { margin: 4px 0 0; font-size: 16px; font-weight: 650; }
 button.stop {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 0;
+  border: 1px solid CanvasText;
   background: var(--red);
   color: Canvas;
-  border-radius: 999px;
-  padding: 12px 18px;
+  display: grid;
+  place-items: center;
   box-shadow: none;
+}
+button.stop .stop-mark {
+  width: 14px;
+  height: 14px;
+  background: Canvas;
 }
 .floor {
   display: flex;
@@ -171,7 +181,7 @@ button.stop {
 }
 .chip {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 4px 10px;
   font-size: 12px;
   color: var(--muted);
@@ -218,7 +228,7 @@ button.stop {
 .avatar {
   width: 42px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 0;
   display: grid;
   place-items: center;
   background: var(--accent);
@@ -229,7 +239,7 @@ button.stop {
 .msg strong { font-size: 15px; }
 .msg time, .kind { color: var(--muted); font-size: 12px; }
 .msg p { margin: 4px 0 0; white-space: pre-wrap; line-height: 1.45; }
-.msg.report p, .msg.decision p { background: var(--panel); padding: 10px 12px; border-radius: 8px; }
+.msg.report p, .msg.decision p { background: var(--panel); padding: 10px 12px; border-radius: 0; }
 .msg.system .avatar { background: color-mix(in srgb, LinkText 25%, Canvas); color: var(--blue); }
 .msg.error p { color: var(--red); }
 
@@ -246,7 +256,7 @@ input[type="text"], input:not([type="checkbox"]) {
   background: var(--field);
   color: var(--field-text);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 10px;
   font: inherit;
 }
@@ -254,7 +264,7 @@ button {
   background: var(--accent);
   color: var(--accent-text);
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 10px 14px;
   font: inherit;
   font-weight: 700;
@@ -273,7 +283,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .book[hidden] { display: none; }
 .book-head, .trade-form { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; }
 .book h2, .book h3 { margin: 8px 0; }
-.bars { display: flex; height: 22px; border-radius: 999px; overflow: hidden; background: var(--panel); margin: 8px 0 16px; }
+.bars { display: flex; height: 22px; border-radius: 0; overflow: hidden; background: var(--panel); margin: 8px 0 16px; }
 .bar { height: 100%; min-width: 2px; }
 table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
@@ -285,7 +295,7 @@ select {
   background: var(--field);
   color: var(--field-text);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 10px;
   font: inherit;
 }

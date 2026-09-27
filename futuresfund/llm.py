@@ -35,8 +35,10 @@ def complete(prompt: str) -> str:
         )
     else:
         script = "No lead strategy is on headquarters yet.\n"
+    from futuresfund.session import meeting_note
+
     full = (
-        f"Desk clock: {clock}. The strategy meeting is at 8:00am. Do not hold a meeting before then. "
+        f"Desk clock: {clock}. {meeting_note()} Do not hold a meeting outside those times. "
         f"{describe(size)} "
         "Reason from these limits and from the numbers in the prompt. "
         "Do not invent a profit, a drawdown, or a trade count. "

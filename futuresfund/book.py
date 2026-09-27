@@ -125,7 +125,7 @@ def snapshot() -> dict:
         "lead": lead_script(),
         "intervals": list(reversed(book.get("intervals", [])[-15:])),
         "interval_count": len(book.get("intervals") or []),
-        "next_meeting": "The vote is at 8:00am. Research continues until three rules pass risk.",
+        "next_meeting": "8:00am ET Monday through Friday, and 5:00pm ET Sunday through Friday. Saturday has no meeting.",
     }
 
 

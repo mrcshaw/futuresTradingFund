@@ -171,12 +171,41 @@ def handle_interval(board: Board, signal: dict) -> dict:
     return {"ok": True, "sent": bool(result.get("sent")), "action": plan["action"], "reason": result.get("reason"), "bars": len(bars), "added": bool(closed)}
 
 
+ET = ZoneInfo("America/New_York")
+
+
+def meeting_note() -> str:
+    """The desk clock and every agent use this schedule."""
+    return (
+        "Meetings are 8:00am ET Monday through Friday, ahead of the 9:30 open, "
+        "and 5:00pm ET Sunday through Friday, while the futures market is closed. "
+        "Saturday has no meeting."
+    )
+
+
+def meeting_slot(now: datetime | None = None) -> str | None:
+    """Return the meeting name when the clock is inside its two-minute window."""
+    if now is None:
+        et = datetime.now(ET)
+    elif now.tzinfo is None:
+        et = now.replace(tzinfo=ET)
+    else:
+        et = now.astimezone(ET)
+    if et.weekday() == 5:
+        return None
+    if et.hour == 8 and et.minute < 2 and et.weekday() != 6:
+        return "8:00am"
+    if et.hour == 17 and et.minute < 2:
+        return "5:00pm"
+    return None
+
+
 def strategy_meeting(board: Board, when: str) -> None:
-    """The vote is at 8:00am. Research before that does not open a meeting."""
-    if when != "8:00am":
+    """The vote is at 8:00am or 5:00pm. Research before that does not open a meeting."""
+    if when not in {"8:00am", "5:00pm"}:
         board.post(
             "Portfolio Manager",
-            "The meeting is at 8:00am. Research continues until three rules pass risk.",
+            f"{meeting_note()} Research continues until three rules pass risk.",
             kind="report",
             channel="Portfolio Manager",
         )
@@ -298,13 +327,16 @@ def _held(strategy: dict, signal: dict) -> float:
 
 def scheduler(board: Board) -> None:
     while True:
-        now = datetime.now()
-        book = load()
-        today = now.strftime("%Y-%m-%d")
-        if now.hour == 8 and now.minute < 2 and not str(book.get("last_morning", "")).startswith(today):
-            book["last_morning"] = today
-            save(book)
-            strategy_meeting(board, "8:00am")
+        now = datetime.now(ET)
+        slot = meeting_slot(now)
+        if slot:
+            book = load()
+            today = now.strftime("%Y-%m-%d")
+            key = "last_morning" if slot == "8:00am" else "last_evening"
+            if not str(book.get(key, "")).startswith(today):
+                book[key] = today
+                save(book)
+                strategy_meeting(board, slot)
         time.sleep(20)
 
 

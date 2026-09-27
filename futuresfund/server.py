@@ -34,7 +34,7 @@ board.post(
     "Futures desk is online. Upload a TradingView bar file, with the account size and profit target. "
     "The desk tests several different rules on that file. Each profitable rule stays on the book, and you choose which ones are active. "
     "Each interval alert places, holds, or closes only when the active rules agree and the account matches. "
-    "Research continues until three rules pass risk. The vote is at 8:00am.",
+    "Research continues until three rules pass risk. The vote is 8:00am Monday through Friday and 5:00pm Sunday through Friday.",
     kind="system",
     channel="headquarters",
 )

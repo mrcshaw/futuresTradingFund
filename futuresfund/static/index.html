@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=8" />
+  <link rel="stylesheet" href="/static/styles.css?v=9" />
 </head>
 <body>
   <div class="app">
@@ -38,7 +38,7 @@
           <p class="now-kicker">On the floor</p>
           <p class="now-text" id="now-text">Nobody is working. Send a contract when you are ready.</p>
         </div>
-        <button type="button" id="stop" class="stop" hidden>Stop analysis</button>
+        <button type="button" id="stop" class="stop" hidden aria-label="Stop analysis"><span class="stop-mark"></span></button>
       </section>
       <section class="floor" id="floor"></section>
       <section class="lead" id="lead" hidden>
@@ -142,6 +142,6 @@
       <div id="report-body" class="report-body">Pick a desk to read its report.</div>
     </aside>
   </div>
-  <script type="module" src="/static/app.js?v=17"></script>
+  <script type="module" src="/static/app.js?v=18"></script>
 </body>
 </html>

@@ -35,7 +35,24 @@ function tickClock() {
   const clock = document.querySelector("#clock-time");
   const day = document.querySelector("#clock-date");
   if (clock) clock.textContent = `${time} ET`;
-  if (day) day.textContent = `${date} · meeting 8:00am`;
+  if (day) day.textContent = `${date} · ${nextMeetingLine(now)}`;
+}
+
+function nextMeetingLine(now) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+  const hour = Number(parts.find((part) => part.type === "hour")?.value);
+  if (weekday === "Sat") return "next meeting Sun 5:00pm";
+  if (weekday === "Sun") return hour < 17 ? "next meeting Sun 5:00pm" : "next meeting Mon 8:00am";
+  if (weekday === "Fri" && hour >= 17) return "next meeting Sun 5:00pm";
+  if (hour < 8) return "next meeting 8:00am";
+  if (hour < 17) return "next meeting 5:00pm";
+  return "next meeting 8:00am";
 }
 tickClock();
 setInterval(tickClock, 1000);
