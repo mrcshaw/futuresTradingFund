@@ -186,7 +186,8 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
         _stand_in(board, proposals, contract, timeframe, account, account_size, profit_target, current)
         board.post(
             "Quantitative Researcher",
-            "Three rules passed risk. They wait on the book until the 8:00am meeting. No vote is held before then.",
+            "Three rules passed risk. They wait on the book until the next meeting. "
+            "That is 8:00am Monday through Friday or 5:00pm Sunday through Friday. Saturday has no meeting.",
             kind="report",
             channel="headquarters",
         )
@@ -242,10 +243,11 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
     if len(eligible) < 3:
         board.post(
             "Portfolio Manager",
-            f"The 8:00am meeting has {len(eligible)} of 3 rules that passed risk. The vote waits until three are ready.",
+            f"The {when} meeting has {len(eligible)} of 3 rules that passed risk. The vote waits until three are ready.",
             kind="report",
             channel="Portfolio Manager",
         )
+        _mail_report(board)
         board.finish_run("done")
         return
     try:
@@ -256,7 +258,7 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
         _speak(
             board,
             "Portfolio Manager",
-            "You are leading the 8:00am meeting. Summarize the three rules that passed risk. Do not invent numbers.\n"
+            f"You are leading the {when} meeting. Summarize the three rules that passed risk. Do not invent numbers.\n"
             + "\n".join(transcript),
         )
         tally = _vote(board, eligible, transcript)
@@ -278,15 +280,22 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
         chosen = next((item for item in book["strategies"] if item.get("recommended")), None)
         board.post(
             "Portfolio Manager",
-            f"The 8:00am vote closed. Headquarters shows {chosen['title'] if chosen else 'the current stand-in'}.",
+            f"The {when} vote closed. Headquarters shows {chosen['title'] if chosen else 'the current stand-in'}.",
             kind="report",
             channel="headquarters",
         )
         _floor_analysis(board, chosen or choose_standin(eligible, False))
+        _mail_report(board)
         board.finish_run("done")
     except Exception as exc:
         board.finish_run("error", str(exc))
-        board.post("Portfolio Manager", f"The 8:00am meeting stopped: {exc}.", kind="error", channel="Portfolio Manager")
+        board.post("Portfolio Manager", f"The {when} meeting stopped: {exc}.", kind="error", channel="Portfolio Manager")
+
+
+def _mail_report(board: Board) -> None:
+    from futuresfund.mailer import deliver_report
+
+    board.post("Portfolio Manager", deliver_report(), kind="report", channel="Portfolio Manager")
 
 
 def _developer_backtest(board: Board, bars, contract, account_size, profit_target, name, params, round_number: int) -> tuple[dict | None, str]:
@@ -375,7 +384,8 @@ def _designer_prompt(transcript: list[str], round_number: int) -> str:
         "poc_pullback (lookback 30-100, rows 6-16), vwap_side (length 10-60), "
         "bollinger (length 10-40, dev 2-3), macd (fast 8-16, slow 20-40, signal 5-12), "
         "supertrend (length 7-21, mult 2-4). "
-        f"This is proposal {round_number}. The loop continues until three rules pass risk. The vote is at 8:00am, not now. "
+        f"This is proposal {round_number}. The loop continues until three rules pass risk. "
+        "The vote is at 8:00am Monday through Friday or 5:00pm Sunday through Friday. Saturday has no meeting. "
         "Include a stop in dollars, between 50 and 2000, or the trailing drawdown will fail. "
         'Example: {"name":"bollinger","params":{"length":14,"dev":2,"stop":250}}. '
         "Use the latest backtest and the analyst and risk remarks. "

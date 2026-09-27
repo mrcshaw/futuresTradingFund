@@ -430,3 +430,45 @@ class LiveStopTests(unittest.TestCase):
             ))
             self.assertEqual(again["action"], "watch")
             self.assertEqual(len(research.load_bars()), 1)
+
+
+class ScheduleTests(unittest.TestCase):
+    def test_saturday_has_no_meeting_and_sunday_evening_is_five(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from futuresfund.session import meeting_slot
+
+        et = ZoneInfo("America/New_York")
+        self.assertIsNone(meeting_slot(datetime(2026, 9, 26, 8, 0, tzinfo=et)))
+        self.assertIsNone(meeting_slot(datetime(2026, 9, 26, 17, 0, tzinfo=et)))
+        self.assertIsNone(meeting_slot(datetime(2026, 9, 27, 8, 0, tzinfo=et)))
+        self.assertEqual(meeting_slot(datetime(2026, 9, 27, 17, 0, tzinfo=et)), "5:00pm")
+        self.assertEqual(meeting_slot(datetime(2026, 9, 28, 8, 0, tzinfo=et)), "8:00am")
+        self.assertIsNone(meeting_slot(datetime(2026, 9, 28, 17, 3, tzinfo=et)))
+
+
+class ReportTests(unittest.TestCase):
+    def test_the_report_uses_book_numbers_and_does_not_send_without_smtp(self):
+        from futuresfund.mailer import factual_report, send_report, write_report
+
+        text = factual_report({
+            "strategies": [{
+                "title": "Bollinger 14",
+                "active": True,
+                "proven": True,
+                "accepted": True,
+                "backtest": {"net_profit": 100, "max_drawdown": 40, "trades": 3},
+            }],
+            "orders": [],
+        }, [])
+        self.assertIn("Bollinger 14", text)
+        self.assertIn("profit 100", text)
+        self.assertIn("Saturday has no meeting", text)
+        written = write_report(text, writer=lambda prompt: "The fund is running Bollinger 14.")
+        self.assertEqual(written, "The fund is running Bollinger 14.")
+        kept = write_report(text, writer=lambda prompt: "The meeting model could not answer: down")
+        self.assertEqual(kept, text)
+        os.environ.pop("SMTP_HOST", None)
+        os.environ.pop("REPORT_TO", None)
+        result = send_report(text)
+        self.assertFalse(result["sent"])
