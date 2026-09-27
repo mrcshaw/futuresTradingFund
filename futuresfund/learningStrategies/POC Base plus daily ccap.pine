@@ -1,0 +1,465 @@
+//@version=5
+strategy("POC Color + Pullback", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// ===== VWMA & EMA =====
+show_vwma        = input.bool(true, "Show VWMA", group="Visual")
+vwma_len         = input.int(50, "VWMA Length", minval=5, group="Visual")
+vwma_slope_len   = input.int(5, "VWMA Slope Lookback (bars)", minval=1, group="VWMA Slope")
+min_slope_deg    = input.float(3.0, "Min VWMA slope (degrees)", minval=0.0, step=0.5, group="VWMA Slope",
+  tooltip="Long only if VWMA angle > +this value. Short only if < -this value.\nUses atan(rise/ATR). 0 = no slope filter.")
+atr_len_slope    = input.int(14, "ATR length (for ° scale)", minval=1, group="VWMA Slope",
+  tooltip="Normalizes price rise to a stable angle in degrees.")
+
+show_ema         = input.bool(true, "Show 500 EMA", group="Visual")
+use_ema_filter   = input.bool(true, "Use 500 EMA Trend Filter", group="EMA Filter", tooltip="Long only if price > 500 EMA. Short only if price < 500 EMA.")
+ema_len          = input.int(500, "EMA Length", minval=10, group="EMA Filter")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10, group="Volume Profile")
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5, group="Volume Profile")
+
+// ===== PIVOT PROGRESSION =====
+use_pivot_filter = input.bool(true, "Require Local Higher Low / Lower High", group="Pivot",
+  tooltip="Long: Close must be > last Pivot Low.\nShort: Close must be < last Pivot High.")
+pivot_left       = input.int(15, "Pivot Left Bars", minval=2, maxval=20, group="Pivot")
+pivot_right      = input.int(7, "Pivot Right Bar", minval=2, maxval=20, group="Pivot")
+
+// ===== POC TREND =====
+use_poc_trend    = input.bool(true, "Require Rising/Falling POC", group="POC Trend", tooltip="Long: Current POC >= POC from N bars ago.\nShort: Current POC <= POC from N bars ago.")
+poc_trend_bars   = input.int(60, "POC Trend Lookback (bars)", minval=10, group="POC Trend")
+
+// ===== OPPOSING POC S/R =====
+use_opposing_poc   = input.bool(true, "Block opposing POC S/R", group="Opposing POC",
+  tooltip="Short: skip if a prior POC below acts as support.\nLong: skip if a prior POC above acts as resistance.")
+prior_poc_bars     = input.int(60, "Prior POC offset (bars)", minval=10, maxval=500, step=10, group="Opposing POC",
+  tooltip="How many bars back to read the prior POC zone.\nShould be ≥ profile lookback for a distinct zone.")
+opposing_atr_mult  = input.float(2.0, "Block within ATR ×", minval=0.5, maxval=10.0, step=0.25, group="Opposing POC",
+  tooltip="Only block the trade if the prior POC edge is within this ATR distance of entry.")
+atr_risk_len       = input.int(14, "ATR length (for Opposing POC)", minval=1, group="Opposing POC")
+
+// ===== ENTRY =====
+cooldown_bars      = input.int(10, "Cooldown (bars after exit)", minval=1, group="Entry")
+use_time_cooldown  = input.bool(false, "1 Hour Cooldown After Trade", group="Entry", tooltip="Wait at least 1 hour (in time) after exiting before taking another trade.")
+poc_entry_pct      = input.float(80.0, "POC Entry Depth (%)", minval=0.0, maxval=100.0, group="Entry")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(8, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16, "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== RISK =====
+pv              = input.float(50.0, "Point Value ($)", group="Risk")
+use_poc_stop    = input.bool(false, "Use POC Boundary as Stop", group="Risk", tooltip="Long: POC low - buffer. Short: POC high + buffer.")
+poc_stop_buffer = input.float(5.0, "POC Stop Buffer (pts)", group="Risk", tooltip="Distance to place stop beyond the POC boundary.")
+stop_dollars    = input.float(800.0, "Fixed Stop ($) if not using POC", group="Risk")
+tp_dollars      = input.float(1000.0, "Take Profit ($) (0 = none)", group="Risk")
+
+// ===== REDUCED RISK =====
+use_reduced_risk     = input.bool(false, "Use Reduced Risk Window", group="Reduced Risk")
+reduced_start_hr     = input.int(18, "Start Hour (ET)", group="Reduced Risk")
+reduced_start_mn     = input.int(0, "Start Minute", group="Reduced Risk")
+reduced_end_hr       = input.int(8, "End Hour (ET)", group="Reduced Risk")
+reduced_end_mn       = input.int(0, "End Minute", group="Reduced Risk")
+reduced_stop_dollars = input.float(300.0, "Reduced Stop ($)", group="Reduced Risk")
+reduced_tp_dollars   = input.float(500.0, "Reduced TP ($)", group="Reduced Risk")
+
+// ===== BREAKEVEN =====
+use_breakeven      = input.bool(false, "Breakeven after profit", group="Breakeven")
+be_trigger_dollars = input.float(150.0, "BE trigger ($)", minval=50, group="Breakeven")
+
+// ===== DAILY LIMITS =====
+use_daily_cap    = input.bool(true, "Use Daily Profit Cap", group="Daily Limits")
+daily_profit_cap = input.float(2500.0, "Daily Profit Cap ($)", minval=0.0, group="Daily Limits")
+close_on_cap     = input.bool(false, "Close Open Positions on Cap Hit", group="Daily Limits")
+
+// ===== COMPUTED =====
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+int r_start = reduced_start_hr * 100 + reduced_start_mn
+int r_end   = reduced_end_hr * 100 + reduced_end_mn
+bool in_reduced = use_reduced_risk and (r_start > r_end ? (bar_t >= r_start or bar_t < r_end) : (bar_t >= r_start and bar_t < r_end))
+
+float stop_pts = (in_reduced ? reduced_stop_dollars : stop_dollars) / pv
+float tp_pts   = (in_reduced ? reduced_tp_dollars   : tp_dollars)   / pv
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+if was_in and not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== DAILY PROFIT CAP LOGIC =====
+var float start_of_day_equity = na
+if ta.change(time("D"))
+    start_of_day_equity := strategy.equity
+if na(start_of_day_equity)
+    start_of_day_equity := strategy.equity
+
+float daily_profit = strategy.equity - start_of_day_equity
+bool daily_cap_hit = use_daily_cap and (daily_profit >= daily_profit_cap)
+
+if daily_cap_hit and close_on_cap and strategy.position_size != 0
+    strategy.close_all(comment="Daily Cap Hit")
+
+// ===== VWMA + slope in degrees (atan(rise/ATR); ATR>0 so same as atan2 for this quadrant) =====
+float vwma_val = ta.ema(close, vwma_len)
+float vwma_rise = vwma_val - vwma_val[vwma_slope_len]
+float atr_slope = ta.atr(atr_len_slope)
+float atr_risk  = ta.atr(atr_risk_len)
+bool  atr_ok    = not na(atr_risk) and atr_risk > 0
+float vwma_slope_deg = not na(atr_slope) and atr_slope > 0 ? math.atan(vwma_rise / atr_slope) * 180.0 / math.pi : na
+
+// Min filter: long needs angle > +min, short needs < -min; min 0 = skip slope gate
+bool slope_ok_long  = min_slope_deg <= 0 or (not na(vwma_slope_deg) and vwma_slope_deg >  min_slope_deg)
+bool slope_ok_short = min_slope_deg <= 0 or (not na(vwma_slope_deg) and vwma_slope_deg < -min_slope_deg)
+
+// ===== EMA TREND FILTER =====
+float ema_val = ta.ema(close, ema_len)
+bool ema_ok_long  = not use_ema_filter or (close > ema_val)
+bool ema_ok_short = not use_ema_filter or (close < ema_val)
+
+
+// ===== PIVOT PROGRESSION (lower highs / higher lows) =====
+float ph = ta.pivothigh(high, pivot_left, pivot_right)
+float pl = ta.pivotlow(low,  pivot_left, pivot_right)
+
+var float last_ph_val = na
+var float last_pl_val = na
+
+if not na(ph)
+    last_ph_val := ph
+
+if not na(pl)
+    last_pl_val := pl
+
+bool local_hl = not na(last_pl_val) and close > last_pl_val
+bool local_lh = not na(last_ph_val) and close < last_ph_val
+
+bool pivot_ok_long  = not use_pivot_filter or local_hl
+bool pivot_ok_short = not use_pivot_filter or local_lh
+
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price     = na
+float poc_hi        = na
+float poc_lo        = na
+float poc_delta_pct = na
+int   poc_row       = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo = low[iBar]
+        float bar_hi = high[iBar]
+        bool  bar_up = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    float poc_up_vol = vol_up.get(poc_row)
+    float poc_dn_vol = vol_dn.get(poc_row)
+    float poc_tot    = vol_total.get(poc_row)
+    poc_delta_pct    := poc_tot > 0 ? ((poc_up_vol - poc_dn_vol) / poc_tot) * 100 : 0.0
+
+// ═══════════════════════════════════════════════════════════════
+// Direction: POC channel fill color (same as chart: green = long, red = short).
+// Delta at POC row: >0 green, <0 red. Price vs POC band kept as reference.
+// ═══════════════════════════════════════════════════════════════
+bool poc_valid = not na(poc_hi) and not na(poc_lo)
+
+// Match visual POC fill: green → long bias, red → short bias
+bool poc_green = not na(poc_delta_pct) and poc_delta_pct > 0.0
+bool poc_red   = not na(poc_delta_pct) and poc_delta_pct < 0.0
+
+var int bias = 0
+if poc_valid
+    if close > poc_hi
+        bias := 1
+    else if close < poc_lo
+        bias := -1
+
+// POC width and depth thresholds
+float poc_width = poc_valid ? poc_hi - poc_lo : 0.0
+float long_depth = poc_hi - poc_width * poc_entry_pct / 100.0
+float short_depth = poc_lo + poc_width * poc_entry_pct / 100.0
+
+bool price_in_poc = poc_valid and high >= poc_lo and low <= poc_hi
+bool depth_ok_long  = price_in_poc and low <= long_depth
+bool depth_ok_short = price_in_poc and high >= short_depth
+
+// POC Trend
+float past_poc = poc_price[poc_trend_bars]
+bool poc_rising  = not use_poc_trend or (not na(past_poc) and poc_price >= past_poc)
+bool poc_falling = not use_poc_trend or (not na(past_poc) and poc_price <= past_poc)
+
+// Price action confirmation
+bool bearish_candle = close < open
+bool bullish_candle = close > open
+
+// ===== OPPOSING POC S/R (prior POC acts as support/resistance against trade) =====
+// The POC zone from prior_poc_bars ago — if it's at a different level, it's S/R
+float prior_poc_h = poc_hi[prior_poc_bars]
+float prior_poc_l = poc_lo[prior_poc_bars]
+bool  prior_poc_ok = not na(prior_poc_h) and not na(prior_poc_l) and atr_ok
+
+// Prior POC must be distinctly different from the current POC (at least 0.5 ATR apart)
+bool pocs_distinct = prior_poc_ok and poc_valid and math.abs(nz(poc_price) - (prior_poc_h + prior_poc_l) / 2) > atr_risk * 0.5
+
+// SHORT blocked: prior POC HIGH edge is below entry → support floor within ATR range
+bool support_blocks_short = pocs_distinct and prior_poc_h < close and (close - prior_poc_h) < opposing_atr_mult * atr_risk
+
+// LONG blocked: prior POC LOW edge is above entry → resistance ceiling within ATR range
+bool resist_blocks_long = pocs_distinct and prior_poc_l > close and (prior_poc_l - close) < opposing_atr_mult * atr_risk
+
+bool opposing_ok_long  = not use_opposing_poc or not resist_blocks_long
+bool opposing_ok_short = not use_opposing_poc or not support_blocks_short
+
+// Cooldown + flat
+var int last_trade_bar = -9999
+var int last_trade_time = -9999
+bool cooled_bars = bar_index - last_trade_bar >= cooldown_bars
+// Check if 1 hour (3600000 milliseconds) has passed since last trade
+bool cooled_time = not use_time_cooldown or (last_trade_time == -9999) or (time - last_trade_time >= 3600000)
+bool cooled = cooled_bars and cooled_time
+
+bool is_flat = strategy.position_size == 0 and (na(strategy.position_size[1]) or strategy.position_size[1] == 0)
+
+// LONG:  green POC + rising POC + local HL + no opposing resistance + VWMA slope + EMA trend + pullback + bullish close + not daily cap hit
+// SHORT: red POC + falling POC + local LH + no opposing support + VWMA slope + EMA trend + rally + bearish close + not daily cap hit
+bool long_sig  = depth_ok_long  and poc_green and poc_rising  and pivot_ok_long  and opposing_ok_long  and slope_ok_long  and ema_ok_long  and bullish_candle and in_session and cooled and is_flat and not daily_cap_hit
+bool short_sig = depth_ok_short and poc_red   and poc_falling and pivot_ok_short and opposing_ok_short and slope_ok_short and ema_ok_short and bearish_candle and in_session and cooled and is_flat and not daily_cap_hit
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var bool  be_active       = false
+
+if long_sig
+    float sl0 = use_poc_stop and poc_valid ? poc_lo - poc_stop_buffer : close - stop_pts
+    float lim = tp_pts > 0 ? close + tp_pts : na
+    entry_price     := close
+    current_stop    := sl0
+    be_active       := false
+    last_trade_bar  := bar_index
+    last_trade_time := time
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=lim)
+else if short_sig
+    float sl0 = use_poc_stop and poc_valid ? poc_hi + poc_stop_buffer : close + stop_pts
+    float lim = tp_pts > 0 ? close - tp_pts : na
+    entry_price     := close
+    current_stop    := sl0
+    be_active       := false
+    last_trade_bar  := bar_index
+    last_trade_time := time
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=lim)
+
+// ===== DETECT CLOSE -> COOLDOWN =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    last_trade_bar := bar_index
+    last_trade_time := time
+    be_active      := false
+
+// ===== BREAKEVEN =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and (close - entry_price) >= be_trigger_pts
+        be_active    := true
+        current_stop := entry_price + syminfo.mintick
+        strategy.exit("XL", "Long", stop=current_stop, limit=tp_pts > 0 ? entry_price + tp_pts : na)
+    else if strategy.position_size < 0 and (entry_price - close) >= be_trigger_pts
+        be_active    := true
+        current_stop := entry_price - syminfo.mintick
+        strategy.exit("XS", "Short", stop=current_stop, limit=tp_pts > 0 ? entry_price - tp_pts : na)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== CRITERIA TABLE =====
+var table crit_table = table.new(position.top_right, 3, 14, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+table.cell(crit_table, 0, 1, "POC color (entry)", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, poc_green ? "GREEN → long" : "---", text_color=poc_green ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, poc_red ? "RED → short" : "---", text_color=poc_red ? color.red : color.gray, text_size=size.tiny)
+
+string deg_tbl = not na(vwma_slope_deg) ? str.tostring(vwma_slope_deg, "#.#") + "° (±" + str.tostring(min_slope_deg, "#.#") + "°)" : "n/a"
+table.cell(crit_table, 0, 2, "VWMA slope " + deg_tbl, text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, slope_ok_long ? "OK" : "---", text_color=slope_ok_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, slope_ok_short ? "OK" : "---", text_color=slope_ok_short ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 3, "500 EMA Trend", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, ema_ok_long ? "ABOVE" : "---", text_color=ema_ok_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, ema_ok_short ? "BELOW" : "---", text_color=ema_ok_short ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 4, "POC vs price (ref)", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, bias == 1 ? "above" : "---", text_color=bias == 1 ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, bias == -1 ? "below" : "---", text_color=bias == -1 ? color.red : color.gray, text_size=size.tiny)
+
+string dlt_tbl = not na(poc_delta_pct) ? str.tostring(poc_delta_pct, "#.#") + "%" : "n/a"
+table.cell(crit_table, 0, 5, "POC delta (" + dlt_tbl + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, poc_green ? ">0" : "---", text_color=poc_green ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 5, poc_red ? "<0" : "---", text_color=poc_red ? color.red : color.gray, text_size=size.tiny)
+
+string piv_lbl = "Local Pivot"
+table.cell(crit_table, 0, 6, piv_lbl, text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, local_hl ? "HL" : "---", text_color=local_hl ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 6, local_lh ? "LH" : "---", text_color=local_lh ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 7, "POC Trend", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 7, poc_rising ? "RISING" : "---", text_color=poc_rising ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 7, poc_falling ? "FALLING" : "---", text_color=poc_falling ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 8, "Opp POC S/R", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 8, opposing_ok_long ? "clear" : "RESIST", text_color=opposing_ok_long ? color.lime : color.orange, text_size=size.tiny)
+table.cell(crit_table, 2, 8, opposing_ok_short ? "clear" : "SUPPORT", text_color=opposing_ok_short ? color.red : color.orange, text_size=size.tiny)
+
+table.cell(crit_table, 0, 9, "Price vs POC", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 9, depth_ok_long ? "IN POC" : "---", text_color=depth_ok_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 9, depth_ok_short ? "IN POC" : "---", text_color=depth_ok_short ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 10, "Candle", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 10, bullish_candle ? "BULL" : "---", text_color=bullish_candle ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 10, bearish_candle ? "BEAR" : "---", text_color=bearish_candle ? color.red : color.gray, text_size=size.tiny)
+
+string risk_txt = use_poc_stop ? "POC Boundary ± " + str.tostring(poc_stop_buffer) + " pts" : (in_reduced ? "REDUCED  SL=$" + str.tostring(reduced_stop_dollars, "#") + "  TP=$" + str.tostring(reduced_tp_dollars, "#") : "SL=$" + str.tostring(stop_dollars, "#") + "  TP=$" + str.tostring(tp_dollars, "#"))
+table.cell(crit_table, 0, 11, "Risk", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 11, risk_txt, text_color=in_reduced ? color.orange : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 11, "", text_size=size.tiny)
+
+table.cell(crit_table, 0, 12, "Daily Cap", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 12, daily_cap_hit ? "HIT" : "OK", text_color=daily_cap_hit ? color.red : color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 12, daily_cap_hit ? "HIT" : "OK", text_color=daily_cap_hit ? color.red : color.lime, text_size=size.tiny)
+
+string sig_txt = long_sig ? "LONG" : short_sig ? "SHORT" : "---"
+table.cell(crit_table, 0, 13, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 13, sig_txt, text_color=long_sig ? color.lime : short_sig ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 13, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS =====
+if long_sig
+    string tt = "LONG — GREEN POC + RISING POC + LOCAL HL + no resist + VWMA slope + pullback\n" +
+      "Pivot: Local Higher Low " + (local_hl ? "YES" : "N/A") + "\n" +
+      "POC Trend: " + (poc_rising ? "RISING" : "---") + "\n" +
+      "Opp POC: " + (resist_blocks_long ? "RESIST above — blocked" : "clear") + "\n" +
+      "VWMA slope: " + str.tostring(nz(vwma_slope_deg), "#.##") + "° (need > +" + str.tostring(min_slope_deg, "#.#") + "°)\n" +
+      "POC delta: " + str.tostring(nz(poc_delta_pct), "#.#") + "% (green > 0)\n" +
+      "POC vs price (ref): " + (bias == 1 ? "above band" : bias == -1 ? "below band" : "inside") + "\n" +
+      "Price position: " + (depth_ok_long ? "IN POC DEPTH" : "---") + " | Width: " + str.tostring(poc_width, "#.##") + "\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(current_stop, "#.##") + (use_poc_stop ? " (POC low - buffer)" : "")
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    string tt = "SHORT — RED POC + FALLING POC + LOCAL LH + no support + VWMA slope + pullback\n" +
+      "Pivot: Local Lower High " + (local_lh ? "YES" : "N/A") + "\n" +
+      "POC Trend: " + (poc_falling ? "FALLING" : "---") + "\n" +
+      "Opp POC: " + (support_blocks_short ? "SUPPORT below — blocked" : "clear") + "\n" +
+      "VWMA slope: " + str.tostring(nz(vwma_slope_deg), "#.##") + "° (need < -" + str.tostring(min_slope_deg, "#.#") + "°)\n" +
+      "POC delta: " + str.tostring(nz(poc_delta_pct), "#.#") + "% (red < 0)\n" +
+      "POC vs price (ref): " + (bias == 1 ? "above band" : bias == -1 ? "below band" : "inside") + "\n" +
+      "Price position: " + (depth_ok_short ? "IN POC DEPTH" : "---") + " | Width: " + str.tostring(poc_width, "#.##") + "\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(current_stop, "#.##") + (use_poc_stop ? " (POC high + buffer)" : "")
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+
+// ===== POC DELTA FILL COLOR =====
+color channel_fill = na
+if not na(poc_delta_pct)
+    float s = math.min(math.abs(poc_delta_pct) / 5.0, 1.0)
+    if poc_delta_pct > 0
+        channel_fill := color.new(color.green, 95 - math.round(s * 50))
+    else if poc_delta_pct < 0
+        channel_fill := color.new(color.red, 95 - math.round(s * 50))
+
+// ===== POC DELTA LABEL =====
+var label lbl_delta = na
+if not na(poc_price) and not na(poc_delta_pct)
+    string dtxt = (poc_delta_pct >= 0 ? "+" : "") + str.tostring(poc_delta_pct, "#.#") + "%"
+    if na(lbl_delta)
+        lbl_delta := label.new(bar_index, poc_price, dtxt, style=label.style_label_center, color=color.new(color.gray, 60), textcolor=color.white, size=size.small)
+    else
+        label.set_xy(lbl_delta, bar_index, poc_price)
+        label.set_text(lbl_delta, dtxt)
+
+// ===== PLOTS =====
+plot(show_vwma ? vwma_val : na, "VWMA", color.new(color.gray, 0), linewidth=1)
+plot(show_ema ? ema_val : na, "500 EMA", color.new(color.white, 0), linewidth=2)
+plot(vwma_slope_deg, "VWMA slope °", color.new(color.teal, 0), display=display.data_window)
+plot(atr_risk, "ATR (risk)", color.new(color.blue, 0), display=display.data_window)
+
+
+float ppoc = not na(poc_price) ? poc_price : na
+float phi  = not na(poc_hi) ? poc_hi : na
+float plo  = not na(poc_lo) ? poc_lo : na
+plot(ppoc, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_lo = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+fill(plot_lo, plot_hi, channel_fill)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_delta_pct) ? poc_delta_pct : na, "POC Delta %", color.orange, display=display.data_window)

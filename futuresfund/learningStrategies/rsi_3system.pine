@@ -1,0 +1,391 @@
+// RSI 3-System Strategy
+// Based on The Secret Mindset's RSI method:
+//   System 1: RSI 50 line = trend direction
+//   System 2: Pullback zone crossover (42-58 default)
+//   System 3: RSI divergence — pivot-based (from TradingView RSI Divergence indicator)
+//   S4: HTF RSI bias (longer-period RSI above/below 50)
+//
+// Entry requires min_systems confluence factors to agree.
+// Optimized for ES 2-min night session (18:00-08:00 ET).
+
+//@version=5
+strategy("RSI 3-System Strategy", shorttitle="RSI 3-Sys", overlay=true,
+     initial_capital=25000, default_qty_type=strategy.fixed,
+     default_qty_value=1, commission_type=strategy.commission.cash_per_contract,
+     commission_value=5.50, slippage=1, pyramiding=0,
+     process_orders_on_close=true, calc_on_every_tick=false,
+     max_labels_count=500)
+
+// ─── RSI SETTINGS ─────────────────────────────────────────────────
+rsi_len       = input.int(14,   "RSI Length",           group="RSI")
+htf_rsi_len   = input.int(70,   "HTF RSI Length",       group="RSI",
+     tooltip="Longer-period RSI simulates higher timeframe bias.")
+pullback_lo   = input.float(42, "Pullback Zone Low",    group="RSI", step=1)
+pullback_hi   = input.float(58, "Pullback Zone High",   group="RSI", step=1)
+
+// ─── DIVERGENCE (from TradingView RSI Divergence Indicator) ───────
+lbL           = input.int(5,    "Pivot Lookback Left",   group="Divergence", minval=1)
+lbR           = input.int(5,    "Pivot Lookback Right", group="Divergence", minval=1)
+rangeUpper    = input.int(60,   "Max Lookback Range",    group="Divergence", minval=5)
+rangeLower    = input.int(5,    "Min Lookback Range",    group="Divergence", minval=1)
+div_window    = input.int(12,   "Divergence Window",    group="Divergence", minval=0, maxval=30,
+     tooltip="Bars after divergence confirmed that it stays active (overlaps with pullback).")
+
+// ─── SYSTEM TOGGLES ──────────────────────────────────────────────
+use_pullback   = input.bool(true, "Use Pullback Zone (System 2)",  group="Systems")
+use_divergence = input.bool(true, "Use Divergence (System 3)",     group="Systems")
+use_htf_bias   = input.bool(true, "Use HTF RSI Bias",             group="Systems")
+min_systems    = input.int(3,     "Min Systems to Agree", minval=1, maxval=4, group="Systems",
+     tooltip="How many systems must confirm before entry. Max 4: trend + HTF + pullback + divergence.")
+
+// ─── RISK MANAGEMENT ──────────────────────────────────────────────
+pv            = input.float(50.0, "Point Value ($)",      group="Risk")
+stop_dollars  = input.float(300.0,"Stop Loss ($)",        step=25, group="Risk")
+tp_dollars    = input.float(900.0,"Take Profit ($)",      step=25, group="Risk")
+cooldown_bars = input.int(15,     "Cooldown Bars", minval=0, group="Risk")
+
+use_breakeven  = input.bool(false,  "Use Breakeven",     group="Breakeven")
+be_trigger_dol = input.float(200.0, "BE Trigger ($)",    step=25, group="Breakeven")
+
+// ─── SESSION FILTER ───────────────────────────────────────────────
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18,    "Start Hour (ET)",    group="Session")
+sess_start_mn = input.int(0,     "Start Minute",       group="Session")
+sess_end_hr   = input.int(8,     "End Hour (ET)",      group="Session")
+sess_end_mn   = input.int(0,     "End Minute",         group="Session")
+
+// ─── DISPLAY ──────────────────────────────────────────────────────
+show_legend     = input.bool(true, "Show Legend Table",    group="Display")
+show_rsi_bg     = input.bool(true, "RSI Zone Background",   group="Display")
+show_sl_tp      = input.bool(true, "Show SL/TP Lines",     group="Display")
+show_trade_box  = input.bool(true, "Show Trade Zone Box",  group="Display")
+show_session_bg = input.bool(true, "Shade Out-of-Session", group="Display")
+show_bar_color  = input.bool(true, "Color Bars by Score",  group="Display")
+extreme_hi      = input.float(80, "Extreme High (RSI bg)", group="Display")
+extreme_lo      = input.float(20, "Extreme Low (RSI bg)",  group="Display")
+
+// ─── SESSION LOGIC ────────────────────────────────────────────────
+cur_hr  = hour(time, "America/New_York")
+cur_mn  = minute(time, "America/New_York")
+bar_t   = cur_hr * 100 + cur_mn
+s_start = sess_start_hr * 100 + sess_start_mn
+s_end   = sess_end_hr   * 100 + sess_end_mn
+in_session = use_session ? (s_start > s_end ? (bar_t >= s_start or bar_t < s_end)
+     : (bar_t >= s_start and bar_t < s_end)) : true
+
+prev_hr  = hour(time[1], "America/New_York")
+prev_mn  = minute(time[1], "America/New_York")
+prev_t   = prev_hr * 100 + prev_mn
+prev_in  = use_session ? (s_start > s_end ? (prev_t >= s_start or prev_t < s_end)
+     : (prev_t >= s_start and prev_t < s_end)) : true
+sess_end_flag = prev_in and not in_session
+
+if sess_end_flag and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ─── RSI CALCULATIONS ─────────────────────────────────────────────
+rsi_val     = ta.rsi(close, rsi_len)
+htf_rsi_val = ta.rsi(close, htf_rsi_len)
+
+// ─── SYSTEM 1: RSI 50-LINE TREND ─────────────────────────────────
+rsi_bullish = rsi_val > 50
+rsi_bearish = rsi_val < 50
+
+// ─── HTF BIAS ─────────────────────────────────────────────────────
+htf_bullish = use_htf_bias ? htf_rsi_val > 50 : true
+htf_bearish = use_htf_bias ? htf_rsi_val < 50 : true
+
+// ─── SYSTEM 2: PULLBACK ZONE CROSSOVER ────────────────────────────
+pullback_long  = use_pullback ? (rsi_val[1] <= 50 and rsi_val > 50 and rsi_val[1] >= pullback_lo) : false
+pullback_short = use_pullback ? (rsi_val[1] >= 50 and rsi_val < 50 and rsi_val[1] <= pullback_hi) : false
+
+// ─── SYSTEM 3: DIVERGENCE (pivot-based from TradingView indicator) ──
+_inRange(bool cond) =>
+    bars = ta.barssince(cond)
+    rangeLower <= bars and bars <= rangeUpper
+
+rsiLBR = rsi_val[lbR]
+
+plFound = not na(ta.pivotlow(rsi_val, lbL, lbR))
+phFound = not na(ta.pivothigh(rsi_val, lbL, lbR))
+
+// Regular Bullish: price lower low + RSI higher low at pivots
+inRangePl  = _inRange(plFound[1])
+oscHL      = rsiLBR > ta.valuewhen(plFound, rsiLBR, 1) and inRangePl
+priceLL    = low[lbR] < ta.valuewhen(plFound, low[lbR], 1)
+bullDivRaw = priceLL and oscHL and plFound
+
+// Regular Bearish: price higher high + RSI lower high at pivots
+inRangePh  = _inRange(phFound[1])
+oscLH      = rsiLBR < ta.valuewhen(phFound, rsiLBR, 1) and inRangePh
+priceHH    = high[lbR] > ta.valuewhen(phFound, high[lbR], 1)
+bearDivRaw = priceHH and oscLH and phFound
+
+// Keep divergence active for window bars (so it can overlap with pullback)
+bullDivActive = bullDivRaw
+bearDivActive = bearDivRaw
+for i = 1 to 20
+    if i <= div_window
+        bullDivActive := bullDivActive or bullDivRaw[i]
+        bearDivActive := bearDivActive or bearDivRaw[i]
+
+bull_div = use_divergence ? bullDivActive : false
+bear_div = use_divergence ? bearDivActive : false
+
+// ─── CONFLUENCE SCORING ───────────────────────────────────────────
+long_score  = (rsi_bullish ? 1 : 0) + (htf_bullish ? 1 : 0) + (pullback_long ? 1 : 0) + (bull_div ? 1 : 0)
+short_score = (rsi_bearish ? 1 : 0) + (htf_bearish ? 1 : 0) + (pullback_short ? 1 : 0) + (bear_div ? 1 : 0)
+
+// ─── ANTI-REPAINT + ENTRY LOGIC ───────────────────────────────────
+var int   last_trade_bar = -9999
+var bool  in_trade       = false
+var float entry_price    = na
+var bool  be_active      = false
+var line  sl_line        = na
+var line  tp_line        = na
+var line  entry_line     = na
+var box   trade_box      = na
+var int   trade_dir      = 0
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+flat = strategy.position_size == 0 and not in_trade
+
+cooled = bar_index - last_trade_bar >= cooldown_bars
+
+stop_pts = stop_dollars / pv
+tp_pts   = tp_dollars   / pv
+be_pts   = be_trigger_dol / pv
+
+long_ok  = long_score  >= min_systems and flat and in_session and cooled and not (short_score >= min_systems)
+short_ok = short_score >= min_systems and flat and in_session and cooled and not (long_score >= min_systems)
+
+if long_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := 1
+    strategy.entry("Long", strategy.long, comment="RSI Long")
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+    if show_sl_tp
+        if not na(sl_line)
+            line.delete(sl_line)
+        if not na(tp_line)
+            line.delete(tp_line)
+        if not na(entry_line)
+            line.delete(entry_line)
+        sl_line    := line.new(bar_index, close - stop_pts, bar_index + 1, close - stop_pts,
+             color=color.new(color.red, 30), width=2, style=line.style_dashed)
+        tp_line    := line.new(bar_index, close + tp_pts, bar_index + 1, close + tp_pts,
+             color=color.new(color.lime, 30), width=2, style=line.style_dashed)
+        entry_line := line.new(bar_index, close, bar_index + 1, close,
+             color=color.new(color.white, 50), width=1, style=line.style_dotted)
+    if show_trade_box
+        if not na(trade_box)
+            box.delete(trade_box)
+        trade_box := box.new(bar_index, close + tp_pts, bar_index + 1, close - stop_pts,
+             bgcolor=color.new(color.lime, 92), border_color=color.new(color.lime, 70), border_width=1)
+
+if short_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := -1
+    strategy.entry("Short", strategy.short, comment="RSI Short")
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+    if show_sl_tp
+        if not na(sl_line)
+            line.delete(sl_line)
+        if not na(tp_line)
+            line.delete(tp_line)
+        if not na(entry_line)
+            line.delete(entry_line)
+        sl_line    := line.new(bar_index, close + stop_pts, bar_index + 1, close + stop_pts,
+             color=color.new(color.red, 30), width=2, style=line.style_dashed)
+        tp_line    := line.new(bar_index, close - tp_pts, bar_index + 1, close - tp_pts,
+             color=color.new(color.lime, 30), width=2, style=line.style_dashed)
+        entry_line := line.new(bar_index, close, bar_index + 1, close,
+             color=color.new(color.white, 50), width=1, style=line.style_dotted)
+    if show_trade_box
+        if not na(trade_box)
+            box.delete(trade_box)
+        trade_box := box.new(bar_index, close + stop_pts, bar_index + 1, close - tp_pts,
+             bgcolor=color.new(color.red, 92), border_color=color.new(color.red, 70), border_width=1)
+
+// Extend lines and box while in trade
+if strategy.position_size != 0
+    if show_sl_tp
+        if not na(sl_line)
+            line.set_x2(sl_line, bar_index + 1)
+        if not na(tp_line)
+            line.set_x2(tp_line, bar_index + 1)
+        if not na(entry_line)
+            line.set_x2(entry_line, bar_index + 1)
+    if show_trade_box and not na(trade_box)
+        box.set_right(trade_box, bar_index + 1)
+
+// ─── BREAKEVEN ────────────────────────────────────────────────────
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and close - entry_price >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick,
+             limit=entry_price + tp_pts)
+    if strategy.position_size < 0 and entry_price - close >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick,
+             limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ─── ENTRY MARKERS & TOOLTIPS ─────────────────────────────────────
+plotshape(long_ok, "Long Entry", shape.triangleup, location.belowbar,
+     color.lime, size=size.small)
+plotshape(short_ok, "Short Entry", shape.triangledown, location.abovebar,
+     color.red, size=size.small)
+
+// Divergence markers
+plotshape(bullDivRaw, "Bull Div", shape.diamond, location.belowbar, #26a69a,
+     size=size.tiny, offset=-lbR)
+plotshape(bearDivRaw, "Bear Div", shape.diamond, location.abovebar, #ff5252,
+     size=size.tiny, offset=-lbR)
+
+if long_ok
+    sl_p = close - stop_pts
+    tp_p = close + tp_pts
+    label.new(bar_index, low - 2 * syminfo.mintick, "L",
+         color=color.lime, style=label.style_label_up,
+         textcolor=color.white, size=size.small,
+         tooltip="RSI LONG @ " + str.tostring(close, "#.##") +
+                 "\nScore: " + str.tostring(long_score) + "/" + str.tostring(min_systems) +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") +
+                 " | HTF RSI: " + str.tostring(htf_rsi_val, "#.#") +
+                 "\nS1 Trend: " + (rsi_bullish ? "BULL" : "BEAR") +
+                 "\nS2 Pullback: " + (pullback_long ? "YES" : "NO") +
+                 "\nS3 Divergence: " + (bull_div ? "YES (pivot)" : "NO") +
+                 "\nHTF Bias: " + (htf_bullish ? "BULL" : "BEAR") +
+                 "\nSL: " + str.tostring(sl_p, "#.##") +
+                 " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_p, "#.##") +
+                 " ($" + str.tostring(tp_dollars) + ")" +
+                 (use_breakeven ? "\nBE: $" + str.tostring(be_trigger_dol) : ""))
+
+if short_ok
+    sl_p = close + stop_pts
+    tp_p = close - tp_pts
+    label.new(bar_index, high + 2 * syminfo.mintick, "S",
+         color=color.red, style=label.style_label_down,
+         textcolor=color.white, size=size.small,
+         tooltip="RSI SHORT @ " + str.tostring(close, "#.##") +
+                 "\nScore: " + str.tostring(short_score) + "/" + str.tostring(min_systems) +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") +
+                 " | HTF RSI: " + str.tostring(htf_rsi_val, "#.#") +
+                 "\nS1 Trend: " + (rsi_bearish ? "BEAR" : "BULL") +
+                 "\nS2 Pullback: " + (pullback_short ? "YES" : "NO") +
+                 "\nS3 Divergence: " + (bear_div ? "YES (pivot)" : "NO") +
+                 "\nHTF Bias: " + (htf_bearish ? "BEAR" : "BULL") +
+                 "\nSL: " + str.tostring(sl_p, "#.##") +
+                 " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_p, "#.##") +
+                 " ($" + str.tostring(tp_dollars) + ")" +
+                 (use_breakeven ? "\nBE: $" + str.tostring(be_trigger_dol) : ""))
+
+// ─── RSI ZONE BACKGROUND ─────────────────────────────────────────
+bgcolor(show_rsi_bg and rsi_val > extreme_hi ? color.new(color.red, 90) :
+     show_rsi_bg and rsi_val < extreme_lo ? color.new(color.green, 90) : na)
+
+// ─── SESSION SHADING ─────────────────────────────────────────────
+bgcolor(show_session_bg and not in_session ? color.new(color.gray, 95) : na)
+
+// ─── BAR COLORING BY CONFLUENCE SCORE ────────────────────────────
+best_dir_score = math.max(long_score, short_score)
+bar_clr = not show_bar_color ? na :
+     best_dir_score >= min_systems and long_score > short_score ? color.new(color.lime, 40) :
+     best_dir_score >= min_systems and short_score > long_score ? color.new(color.red, 40) :
+     best_dir_score >= min_systems - 1 and long_score > short_score ? color.new(color.lime, 75) :
+     best_dir_score >= min_systems - 1 and short_score > long_score ? color.new(color.red, 75) : na
+barcolor(bar_clr)
+
+// ─── LEGEND TABLE ─────────────────────────────────────────────────
+if show_legend
+    var table tb = table.new(position.top_right, 2, 12,
+         bgcolor=#1e222d, border_color=#373a46,
+         border_width=1, frame_color=#373a46, frame_width=1)
+
+    if barstate.isfirst
+        tb.cell(0, 0, "Criteria",      text_color=color.white, text_size=size.small)
+        tb.cell(1, 0, "Status",        text_color=color.white, text_size=size.small)
+        tb.cell(0, 1, "RSI (" + str.tostring(rsi_len) + ")",
+             text_color=color.white, text_size=size.small)
+        tb.cell(0, 2, "S1: 50-Line",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 3, "HTF RSI (" + str.tostring(htf_rsi_len) + ")",
+             text_color=color.white, text_size=size.small)
+        tb.cell(0, 4, "S2: Pullback",  text_color=color.white, text_size=size.small)
+        tb.cell(0, 5, "S3: Divergence",text_color=color.white, text_size=size.small)
+        tb.cell(0, 6, "Score",         text_color=color.white, text_size=size.small)
+        tb.cell(0, 7, "Session",       text_color=color.white, text_size=size.small)
+        tb.cell(0, 8, "Flat / Cooled", text_color=color.white, text_size=size.small)
+        tb.cell(0, 9, "Position",      text_color=color.white, text_size=size.small)
+        tb.cell(0, 10, "Entry / SL",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 11, "TP / P&L",     text_color=color.white, text_size=size.small)
+
+    rsi_str = str.tostring(rsi_val, "#.#")
+    rsi_clr = rsi_val > 50 ? color.lime : color.red
+
+    s1_str = rsi_bullish ? "BULL" : "BEAR"
+    s1_clr = rsi_bullish ? color.lime : color.red
+
+    htf_str = str.tostring(htf_rsi_val, "#.#") + (htf_bullish ? " BULL" : " BEAR")
+    htf_clr = htf_bullish ? color.lime : color.red
+
+    s2_str = pullback_long ? "LONG ✓" : pullback_short ? "SHORT ✓" : "—"
+    s2_clr = pullback_long ? color.lime : pullback_short ? color.red : color.gray
+
+    s3_str = bull_div ? "BULL DIV" : bear_div ? "BEAR DIV" : "—"
+    s3_clr = bull_div ? color.lime : bear_div ? color.red : color.gray
+
+    legend_best = math.max(long_score, short_score)
+    dir_str = long_score >= short_score ? "L" : "S"
+    score_str = dir_str + " " + str.tostring(legend_best) + "/" + str.tostring(min_systems)
+    score_clr = legend_best >= min_systems ? color.lime : color.yellow
+
+    sess_str = in_session ? "YES" : "NO"
+    sess_clr = in_session ? color.lime : color.gray
+
+    fc_str = (flat ? "FLAT" : "IN TRADE") + " / " + (cooled ? "COOLED" : "WAIT")
+    fc_clr = flat and cooled ? color.lime : color.yellow
+
+    pos_str = strategy.position_size > 0 ? "LONG" :
+              strategy.position_size < 0 ? "SHORT" : "FLAT"
+    pos_clr = strategy.position_size > 0 ? color.lime :
+              strategy.position_size < 0 ? color.red : color.gray
+
+    entry_sl_str = "—"
+    tp_pnl_str   = "—"
+    entry_sl_clr = color.gray
+    tp_pnl_clr   = color.gray
+    if strategy.position_size != 0 and not na(entry_price)
+        cur_sl = trade_dir == 1 ? entry_price - stop_pts : entry_price + stop_pts
+        cur_tp = trade_dir == 1 ? entry_price + tp_pts   : entry_price - tp_pts
+        if be_active
+            cur_sl := trade_dir == 1 ? entry_price + syminfo.mintick : entry_price - syminfo.mintick
+        unrealized_pts = trade_dir == 1 ? close - entry_price : entry_price - close
+        unrealized_dol = unrealized_pts * pv
+        entry_sl_str := str.tostring(entry_price, "#.##") + " / " + str.tostring(cur_sl, "#.##")
+        entry_sl_clr := color.white
+        tp_pnl_str   := str.tostring(cur_tp, "#.##") + " / $" + str.tostring(unrealized_dol, "#.#")
+        tp_pnl_clr   := unrealized_dol >= 0 ? color.lime : color.red
+
+    tb.cell(1, 1, rsi_str,       text_color=rsi_clr,      text_size=size.small)
+    tb.cell(1, 2, s1_str,        text_color=s1_clr,       text_size=size.small)
+    tb.cell(1, 3, htf_str,       text_color=htf_clr,      text_size=size.small)
+    tb.cell(1, 4, s2_str,        text_color=s2_clr,       text_size=size.small)
+    tb.cell(1, 5, s3_str,        text_color=s3_clr,       text_size=size.small)
+    tb.cell(1, 6, score_str,     text_color=score_clr,    text_size=size.small)
+    tb.cell(1, 7, sess_str,      text_color=sess_clr,     text_size=size.small)
+    tb.cell(1, 8, fc_str,        text_color=fc_clr,       text_size=size.small)
+    tb.cell(1, 9, pos_str,       text_color=pos_clr,      text_size=size.small)
+    tb.cell(1, 10, entry_sl_str, text_color=entry_sl_clr, text_size=size.small)
+    tb.cell(1, 11, tp_pnl_str,   text_color=tp_pnl_clr,   text_size=size.small)

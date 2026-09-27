@@ -1,0 +1,121 @@
+//@version=5
+// ============================================================
+// Outside Candle 3-Bar Strategy
+// ============================================================
+//
+// 1. Current candle engulfs the previous 3 (high > all highs, low < all lows)
+// 2. Bullish: close in top 25% of candle range → long
+// 3. Bearish: close in bottom 25% of candle range → short
+// 4. Simple fixed stop, optional EMA filter, session management
+// ============================================================
+
+strategy("Outside Candle 3-Bar", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=false)
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+stop_dollars = input.float(100.0, "Fixed Stop ($)")
+
+// ===== EMA FILTER =====
+use_ema        = input.bool(false, "Use EMA Filter")
+ema_len        = input.int(50, "EMA Length")
+ema_slope_bars = input.int(10, "EMA Slope Lookback (bars)")
+ema_min_angle  = input.float(3.0, "Min EMA Angle (degrees)")
+
+// ===== SESSION =====
+use_session_filter = input.bool(true, "Use Session Filter")
+use_ny_sess    = input.bool(true, "Enable NY Session")
+ny_start_hr    = input.int(9, "NY Session Start Hour (ET)")
+ny_start_mn    = input.int(30, "NY Session Start Minute")
+ny_end_hr      = input.int(16, "NY Session End Hour (ET)")
+ny_end_mn      = input.int(0, "NY Session End Minute")
+use_fut_sess   = input.bool(true, "Enable Futures Session")
+fut_start_hr   = input.int(18, "Futures Start Hour (ET)")
+fut_end_hr     = input.int(8, "Futures End Hour (ET)")
+
+// ===== COMPUTED =====
+stop_pts        = stop_dollars / pv
+float ema_val   = ta.ema(close, ema_len)
+float ema_angle = math.todegrees(math.atan((ema_val - ema_val[ema_slope_bars]) / ema_slope_bars))
+bool ema_up     = not use_ema or (ema_angle >= ema_min_angle and close > ema_val)
+bool ema_down   = not use_ema or (ema_angle <= -ema_min_angle and close < ema_val)
+
+// ===== SESSION LOGIC =====
+bar_hr    = hour(time, "America/New_York")
+bar_mn    = minute(time, "America/New_York")
+bar_t     = bar_hr * 100 + bar_mn
+ny_start  = ny_start_hr * 100 + ny_start_mn
+ny_end    = ny_end_hr * 100 + ny_end_mn
+fut_start = fut_start_hr * 100
+fut_end   = fut_end_hr * 100
+in_ny     = use_ny_sess and bar_t >= ny_start and bar_t < ny_end
+in_fut    = use_fut_sess and (bar_t >= fut_start or bar_t < fut_end)
+in_session = not use_session_filter or (in_ny or in_fut)
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+was_ny  = use_ny_sess and prev_t >= ny_start and prev_t < ny_end
+was_fut = use_fut_sess and (prev_t >= fut_start or prev_t < fut_end)
+session_ended = (was_ny or was_fut) and not in_session
+
+if session_ended and strategy.position_size != 0
+    log.info("SESSION CLOSE bar={0}", bar_index)
+    strategy.close_all(comment="Session Close")
+
+// ===== DIRECTION FILTER =====
+close_pct_min = input.float(0.5, "Min Close Position for Bullish (0–1)", minval=0.0, maxval=1.0,
+  tooltip="Bullish if close is above this fraction of the candle range. 0.5 = upper half, 0.75 = top quarter.")
+close_pct_max = input.float(0.5, "Max Close Position for Bearish (0–1)", minval=0.0, maxval=1.0,
+  tooltip="Bearish if close is below this fraction of the candle range. 0.5 = lower half, 0.25 = bottom quarter.")
+
+// ===== PATTERN: engulfs previous 3 candles =====
+bool engulfs = high > high[1] and high > high[2] and high > high[3] and low < low[1] and low < low[2] and low < low[3]
+
+float candle_range   = high - low
+float close_position = candle_range > 0 ? (close - low) / candle_range : 0.5
+
+bool bullish = engulfs and close_position >= close_pct_min
+bool bearish = engulfs and close_position <= close_pct_max
+
+// ===== LOGGING =====
+if engulfs
+    log.info("ENGULF DETECTED bar={0} close_pos={1} bullish={2} bearish={3} in_sess={4} ema_up={5} ema_down={6} flat={7}",
+      bar_index, close_position, bullish, bearish, in_session, ema_up, ema_down, strategy.position_size == 0)
+
+if bullish and strategy.position_size == 0 and not (in_session and ema_up)
+    log.warning("LONG BLOCKED bar={0} in_session={1} ema_up={2} ema_angle={3}",
+      bar_index, in_session, ema_up, ema_angle)
+if bearish and strategy.position_size == 0 and not (in_session and ema_down)
+    log.warning("SHORT BLOCKED bar={0} in_session={1} ema_down={2} ema_angle={3}",
+      bar_index, in_session, ema_down, ema_angle)
+
+// ===== ENTRIES =====
+if strategy.position_size == 0 and in_session
+    if bullish and ema_up
+        float sl = close - stop_pts
+        strategy.entry("Long", strategy.long)
+        strategy.exit("XL", "Long", stop=sl)
+        log.info("ENTRY LONG bar={0} close={1} stop={2}", bar_index, close, sl)
+    else if bearish and ema_down
+        float sl = close + stop_pts
+        strategy.entry("Short", strategy.short)
+        strategy.exit("XS", "Short", stop=sl)
+        log.info("ENTRY SHORT bar={0} close={1} stop={2}", bar_index, close, sl)
+
+// ===== TRADE CLOSED =====
+if strategy.position_size[1] != 0 and strategy.position_size == 0 and strategy.closedtrades > 0
+    log.info("TRADE CLOSED bar={0} pnl={1}", bar_index, strategy.closedtrades.profit(strategy.closedtrades - 1))
+
+// ===== VISUALS =====
+plot(ema_val, "50 EMA", color=ema_angle >= ema_min_angle ? color.green : ema_angle <= -ema_min_angle ? color.red : color.gray, linewidth=2)
+plotshape(bullish, "Bullish Outside", shape.triangleup, location.belowbar, color.lime, size=size.normal)
+plotshape(bearish, "Bearish Outside", shape.triangledown, location.abovebar, color.red, size=size.normal)
+
+// ===== DEBUG (hover to see) =====
+plot(in_session ? 1 : 0, "In Session", color.white, display=display.data_window)
+plot(engulfs ? 1 : 0, "Engulfs 3", color.orange, display=display.data_window)
+plot(close_position, "Close Position", color.aqua, display=display.data_window)
+plot(ema_angle, "EMA Angle", color.yellow, display=display.data_window)

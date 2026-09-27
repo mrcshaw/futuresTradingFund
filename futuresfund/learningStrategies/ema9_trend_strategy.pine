@@ -1,0 +1,222 @@
+//@version=5
+// ============================================================
+// Pullback Strategy — 25 SMA / 55 EMA / 200 EMA
+// ============================================================
+//
+// TREND:  Price above 200 EMA = uptrend, below = downtrend
+// PULLBACK: Price enters the 55 EMA buffer zone
+// ENTRY: Price leaves the zone with a pin bar or engulfing candle
+// EXIT:  Step trailing stop + fixed stop + hard TP
+// ============================================================
+
+strategy("Pullback 25/55/200", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=false)
+
+// ===== MOVING AVERAGES =====
+fast_len         = input.int(25, "Fast MA Length (SMA)")
+mid_len          = input.int(55, "Mid MA Length (EMA)")
+slow_len         = input.int(200, "Slow MA Length (EMA)")
+
+// ===== PULLBACK SETTINGS =====
+pb_buffer        = input.float(5.0, "Pullback Zone Buffer (pts)", tooltip="How close price must get to the 55 EMA to count as a pullback.")
+
+// ===== EXIT SETTINGS =====
+pv               = input.float(50.0, "Point Value ($)")
+stop_dollars     = input.float(100.0, "Fixed Stop ($)")
+use_trail        = input.bool(true, "Enable Trailing Stop")
+trail_pct        = input.float(100.0, "Trail: Keep % of Peak Profit")
+trail_step_amt   = input.float(200.0, "Trail: Tighten every $X profit")
+trail_step_pct   = input.float(100.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(200.0, "Trail: Min Profit Before Trailing ($)")
+hard_tp_dollars  = input.float(200.0, "Hard TP $ (0 = off)")
+
+// ===== SESSION =====
+ny_start_hr    = input.int(9, "NY Session Start Hour (ET)")
+ny_start_mn    = input.int(30, "NY Session Start Minute")
+ny_end_hr      = input.int(16, "NY Session End Hour (ET)")
+ny_end_mn      = input.int(0, "NY Session End Minute")
+use_fut_sess   = input.bool(true, "Enable Futures Session")
+fut_start_hr   = input.int(18, "Futures Start Hour (ET)")
+fut_end_hr     = input.int(8, "Futures End Hour (ET)")
+
+// ===== COMPUTED =====
+stop_pts       = stop_dollars / pv
+hard_tp_pts    = hard_tp_dollars > 0 ? hard_tp_dollars / pv : 0.0
+
+fast_ma        = ta.sma(close, fast_len)
+mid_ma         = ta.ema(close, mid_len)
+slow_ma        = ta.ema(close, slow_len)
+
+// ===== TREND (200 EMA only) =====
+bool uptrend   = close > slow_ma
+bool downtrend = close < slow_ma
+
+// ===== PULLBACK ZONE =====
+float zone_top    = mid_ma + pb_buffer
+float zone_bottom = mid_ma - pb_buffer
+
+bool in_zone = close >= zone_bottom and close <= zone_top
+
+// Track: did price enter the zone? Armed when it leaves with a signal.
+var bool was_in_zone = false
+
+if in_zone
+    was_in_zone := true
+
+// ===== PRICE ACTION PATTERNS =====
+float body       = math.abs(close - open)
+float upper_wick = high - math.max(close, open)
+float lower_wick = math.min(close, open) - low
+float full_range = high - low
+
+// Bullish pin bar: long lower wick, small body at top, closed green
+bool bull_pin = close > open and lower_wick > body * 2 and upper_wick < body and full_range > 0
+
+// Bearish pin bar: long upper wick, small body at bottom, closed red
+bool bear_pin = close < open and upper_wick > body * 2 and lower_wick < body and full_range > 0
+
+// Bullish engulfing: prev red, current green, current body wraps prev body
+bool bull_engulf = close > open and close[1] < open[1] and close > open[1] and open < close[1]
+
+// Bearish engulfing: prev green, current red, current body wraps prev body
+bool bear_engulf = close < open and close[1] > open[1] and close < open[1] and open > close[1]
+
+bool bull_signal = bull_pin or bull_engulf
+bool bear_signal = bear_pin or bear_engulf
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+
+ny_start  = ny_start_hr * 100 + ny_start_mn
+ny_end    = ny_end_hr * 100 + ny_end_mn
+fut_start = fut_start_hr * 100
+fut_end   = fut_end_hr * 100
+
+in_ny  = bar_t >= ny_start and bar_t < ny_end
+in_fut = use_fut_sess and (bar_t >= fut_start or bar_t < fut_end)
+in_session = in_ny or in_fut
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+was_ny  = prev_t >= ny_start and prev_t < ny_end
+was_fut = use_fut_sess and (prev_t >= fut_start or prev_t < fut_end)
+was_in  = was_ny or was_fut
+session_ended = was_in and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== TRADE TRACKING =====
+var int  prev_closed_count = 0
+var bool waiting_for_reset = false
+
+if strategy.closedtrades > prev_closed_count
+    waiting_for_reset  := true
+    was_in_zone        := false
+    prev_closed_count  := strategy.closedtrades
+
+if waiting_for_reset and in_zone
+    waiting_for_reset := false
+
+bool is_flat   = strategy.position_size == 0
+bool can_enter = is_flat and not waiting_for_reset and in_session
+
+// ===== STATE =====
+var float peak_profit_pts = 0.0
+var float current_stop    = 0.0
+
+// ===== ENTRY =====
+// LONG: uptrend + was in zone + leaves zone above + bullish candle
+bool long_trigger = can_enter and uptrend and was_in_zone and close > zone_top and bull_signal
+if long_trigger
+    strategy.entry("Long", strategy.long)
+    current_stop    := close - stop_pts
+    peak_profit_pts := 0.0
+    was_in_zone     := false
+    if hard_tp_pts > 0
+        strategy.exit("XL", "Long", stop=current_stop, limit=close + hard_tp_pts)
+    else
+        strategy.exit("XL", "Long", stop=current_stop)
+    log.info("ENTRY LONG: close={0} mid={1} pattern={2} stop={3} bar={4}",
+      close, mid_ma, bull_pin ? "PIN" : "ENGULF", current_stop, bar_index)
+
+// SHORT: downtrend + was in zone + leaves zone below + bearish candle
+bool short_trigger = can_enter and downtrend and was_in_zone and close < zone_bottom and bear_signal
+if short_trigger
+    strategy.entry("Short", strategy.short)
+    current_stop    := close + stop_pts
+    peak_profit_pts := 0.0
+    was_in_zone     := false
+    if hard_tp_pts > 0
+        strategy.exit("XS", "Short", stop=current_stop, limit=close - hard_tp_pts)
+    else
+        strategy.exit("XS", "Short", stop=current_stop)
+    log.info("ENTRY SHORT: close={0} mid={1} pattern={2} stop={3} bar={4}",
+      close, mid_ma, bear_pin ? "PIN" : "ENGULF", current_stop, bar_index)
+
+// ===== FILL DETECTION =====
+if strategy.position_size != 0 and strategy.position_size[1] == 0
+    log.info("FILL: avg={0} dir={1} bar={2}",
+      strategy.position_avg_price,
+      strategy.position_size > 0 ? "LONG" : "SHORT",
+      bar_index)
+
+// ===== STEP TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= (trail_min_dollars / pv)
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float lock_pts = peak_profit_pts * (keep_pct / 100.0)
+            float new_stop = avg + lock_pts
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop)
+    else if strategy.position_size < 0
+        float avg = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= (trail_min_dollars / pv)
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float lock_pts = peak_profit_pts * (keep_pct / 100.0)
+            float new_stop = avg - lock_pts
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop)
+
+// ===== VISUALS =====
+plot(fast_ma, "25 SMA", color.new(color.aqua, 0), linewidth=1)
+plot(mid_ma, "55 EMA", color.new(color.yellow, 0), linewidth=2)
+plot(slow_ma, "200 EMA", color=uptrend ? color.green : color.red, linewidth=2)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+// Pullback zone always visible
+plot(zone_top, "Zone Top", color.new(color.yellow, 75), style=plot.style_stepline)
+plot(zone_bottom, "Zone Bottom", color.new(color.yellow, 75), style=plot.style_stepline)
+
+// Mark when price is in the zone
+bgcolor(in_zone and is_flat ? color.new(color.yellow, 90) : na)
+
+// Mark signals
+plotshape(long_trigger ? low - 1 : na,
+  "Bull Entry", shape.triangleup, location.absolute, color.lime, size=size.small)
+plotshape(short_trigger ? high + 1 : na,
+  "Bear Entry", shape.triangledown, location.absolute, color.red, size=size.small)
+
+// ===== DEBUG DATA WINDOW =====
+plot(was_in_zone ? 1 : 0, "Was In Zone", color.yellow, display=display.data_window)
+plot(bull_signal ? 1 : bear_signal ? -1 : 0, "Candle Pattern", color.orange, display=display.data_window)
+plot(in_zone ? 1 : 0, "In Zone Now", color.aqua, display=display.data_window)

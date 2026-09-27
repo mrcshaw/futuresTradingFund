@@ -1,0 +1,392 @@
+//@version=5
+strategy("BOS Breakout Evening ES 2min", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// Break of Structure (BOS) Breakout:
+// 1. Detect pivot highs/lows in a rolling window
+// 2. Bullish BOS: PH found, then PL after PH sweeps below PL before PH -> first close above PH = long
+// 3. Bearish BOS: PL found, then PH after PL sweeps above PH before PL -> first close below PL = short
+// 4. Optional EMA trend alignment filter
+// 5. ATR or dollar-based stop/take profit
+// Evening session: 18:00-8:00 ET on ES 2min
+
+// ===== STRUCTURE DETECTION =====
+pivot_window  = input.int(4, "Pivot Window (bars each side)", minval=2, maxval=15, step=1, tooltip="Bars on each side for pivot high/low detection.")
+backcandles   = input.int(25, "BOS Lookback (bars)", minval=10, maxval=60, step=5, tooltip="How far back to search for the BOS pattern.")
+
+// ===== EMA TREND FILTER =====
+use_ema_filter   = input.bool(false, "Use EMA Trend Filter", group="EMA Filter", tooltip="Require all candles in trend window to be above/below EMA.")
+ema_length       = input.int(50, "EMA Length", minval=10, maxval=200, group="EMA Filter")
+ema_trend_window = input.int(10, "EMA Trend Window", minval=2, maxval=30, group="EMA Filter", tooltip="Number of consecutive bars that must be above/below EMA.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+stop_dollars = input.float(500.0, "Stop ($)", tooltip="Dollar-based stop loss. Set 0 to use ATR-based.")
+tp_dollars   = input.float(1000.0, "Take Profit ($)", tooltip="Dollar-based take profit. Set 0 to use ATR-based.")
+atr_length   = input.int(14, "ATR Length", minval=5, maxval=50, group="ATR Risk")
+atr_sl_mult  = input.float(2.0, "ATR SL Multiplier", minval=0.5, maxval=5.0, step=0.5, group="ATR Risk", tooltip="Used only when Stop ($) = 0.")
+atr_tp_mult  = input.float(4.0, "ATR TP Multiplier", minval=0.5, maxval=8.0, step=0.5, group="ATR Risk", tooltip="Used only when TP ($) = 0.")
+
+// ===== COOLDOWN =====
+cooldown_bars = input.int(5, "Cooldown (bars)", minval=0, maxval=50, step=1)
+
+// ===== FLIP ON STOP OUT =====
+flip_on_stopout = input.bool(true, "Flip on Stop Out", group="Reversal", tooltip="When fully stopped out by the stop loss (not breakeven), enter in the opposite direction.")
+min_loss_to_flip = input.float(100.0, "Min loss to flip ($)", minval=0, group="Reversal", tooltip="Only reverse when the closed trade lost at least this much. Avoids flipping on breakeven or small-loss exits.")
+
+// ===== BREAKEVEN =====
+use_breakeven      = input.bool(false, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(200.0, "BE Trigger ($)", minval=50, group="Breakeven", tooltip="Move stop to entry + 1 tick after this much unrealized profit.")
+
+// ===== COMPUTED =====
+float stop_pts = stop_dollars > 0 ? stop_dollars / pv : na
+float tp_pts   = tp_dollars > 0 ? tp_dollars / pv : na
+float be_trigger_pts = be_trigger_dollars / pv
+float atr_val  = ta.atr(atr_length)
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== EMA =====
+float ema_val = ta.ema(close, ema_length)
+
+// ===== EMA TREND SIGNAL =====
+// bullish = all candles in window have body above EMA
+// bearish = all candles in window have body below EMA
+int ema_signal = 0
+if use_ema_filter
+    int win = ema_trend_window + 1
+    bool all_above = true
+    bool all_below = true
+    for k = 0 to ema_trend_window
+        float body_lo = math.min(open[k], close[k])
+        float body_hi = math.max(open[k], close[k])
+        float ema_k = ema_val[k]
+        if na(ema_k)
+            all_above := false
+            all_below := false
+            break
+        if body_lo <= ema_k
+            all_above := false
+        if body_hi >= ema_k
+            all_below := false
+    if all_above
+        ema_signal := 2
+    else if all_below
+        ema_signal := 1
+
+// ===== PIVOT DETECTION =====
+// Pivots are "confirmed" pivot_window bars after they occur.
+// We look at bars [i - backcandles ... i - pivot_window] for confirmed pivots.
+
+// ===== BOS DETECTION =====
+var int bos_signal = 0  // 2 = bullish, 1 = bearish
+var int bos_pivot_ref = -1
+var float bos_level = na
+
+bos_signal := 0
+bos_pivot_ref := -1
+bos_level := na
+
+int pw = pivot_window
+int bc = backcandles
+int piv_end_offset = pw  // confirmed pivots must be at least this many bars back
+
+// Collect confirmed pivots
+if bar_index >= bc
+    // Arrays for pivot highs and lows (index, value)
+    var array<int> ph_idx_arr = array.new_int(0)
+    var array<float> ph_val_arr = array.new_float(0)
+    var array<int> pl_idx_arr = array.new_int(0)
+    var array<float> pl_val_arr = array.new_float(0)
+
+    array.clear(ph_idx_arr)
+    array.clear(ph_val_arr)
+    array.clear(pl_idx_arr)
+    array.clear(pl_val_arr)
+
+    for j = bc to piv_end_offset
+        int offset = j
+        // Check if this bar is a pivot high
+        bool is_ph = true
+        bool is_pl = true
+        float hi_j = high[offset]
+        float lo_j = low[offset]
+
+        for side = 1 to pw
+            if high[offset - side] > hi_j or high[offset + side] > hi_j
+                is_ph := false
+            if low[offset - side] < lo_j or low[offset + side] < lo_j
+                is_pl := false
+
+        if is_ph
+            array.push(ph_idx_arr, offset)
+            array.push(ph_val_arr, hi_j)
+        if is_pl
+            array.push(pl_idx_arr, offset)
+            array.push(pl_val_arr, lo_j)
+
+    // Bullish BOS: latest PH, PLs before and after, PL_after sweeps below PL_before, first close above PH
+    if array.size(ph_idx_arr) > 0
+        int latest_ph_offset = array.get(ph_idx_arr, array.size(ph_idx_arr) - 1)
+        float latest_ph_val = array.get(ph_val_arr, array.size(ph_val_arr) - 1)
+
+        if close > latest_ph_val and close[1] <= latest_ph_val and array.size(pl_idx_arr) > 0
+            float pl_before_val = na
+            int   pl_before_off = 99999
+            float pl_after_val = na
+            bool has_pl_before = false
+            bool has_pl_after = false
+
+            for k = 0 to array.size(pl_idx_arr) - 1
+                int pl_off = array.get(pl_idx_arr, k)
+                float pl_v = array.get(pl_val_arr, k)
+                if pl_off > latest_ph_offset
+                    if pl_off < pl_before_off
+                        pl_before_off := pl_off
+                        pl_before_val := pl_v
+                    has_pl_before := true
+                else if pl_off < latest_ph_offset
+                    if not has_pl_after or pl_v < pl_after_val
+                        pl_after_val := pl_v
+                    has_pl_after := true
+
+            if has_pl_before and has_pl_after and pl_after_val < pl_before_val
+                bos_signal := 2
+                bos_pivot_ref := latest_ph_offset
+                bos_level := latest_ph_val
+
+    // Bearish BOS: latest PL, PHs before and after, PH_after sweeps above PH_before, first close below PL
+    if bos_signal == 0 and array.size(pl_idx_arr) > 0
+        int latest_pl_offset = array.get(pl_idx_arr, array.size(pl_idx_arr) - 1)
+        float latest_pl_val = array.get(pl_val_arr, array.size(pl_val_arr) - 1)
+
+        if close < latest_pl_val and close[1] >= latest_pl_val and array.size(ph_idx_arr) > 0
+            float ph_before_val = na
+            int   ph_before_off = 99999
+            float ph_after_val = na
+            bool has_ph_before = false
+            bool has_ph_after = false
+
+            for k = 0 to array.size(ph_idx_arr) - 1
+                int ph_off = array.get(ph_idx_arr, k)
+                float ph_v = array.get(ph_val_arr, k)
+                if ph_off > latest_pl_offset
+                    if ph_off < ph_before_off
+                        ph_before_off := ph_off
+                        ph_before_val := ph_v
+                    has_ph_before := true
+                else if ph_off < latest_pl_offset
+                    if not has_ph_after or ph_v > ph_after_val
+                        ph_after_val := ph_v
+                    has_ph_after := true
+
+            if has_ph_before and has_ph_after and ph_after_val > ph_before_val
+                bos_signal := 1
+                bos_pivot_ref := latest_pl_offset
+                bos_level := latest_pl_val
+
+// Apply EMA filter
+if use_ema_filter and bos_signal != 0 and ema_signal != bos_signal
+    bos_signal := 0
+    bos_pivot_ref := -1
+    bos_level := na
+
+// ===== ENTRY LOGIC =====
+var int last_trade_bar = -9999
+var float current_stop = 0.0
+var float entry_price  = 0.0
+var bool  be_active    = false
+
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+float sl_dist = stop_dollars > 0 ? stop_pts : (not na(atr_val) ? atr_val * atr_sl_mult : na)
+float tp_dist = tp_dollars > 0 ? tp_pts : (not na(atr_val) ? atr_val * atr_tp_mult : na)
+
+bool long_sig  = bos_signal == 2 and in_session and cooled_down and strategy.position_size == 0 and not na(sl_dist) and not na(tp_dist)
+bool short_sig = bos_signal == 1 and in_session and cooled_down and strategy.position_size == 0 and not na(sl_dist) and not na(tp_dist)
+
+// Detect fully stopped out: position just closed, last closed trade was a real loss (not breakeven)
+bool just_closed = strategy.position_size == 0 and strategy.position_size[1] != 0
+bool was_stopped_out = false
+int  stopped_out_side = 0  // 2 = was long (flip to short), 1 = was short (flip to long)
+if flip_on_stopout and just_closed and strategy.closedtrades > 0
+    float last_profit = strategy.closedtrades.profit(strategy.closedtrades - 1)
+    int   last_size   = strategy.closedtrades.size(strategy.closedtrades - 1)
+    if last_profit < -min_loss_to_flip
+        was_stopped_out := true
+        stopped_out_side := last_size > 0 ? 2 : 1
+
+bool flip_long  = flip_on_stopout and was_stopped_out and stopped_out_side == 1 and in_session and not na(sl_dist) and not na(tp_dist)
+bool flip_short = flip_on_stopout and was_stopped_out and stopped_out_side == 2 and in_session and not na(sl_dist) and not na(tp_dist)
+
+if long_sig
+    current_stop := close - sl_dist
+    entry_price  := close
+    be_active    := false
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_dist)
+else if short_sig
+    current_stop := close + sl_dist
+    entry_price  := close
+    be_active    := false
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_dist)
+else if flip_long
+    current_stop := close - sl_dist
+    entry_price  := close
+    be_active    := false
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_dist)
+else if flip_short
+    current_stop := close + sl_dist
+    entry_price  := close
+    be_active    := false
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_dist)
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            float tp_lim = tp_dollars > 0 ? entry_price + tp_pts : entry_price + tp_dist
+            strategy.exit("XL", "Long", stop=current_stop, limit=tp_lim)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            float tp_lim = tp_dollars > 0 ? entry_price - tp_pts : entry_price - tp_dist
+            strategy.exit("XS", "Short", stop=current_stop, limit=tp_lim)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 8, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+// Row 1: BOS Signal
+table.cell(crit_table, 0, 1, "BOS Signal", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, bos_signal == 2 ? "1" : "0", text_color=bos_signal == 2 ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, bos_signal == 1 ? "1" : "0", text_color=bos_signal == 1 ? color.red : color.gray, text_size=size.tiny)
+
+// Row 2: EMA Trend
+string ema_txt = use_ema_filter ? (ema_signal == 2 ? "Bull" : ema_signal == 1 ? "Bear" : "Flat") : "OFF"
+color ema_col = ema_signal == 2 ? color.lime : ema_signal == 1 ? color.red : color.gray
+table.cell(crit_table, 0, 2, "EMA Trend", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, ema_txt, text_color=ema_col, text_size=size.tiny)
+table.cell(crit_table, 2, 2, "", text_size=size.tiny)
+
+// Row 3: Session
+table.cell(crit_table, 0, 3, "In Session", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, in_session ? "YES" : "NO", text_color=in_session ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, "", text_size=size.tiny)
+
+// Row 4: Cooldown
+table.cell(crit_table, 0, 4, "Cooled Down", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, cooled_down ? "YES" : "NO", text_color=cooled_down ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, "", text_size=size.tiny)
+
+// Row 5: ATR
+string atr_txt = not na(atr_val) ? str.tostring(atr_val, "#.##") : "n/a"
+table.cell(crit_table, 0, 5, "ATR (" + str.tostring(atr_length) + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, atr_txt, text_color=color.orange, text_size=size.tiny)
+table.cell(crit_table, 2, 5, "", text_size=size.tiny)
+
+// Row 6: Breakeven
+string be_txt = be_active ? "ACTIVE" : "---"
+color be_col = be_active ? color.lime : color.gray
+table.cell(crit_table, 0, 6, "Breakeven", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, be_txt, text_color=be_col, text_size=size.tiny)
+table.cell(crit_table, 2, 6, "", text_size=size.tiny)
+
+// Row 7: Signal
+string sig_txt = long_sig ? "LONG" : short_sig ? "SHORT" : flip_long ? "FLIP LONG" : flip_short ? "FLIP SHORT" : "---"
+color sig_col = long_sig or flip_long ? color.lime : short_sig or flip_short ? color.red : color.gray
+table.cell(crit_table, 0, 7, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 7, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 7, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+if long_sig or flip_long
+    string sl_type = stop_dollars > 0 ? "$" + str.tostring(stop_dollars, "#") : str.tostring(atr_sl_mult, "#.#") + "x ATR"
+    string tp_type = tp_dollars > 0 ? "$" + str.tostring(tp_dollars, "#") : str.tostring(atr_tp_mult, "#.#") + "x ATR"
+    string long_reason = flip_long ? "FLIP (stopped out of short)" : "BOS Bullish"
+    string tt = "LONG ENTRY (" + long_reason + ")\n" +
+      "──────────────────\n" +
+      (flip_long ? "✓  Reversal: stopped out of short, entering long\n" : "✓  Break of Structure: close broke above pivot high\n" +
+      "   Pivot Ref: " + str.tostring(bos_pivot_ref) + " bars ago\n" +
+      "   BOS Level: " + str.tostring(nz(bos_level), "#.##") + "\n") +
+      (use_ema_filter and not flip_long ? ((ema_signal == 2 ? "✓" : "✗") + "  EMA trend aligned (all " + str.tostring(ema_trend_window) + " bars above EMA)\n") : "") +
+      (in_session ? "✓" : "✗") + "  In session (" + str.tostring(sess_start_hr) + ":00-" + str.tostring(sess_end_hr) + ":00)\n" +
+      (flip_long ? "" : (cooled_down ? "✓" : "✗") + "  Cooldown satisfied (" + str.tostring(cooldown_bars) + " bars)\n") +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close - sl_dist, "#.##") + " (" + sl_type + ")\n" +
+      "TP: " + str.tostring(close + tp_dist, "#.##") + " (" + tp_type + ")\n" +
+      "ATR: " + str.tostring(nz(atr_val), "#.##")
+    label.new(bar_index, low, flip_long ? "▲ flip" : "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig or flip_short
+    string sl_type = stop_dollars > 0 ? "$" + str.tostring(stop_dollars, "#") : str.tostring(atr_sl_mult, "#.#") + "x ATR"
+    string tp_type = tp_dollars > 0 ? "$" + str.tostring(tp_dollars, "#") : str.tostring(atr_tp_mult, "#.#") + "x ATR"
+    string short_reason = flip_short ? "FLIP (stopped out of long)" : "BOS Bearish"
+    string tt = "SHORT ENTRY (" + short_reason + ")\n" +
+      "──────────────────\n" +
+      (flip_short ? "✓  Reversal: stopped out of long, entering short\n" : "✓  Break of Structure: close broke below pivot low\n" +
+      "   Pivot Ref: " + str.tostring(bos_pivot_ref) + " bars ago\n" +
+      "   BOS Level: " + str.tostring(nz(bos_level), "#.##") + "\n") +
+      (use_ema_filter and not flip_short ? ((ema_signal == 1 ? "✓" : "✗") + "  EMA trend aligned (all " + str.tostring(ema_trend_window) + " bars below EMA)\n") : "") +
+      (in_session ? "✓" : "✗") + "  In session (" + str.tostring(sess_start_hr) + ":00-" + str.tostring(sess_end_hr) + ":00)\n" +
+      (flip_short ? "" : (cooled_down ? "✓" : "✗") + "  Cooldown satisfied (" + str.tostring(cooldown_bars) + " bars)\n") +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close + sl_dist, "#.##") + " (" + sl_type + ")\n" +
+      "TP: " + str.tostring(close - tp_dist, "#.##") + " (" + tp_type + ")\n" +
+      "ATR: " + str.tostring(nz(atr_val), "#.##")
+    label.new(bar_index, high, flip_short ? "▼ flip" : "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== BOS LEVEL LINE =====
+if (long_sig or short_sig) and not na(bos_level)
+    int ref_bar = bar_index - bos_pivot_ref
+    line.new(ref_bar, bos_level, bar_index, bos_level, color=color.new(color.purple, 30), style=line.style_dashed, width=2)
+
+// ===== PLOT =====
+plot(ema_val, "EMA", use_ema_filter ? (ema_signal == 2 ? color.lime : ema_signal == 1 ? color.red : color.gray) : color.new(color.blue, 60), linewidth=1)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)

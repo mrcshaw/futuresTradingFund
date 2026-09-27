@@ -67,12 +67,23 @@ def write_report(facts: str, writer=None) -> str:
     return text
 
 
-def send_report(body: str) -> dict:
-    """Send the report. Missing SMTP settings leave it on the desk."""
-    host = os.environ.get("SMTP_HOST", "").strip()
-    recipients = [part.strip() for part in os.environ.get("REPORT_TO", "").split(",") if part.strip()]
-    if not host or not recipients:
-        return {"sent": False, "reason": "Email is not configured. Set SMTP_HOST and REPORT_TO in .env."}
+REPORT_ADDRESS = "thefutureoffuturestrading@gmail.com"
+
+
+def report_recipients() -> list[str]:
+    raw = os.environ.get("REPORT_TO", "").strip() or REPORT_ADDRESS
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def send_report(body: str, subject: str = "Futures desk report") -> dict:
+    """Send the report. A missing password does not stall the strategy queue."""
+    host = os.environ.get("SMTP_HOST", "").strip() or "smtp.gmail.com"
+    recipients = report_recipients()
+    if not os.environ.get("SMTP_PASSWORD", "").strip():
+        return {
+            "sent": False,
+            "reason": f"SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to {', '.join(recipients)}.",
+        }
     try:
         port = int(os.environ.get("SMTP_PORT", "587") or "587")
     except ValueError:
@@ -83,7 +94,7 @@ def send_report(body: str) -> dict:
     if not sender:
         return {"sent": False, "reason": "Email needs REPORT_FROM or SMTP_USER."}
     message = EmailMessage()
-    message["Subject"] = "Futures desk report"
+    message["Subject"] = subject
     message["From"] = sender
     message["To"] = ", ".join(recipients)
     message.set_content(body)

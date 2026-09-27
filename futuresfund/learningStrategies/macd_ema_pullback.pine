@@ -1,0 +1,300 @@
+//@version=5
+strategy("MACD EMA Pullback", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// MACD EMA Pullback — Evening Session
+// Trend: fast SMA crosses slow EMA sets direction
+// Entry: pullback near slow EMA + MACD momentum + ATR above threshold
+// Confluence system: each factor = 1 point, need min_confluence to enter
+
+// ===== MOVING AVERAGES =====
+fast_ma_len    = input.int(10, "Fast SMA Length", minval=3, maxval=50, group="MA")
+slow_ma_len    = input.int(40, "Slow EMA Length", minval=10, maxval=200, group="MA")
+show_fast_ma   = input.bool(true, "Show Fast SMA", group="MA")
+show_slow_ma   = input.bool(true, "Show Slow EMA", group="MA")
+fast_slope_len = input.int(5, "Fast SMA Slope Lookback", minval=1, group="MA")
+slow_slope_len = input.int(5, "Slow EMA Slope Lookback", minval=1, group="MA")
+min_fast_slope = input.float(0.0, "Min Fast SMA Slope (pts)", minval=0.0, step=0.1, group="MA", tooltip="0 = disabled. Require fast MA to be sloping in trade direction.")
+min_slow_slope = input.float(0.2, "Min Slow EMA Slope (pts)", minval=0.0, step=0.1, group="MA", tooltip="0 = disabled. Require slow MA to be sloping in trade direction.")
+
+// ===== MACD =====
+macd_fast   = input.int(12, "MACD Fast", minval=1, group="MACD")
+macd_slow   = input.int(26, "MACD Slow", minval=1, group="MACD")
+macd_signal = input.int(9,  "MACD Signal", minval=1, group="MACD")
+
+// ===== ENTRY =====
+atr_len         = input.int(14, "ATR Length", minval=5, group="Entry")
+atr_threshold   = input.float(4.0, "ATR Threshold (pts)", minval=0.5, step=0.5, group="Entry", tooltip="ATR must be above this to trade. Filters out low-volatility chop.")
+pullback_buffer = input.float(1.0, "Pullback Buffer (pts)", minval=0.5, step=0.5, group="Entry", tooltip="Max distance from slow EMA for pullback entry.")
+min_confluence  = input.int(4, "Min Confluence Factors", minval=2, maxval=5, group="Entry", tooltip="Number of factors that must agree before entry. Factors: ATR ok, trend direction, pullback near EMA, MACD momentum, MA alignment.")
+cooldown_bars   = input.int(5, "Cooldown (bars)", minval=0, maxval=50, group="Entry")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18, "Session Start Hour (ET)", group="Session")
+sess_start_mn = input.int(0,  "Session Start Minute", group="Session")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)", group="Session")
+sess_end_mn   = input.int(0,  "Session End Minute", group="Session")
+
+// ===== RISK MODE =====
+use_atr_risk   = input.bool(false, "Use ATR-Based Risk (vs Fixed $)", group="Risk", tooltip="ON = ATR multiplier for SL/TP. OFF = fixed dollar SL/TP.")
+pv             = input.float(50.0, "Point Value ($)", group="Risk")
+// Fixed $ mode
+stop_dollars   = input.float(425.0, "Fixed Stop ($)", minval=50, step=25, group="Risk")
+tp_dollars     = input.float(700.0, "Fixed Take Profit ($)", minval=50, step=50, group="Risk")
+// ATR mode
+sl_atr_mult    = input.float(1.5, "SL ATR Multiplier", minval=0.5, maxval=5.0, step=0.1, group="Risk", tooltip="Stop = ATR × this multiplier.")
+tp_atr_mult    = input.float(2.5, "TP ATR Multiplier", minval=0.5, maxval=10.0, step=0.1, group="Risk", tooltip="TP = ATR × this multiplier.")
+
+// ===== BREAKEVEN =====
+use_breakeven      = input.bool(false, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(150.0, "BE Trigger ($)", minval=50, step=25, group="Breakeven")
+
+// ===== COMPUTED =====
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== INDICATORS =====
+float fast_ma = ta.sma(close, fast_ma_len)
+float slow_ma = ta.ema(close, slow_ma_len)
+[macd_line, signal_line, hist] = ta.macd(close, macd_fast, macd_slow, macd_signal)
+float atr_val = ta.atr(atr_len)
+
+// Slopes
+float fast_slope = fast_ma - fast_ma[fast_slope_len]
+float slow_slope = slow_ma - slow_ma[slow_slope_len]
+bool fast_slope_up = min_fast_slope <= 0 or fast_slope > min_fast_slope
+bool fast_slope_dn = min_fast_slope <= 0 or fast_slope < -min_fast_slope
+bool slow_slope_up = min_slow_slope <= 0 or slow_slope > min_slow_slope
+bool slow_slope_dn = min_slow_slope <= 0 or slow_slope < -min_slow_slope
+
+// Dynamic SL/TP based on risk mode
+float stop_pts = use_atr_risk ? (not na(atr_val) ? atr_val * sl_atr_mult : na) : stop_dollars / pv
+float tp_pts   = use_atr_risk ? (not na(atr_val) ? atr_val * tp_atr_mult : na) : tp_dollars / pv
+
+// ===== TREND DIRECTION (set by crossover) =====
+var int trend = 0
+if ta.crossover(fast_ma, slow_ma)
+    trend := 1
+if ta.crossunder(fast_ma, slow_ma)
+    trend := -1
+
+// ===== CONFLUENCE SCORING =====
+int conf_long  = 0
+int conf_short = 0
+
+// 1) ATR above threshold
+bool atr_ok = not na(atr_val) and atr_val >= atr_threshold
+if atr_ok
+    conf_long  += 1
+    conf_short += 1
+
+// 2) Trend direction
+if trend == 1
+    conf_long += 1
+if trend == -1
+    conf_short += 1
+
+// 3) Pullback near slow EMA
+float dist_to_slow = close - slow_ma
+bool pullback_long  = trend == 1 and math.abs(dist_to_slow) <= pullback_buffer
+bool pullback_short = trend == -1 and math.abs(dist_to_slow) <= pullback_buffer
+if pullback_long
+    conf_long += 1
+if pullback_short
+    conf_short += 1
+
+// 4) MACD histogram momentum (growing in trade direction)
+bool macd_mom_long  = hist > hist[1] and hist > 0
+bool macd_mom_short = hist < hist[1] and hist < 0
+if macd_mom_long
+    conf_long += 1
+if macd_mom_short
+    conf_short += 1
+
+// 5) Fast MA still above/below slow (trend intact)
+if fast_ma > slow_ma
+    conf_long += 1
+if fast_ma < slow_ma
+    conf_short += 1
+
+// ===== ENTRY LOGIC =====
+var int last_trade_bar = -9999
+var float current_stop = 0.0
+var float entry_price  = 0.0
+var bool  be_active    = false
+var bool  in_trade     = false
+
+if strategy.position_size != 0
+    in_trade := true
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+bool flat = strategy.position_size == 0 and not in_trade
+
+bool risk_ok = not na(stop_pts) and not na(tp_pts) and stop_pts > 0 and tp_pts > 0
+bool long_sig  = macd_mom_long and conf_long >= min_confluence and fast_slope_up and slow_slope_up and in_session and cooled_down and risk_ok and flat
+bool short_sig = macd_mom_short and conf_short >= min_confluence and fast_slope_dn and slow_slope_dn and in_session and cooled_down and risk_ok and flat
+
+if long_sig
+    current_stop   := close - stop_pts
+    entry_price    := close
+    be_active      := false
+    in_trade       := true
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig
+    current_stop   := close + stop_pts
+    entry_price    := close
+    be_active      := false
+    in_trade       := true
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 9, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+// Row 1: ATR
+string atr_txt = not na(atr_val) ? str.tostring(atr_val, "#.##") : "n/a"
+table.cell(crit_table, 0, 1, "ATR (" + atr_txt + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, atr_ok ? "1" : "0", text_color=atr_ok ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, atr_ok ? "1" : "0", text_color=atr_ok ? color.red : color.gray, text_size=size.tiny)
+
+// Row 2: Trend
+string trend_txt = trend == 1 ? "BULL" : trend == -1 ? "BEAR" : "---"
+color trend_col = trend == 1 ? color.lime : trend == -1 ? color.red : color.gray
+table.cell(crit_table, 0, 2, "Trend", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, trend == 1 ? "1" : "0", text_color=trend == 1 ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, trend == -1 ? "1" : "0", text_color=trend == -1 ? color.red : color.gray, text_size=size.tiny)
+
+// Row 3: Pullback
+table.cell(crit_table, 0, 3, "Pullback (" + str.tostring(math.abs(dist_to_slow), "#.#") + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, pullback_long ? "1" : "0", text_color=pullback_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, pullback_short ? "1" : "0", text_color=pullback_short ? color.red : color.gray, text_size=size.tiny)
+
+// Row 4: MACD Momentum
+table.cell(crit_table, 0, 4, "MACD Momentum", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, macd_mom_long ? "1" : "0", text_color=macd_mom_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, macd_mom_short ? "1" : "0", text_color=macd_mom_short ? color.red : color.gray, text_size=size.tiny)
+
+// Row 5: MA Alignment
+table.cell(crit_table, 0, 5, "MA Aligned", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, fast_ma > slow_ma ? "1" : "0", text_color=fast_ma > slow_ma ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 5, fast_ma < slow_ma ? "1" : "0", text_color=fast_ma < slow_ma ? color.red : color.gray, text_size=size.tiny)
+
+// Row 6: Session
+table.cell(crit_table, 0, 6, "In Session", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, in_session ? "YES" : "NO", text_color=in_session ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 6, "", text_size=size.tiny)
+
+// Row 7: Breakeven
+string be_txt = be_active ? "ACTIVE" : "---"
+table.cell(crit_table, 0, 7, "Breakeven", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 7, be_txt, text_color=be_active ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 7, "", text_size=size.tiny)
+
+// Row 8: Signal + Confluence
+string sig_txt = long_sig ? "LONG (" + str.tostring(conf_long) + "/5)" : short_sig ? "SHORT (" + str.tostring(conf_short) + "/5)" : str.tostring(math.max(conf_long, conf_short)) + "/5"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(crit_table, 0, 8, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 8, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 8, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+string risk_mode_txt = use_atr_risk ? "ATR" : "Fixed$"
+float sl_dollars_actual = not na(stop_pts) ? stop_pts * pv : 0
+float tp_dollars_actual = not na(tp_pts) ? tp_pts * pv : 0
+
+if long_sig
+    string tt = "LONG ENTRY (MACD EMA Pullback)\n" +
+      "──────────────────\n" +
+      "Confluence: " + str.tostring(conf_long) + " / 5  (need " + str.tostring(min_confluence) + ")\n" +
+      (atr_ok          ? "✓" : "✗") + "  ATR (" + str.tostring(atr_val, "#.##") + " >= " + str.tostring(atr_threshold, "#.#") + ")\n" +
+      (trend == 1      ? "✓" : "✗") + "  Trend bullish (SMA crossed above EMA)\n" +
+      (pullback_long   ? "✓" : "✗") + "  Pullback near EMA (" + str.tostring(math.abs(dist_to_slow), "#.#") + " <= " + str.tostring(pullback_buffer, "#.#") + ")\n" +
+      (macd_mom_long   ? "✓" : "✗") + "  MACD momentum up (hist=" + str.tostring(hist, "#.##") + ")\n" +
+      (fast_ma > slow_ma ? "✓" : "✗") + "  MA aligned (" + str.tostring(fast_ma_len) + " SMA > " + str.tostring(slow_ma_len) + " EMA)\n" +
+      (fast_slope_up   ? "✓" : "✗") + "  Fast slope up (" + str.tostring(fast_slope, "#.##") + ")\n" +
+      (slow_slope_up   ? "✓" : "✗") + "  Slow slope up (" + str.tostring(slow_slope, "#.##") + ")\n" +
+      "──────────────────\n" +
+      "Risk: " + risk_mode_txt + "\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close - stop_pts, "#.##") + " ($" + str.tostring(sl_dollars_actual, "#") + ")\n" +
+      "TP: " + str.tostring(close + tp_pts, "#.##") + " ($" + str.tostring(tp_dollars_actual, "#") + ")"
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    string tt = "SHORT ENTRY (MACD EMA Pullback)\n" +
+      "──────────────────\n" +
+      "Confluence: " + str.tostring(conf_short) + " / 5  (need " + str.tostring(min_confluence) + ")\n" +
+      (atr_ok           ? "✓" : "✗") + "  ATR (" + str.tostring(atr_val, "#.##") + " >= " + str.tostring(atr_threshold, "#.#") + ")\n" +
+      (trend == -1      ? "✓" : "✗") + "  Trend bearish (SMA crossed below EMA)\n" +
+      (pullback_short   ? "✓" : "✗") + "  Pullback near EMA (" + str.tostring(math.abs(dist_to_slow), "#.#") + " <= " + str.tostring(pullback_buffer, "#.#") + ")\n" +
+      (macd_mom_short   ? "✓" : "✗") + "  MACD momentum down (hist=" + str.tostring(hist, "#.##") + ")\n" +
+      (fast_ma < slow_ma ? "✓" : "✗") + "  MA aligned (" + str.tostring(fast_ma_len) + " SMA < " + str.tostring(slow_ma_len) + " EMA)\n" +
+      (fast_slope_dn   ? "✓" : "✗") + "  Fast slope down (" + str.tostring(fast_slope, "#.##") + ")\n" +
+      (slow_slope_dn   ? "✓" : "✗") + "  Slow slope down (" + str.tostring(slow_slope, "#.##") + ")\n" +
+      "──────────────────\n" +
+      "Risk: " + risk_mode_txt + "\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close + stop_pts, "#.##") + " ($" + str.tostring(sl_dollars_actual, "#") + ")\n" +
+      "TP: " + str.tostring(close - tp_pts, "#.##") + " ($" + str.tostring(tp_dollars_actual, "#") + ")"
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== PLOTS =====
+plot(show_fast_ma ? fast_ma : na, "Fast SMA", fast_slope_up ? color.lime : fast_slope_dn ? color.red : color.yellow, linewidth=1)
+plot(show_slow_ma ? slow_ma : na, "Slow EMA", slow_slope_up ? color.lime : slow_slope_dn ? color.red : color.purple, linewidth=2)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plot(hist, "MACD Hist", display=display.data_window)
+plot(atr_val, "ATR", display=display.data_window)
+plot(dist_to_slow, "Dist to Slow EMA", display=display.data_window)
+plot(fast_slope, "Fast SMA Slope", display=display.data_window)
+plot(slow_slope, "Slow EMA Slope", display=display.data_window)
+plot(use_atr_risk and not na(stop_pts) ? stop_pts * pv : na, "Dynamic SL $", display=display.data_window)
+plot(use_atr_risk and not na(tp_pts) ? tp_pts * pv : na, "Dynamic TP $", display=display.data_window)

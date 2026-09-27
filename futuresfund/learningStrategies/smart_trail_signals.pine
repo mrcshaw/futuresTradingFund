@@ -1,0 +1,307 @@
+//@version=5
+strategy("Smart Trail Signals", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== SIGNAL SETTINGS =====
+sensitivity = input.int(13, "Optimal Sensitivity", minval=1, tooltip="Adjusts the agility of the Smart Trail.")
+min_score   = input.int(2, "Min AI Score to Trade (1-4)", minval=1, maxval=4, tooltip="Only take signals with this score or higher.")
+
+// ===== CHANNEL =====
+zone_ema_len  = input.int(55, "Channel EMA Length", minval=5)
+zone_atr_len  = input.int(20, "Channel ATR Length", minval=5)
+zone_atr_mult = input.float(2.0, "Channel ATR Multiplier", minval=0.5, step=0.1)
+
+// ===== MID-LINE SLOPE FILTER =====
+mid_slope_len = input.int(5, "Mid-Line Slope Lookback (bars)", minval=1, tooltip="How many bars back to measure the channel mid-line slope.")
+min_mid_slope = input.float(0.5, "Min Mid-Line Slope (pts)", minval=0.0, step=0.1, tooltip="Minimum mid-line slope to allow entries. 0 = disabled.")
+
+// ===== COOLDOWN =====
+cooldown_bars = input.int(15, "Min Bars Between Trades", minval=1, tooltip="Bars to wait after EXIT before next entry. Prevents rapid re-entry.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(9,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== EXIT MODE =====
+exit_mode = input.string("TP", "Exit Mode", options=["TP", "Channel Return", "First Hit"], tooltip="TP = fixed take profit only. Channel Return = exit when price re-enters channel. First Hit = whichever triggers first.")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(300.0, "Stop ($)")
+tp_dollars        = input.float(1000.0, "Take Profit ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(45.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(500.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(10.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(200.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== REVERSAL ON STOP =====
+use_reversal      = input.bool(false, "Reverse on Stop-Out", group="Reversal", tooltip="Enter opposite direction immediately after a stop loss.")
+rev_stop_dollars  = input.float(300.0, "Reversal Stop ($)", minval=50, group="Reversal")
+rev_tp_dollars    = input.float(500.0, "Reversal TP ($)", minval=50, group="Reversal")
+
+// ===== COMPUTED =====
+float stop_pts     = stop_dollars / pv
+float tp_pts       = tp_dollars / pv
+float rev_stop_pts = rev_stop_dollars / pv
+float rev_tp_pts   = rev_tp_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== SMART TRAIL (SuperTrend-style) =====
+atr_val  = ta.atr(sensitivity)
+up_level = hl2 - (sensitivity * 0.3) * atr_val
+dn_level = hl2 + (sensitivity * 0.3) * atr_val
+
+var float trail = na
+var int   trend = 1
+
+trail := na(trail) ? hl2 : trail
+
+if trend == 1
+    if close < trail
+        trend := -1
+        trail := dn_level
+    else
+        trail := math.max(trail, up_level)
+else
+    if close > trail
+        trend := 1
+        trail := up_level
+    else
+        trail := math.min(trail, dn_level)
+
+// ===== CHANNEL (Keltner) =====
+zone_basis = ta.ema(close, zone_ema_len)
+zone_rang  = ta.atr(zone_atr_len) * zone_atr_mult
+zone_upper = zone_basis + zone_rang
+zone_lower = zone_basis - zone_rang
+
+// ===== MID-LINE SLOPE =====
+float mid_slope = zone_basis - zone_basis[mid_slope_len]
+bool  mid_up    = min_mid_slope <= 0 or mid_slope > min_mid_slope
+bool  mid_dn    = min_mid_slope <= 0 or mid_slope < -min_mid_slope
+
+// ===== CHANNEL BREAKOUT DETECTION =====
+bool above_channel = close > zone_upper
+bool below_channel = close < zone_lower
+bool inside_channel = close >= zone_lower and close <= zone_upper
+
+// Only reset after price fully returns inside the channel (between both bands)
+var bool long_breakout_traded  = false
+var bool short_breakout_traded = false
+
+if inside_channel
+    long_breakout_traded  := false
+    short_breakout_traded := false
+
+// ===== COOLDOWN =====
+var int last_trade_bar = -9999
+var bool just_entered = false
+bool cooled = bar_index - last_trade_bar >= cooldown_bars
+
+just_entered := false
+
+// ===== AI CLASSIFICATION =====
+rsi_val   = ta.rsi(close, 14)
+vol_check = volume > ta.sma(volume, 20)
+
+get_ai_score(is_buy) =>
+    score = 2
+    if is_buy
+        if rsi_val > 60 and vol_check
+            score := 4
+        else if rsi_val > 50
+            score := 3
+        else
+            score := 1
+    else
+        if rsi_val < 40 and vol_check
+            score := 4
+        else if rsi_val < 50
+            score := 3
+        else
+            score := 1
+    score
+
+ai_score  = above_channel ? get_ai_score(true) : below_channel ? get_ai_score(false) : 0
+is_strong = ai_score >= 3
+
+// ===== ENTRY SIGNALS =====
+bool long_sig  = above_channel and not long_breakout_traded and mid_up and trend == 1 and ai_score >= min_score and cooled
+bool short_sig = below_channel and not short_breakout_traded and mid_dn and trend == -1 and ai_score >= min_score and cooled
+
+// ===== CHANNEL RETURN EXIT =====
+bool use_chan_exit = exit_mode == "Channel Return" or exit_mode == "First Hit"
+bool exit_long  = use_chan_exit and strategy.position_size > 0 and inside_channel and close[1] > zone_upper[1]
+bool exit_short = use_chan_exit and strategy.position_size < 0 and inside_channel and close[1] < zone_lower[1]
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float peak_profit_pts = 0.0
+var float entry_price     = 0.0
+var int   last_dir        = 0
+var bool  is_reversal     = false
+var bool  reversal_pending = false
+
+bool flat_now      = strategy.position_size == 0
+bool flat_last_bar = na(strategy.position_size[1]) or strategy.position_size[1] == 0
+bool is_flat       = flat_now and flat_last_bar
+bool long_ok       = long_sig and in_session and is_flat
+bool short_ok      = short_sig and in_session and is_flat
+
+bool use_tp_exit = exit_mode == "TP" or exit_mode == "First Hit"
+
+if long_ok
+    entry_price            := close
+    current_stop           := close - stop_pts
+    peak_profit_pts        := 0.0
+    last_dir               := 1
+    is_reversal            := false
+    long_breakout_traded   := true
+    last_trade_bar         := bar_index
+    just_entered           := true
+    strategy.entry("Long", strategy.long)
+    if use_tp_exit
+        strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else
+        strategy.exit("XL", "Long", stop=current_stop)
+else if short_ok
+    entry_price            := close
+    current_stop           := close + stop_pts
+    peak_profit_pts        := 0.0
+    last_dir               := -1
+    is_reversal            := false
+    short_breakout_traded  := true
+    last_trade_bar         := bar_index
+    just_entered           := true
+    strategy.entry("Short", strategy.short)
+    if use_tp_exit
+        strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+    else
+        strategy.exit("XS", "Short", stop=current_stop)
+
+// ===== CHANNEL RETURN EXITS =====
+if exit_long
+    strategy.close("Long", comment="Channel Return")
+if exit_short
+    strategy.close("Short", comment="Channel Return")
+
+// ===== DETECT POSITION CLOSE -> UPDATE COOLDOWN =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    last_trade_bar := bar_index
+    if not is_reversal and last_dir != 0
+        int idx = strategy.closedtrades - 1
+        if idx >= 0 and strategy.closedtrades.profit(idx) < 0
+            reversal_pending := true
+    peak_profit_pts := 0.0
+    is_reversal     := false
+
+// ===== REVERSAL TRADE =====
+if use_reversal and reversal_pending and strategy.position_size == 0 and in_session
+    reversal_pending := false
+    is_reversal      := true
+    peak_profit_pts  := 0.0
+    if last_dir == 1
+        entry_price  := close
+        current_stop := close + rev_stop_pts
+        last_dir     := -1
+        strategy.entry("RevShort", strategy.short)
+        strategy.exit("XRS", "RevShort", stop=current_stop, limit=close - rev_tp_pts)
+    else if last_dir == -1
+        entry_price  := close
+        current_stop := close - rev_stop_pts
+        last_dir     := 1
+        strategy.entry("RevLong", strategy.long)
+        strategy.exit("XRL", "RevLong", stop=current_stop, limit=close + rev_tp_pts)
+
+// ===== TRAILING STOP =====
+string pos_id = strategy.opentrades > 0 ? strategy.opentrades.entry_id(0) : ""
+bool trail_long  = use_trail and not just_entered and strategy.position_size > 0 and pos_id == "Long"
+bool trail_short = use_trail and not just_entered and strategy.position_size < 0 and pos_id == "Short"
+
+if trail_long
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit_pts
+        peak_profit_pts := profit_now
+    if peak_profit_pts >= trail_min_dollars / pv
+        float peak_dollars = peak_profit_pts * pv
+        int   steps        = math.floor(peak_dollars / trail_step_amt)
+        float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+        float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+        if new_stop > current_stop
+            current_stop := new_stop
+            if use_tp_exit
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+            else
+                strategy.exit("XL", "Long", stop=current_stop)
+else if trail_short
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit_pts
+        peak_profit_pts := profit_now
+    if peak_profit_pts >= trail_min_dollars / pv
+        float peak_dollars = peak_profit_pts * pv
+        int   steps        = math.floor(peak_dollars / trail_step_amt)
+        float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+        float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+        if new_stop < current_stop
+            current_stop := new_stop
+            if use_tp_exit
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+            else
+                strategy.exit("XS", "Short", stop=current_stop)
+
+// ===== PLOT =====
+plot(trail, "Smart Trail", color = trend == 1 ? #00e676 : #ff5252, linewidth=2)
+plot(zone_basis, "Channel Mid", color.yellow, linewidth=1, style=plot.style_stepline)
+
+p_up = plot(zone_upper, "Zone Upper", color=color.new(#ff5252, 50))
+p_dn = plot(zone_lower, "Zone Lower", color=color.new(#00e676, 50))
+fill(p_up, p_dn, color = trend == 1 ? color.new(#00e676, 95) : color.new(#ff5252, 95), title="Zone Fill")
+
+barcolor(trend == 1 ? (is_strong ? #00e676 : #2962ff) : (is_strong ? #ff5252 : #aa00ff))
+
+plotshape(long_ok, "Long Entry", shape.triangleup, location.belowbar, #00e676, size=size.small)
+plotshape(short_ok, "Short Entry", shape.triangledown, location.abovebar, #ff5252, size=size.small)
+plotchar(exit_long, "Channel Return L", "✕", location.abovebar, color.new(#ff9800, 0), size=size.tiny)
+plotchar(exit_short, "Channel Return S", "✕", location.belowbar, color.new(#2962ff, 0), size=size.tiny)
+
+bool rev_long_entered  = is_reversal and strategy.position_size > 0 and strategy.position_size[1] == 0
+bool rev_short_entered = is_reversal and strategy.position_size < 0 and strategy.position_size[1] == 0
+plotshape(rev_long_entered, "Rev Long", shape.arrowup, location.belowbar, color.orange, size=size.tiny)
+plotshape(rev_short_entered, "Rev Short", shape.arrowdown, location.abovebar, color.orange, size=size.tiny)
+
+// ===== INFO TABLE =====
+var table info = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 80), border_color=color.gray)
+if barstate.islast
+    table.cell(info, 0, 0, "Trend", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 0, trend == 1 ? "BULL" : "BEAR", text_color=trend == 1 ? color.teal : color.red, text_size=size.small)
+    table.cell(info, 0, 1, "Mid Slope", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 1, str.tostring(mid_slope, "#.##"), text_color=mid_slope > 0 ? color.teal : color.red, text_size=size.small)
+    table.cell(info, 0, 2, "Slope OK", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 2, mid_up ? "Long ✓" : mid_dn ? "Short ✓" : "Flat ✗", text_color=mid_up or mid_dn ? color.teal : color.gray, text_size=size.small)
+    table.cell(info, 0, 3, "Exit", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 3, exit_mode, text_color=color.orange, text_size=size.small)

@@ -1,0 +1,514 @@
+// Market Structure Break & Order Block Strategy
+// Based on EmreKb MSB-OB indicator — converted to strategy
+// with session filter, risk management, and no-repaint safeguards.
+//
+// Original indicator: © EmreKb (MPL 2.0)
+//
+// Entry: After MSB, wait for price to pull back into any active OB zone.
+// Optimized for ES 2-min night session (18:00-08:00 ET).
+
+//@version=5
+strategy("MSB-OB Pullback Strategy", shorttitle="MSB-OB Pull", overlay=true,
+     initial_capital=25000, default_qty_type=strategy.fixed,
+     default_qty_value=1, commission_type=strategy.commission.cash_per_contract,
+     commission_value=5.50, slippage=1, pyramiding=0,
+     process_orders_on_close=true, calc_on_every_tick=false,
+     max_lines_count=500, max_boxes_count=500, max_labels_count=500)
+
+// ─── MSB SETTINGS ─────────────────────────────────────────────────
+zigzag_len   = input.int(9,      "ZigZag Length",              group="MSB Settings")
+show_zigzag  = input.bool(true,  "Show Zigzag",               group="MSB Settings")
+fib_factor   = input.float(0.33, "Fib Factor for MSB",  0, 1, 0.01, group="MSB Settings")
+delete_boxes = input.bool(true,  "Delete Old/Broken Boxes",   group="MSB Settings")
+
+// ─── OB ZONE ADJUSTMENT ───────────────────────────────────────────
+zone_buffer_pts = input.float(0, "OB Zone Buffer (pts)", minval=0, step=0.5, group="OB Zone",
+     tooltip="Expand entry zone by this many points. 0 = exact zone boundaries.")
+
+// ─── EMA TREND FILTER ─────────────────────────────────────────────
+use_ema_trend = input.bool(true,  "Use EMA for Trend",         group="Trend")
+ema_len       = input.int(50,    "EMA Length", minval=2,      group="Trend")
+ema_mode      = input.string("Slope", "EMA Mode", options=["Slope", "Price"], group="Trend",
+     tooltip="Slope: EMA sloping in trade direction. Price: close below EMA for short, above for long.")
+min_slope     = input.float(0.05, "Min EMA Slope (pts/bar)", minval=0, step=0.01, group="Trend",
+     tooltip="Minimum EMA slope in points per bar to avoid flat markets. 0 = disabled.")
+slope_lookback = input.int(5,    "Slope Lookback", minval=1,  group="Trend",
+     tooltip="Bars used to measure EMA slope.")
+
+// ─── RISK MANAGEMENT ──────────────────────────────────────────────
+pv            = input.float(50.0, "Point Value ($)",      group="Risk")
+stop_dollars  = input.float(200.0,"Stop Loss ($)",        step=25, group="Risk")
+tp_dollars    = input.float(700.0,"Take Profit ($)",      step=25, group="Risk")
+cooldown_bars = input.int(10,     "Cooldown Bars", minval=0, group="Risk")
+
+use_breakeven  = input.bool(false,  "Use Breakeven",     group="Breakeven")
+be_trigger_dol = input.float(200.0, "BE Trigger ($)",    step=25, group="Breakeven")
+
+// ─── SESSION FILTER ───────────────────────────────────────────────
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18,    "Start Hour (ET)",    group="Session")
+sess_start_mn = input.int(0,     "Start Minute",       group="Session")
+sess_end_hr   = input.int(8,     "End Hour (ET)",      group="Session")
+sess_end_mn   = input.int(0,     "End Minute",         group="Session")
+
+// ─── DISPLAY ──────────────────────────────────────────────────────
+bu_ob_color        = input.color(color.new(color.green, 70), "Bu-OB Color",   group="Display")
+bu_ob_border_color = input.color(color.green,                "Bu-OB Border",  group="Display")
+be_ob_color        = input.color(color.new(color.red, 70),   "Be-OB Color",   group="Display")
+be_ob_border_color = input.color(color.red,                  "Be-OB Border",  group="Display")
+bu_bb_color        = input.color(color.new(color.green, 70), "Bu-BB Color",   group="Display")
+bu_bb_border_color = input.color(color.green,                "Bu-BB Border",  group="Display")
+be_bb_color        = input.color(color.new(color.red, 70),   "Be-BB Color",   group="Display")
+be_bb_border_color = input.color(color.red,                  "Be-BB Border",  group="Display")
+text_size          = input.string(size.tiny, "Text Size",
+     options=[size.tiny, size.small, size.normal], group="Display")
+show_legend        = input.bool(true, "Show Legend Table",   group="Display")
+
+// ─── SESSION LOGIC ────────────────────────────────────────────────
+cur_hr  = hour(time, "America/New_York")
+cur_mn  = minute(time, "America/New_York")
+bar_t   = cur_hr * 100 + cur_mn
+s_start = sess_start_hr * 100 + sess_start_mn
+s_end   = sess_end_hr   * 100 + sess_end_mn
+in_session = use_session ? (s_start > s_end ? (bar_t >= s_start or bar_t < s_end)
+     : (bar_t >= s_start and bar_t < s_end)) : true
+
+prev_hr  = hour(time[1], "America/New_York")
+prev_mn  = minute(time[1], "America/New_York")
+prev_t   = prev_hr * 100 + prev_mn
+prev_in  = use_session ? (s_start > s_end ? (prev_t >= s_start or prev_t < s_end)
+     : (prev_t >= s_start and prev_t < s_end)) : true
+sess_end_flag = prev_in and not in_session
+
+if sess_end_flag and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ─── EMA TREND ───────────────────────────────────────────────────
+ema_val    = ta.ema(close, ema_len)
+ema_slope  = (ema_val - ema_val[slope_lookback]) / slope_lookback
+ema_slope_up   = ema_val > ema_val[1] and (min_slope <= 0 or ema_slope >= min_slope)
+ema_slope_down = ema_val < ema_val[1] and (min_slope <= 0 or ema_slope <= -min_slope)
+bullish_trend = ema_mode == "Slope" ? ema_slope_up   : (close > ema_val)
+bearish_trend = ema_mode == "Slope" ? ema_slope_down : (close < ema_val)
+
+// ─── ZIGZAG / MSB CORE (identical to original indicator) ──────────
+var float[] high_points_arr = array.new_float(5)
+var int[]   high_index_arr  = array.new_int(5)
+var float[] low_points_arr  = array.new_float(5)
+var int[]   low_index_arr   = array.new_int(5)
+
+var box[] bu_ob_boxes = array.new_box(5)
+var box[] be_ob_boxes = array.new_box(5)
+var box[] bu_bb_boxes = array.new_box(5)
+var box[] be_bb_boxes = array.new_box(5)
+
+to_up   = high >= ta.highest(zigzag_len)
+to_down = low  <= ta.lowest(zigzag_len)
+
+trend = 1
+trend := nz(trend[1], 1)
+trend := trend == 1 and to_down ? -1 : trend == -1 and to_up ? 1 : trend
+
+last_trend_up_since   = ta.barssince(to_up[1])
+low_val  = ta.lowest(nz(last_trend_up_since > 0 ? last_trend_up_since : 1, 1))
+low_index = bar_index - ta.barssince(low_val == low)
+
+last_trend_down_since = ta.barssince(to_down[1])
+high_val  = ta.highest(nz(last_trend_down_since > 0 ? last_trend_down_since : 1, 1))
+high_index = bar_index - ta.barssince(high_val == high)
+
+if ta.change(trend) != 0
+    if trend == 1
+        array.push(low_points_arr, low_val)
+        array.push(low_index_arr, low_index)
+    if trend == -1
+        array.push(high_points_arr, high_val)
+        array.push(high_index_arr, high_index)
+
+f_get_high(ind) =>
+    sz = array.size(high_points_arr)
+    idx = sz - 1 - ind
+    if idx >= 0 and idx < sz
+        [array.get(high_points_arr, idx), array.get(high_index_arr, idx)]
+    else
+        [float(na), int(na)]
+
+f_get_low(ind) =>
+    sz = array.size(low_points_arr)
+    idx = sz - 1 - ind
+    if idx >= 0 and idx < sz
+        [array.get(low_points_arr, idx), array.get(low_index_arr, idx)]
+    else
+        [float(na), int(na)]
+
+f_delete_box(box_arr) =>
+    if delete_boxes
+        box.delete(array.shift(box_arr))
+    else
+        array.shift(box_arr)
+    0
+
+[h0, h0i] = f_get_high(0)
+[h1, h1i] = f_get_high(1)
+[l0, l0i] = f_get_low(0)
+[l1, l1i] = f_get_low(1)
+
+has_swing_data = not na(h0) and not na(h1) and not na(l0) and not na(l1)
+
+if has_swing_data
+    if ta.change(trend) != 0 and show_zigzag
+        if trend == 1
+            line.new(h0i, h0, l0i, l0, color=color.gray, width=1)
+        if trend == -1
+            line.new(l0i, l0, h0i, h0, color=color.gray, width=1)
+
+// ─── MARKET STRUCTURE (identical to original) ─────────────────────
+market = 1
+market := nz(market[1], 1)
+last_l0 = ta.valuewhen(ta.change(market) != 0, l0, 0)
+last_h0 = ta.valuewhen(ta.change(market) != 0, h0, 0)
+market := has_swing_data ? (last_l0 == l0 or last_h0 == h0 ? market
+     : market == 1  and l0 < l1 and l0 < l1 - math.abs(h0 - l1) * fib_factor ? -1
+     : market == -1 and h0 > h1 and h0 > h1 + math.abs(h1 - l0) * fib_factor ?  1
+     : market) : market
+
+// ─── ORDER BLOCK + BREAKER BLOCK DETECTION (identical to original) ─
+bu_ob_index = bar_index
+bu_ob_index := nz(bu_ob_index[1], bar_index)
+if has_swing_data
+    for i = h1i to l0i[zigzag_len]
+        index = bar_index - i
+        if open[index] > close[index]
+            bu_ob_index := bar_index[index]
+bu_ob_since = bar_index - bu_ob_index
+
+be_ob_index = bar_index
+be_ob_index := nz(be_ob_index[1], bar_index)
+if has_swing_data
+    for i = l1i to h0i[zigzag_len]
+        index = bar_index - i
+        if open[index] < close[index]
+            be_ob_index := bar_index[index]
+be_ob_since = bar_index - be_ob_index
+
+be_bb_index = bar_index
+be_bb_index := nz(be_bb_index[1], bar_index)
+if has_swing_data
+    for i = h1i - zigzag_len to l1i
+        index = bar_index - i
+        if open[index] > close[index]
+            be_bb_index := bar_index[index]
+be_bb_since = bar_index - be_bb_index
+
+bu_bb_index = bar_index
+bu_bb_index := nz(bu_bb_index[1], bar_index)
+if has_swing_data
+    for i = l1i - zigzag_len to h1i
+        index = bar_index - i
+        if open[index] < close[index]
+            bu_bb_index := bar_index[index]
+bu_bb_since = bar_index - bu_bb_index
+
+// ─── MSB SIGNAL + DRAW BOXES (identical to original) ──────────────
+msb_bull = ta.change(market) != 0 and market == 1
+msb_bear = ta.change(market) != 0 and market == -1
+
+if msb_bull
+    line.new(h1i, h1, h0i, h1, color=color.green, width=2)
+    label.new(int(math.avg(h1i, l0i)), h1, "MSB",
+         color=color.new(color.black, 100), style=label.style_label_down,
+         textcolor=color.green, size=size.small)
+    bu_ob = box.new(bu_ob_index, high[bu_ob_since], bar_index + 10,
+         low[bu_ob_since], bgcolor=bu_ob_color,
+         border_color=bu_ob_border_color, text="Bu-OB",
+         text_color=color.green, text_halign=text.align_right, text_size=text_size)
+    bu_bb = box.new(bu_bb_index, high[bu_bb_since], bar_index + 10,
+         low[bu_bb_since], bgcolor=bu_bb_color,
+         border_color=bu_bb_border_color, text=l0 < l1 ? "Bu-BB" : "Bu-MB",
+         text_color=color.green, text_halign=text.align_right, text_size=text_size)
+    array.push(bu_ob_boxes, bu_ob)
+    array.push(bu_bb_boxes, bu_bb)
+
+if msb_bear
+    line.new(l1i, l1, l0i, l1, color=color.red, width=2)
+    label.new(int(math.avg(l1i, h0i)), l1, "MSB",
+         color=color.new(color.black, 100), style=label.style_label_up,
+         textcolor=color.red, size=size.small)
+    be_ob = box.new(be_ob_index, high[be_ob_since], bar_index + 10,
+         low[be_ob_since], bgcolor=be_ob_color,
+         border_color=be_ob_border_color, text="Be-OB",
+         text_color=color.red, text_halign=text.align_right, text_size=text_size)
+    be_bb = box.new(be_bb_index, high[be_bb_since], bar_index + 10,
+         low[be_bb_since], bgcolor=be_bb_color,
+         border_color=be_bb_border_color, text=h0 > h1 ? "Be-BB" : "Be-MB",
+         text_color=color.red, text_halign=text.align_right, text_size=text_size)
+    array.push(be_ob_boxes, be_ob)
+    array.push(be_bb_boxes, be_bb)
+
+// ─── OB PULLBACK ENTRY LOGIC ─────────────────────────────────────
+// Scan ALL active OB boxes for pullback entry (not just the latest).
+// A box is "active" if it's still in the array (not yet broken/deleted).
+// First touch → enter, then remove the box so we don't re-enter.
+
+var int   last_trade_bar = -9999
+var bool  in_trade       = false
+var float entry_price    = na
+var bool  be_active      = false
+var bool  traded_since_last_msb = false
+
+if msb_bull or msb_bear
+    traded_since_last_msb := false
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+flat = strategy.position_size == 0 and not in_trade
+
+cooled = bar_index - last_trade_bar >= cooldown_bars
+ready_for_next = not traded_since_last_msb
+
+stop_pts = stop_dollars / pv
+tp_pts   = tp_dollars   / pv
+be_pts   = be_trigger_dol / pv
+
+bool   long_ok       = false
+bool   short_ok      = false
+float  hit_ob_top    = na
+float  hit_ob_bot    = na
+int    hit_ob_idx    = -1
+bool   hit_is_bb     = false
+
+// EMA trend filter: only long when bullish, only short when bearish
+ema_ok_long  = use_ema_trend ? bullish_trend : true
+ema_ok_short = use_ema_trend ? bearish_trend : true
+
+// Scan Bu-OB and Bu-BB boxes: price pulls back DOWN into demand zone → LONG
+// Only when structure is BULLISH (market == 1) and above EMA
+// ready_for_next: one trade per BOS; wait for new BOS before next entry
+if flat and in_session and cooled and ready_for_next and market == 1 and ema_ok_long
+    if array.size(bu_ob_boxes) > 0
+        for j = array.size(bu_ob_boxes) - 1 to 0
+            if long_ok
+                break
+            bx = array.get(bu_ob_boxes, j)
+            top_  = box.get_top(bx) + zone_buffer_pts
+            bot_  = box.get_bottom(bx) - zone_buffer_pts
+            if low <= top_ and close >= bot_
+                long_ok    := true
+                hit_ob_top := box.get_top(bx)
+                hit_ob_bot := box.get_bottom(bx)
+                hit_ob_idx := j
+                hit_is_bb  := false
+    if not long_ok and array.size(bu_bb_boxes) > 0
+        for j = array.size(bu_bb_boxes) - 1 to 0
+            if long_ok
+                break
+            bx = array.get(bu_bb_boxes, j)
+            top_  = box.get_top(bx) + zone_buffer_pts
+            bot_  = box.get_bottom(bx) - zone_buffer_pts
+            if low <= top_ and close >= bot_
+                long_ok    := true
+                hit_ob_top := box.get_top(bx)
+                hit_ob_bot := box.get_bottom(bx)
+                hit_ob_idx := j
+                hit_is_bb  := true
+
+// Scan Be-OB and Be-BB/Be-MB boxes: price pulls back UP into supply zone → SHORT
+// Only when structure is BEARISH (market == -1) and below EMA
+// ready_for_next: one trade per BOS; wait for new BOS before next entry
+// Entry when candle range overlaps zone (low <= top, high >= bot)
+if flat and in_session and cooled and ready_for_next and market == -1 and ema_ok_short
+    if array.size(be_ob_boxes) > 0
+        for j = array.size(be_ob_boxes) - 1 to 0
+            if short_ok
+                break
+            bx = array.get(be_ob_boxes, j)
+            top_  = box.get_top(bx) + zone_buffer_pts
+            bot_  = box.get_bottom(bx) - zone_buffer_pts
+            if low <= top_ and high >= bot_
+                short_ok   := true
+                hit_ob_top := box.get_top(bx)
+                hit_ob_bot := box.get_bottom(bx)
+                hit_ob_idx := j
+                hit_is_bb  := false
+    if not short_ok and array.size(be_bb_boxes) > 0
+        for j = array.size(be_bb_boxes) - 1 to 0
+            if short_ok
+                break
+            bx = array.get(be_bb_boxes, j)
+            top_  = box.get_top(bx) + zone_buffer_pts
+            bot_  = box.get_bottom(bx) - zone_buffer_pts
+            if low <= top_ and high >= bot_
+                short_ok   := true
+                hit_ob_top := box.get_top(bx)
+                hit_ob_bot := box.get_bottom(bx)
+                hit_ob_idx := j
+                hit_is_bb  := true
+
+if long_ok
+    in_trade             := true
+    traded_since_last_msb := true
+    entry_price          := close
+    be_active            := false
+    last_trade_bar       := bar_index
+    strategy.entry("Long", strategy.long, comment="OB Long")
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+    if hit_ob_idx >= 0
+        arr = hit_is_bb ? bu_bb_boxes : bu_ob_boxes
+        box.set_bgcolor(array.get(arr, hit_ob_idx), color.new(color.green, 90))
+        box.set_text(array.get(arr, hit_ob_idx), hit_is_bb ? "Bu-BB ✓" : "Bu-OB ✓")
+
+if short_ok
+    in_trade             := true
+    traded_since_last_msb := true
+    entry_price          := close
+    be_active            := false
+    last_trade_bar       := bar_index
+    strategy.entry("Short", strategy.short, comment="OB Short")
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+    if hit_ob_idx >= 0
+        arr = hit_is_bb ? be_bb_boxes : be_ob_boxes
+        box.set_bgcolor(array.get(arr, hit_ob_idx), color.new(color.red, 90))
+        box.set_text(array.get(arr, hit_ob_idx), hit_is_bb ? "Be-BB ✓" : "Be-OB ✓")
+
+// ─── EXTEND / INVALIDATE BOXES (identical to original) ────────────
+for bull_ob in bu_ob_boxes
+    bottom = box.get_bottom(bull_ob)
+    top_   = box.get_top(bull_ob)
+    if close < bottom
+        f_delete_box(bu_ob_boxes)
+    else if close < top_
+        alert("Price in Bu-OB zone")
+    else
+        box.set_right(bull_ob, bar_index + 10)
+
+for bear_ob in be_ob_boxes
+    top_   = box.get_top(bear_ob)
+    bottom = box.get_bottom(bear_ob)
+    if close > top_
+        f_delete_box(be_ob_boxes)
+    else if close > bottom
+        alert("Price in Be-OB zone")
+    else
+        box.set_right(bear_ob, bar_index + 10)
+
+for bear_bb in be_bb_boxes
+    top_   = box.get_top(bear_bb)
+    bottom = box.get_bottom(bear_bb)
+    if close > top_
+        f_delete_box(be_bb_boxes)
+    else if close > bottom
+        alert("Price in Be-BB zone")
+    else
+        box.set_right(bear_bb, bar_index + 10)
+
+for bull_bb in bu_bb_boxes
+    bottom = box.get_bottom(bull_bb)
+    top_   = box.get_top(bull_bb)
+    if close < bottom
+        f_delete_box(bu_bb_boxes)
+    else if close < top_
+        alert("Price in Bu-BB zone")
+    else
+        box.set_right(bull_bb, bar_index + 10)
+
+// ─── BREAKEVEN ────────────────────────────────────────────────────
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and close - entry_price >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick,
+             limit=entry_price + tp_pts)
+    if strategy.position_size < 0 and entry_price - close >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick,
+             limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ─── EMA PLOT ──────────────────────────────────────────────────────
+plot(use_ema_trend ? ema_val : na, "EMA", color=color.orange, linewidth=2)
+
+// ─── ENTRY MARKERS & TOOLTIPS ─────────────────────────────────────
+plotshape(long_ok, "Long Entry", shape.triangleup, location.belowbar,
+     color.lime, size=size.small)
+plotshape(short_ok, "Short Entry", shape.triangledown, location.abovebar,
+     color.red, size=size.small)
+
+if long_ok
+    sl_p = close - stop_pts
+    tp_p = close + tp_pts
+    label.new(bar_index, low - 2 * syminfo.mintick, "L",
+         color=color.lime, style=label.style_label_up,
+         textcolor=color.white, size=size.small,
+         tooltip="OB PULLBACK LONG @ " + str.tostring(close, "#.##") +
+                 "\nOB Zone: " + str.tostring(hit_ob_bot, "#.##") +
+                 " – " + str.tostring(hit_ob_top, "#.##") +
+                 "\nSL: " + str.tostring(sl_p, "#.##") +
+                 " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_p, "#.##") +
+                 " ($" + str.tostring(tp_dollars) + ")" +
+                 "\nMarket: " + (market == 1 ? "BULLISH" : "BEARISH") +
+                 (use_breakeven ? "\nBE trig: $" + str.tostring(be_trigger_dol) : ""))
+
+if short_ok
+    sl_p = close + stop_pts
+    tp_p = close - tp_pts
+    label.new(bar_index, high + 2 * syminfo.mintick, "S",
+         color=color.red, style=label.style_label_down,
+         textcolor=color.white, size=size.small,
+         tooltip="OB PULLBACK SHORT @ " + str.tostring(close, "#.##") +
+                 "\nOB Zone: " + str.tostring(hit_ob_bot, "#.##") +
+                 " – " + str.tostring(hit_ob_top, "#.##") +
+                 "\nSL: " + str.tostring(sl_p, "#.##") +
+                 " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_p, "#.##") +
+                 " ($" + str.tostring(tp_dollars) + ")" +
+                 "\nMarket: " + (market == 1 ? "BULLISH" : "BEARISH") +
+                 (use_breakeven ? "\nBE trig: $" + str.tostring(be_trigger_dol) : ""))
+
+// ─── LEGEND TABLE ─────────────────────────────────────────────────
+if show_legend
+    var table tb = table.new(position.top_right, 2, 9,
+         bgcolor=#1e222d, border_color=#373a46,
+         border_width=1, frame_color=#373a46, frame_width=1)
+
+    if barstate.isfirst
+        tb.cell(0, 0, "Criteria",    text_color=color.white, text_size=size.small)
+        tb.cell(1, 0, "Status",      text_color=color.white, text_size=size.small)
+        tb.cell(0, 1, "Structure",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 2, "Trend",       text_color=color.white, text_size=size.small)
+        tb.cell(0, 3, "EMA Trend",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 4, "Session",     text_color=color.white, text_size=size.small)
+        tb.cell(0, 5, "Flat",        text_color=color.white, text_size=size.small)
+        tb.cell(0, 6, "Cooled",      text_color=color.white, text_size=size.small)
+        tb.cell(0, 7, "Bu-OB Zones", text_color=color.white, text_size=size.small)
+        tb.cell(0, 8, "Be-OB Zones", text_color=color.white, text_size=size.small)
+
+    mkt_str  = market == 1 ? "BULLISH" : "BEARISH"
+    mkt_clr  = market == 1 ? color.lime : color.red
+    trd_str  = trend  == 1 ? "UP" : "DOWN"
+    trd_clr  = trend  == 1 ? color.lime : color.red
+    ema_str  = use_ema_trend ? (bullish_trend ? "BULL" : "BEAR") : "OFF"
+    ema_clr  = use_ema_trend ? (bullish_trend ? color.lime : color.red) : color.gray
+    sess_str = in_session ? "YES" : "NO"
+    sess_clr = in_session ? color.lime : color.gray
+    flat_str = flat ? "YES" : "NO"
+    flat_clr = flat ? color.lime : color.yellow
+    cool_str = cooled ? "YES" : "NO"
+    cool_clr = cooled ? color.lime : color.yellow
+
+    bu_cnt = array.size(bu_ob_boxes)
+    be_cnt = array.size(be_ob_boxes)
+    bu_str = str.tostring(bu_cnt) + " active"
+    be_str = str.tostring(be_cnt) + " active"
+    bu_clr = bu_cnt > 0 ? color.lime : color.gray
+    be_clr = be_cnt > 0 ? color.lime : color.gray
+
+    tb.cell(1, 1, mkt_str,  text_color=mkt_clr,  text_size=size.small)
+    tb.cell(1, 2, trd_str,  text_color=trd_clr,  text_size=size.small)
+    tb.cell(1, 3, ema_str,  text_color=ema_clr,  text_size=size.small)
+    tb.cell(1, 4, sess_str, text_color=sess_clr,  text_size=size.small)
+    tb.cell(1, 5, flat_str, text_color=flat_clr,  text_size=size.small)
+    tb.cell(1, 6, cool_str, text_color=cool_clr,  text_size=size.small)
+    tb.cell(1, 7, bu_str,   text_color=bu_clr,    text_size=size.small)
+    tb.cell(1, 8, be_str,   text_color=be_clr,    text_size=size.small)

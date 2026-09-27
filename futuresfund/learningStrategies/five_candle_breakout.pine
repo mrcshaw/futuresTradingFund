@@ -1,0 +1,233 @@
+//@version=5
+// ============================================================
+// 5-Candle Breakout Strategy
+// ============================================================
+//
+// 1. Count 5 candles, record the high and low of the set
+// 2. Look at candle #5: green = expect up, red = expect down, doji = skip
+// 3. Wait up to 4 candles for price to break the set's high/low
+// 4. Breakout confirmed → enter with fixed stop + step trailing
+// 5. No breakout by candle 4 → start a new 5-candle set
+//
+// Best used on a 5-minute chart.
+// ============================================================
+
+strategy("5-Candle Breakout", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true)
+
+// ===== INPUTS =====
+set_size         = input.int(5, "Candles Per Set", minval=2)
+watch_bars       = input.int(4, "Max Bars to Wait for Breakout", minval=1)
+doji_threshold   = input.float(0.25, "Doji Threshold (pts)", tooltip="If |close - open| <= this, candle is a doji. Set to 0 to disable doji detection.")
+
+// ===== EXIT SETTINGS =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(300.0, "Fixed Stop ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(45.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(1000.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(10.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(150.0, "Trail: Min Profit Before Trailing ($)")
+hard_tp_dollars   = input.float(0.0, "Hard TP $ (0 = off)")
+
+// ===== EMA FILTER =====
+use_ema          = input.bool(true, "Use EMA Filter")
+ema_len          = input.int(200, "EMA Length")
+ema_slope_bars   = input.int(10, "EMA Slope Lookback (bars)")
+ema_min_angle    = input.float(3.0, "Min EMA Angle (degrees)")
+
+// ===== SESSION =====
+use_ny_sess      = input.bool(true, "Enable NY Session")
+ny_start_hr      = input.int(9, "NY Session Start Hour (ET)")
+ny_start_mn      = input.int(30, "NY Session Start Minute")
+ny_end_hr        = input.int(16, "NY Session End Hour (ET)")
+ny_end_mn        = input.int(0, "NY Session End Minute")
+use_fut_sess     = input.bool(true, "Enable Futures Session")
+fut_start_hr     = input.int(18, "Futures Start Hour (ET)")
+fut_end_hr       = input.int(8, "Futures End Hour (ET)")
+
+// ===== COMPUTED =====
+stop_pts          = stop_dollars / pv
+hard_tp_pts       = hard_tp_dollars > 0 ? hard_tp_dollars / pv : 0.0
+ema_val           = ta.ema(close, ema_len)
+float ema_angle   = math.todegrees(math.atan((ema_val - ema_val[ema_slope_bars]) / ema_slope_bars))
+bool ema_up       = not use_ema or (ema_angle >= ema_min_angle and close > ema_val)
+bool ema_down     = not use_ema or (ema_angle <= -ema_min_angle and close < ema_val)
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+
+ny_start  = ny_start_hr * 100 + ny_start_mn
+ny_end    = ny_end_hr * 100 + ny_end_mn
+fut_start = fut_start_hr * 100
+fut_end   = fut_end_hr * 100
+
+in_ny  = use_ny_sess and bar_t >= ny_start and bar_t < ny_end
+in_fut = use_fut_sess and (bar_t >= fut_start or bar_t < fut_end)
+in_session = in_ny or in_fut
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+was_ny  = use_ny_sess and prev_t >= ny_start and prev_t < ny_end
+was_fut = use_fut_sess and (prev_t >= fut_start or prev_t < fut_end)
+was_in  = was_ny or was_fut
+session_ended = was_in and not in_session
+
+if session_ended and strategy.position_size != 0
+    log.info("SESSION CLOSE bar={0}", bar_index)
+    strategy.close_all(comment="Session Close")
+
+// ===== STATE =====
+var int   phase          = 0
+var int   gather_count   = 0
+var int   watch_count    = 0
+var float set_high       = na
+var float set_low        = na
+var int   signal_dir     = 0
+var float peak_profit_pts = 0.0
+var float current_stop    = 0.0
+
+// ===== PHASE 0: GATHERING =====
+if phase == 0 and strategy.position_size == 0
+    gather_count += 1
+
+    if na(set_high) or high > set_high
+        set_high := high
+    if na(set_low) or low < set_low
+        set_low := low
+
+    if gather_count >= set_size
+        bool is_green = close > open
+        bool is_red   = close < open
+        bool is_doji  = math.abs(close - open) <= doji_threshold
+
+        if is_doji
+            log.info("SET COMPLETE (DOJI): high={0} low={1} — skipping bar={2}", set_high, set_low, bar_index)
+            gather_count := 0
+            set_high     := na
+            set_low      := na
+        else
+            signal_dir  := is_green ? 1 : -1
+            phase       := 1
+            watch_count := 0
+            log.info("SET COMPLETE: high={0} low={1} dir={2} bar={3}",
+              set_high, set_low, signal_dir > 0 ? "UP" : "DOWN", bar_index)
+
+// ===== PHASE 1: WATCHING FOR BREAKOUT =====
+if phase == 1 and strategy.position_size == 0
+    watch_count += 1
+
+    bool broke_high = close > set_high
+    bool broke_low  = close < set_low
+
+    if signal_dir > 0 and broke_high and in_session and ema_up
+        current_stop    := close - stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Long", strategy.long)
+        if hard_tp_pts > 0
+            strategy.exit("XL", "Long", stop=current_stop, limit=close + hard_tp_pts)
+        else
+            strategy.exit("XL", "Long", stop=current_stop)
+        log.info("ENTRY LONG: close={0} setHigh={1} stop={2} bar={3}",
+          close, set_high, current_stop, bar_index)
+        phase        := 0
+        gather_count := 0
+        set_high     := na
+        set_low      := na
+        signal_dir   := 0
+
+    else if signal_dir < 0 and broke_low and in_session and ema_down
+        current_stop    := close + stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Short", strategy.short)
+        if hard_tp_pts > 0
+            strategy.exit("XS", "Short", stop=current_stop, limit=close - hard_tp_pts)
+        else
+            strategy.exit("XS", "Short", stop=current_stop)
+        log.info("ENTRY SHORT: close={0} setLow={1} stop={2} bar={3}",
+          close, set_low, current_stop, bar_index)
+        phase        := 0
+        gather_count := 0
+        set_high     := na
+        set_low      := na
+        signal_dir   := 0
+
+    else if watch_count >= watch_bars
+        log.info("WATCH EXPIRED: no breakout in {0} bars, restarting bar={1}", watch_bars, bar_index)
+        phase        := 0
+        gather_count := 0
+        set_high     := na
+        set_low      := na
+        signal_dir   := 0
+
+// After trade closes, reset to gathering
+if strategy.position_size[1] != 0 and strategy.position_size == 0
+    phase        := 0
+    gather_count := 0
+    set_high     := na
+    set_low      := na
+    signal_dir   := 0
+    if strategy.closedtrades > 0
+        log.info("TRADE CLOSED: pnl={0} bar={1}",
+          strategy.closedtrades.profit(strategy.closedtrades - 1), bar_index)
+
+// ===== STEP TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= (trail_min_dollars / pv)
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float lock_pts = peak_profit_pts * (keep_pct / 100.0)
+            float new_stop = avg + lock_pts
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop)
+                log.info("TRAIL LONG: stop={0} peak${1} keep%={2} steps={3} bar={4}",
+                  current_stop, peak_dollars, keep_pct, steps, bar_index)
+    else if strategy.position_size < 0
+        float avg = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= (trail_min_dollars / pv)
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float lock_pts = peak_profit_pts * (keep_pct / 100.0)
+            float new_stop = avg - lock_pts
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop)
+                log.info("TRAIL SHORT: stop={0} peak${1} keep%={2} steps={3} bar={4}",
+                  current_stop, peak_dollars, keep_pct, steps, bar_index)
+
+// ===== VISUALS =====
+color set_color = phase == 0 ? color.new(color.gray, 50) : signal_dir > 0 ? color.new(color.lime, 30) : color.new(color.red, 30)
+plot(not na(set_high) and strategy.position_size == 0 ? set_high : na, "Set High", set_color, style=plot.style_stepline, linewidth=2)
+plot(not na(set_low) and strategy.position_size == 0 ? set_low : na, "Set Low", set_color, style=plot.style_stepline, linewidth=2)
+plot(use_ema ? ema_val : na, "EMA", color=ema_angle >= ema_min_angle ? color.green : ema_angle <= -ema_min_angle ? color.red : color.gray, linewidth=1)
+plot(strategy.position_size != 0 ? current_stop : na, "Trail Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+color bg = na
+if strategy.position_size == 0
+    if phase == 0 and gather_count > 0
+        bg := color.new(color.yellow, 93)
+    if phase == 1
+        bg := signal_dir > 0 ? color.new(color.green, 93) : color.new(color.red, 93)
+bgcolor(bg)
+
+// ===== DEBUG DATA WINDOW =====
+plot(phase, "Phase", color.white, display=display.data_window)
+plot(gather_count, "Gather Count", color.yellow, display=display.data_window)
+plot(watch_count, "Watch Count", color.orange, display=display.data_window)
+plot(signal_dir, "Signal Dir", color.aqua, display=display.data_window)

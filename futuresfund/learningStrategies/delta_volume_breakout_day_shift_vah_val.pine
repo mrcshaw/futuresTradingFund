@@ -1,0 +1,351 @@
+//@version=5
+strategy("Day Shift Delta Volume Breakout + VAH/VAL Zones", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=true,
+  max_bars_back=5000, max_boxes_count=500)
+
+// calc_on_every_tick=true so stop is checked intrabar (prevents losses exceeding stop)
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(24, "Price Levels (rows)", minval=10, maxval=100, step=2)
+va_pct           = input.float(90.0, "Value Area %", minval=50.0, maxval=95.0, step=5.0, group="VAH/VAL Zones", tooltip="90% = accurate to price range. Standard is 70%.")
+zone_width_pts   = input.float(2.0, "Zone Width (pts)", minval=0.5, step=0.5, group="VAH/VAL Zones")
+max_bounces      = input.int(5, "Max Bounces Before Reset", minval=1, maxval=20, group="VAH/VAL Zones")
+min_bounces_enter = input.int(1, "Min Bounces to Enter", minval=0, maxval=5, group="VAH/VAL Zones", tooltip="Require zone tested before trade. 0=any.")
+touch_tol_pts    = input.float(1.0, "Touch Tolerance (pts)", minval=0.0, step=0.5, group="VAH/VAL Zones")
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(10, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5)
+
+// ===== MAX SLOPE: Avoid trending markets =====
+ema_trend_len  = input.int(50, "EMA Length", minval=1, group="Trend Filter")
+ema_slope_len  = input.int(5, "Slope Lookback (bars)", minval=1, group="Trend Filter")
+max_slope_pts  = input.float(5.0, "Max Slope (pts)", minval=0, step=0.5, group="Trend Filter", tooltip="Skip trades when |EMA slope| > this. 0=disabled. 5=profitable.")
+
+// ===== ENTRY: Mean Reversion at VAH/VAL Zones =====
+rsi_len        = input.int(14, "RSI Length", minval=2, group="Entry — Mean Reversion")
+rsi_os         = input.float(30.0, "RSI Oversold (long)", minval=10, maxval=50, group="Entry — Mean Reversion")
+rsi_ob         = input.float(70.0, "RSI Overbought (short)", minval=50, maxval=90, group="Entry — Mean Reversion")
+zone_buffer    = input.float(2.0, "Zone Proximity Buffer (pts)", minval=0, step=0.5, tooltip="Price must be within zone + this buffer to qualify.", group="Entry — Mean Reversion")
+cooldown_bars  = input.int(10, "Cooldown (bars)", minval=0, maxval=100, step=1, tooltip="10 bars = 20 min on 2m chart.", group="Entry — Mean Reversion")
+max_daily_trades = input.int(4, "Max Trades/Day", minval=1, maxval=20, group="Entry — Mean Reversion")
+
+// ===== SESSION =====
+session_preset = input.string("Day 8:30-15", "Session", options=["Day 8:30-15", "Overnight 18-8"], group="Session")
+use_session    = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr  = input.int(8, "Start Hour (ET)", group="Session")
+sess_start_mn  = input.int(30, "Start Minute", group="Session")
+sess_end_hr    = input.int(15, "End Hour (ET)", group="Session")
+sess_end_mn    = input.int(0, "End Minute", group="Session")
+
+// Apply preset
+int eff_start_hr = session_preset == "Overnight 18-8" ? 18 : sess_start_hr
+int eff_start_mn = session_preset == "Overnight 18-8" ? 0 : sess_start_mn
+int eff_end_hr   = session_preset == "Overnight 18-8" ? 8 : sess_end_hr
+int eff_end_mn   = session_preset == "Overnight 18-8" ? 0 : sess_end_mn
+
+// ===== RISK =====
+pv             = input.float(50.0, "Point Value ($)")
+stop_dollars   = input.float(300.0, "Stop ($)", tooltip="$300 = 6 pts. Sized for 2m ES volatility.")
+tp_dollars     = input.float(300.0, "Take Profit ($)", tooltip="1:1 R:R — high win rate makes this profitable.")
+
+// ===== DAILY LIMITS =====
+use_daily_limits  = input.bool(true, "Enable Daily Limits")
+daily_loss_limit  = input.float(600.0, "Daily Loss Limit ($)", minval=0)
+daily_profit_cap  = input.float(2500.0, "Daily Profit Cap ($)", minval=0)
+
+// ===== COMPUTED =====
+float stop_pts = stop_dollars / pv
+float tp_pts   = tp_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = eff_start_hr * 100 + eff_start_mn
+int s_end   = eff_end_hr * 100 + eff_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== DAILY P&L + TRADE COUNT =====
+var float daily_pnl      = 0.0
+var int   daily_trade_ct = 0
+var int   last_reset_day = -1
+var bool  daily_locked   = false
+
+int today = dayofweek(time, "America/New_York") * 10000 + year(time) * 100 + dayofmonth(time, "America/New_York")
+if today != last_reset_day
+    daily_pnl      := 0.0
+    daily_trade_ct := 0
+    daily_locked   := false
+    last_reset_day := today
+
+if strategy.closedtrades > 0
+    float running = 0.0
+    int   day_trades = 0
+    for i = 0 to strategy.closedtrades - 1
+        int trade_day = dayofweek(strategy.closedtrades.exit_time(i), "America/New_York") * 10000 + year(strategy.closedtrades.exit_time(i)) * 100 + dayofmonth(strategy.closedtrades.exit_time(i), "America/New_York")
+        if trade_day == today
+            running += strategy.closedtrades.profit(i)
+            day_trades += 1
+    daily_pnl      := running
+    daily_trade_ct := day_trades
+
+if use_daily_limits
+    if (daily_loss_limit > 0 and daily_pnl <= -daily_loss_limit) or (daily_profit_cap > 0 and daily_pnl >= daily_profit_cap)
+        daily_locked := true
+        if strategy.position_size != 0
+            strategy.close_all(comment="Daily Limit")
+
+bool at_max_trades = daily_trade_ct >= max_daily_trades
+
+// ===== RSI =====
+float rsi_val = ta.rsi(close, rsi_len)
+
+// ===== EMA SLOPE (avoid trending) =====
+float ema_trend = ta.ema(close, ema_trend_len)
+float ema_slope = ema_trend - ema_trend[ema_slope_len]
+bool slope_ok   = max_slope_pts <= 0 or math.abs(ema_slope) <= max_slope_pts
+
+// ===== VOLUME PROFILE WITH DELTA + VALUE AREA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+float val_price = na
+float vah_price = na
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = math.max(e_row - s_row + 1, 1)
+
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    float poc_up  = vol_up.get(poc_row)
+    float poc_dn  = vol_dn.get(poc_row)
+    float poc_tot = vol_total.get(poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+    float total_vol = 0.0
+    for r = 0 to rows - 1
+        total_vol += vol_total.get(r)
+
+    float va_target = total_vol * (va_pct / 100.0)
+    int   va_lo_row = poc_row
+    int   va_hi_row = poc_row
+    float va_vol    = vol_total.get(poc_row)
+    int   expand_count = 0
+
+    while va_vol < va_target and expand_count < rows
+        expand_count += 1
+        float vol_above = va_hi_row < rows - 1 ? vol_total.get(va_hi_row + 1) : -1.0
+        float vol_below = va_lo_row > 0 ? vol_total.get(va_lo_row - 1) : -1.0
+        if vol_above >= vol_below and va_hi_row < rows - 1
+            va_hi_row += 1
+            va_vol += vol_total.get(va_hi_row)
+        else if va_lo_row > 0
+            va_lo_row -= 1
+            va_vol += vol_total.get(va_lo_row)
+        else if va_hi_row < rows - 1
+            va_hi_row += 1
+            va_vol += vol_total.get(va_hi_row)
+        else
+            break
+
+    val_price := prof_lo + va_lo_row * step_size
+    vah_price := prof_lo + (va_hi_row + 1) * step_size
+
+// ===== VAH/VAL BOUNCE DETECTION =====
+bool val_touch = not na(val_price) and low <= val_price + touch_tol_pts and close > val_price and close[1] > val_price
+bool vah_touch = not na(vah_price) and high >= vah_price - touch_tol_pts and close < vah_price and close[1] < vah_price
+
+var int val_bounce_count = 0
+var int vah_bounce_count = 0
+var int last_va_poc_row = -999
+
+if not na(val_price) and poc_row != last_va_poc_row
+    val_bounce_count := 0
+    vah_bounce_count := 0
+    last_va_poc_row  := poc_row
+
+if val_touch
+    val_bounce_count := math.min(val_bounce_count + 1, max_bounces)
+if vah_touch
+    vah_bounce_count := math.min(vah_bounce_count + 1, max_bounces)
+
+// ===== VAH/VAL ZONE BOUNDARIES =====
+float val_lo = not na(val_price) ? val_price : na
+float val_hi = not na(val_price) ? val_price + zone_width_pts : na
+float vah_lo = not na(vah_price) ? vah_price - zone_width_pts : na
+float vah_hi = not na(vah_price) ? vah_price : na
+
+int val_transp = math.max(50, 95 - val_bounce_count * 15)
+int vah_transp = math.max(50, 95 - vah_bounce_count * 15)
+color val_fill = color.new(color.green, val_transp)
+color vah_fill = color.new(color.red, vah_transp)
+
+// ===== MEAN REVERSION ENTRY SIGNALS =====
+// Long: RSI oversold + price near VAL zone (support) + zone has bounced (high-volume support)
+// Short: RSI overbought + price near VAH zone (resistance) + zone has bounced (high-volume resistance)
+bool near_val = not na(val_hi) and close <= val_hi + zone_buffer
+bool near_vah = not na(vah_lo) and close >= vah_lo - zone_buffer
+bool val_tested = val_bounce_count >= min_bounces_enter
+bool vah_tested = vah_bounce_count >= min_bounces_enter
+// POC delta: long when not heavy selling, short when not heavy buying
+bool delta_ok_long  = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > -min_delta_pct)
+bool delta_ok_short = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < min_delta_pct)
+
+bool long_sig = rsi_val <= rsi_os and near_val and val_tested and delta_ok_long and slope_ok and in_session and not daily_locked and not at_max_trades and strategy.position_size <= 0
+bool short_sig = rsi_val >= rsi_ob and near_vah and vah_tested and delta_ok_short and slope_ok and in_session and not daily_locked and not at_max_trades and strategy.position_size >= 0
+
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+// Entry + Exit: place exit on entry (close), re-issue each bar with position_avg_price for correct stop
+if long_sig and cooled_down
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+else if short_sig and cooled_down
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+else if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    strategy.exit("XL", "Long", stop=avg - stop_pts, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    strategy.exit("XS", "Short", stop=avg + stop_pts, limit=avg - tp_pts)
+
+// ===== POC PRESSURE FILL =====
+float delta_strength = 0.0
+color channel_fill = na
+if not na(poc_delta_pct) and min_delta_pct > 0
+    if poc_delta_pct > min_delta_pct
+        delta_strength := math.min(1.0, poc_delta_pct / min_delta_pct)
+        channel_fill := color.new(color.green, 95 - math.round(delta_strength * 45))
+    else if poc_delta_pct < -min_delta_pct
+        delta_strength := math.min(1.0, -poc_delta_pct / min_delta_pct)
+        channel_fill := color.new(color.red, 95 - math.round(delta_strength * 45))
+
+// ===== POC DELTA LABEL =====
+var label lbl_poc = na
+if not na(poc_hi) and not na(poc_lo) and not na(poc_delta_pct)
+    float mid_y = (poc_lo + poc_hi) / 2
+    string txt = poc_delta_pct >= 0 ? "+" + str.tostring(poc_delta_pct, "#.#") + "%" : str.tostring(poc_delta_pct, "#.#") + "%"
+    if na(lbl_poc)
+        lbl_poc := label.new(bar_index, mid_y, txt, style=label.style_label_center, color=color.new(color.gray, 70), textcolor=color.white, size=size.normal)
+    else
+        label.set_xy(lbl_poc, bar_index, mid_y)
+        label.set_text(lbl_poc, txt)
+
+// ===== PLOT =====
+plot(rsi_val, "RSI", rsi_val <= rsi_os ? color.lime : rsi_val >= rsi_ob ? color.red : color.gray, display=display.data_window)
+
+float plo  = not na(poc_lo) ? poc_lo : na
+float ppoc = not na(poc_price) ? poc_price : na
+float phi  = not na(poc_hi) ? poc_hi : na
+plot_lo  = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_poc = plot(ppoc, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi  = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+fill(plot_lo, plot_hi, channel_fill)
+plot(ema_trend, "EMA (slope filter)", slope_ok ? color.aqua : color.orange, linewidth=2)
+
+p_val_lo = plot(not na(val_lo) ? val_lo : na, "VAL Zone Low", color.green, 1, plot.style_linebr)
+p_val_hi = plot(not na(val_hi) ? val_hi : na, "VAL Zone High", color.green, 1, plot.style_linebr)
+p_vah_lo = plot(not na(vah_lo) ? vah_lo : na, "VAH Zone Low", color.red, 1, plot.style_linebr)
+p_vah_hi = plot(not na(vah_hi) ? vah_hi : na, "VAH Zone High", color.red, 1, plot.style_linebr)
+fill(p_val_lo, p_val_hi, val_fill)
+fill(p_vah_lo, p_vah_hi, vah_fill)
+
+plot(not na(val_price) ? val_price : na, "VAL", color.green, 2)
+plot(not na(vah_price) ? vah_price : na, "VAH", color.red, 2)
+
+plot(strategy.position_size != 0 ? (strategy.position_size > 0 ? strategy.position_avg_price - stop_pts : strategy.position_avg_price + stop_pts) : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig and cooled_down, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig and cooled_down, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+var label lbl_val = na
+var label lbl_vah = na
+if not na(val_price) and barstate.islast
+    if na(lbl_val)
+        lbl_val := label.new(bar_index, val_price, "VAL\n" + str.tostring(val_bounce_count) + " bounces", style=label.style_label_up, color=color.new(color.green, 70), textcolor=color.white, size=size.small)
+    else
+        label.set_xy(lbl_val, bar_index, val_price)
+        label.set_text(lbl_val, "VAL\n" + str.tostring(val_bounce_count) + " bounces")
+if not na(vah_price) and barstate.islast
+    if na(lbl_vah)
+        lbl_vah := label.new(bar_index, vah_price, "VAH\n" + str.tostring(vah_bounce_count) + " bounces", style=label.style_label_down, color=color.new(color.red, 70), textcolor=color.white, size=size.small)
+    else
+        label.set_xy(lbl_vah, bar_index, vah_price)
+        label.set_text(lbl_vah, "VAH\n" + str.tostring(vah_bounce_count) + " bounces")
+
+plot(not na(poc_delta_pct) ? poc_delta_pct : na, "POC Delta %", color.orange, display=display.data_window)
+plot(daily_pnl, "Daily P&L", daily_pnl >= 0 ? color.lime : color.red, display=display.data_window)
+plot(daily_trade_ct, "Daily Trades", display=display.data_window)
+
+bgcolor(daily_locked ? color.new(color.red, 85) : na)

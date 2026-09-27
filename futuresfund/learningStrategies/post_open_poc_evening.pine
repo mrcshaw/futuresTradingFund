@@ -1,0 +1,455 @@
+//@version=5
+strategy("Post-Open POC (ORB v5) — Evening", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// ===== TIMING =====
+session_start_hr = input.int(18, "Session Start Hour (ET)", minval=12, maxval=23, group="Evening")
+session_start_mn = input.int(0, "Session Start Minute", minval=0, maxval=59, group="Evening")
+gather_min   = input.int(120, "Gather Minutes", minval=5, maxval=120, step=5, group="Evening",
+  tooltip="Minutes after session start to build opening range.")
+entry_end_hr = input.int(23, "Entry End Hour", minval=0, maxval=23, group="Evening")
+entry_end_mn = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5, group="Evening")
+eod_hr       = input.int(23, "EOD Flatten Hour", minval=0, maxval=23, group="Evening")
+eod_mn       = input.int(59, "EOD Flatten Min", group="Evening")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)", group="Risk")
+stop_dollars      = input.float(500.0, "Stop ($)", group="Risk", tooltip="Max $ risk per trade; caps OR stop.")
+tp_dollars        = input.float(1100.0, "Take Profit ($)", group="Risk")
+profit_goal       = input.float(0.0, "Profit Goal ($)", minval=0, step=100, group="Risk",
+  tooltip="Session profit target. 0=disabled.")
+use_trail         = input.bool(false, "Enable Trailing Stop", group="Risk")
+trail_pct         = input.float(75.0, "Trail: Keep % of Peak Profit", group="Risk")
+trail_step_amt    = input.float(250.0, "Trail: Tighten every $X profit", group="Risk")
+trail_step_pct    = input.float(50.0, "Trail: Tighten by X% per step", group="Risk")
+trail_min_dollars = input.float(350.0, "Trail: Min Profit Before Trailing ($)", group="Risk")
+use_breakeven     = input.bool(true, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(200.0, "BE Trigger ($)", minval=50, group="Breakeven",
+  tooltip="Move stop to entry + 1 tick after this much unrealized profit.")
+
+// ===== FILTERS =====
+i_margin     = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25, group="Filters")
+i_or_min     = input.float(0.0, "OR Min Size (pts)", minval=0, step=1, group="Filters")
+i_or_max     = input.float(9999.0, "OR Max Size (pts)", minval=1, step=5, group="Filters")
+i_poc_filter = input.bool(true, "POC Directional Filter", group="Filters")
+max_attempts = input.int(5, "Max Attempts / Day", minval=1, maxval=10, group="Filters")
+
+// ===== ENTRY CONFLUENCE =====
+pivot_left    = input.int(5, "Pivot Left Bars", minval=1, maxval=20, group="Confluence")
+pivot_right   = input.int(5, "Pivot Right Bars", minval=1, maxval=20, group="Confluence")
+sma_fast_len  = input.int(25, "Fast SMA (Close)", minval=2, maxval=50, group="Confluence",
+  tooltip="SMA on close. Entry when this crosses the OR breakout line.")
+sma_slow_len  = input.int(25, "Slow SMA (Low/Trend)", minval=5, maxval=100, group="Confluence",
+  tooltip="SMA on close for trend. Slope determines direction.")
+sma_slope_len = input.int(5, "Slope Lookback (bars)", minval=1, maxval=20, group="Confluence")
+min_slope_pts = input.float(0.5, "Min Slope (pts)", minval=0.0, step=0.25, group="Confluence",
+  tooltip="Slow SMA must be rising/falling by at least this many pts. 0=disabled.")
+min_confluence = input.int(2, "Min Confluence Score", minval=0, maxval=5, group="Confluence",
+  tooltip="How many factors (Pivot + SMA Cross + Color Flip + POC + Slope) must be met.")
+
+// ===== COMPUTED =====
+float margin_pts    = i_margin
+float or_min_pts    = i_or_min
+float or_max_pts    = i_or_max
+bool  poc_filter    = i_poc_filter
+float stop_pts      = stop_dollars / pv
+float tp_pts        = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+float trail_min_pts  = trail_min_dollars / pv
+
+// ===== PREV DAY POC =====
+[prev_hi, prev_lo, prev_cl] = request.security(syminfo.tickerid, "D",
+  [high[1], low[1], close[1]], lookahead=barmerge.lookahead_off)
+float prev_poc = (prev_hi + prev_lo + prev_cl) / 3.0
+
+// ===== PIVOT POINTS =====
+float ph = ta.pivothigh(high, pivot_left, pivot_right)
+float pl = ta.pivotlow(low, pivot_left, pivot_right)
+var float last_ph = na
+var float last_pl = na
+if not na(ph)
+    last_ph := ph
+if not na(pl)
+    last_pl := pl
+
+// ===== SMA FAST (close) & SLOW (trend) =====
+float sma_fast  = ta.sma(close, sma_fast_len)
+float sma_slow  = ta.sma(close, sma_slow_len)
+float slow_slope = sma_slow - sma_slow[sma_slope_len]
+bool  slope_up   = min_slope_pts <= 0 or slow_slope > min_slope_pts
+bool  slope_dn   = min_slope_pts <= 0 or slow_slope < -min_slope_pts
+
+// ===== COLOR FLIP =====
+bool bar_green  = close > open
+bool bar_red    = close < open
+bool prev_green = close[1] > open[1]
+bool prev_red   = close[1] < open[1]
+bool flip_to_green = bar_green and prev_red
+bool flip_to_red   = bar_red and prev_green
+
+// ===== TIME HELPERS =====
+hrs = hour(time, "America/New_York")
+mns = minute(time, "America/New_York")
+int bar_time = hrs * 100 + mns
+int sess_start = session_start_hr * 100 + session_start_mn
+int sess_end   = 2400
+bool in_session = bar_time >= sess_start and bar_time < 2400
+bool is_new_session = bar_time >= sess_start and bar_time[1] < sess_start
+int gather_end_time = sess_start + gather_min
+bool in_gather = in_session and bar_time < gather_end_time
+bool gather_done = in_session and bar_time >= gather_end_time
+int entry_end_time = entry_end_hr * 100 + entry_end_mn
+bool in_entry_window = gather_done and bar_time < entry_end_time
+bool at_eod = bar_time >= (eod_hr * 100 + eod_mn)
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+var bool  or_valid = false
+
+if is_new_session
+    or_high  := na
+    or_low   := na
+    or_built := false
+    or_valid := false
+
+if in_gather
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+
+if gather_done and not or_built
+    or_built := true
+    float or_range = nz(or_high) - nz(or_low)
+    or_valid := or_range >= or_min_pts and or_range <= or_max_pts and or_range > 0
+
+// ===== ATTEMPT COUNTER =====
+var int day_attempts    = 0
+var bool long_taken     = false
+var bool short_taken    = false
+var bool armed_long     = false
+var bool armed_short    = false
+var int armed_long_bar  = 0
+var int armed_short_bar = 0
+if is_new_session
+    day_attempts    := 0
+    long_taken      := false
+    short_taken     := false
+    armed_long      := false
+    armed_short     := false
+    armed_long_bar  := 0
+    armed_short_bar := 0
+
+// ===== PROFIT GOAL =====
+var float session_start_equity = 0.0
+if is_new_session
+    session_start_equity := strategy.netprofit
+float session_pnl = strategy.netprofit - session_start_equity
+bool profit_goal_reached = profit_goal > 0 and session_pnl >= profit_goal
+
+// ===== STOP / TP STATE =====
+var float peak_profit    = 0.0
+var float current_stop   = na
+var float plot_stop      = na
+var float plot_tp        = na
+var float entry_stop_px  = na
+var float entry_price    = 0.0
+var bool  be_active      = false
+
+if is_new_session
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    plot_tp       := na
+    entry_stop_px := na
+    be_active     := false
+
+if profit_goal_reached and strategy.position_size != 0
+    strategy.close_all(comment="Profit Goal")
+    peak_profit := 0.0
+    current_stop := na
+    entry_stop_px := na
+    plot_stop := na
+    plot_tp := na
+
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit := 0.0
+    current_stop := na
+    entry_stop_px := na
+    plot_stop := na
+    plot_tp := na
+
+// ===== ENTRY CRITERIA =====
+float or_range_pts = nz(or_high) - nz(or_low)
+bool c_or_ready     = or_built and or_valid
+bool c_entry_window = in_entry_window
+bool c_attempts_ok  = day_attempts < max_attempts
+bool c_flat         = strategy.position_size == 0
+bool c_breakout_long  = not na(or_high) and close > (or_high + margin_pts)
+bool c_breakout_short = not na(or_low)  and close < (or_low - margin_pts)
+bool c_poc_long   = not poc_filter or (not na(prev_poc) and close > prev_poc)
+bool c_poc_short  = not poc_filter or (not na(prev_poc) and close < prev_poc)
+
+// Pivot: long needs a recent pivot low (reversal up), short needs recent pivot high (reversal down)
+bool c_pivot_long  = not na(pl)
+bool c_pivot_short = not na(ph)
+
+// SMA cross: fast SMA crossed above OR high (long) or below OR low (short)
+bool sma_above_or = not na(or_high) and sma_fast > (or_high + margin_pts)
+bool sma_below_or = not na(or_low) and sma_fast < (or_low - margin_pts)
+bool c_sma_cross_long  = sma_above_or and not (sma_fast[1] > (or_high + margin_pts))
+bool c_sma_cross_short = sma_below_or and not (sma_fast[1] < (or_low - margin_pts))
+
+// Slope of 25 SMA: confirms trend direction
+bool c_slope_long  = slope_up
+bool c_slope_short = slope_dn
+
+// Color flip: green-to-red for short (selling pressure), red-to-green for long (buying pressure)
+bool c_flip_long  = flip_to_green
+bool c_flip_short = flip_to_red
+
+// ===== CONFLUENCE SCORE (5 factors) =====
+int score_long  = (c_pivot_long ? 1 : 0) + (c_sma_cross_long ? 1 : 0) + (c_slope_long ? 1 : 0) + (c_flip_long ? 1 : 0) + (c_poc_long ? 1 : 0)
+int score_short = (c_pivot_short ? 1 : 0) + (c_sma_cross_short ? 1 : 0) + (c_slope_short ? 1 : 0) + (c_flip_short ? 1 : 0) + (c_poc_short ? 1 : 0)
+bool confluence_long  = score_long >= min_confluence
+bool confluence_short = score_short >= min_confluence
+
+// ===== RESET TAKEN FLAGS when price returns inside OR =====
+if not na(or_high) and not na(or_low)
+    if close <= or_high and long_taken
+        long_taken := false
+    if close >= or_low and short_taken
+        short_taken := false
+    if close <= or_high
+        armed_long := false
+    if close >= or_low
+        armed_short := false
+
+// ===== ARM on SMA cross (wait for next pivot to enter) =====
+bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts and not profit_goal_reached
+if can_trade and c_sma_cross_long and confluence_long and not long_taken
+    armed_long     := true
+    armed_long_bar := bar_index
+if can_trade and c_sma_cross_short and confluence_short and not short_taken
+    armed_short     := true
+    armed_short_bar := bar_index
+
+// ===== ENTRY: after cross, enter on next pivot that FORMED after arming =====
+// ta.pivothigh confirms pivot_right bars late — the actual pivot bar is bar_index - pivot_right.
+// Only accept pivots whose real bar is strictly after the arm bar.
+bool still_above_breakout = not na(or_high) and close > (or_high + margin_pts)
+bool still_below_breakout = not na(or_low) and close < (or_low - margin_pts)
+bool pivot_long_fresh  = not na(pl) and (bar_index - pivot_right) > armed_long_bar
+bool pivot_short_fresh = not na(ph) and (bar_index - pivot_right) > armed_short_bar
+bool breakout_long  = can_trade and armed_long  and pivot_long_fresh  and still_above_breakout
+bool breakout_short = can_trade and armed_short and pivot_short_fresh and still_below_breakout
+bool long_sig  = breakout_long  and strategy.position_size == 0
+bool short_sig = breakout_short and strategy.position_size == 0
+
+// ===== ENTRY + EXIT =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    day_attempts   += 1
+    long_taken     := true
+    armed_long     := false
+    peak_profit    := 0.0
+    float raw_stop  = or_high - 0.25
+    current_stop   := (close - raw_stop) > stop_pts ? (close - stop_pts) : raw_stop
+    entry_stop_px  := current_stop
+    entry_price    := close
+    be_active      := false
+    strategy.entry("Long", strategy.long)
+else if short_sig and entry_ok
+    day_attempts   += 1
+    short_taken    := true
+    armed_short    := false
+    peak_profit    := 0.0
+    float raw_stop  = or_low + 0.25
+    current_stop   := (raw_stop - close) > stop_pts ? (close + stop_pts) : raw_stop
+    entry_stop_px  := current_stop
+    entry_price    := close
+    be_active      := false
+    strategy.entry("Short", strategy.short)
+
+if strategy.position_size == 0
+    plot_stop := na
+    plot_tp   := na
+
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float tp_price = avg + tp_pts
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if use_breakeven and not be_active and profit_now >= be_trigger_pts
+        be_active    := true
+        current_stop := avg + 0.25
+    if use_trail and peak_profit >= trail_min_pts
+        float peak_dollars = peak_profit * pv
+        int   steps        = math.floor(peak_dollars / trail_step_amt)
+        float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+        float new_stop     = avg + peak_profit * (keep_pct / 100.0)
+        if new_stop > current_stop
+            current_stop := new_stop
+    strategy.exit("XL", "Long", stop=current_stop, limit=tp_price)
+    plot_stop := current_stop
+    plot_tp   := tp_price
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float tp_price = avg - tp_pts
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if use_breakeven and not be_active and profit_now >= be_trigger_pts
+        be_active    := true
+        current_stop := avg - 0.25
+    if use_trail and peak_profit >= trail_min_pts
+        float peak_dollars = peak_profit * pv
+        int   steps        = math.floor(peak_dollars / trail_step_amt)
+        float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+        float new_stop     = avg - peak_profit * (keep_pct / 100.0)
+        if new_stop < current_stop
+            current_stop := new_stop
+    strategy.exit("XS", "Short", stop=current_stop, limit=tp_price)
+    plot_stop := current_stop
+    plot_tp   := tp_price
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    plot_tp       := na
+    entry_stop_px := na
+    be_active     := false
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 18, bgcolor=color.new(color.black, 70), border_width=1)
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+string or_status = c_or_ready ? "VALID" : or_built ? "SKIP" : "WAIT"
+table.cell(crit_table, 0, 1, "OR (" + str.tostring(or_range_pts, "#.#") + " pts)", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, or_status, text_color=c_or_ready ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, or_status, text_color=c_or_ready ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 2, "Entry Window", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, c_entry_window ? "1" : "0", text_color=c_entry_window ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, c_entry_window ? "1" : "0", text_color=c_entry_window ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 3, "Breakout", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, c_breakout_long ? "1" : "0", text_color=c_breakout_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, c_breakout_short ? "1" : "0", text_color=c_breakout_short ? color.red : color.gray, text_size=size.tiny)
+string poc_lbl = poc_filter ? "POC Filter" : "POC (off)"
+table.cell(crit_table, 0, 4, poc_lbl, text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, c_poc_long ? "1" : "0", text_color=c_poc_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, c_poc_short ? "1" : "0", text_color=c_poc_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 5, "Pivot (" + str.tostring(pivot_left) + "/" + str.tostring(pivot_right) + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, c_pivot_long ? "1" : "0", text_color=c_pivot_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 5, c_pivot_short ? "1" : "0", text_color=c_pivot_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 6, "SMA Cross (" + str.tostring(sma_fast_len) + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, c_sma_cross_long ? "1" : "0", text_color=c_sma_cross_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 6, c_sma_cross_short ? "1" : "0", text_color=c_sma_cross_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 7, "Slope 25 (" + str.tostring(slow_slope, "#.##") + ")", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 7, c_slope_long ? "1" : "0", text_color=c_slope_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 7, c_slope_short ? "1" : "0", text_color=c_slope_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 8, "Color Flip", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 8, c_flip_long ? "1" : "0", text_color=c_flip_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 8, c_flip_short ? "1" : "0", text_color=c_flip_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 9, "Score (min " + str.tostring(min_confluence) + ")", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 9, str.tostring(score_long) + "/5", text_color=confluence_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 9, str.tostring(score_short) + "/5", text_color=confluence_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 10, "Armed (wait pivot)", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 10, armed_long ? "1" : "0", text_color=armed_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 10, armed_short ? "1" : "0", text_color=armed_short ? color.red : color.gray, text_size=size.tiny)
+table.cell(crit_table, 0, 11, "Attempts", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 11, str.tostring(day_attempts) + "/" + str.tostring(max_attempts), text_color=c_attempts_ok ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 11, "", text_size=size.tiny)
+table.cell(crit_table, 0, 12, "Flat", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 12, c_flat ? "1" : "0", text_color=c_flat ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 12, "", text_size=size.tiny)
+string sig_txt = long_sig ? "LONG TRIGGERED" : short_sig ? "SHORT TRIGGERED" : "---"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(crit_table, 0, 13, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 13, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 13, "", text_size=size.tiny)
+string trail_txt = use_trail ? (str.tostring(trail_pct, "#") + "% +" + str.tostring(trail_step_pct, "#") + "%/$" + str.tostring(trail_step_amt, "#")) : "OFF"
+string be_txt = use_breakeven ? ("BE $" + str.tostring(be_trigger_dollars, "#")) : "OFF"
+table.cell(crit_table, 0, 14, "Stop / TP / BE / Trail", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 14, "$" + str.tostring(stop_dollars, "#") + " / $" + str.tostring(tp_dollars, "#") + " | " + be_txt + " | " + trail_txt, text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 2, 14, "", text_size=size.tiny)
+table.cell(crit_table, 0, 15, "OR High/Low", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 15, or_built ? str.tostring(or_high, "#.##") + " / " + str.tostring(or_low, "#.##") : "---", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 2, 15, "", text_size=size.tiny)
+table.cell(crit_table, 0, 16, "Prev POC", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 16, not na(prev_poc) ? str.tostring(prev_poc, "#.##") : "---", text_color=color.fuchsia, text_size=size.tiny)
+table.cell(crit_table, 2, 16, "", text_size=size.tiny)
+string goal_txt = profit_goal > 0 ? ("$" + str.tostring(session_pnl, "#") + " / $" + str.tostring(profit_goal, "#")) : ("$" + str.tostring(session_pnl, "#"))
+table.cell(crit_table, 0, 17, "Session P&L / Goal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 17, goal_txt, text_color=profit_goal_reached ? color.lime : color.white, text_size=size.tiny)
+table.cell(crit_table, 2, 17, profit_goal_reached ? "DONE" : "", text_color=profit_goal_reached ? color.lime : color.gray, text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+if long_sig
+    float raw_stop_l = or_high - 0.25
+    float stop_used = (close - raw_stop_l) > stop_pts ? (close - stop_pts) : raw_stop_l
+    float risk_dollars = (close - stop_used) * pv
+    string tt = "LONG ENTRY (Evening)  Entry on pivot low after SMA cross\n" +
+      "──────────────────\n" +
+      (c_or_ready      ? "✓" : "✗") + "  OR valid  (" + str.tostring(or_range_pts, "#.#") + " pts)\n" +
+      (c_entry_window  ? "✓" : "✗") + "  Entry window\n" +
+      (c_breakout_long ? "✓" : "✗") + "  Still above breakout  (" + str.tostring(close - or_high, "#.##") + " pts)\n" +
+      "── Confluence " + str.tostring(score_long) + "/5 ──\n" +
+      (c_poc_long        ? "✓" : "✗") + "  POC filter  (close > POC)\n" +
+      (c_pivot_long      ? "✓" : "✗") + "  Pivot low confirmed\n" +
+      (c_sma_cross_long  ? "✓" : "✗") + "  SMA crossed above OR (armed)\n" +
+      (c_slope_long      ? "✓" : "✗") + "  Slope 25 up  (" + str.tostring(slow_slope, "#.##") + " pts)\n" +
+      (c_flip_long       ? "✓" : "✗") + "  Color flip red→green\n" +
+      "✓  Pivot low confirmed → ENTRY\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(stop_used, "#.##") + "  ($" + str.tostring(risk_dollars, "#") + " risk)\n" +
+      "TP: " + str.tostring(close + tp_pts, "#.##") + "  ($" + str.tostring(tp_dollars, "#") + ")\n" +
+      (use_breakeven ? "BE: $" + str.tostring(be_trigger_dollars, "#") + " → entry+1tick\n" : "") +
+      (use_trail ? "Trail: " + str.tostring(trail_pct, "#") + "% +" + str.tostring(trail_step_pct, "#") + "%/$" + str.tostring(trail_step_amt, "#") : "")
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+if short_sig
+    float raw_stop_s = or_low + 0.25
+    float stop_used = (raw_stop_s - close) > stop_pts ? (close + stop_pts) : raw_stop_s
+    float risk_dollars = (stop_used - close) * pv
+    string tt = "SHORT ENTRY (Evening)  Entry on pivot high after SMA cross\n" +
+      "──────────────────\n" +
+      (c_or_ready       ? "✓" : "✗") + "  OR valid  (" + str.tostring(or_range_pts, "#.#") + " pts)\n" +
+      (c_entry_window   ? "✓" : "✗") + "  Entry window\n" +
+      (c_breakout_short ? "✓" : "✗") + "  Still below breakout  (" + str.tostring(or_low - close, "#.##") + " pts)\n" +
+      "── Confluence " + str.tostring(score_short) + "/5 ──\n" +
+      (c_poc_short        ? "✓" : "✗") + "  POC filter  (close < POC)\n" +
+      (c_pivot_short      ? "✓" : "✗") + "  Pivot high confirmed\n" +
+      (c_sma_cross_short  ? "✓" : "✗") + "  SMA crossed below OR (armed)\n" +
+      (c_slope_short      ? "✓" : "✗") + "  Slope 25 down  (" + str.tostring(slow_slope, "#.##") + " pts)\n" +
+      (c_flip_short       ? "✓" : "✗") + "  Color flip green→red\n" +
+      "✓  Pivot high confirmed → ENTRY\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(stop_used, "#.##") + "  ($" + str.tostring(risk_dollars, "#") + " risk)\n" +
+      "TP: " + str.tostring(close - tp_pts, "#.##") + "  ($" + str.tostring(tp_dollars, "#") + ")\n" +
+      (use_breakeven ? "BE: $" + str.tostring(be_trigger_dollars, "#") + " → entry-1tick\n" : "") +
+      (use_trail ? "Trail: " + str.tostring(trail_pct, "#") + "% +" + str.tostring(trail_step_pct, "#") + "%/$" + str.tostring(trail_step_amt, "#") : "")
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== PLOTS =====
+color or_hi_col = or_built and or_valid ? color.new(color.lime, 20) : or_built ? color.new(color.gray, 60) : na
+color or_lo_col = or_built and or_valid ? color.new(color.red, 20) : or_built ? color.new(color.gray, 60) : na
+plot(or_built ? or_high : na, "OR High", or_hi_col, linewidth=2, style=plot.style_stepline)
+plot(or_built ? or_low : na, "OR Low", or_lo_col, linewidth=2, style=plot.style_stepline)
+plot(or_built and or_valid ? or_high + margin_pts : na, "Breakout Long", color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(or_built and or_valid ? or_low - margin_pts : na, "Breakout Short", color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+plot(not na(prev_poc) ? prev_poc : na, "Prev POC", color.new(color.fuchsia, 40), linewidth=1, style=plot.style_stepline)
+plot(sma_fast, "SMA Fast", color.new(color.aqua, 20), linewidth=2)
+plot(sma_slow, "SMA Slow", slope_up ? color.new(color.lime, 30) : slope_dn ? color.new(color.red, 30) : color.new(color.gray, 50), linewidth=2)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop (SL)", color.orange, linewidth=1, style=plot.style_circles)
+plot(strategy.position_size != 0 and not na(plot_tp) ? plot_tp : na, "Take Profit", color.teal, linewidth=1, style=plot.style_circles)
+bgcolor(in_gather ? color.new(color.blue, 90) : na, title="Gather Period")
+bgcolor(or_built and not or_valid ? color.new(color.red, 95) : na, title="Skipped (OR out of range)")

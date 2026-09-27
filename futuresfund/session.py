@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -171,7 +172,7 @@ def handle_interval(board: Board, signal: dict) -> dict:
     return {"ok": True, "sent": bool(result.get("sent")), "action": plan["action"], "reason": result.get("reason"), "bars": len(bars), "added": bool(closed)}
 
 
-ET = ZoneInfo("America/New_York")
+learning_pause = threading.Event()
 
 
 def meeting_note() -> str:
@@ -336,7 +337,11 @@ def scheduler(board: Board) -> None:
             if not str(book.get(key, "")).startswith(today):
                 book[key] = today
                 save(book)
-                strategy_meeting(board, slot)
+                learning_pause.set()
+                try:
+                    strategy_meeting(board, slot)
+                finally:
+                    learning_pause.clear()
         time.sleep(20)
 
 

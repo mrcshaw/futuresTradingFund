@@ -1,0 +1,278 @@
+//@version=5
+// ============================================================
+// EMA Pullback Strategy
+// ============================================================
+//
+// SIMPLE IDEA:
+//   200 EMA points up → price pulls back to it → bounces → go long.
+//   200 EMA points down → price pulls back to it → rejects → go short.
+//   First candle against us = trade failed, cut immediately.
+//   If in profit when reversal happens, lock it.
+//   Rely on runners and numbers.
+// ============================================================
+
+strategy("EMA Pullback", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.percent, commission_value=0.04,
+  slippage=2, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true)
+
+// ===== TREND =====
+slow_len         = input.int(200, "200 EMA Length", minval=10, group="Trend")
+slow_slope_bars  = input.int(10, "Slope Lookback (bars)", minval=2, group="Trend",
+                     tooltip="How many bars back to measure slope. Higher = smoother, slower to react.")
+slow_min_angle   = input.float(0.5, "Min Slope Angle (degrees)", minval=0, step=0.25, group="Trend",
+                     tooltip="200 EMA must be angled at least this much to count as trending. Lower = more trades, 0 = always trending.")
+
+use_mid_filter   = input.bool(false, "Require 55 EMA Agreement", group="Trend",
+                     tooltip="OFF = only 200 EMA direction matters (recommended). ON = 55 EMA must also agree or be far enough from 200.")
+mid_len          = input.int(55, "55 EMA Length", minval=2, group="Trend")
+mid_slope_bars   = input.int(10, "55 EMA Slope Lookback", minval=2, group="Trend")
+mid_min_angle    = input.float(0.5, "55 EMA Min Angle", minval=0, step=0.25, group="Trend")
+mid_dist_pts     = input.float(8.0, "55-200 Override Separation (pts)", minval=0, step=0.5, group="Trend",
+                     tooltip="Only used when '55 EMA Agreement' is ON. If slope conflicts but distance is this large, still allow.")
+
+// ===== ENTRY =====
+touch_tol        = input.float(3.0, "Touch Tolerance (pts)", minval=0, step=0.5, group="Entry",
+                     tooltip="How close price wick must get to the 200 EMA. ES: 2-5 pts is reasonable.")
+min_ema_sep      = input.float(8.0, "55-200 Min Separation (pts)", minval=0, step=0.5, group="Entry",
+                     tooltip="55 EMA must be at least this far from 200 EMA. Confirms real trend momentum — not just drifting/hovering. ES: 5-15 pts.")
+cool_bars        = input.int(5, "Cooldown After Exit (bars)", minval=0, group="Entry")
+loss_cool_bars   = input.int(5, "Cooldown After Loss (bars)", minval=0, group="Entry")
+
+// ===== STOP =====
+stop_mode        = input.string("Below 55 EMA", "Stop Placement", options=["Below 55 EMA", "Entry Candle", "Below 200 EMA", "Fixed $", "ATR"], group="Stop",
+                     tooltip="Below 55 EMA: tightest, matches our entry logic. Entry Candle: below the confirm bar. Below 200 EMA: widest.")
+stop_buffer      = input.float(1.0, "Stop Buffer (pts)", minval=0, step=0.5, group="Stop",
+                     tooltip="Added beyond the 55 EMA, entry candle, or 200 EMA.")
+pv               = input.float(50.0, "Point Value ($)", minval=0.1, group="Stop")
+stop_dollars     = input.float(250.0, "Fixed Stop ($)", minval=1, group="Stop")
+atr_stop_mult    = input.float(2.0, "ATR Stop Multiplier", minval=0.5, step=0.5, group="Stop")
+
+// ===== EXIT =====
+tp_mode          = input.string("R Multiple", "Take Profit Mode", options=["R Multiple", "Fixed Pts"], group="Exit")
+take_profit_r    = input.float(2.0, "Take Profit (R multiple)", minval=0.5, step=0.5, group="Exit",
+                     tooltip="TP = risk × this. 2R = TP is 2× your stop distance.")
+take_profit_pts  = input.float(10.0, "Take Profit (fixed pts)", minval=1, step=0.5, group="Exit",
+                     tooltip="Fixed TP distance in points from entry.")
+
+// ===== SESSION =====
+use_session      = input.bool(true, "Session Filter", group="Session")
+session_start    = input.int(9, "NY Start (ET hour)", minval=0, maxval=23, group="Session")
+session_end      = input.int(16, "NY End (ET hour)", minval=0, maxval=23, group="Session")
+use_fut_sess     = input.bool(true, "Futures Overnight Session", group="Session")
+fut_start_hr     = input.int(20, "Futures Start (ET)", minval=0, maxval=23, group="Session")
+fut_end_hr       = input.int(8, "Futures End (ET)", minval=0, maxval=23, group="Session")
+max_trades_day   = input.int(5, "Max Trades Per Day", minval=1, group="Session")
+daily_loss_lim   = input.float(2000.0, "Daily Loss Limit ($)", minval=0, group="Session",
+                     tooltip="Set to 0 to disable. Strategy relies on runners, so allow enough room for small cuts.")
+
+// ===== VISUALS =====
+show_mas         = input.bool(true, "Show Moving Averages", group="Visuals")
+show_touches     = input.bool(true, "Show Touch Markers", group="Visuals")
+show_debug       = input.bool(true, "Debug: Color Background", group="Visuals",
+                     tooltip="Green tint = trend up, Red tint = trend down, No tint = no trend (won't trade).")
+
+// ============================================================
+// COMPUTE
+// ============================================================
+fast_len   = 25
+sma_fast   = ta.sma(close, fast_len)
+ema_mid    = ta.ema(close, mid_len)
+ema_slow   = ta.ema(close, slow_len)
+atr_val    = ta.atr(14)
+stop_pts   = stop_dollars / pv
+
+// ============================================================
+// TREND: 200 EMA slope is king
+// ============================================================
+float slow_rise  = ema_slow - ema_slow[slow_slope_bars]
+float slow_angle = math.todegrees(math.atan(slow_rise / slow_slope_bars))
+
+bool slow_up   = slow_angle >= slow_min_angle
+bool slow_down = slow_angle <= -slow_min_angle
+
+// 55 EMA filter (only when enabled)
+float mid_rise  = ema_mid - ema_mid[mid_slope_bars]
+float mid_angle = math.todegrees(math.atan(mid_rise / mid_slope_bars))
+bool mid_up     = mid_angle >= mid_min_angle
+bool mid_down   = mid_angle <= -mid_min_angle
+float mid_diff  = ema_mid - ema_slow
+bool mid_ok_long  = not use_mid_filter or mid_up or mid_diff >= mid_dist_pts
+bool mid_ok_short = not use_mid_filter or mid_down or mid_diff <= -mid_dist_pts
+
+bool trend_up   = slow_up and mid_ok_long
+bool trend_down = slow_down and mid_ok_short
+
+// ============================================================
+// TOUCH + CONFIRMATION (touch 200, enter when price crosses back above 55)
+// ============================================================
+// 1. Price touches the 200 EMA → touch is registered, stays pending
+// 2. Price crosses back above the 55 EMA → entry (confirms momentum returned)
+// Touch stays valid until price crosses the 55 or trend flips.
+var bool  long_touch_pending  = false
+var bool  short_touch_pending = false
+
+// 55 EMA must be far enough from 200 EMA — confirms real trend momentum
+bool ema_sep_long  = mid_diff >= min_ema_sep
+bool ema_sep_short = mid_diff <= -min_ema_sep
+
+// LONG touch: wick dips near 200 EMA, closes above it, 55 EMA well above 200
+bool long_touch_now  = strategy.position_size == 0 and trend_up and ema_sep_long and low <= ema_slow + touch_tol and close > ema_slow
+
+// SHORT touch: wick pokes near 200 EMA, closes below it, 55 EMA well below 200
+bool short_touch_now = strategy.position_size == 0 and trend_down and ema_sep_short and high >= ema_slow - touch_tol and close < ema_slow
+
+if long_touch_now and not long_touch_pending
+    long_touch_pending := true
+if short_touch_now and not short_touch_pending
+    short_touch_pending := true
+
+// Confirm: price crosses back over the 55 EMA after touching the 200
+bool long_confirm  = long_touch_pending and strategy.position_size == 0 and close > ema_mid and close > ema_slow
+bool short_confirm = short_touch_pending and strategy.position_size == 0 and close < ema_mid and close < ema_slow
+
+if long_confirm
+    long_touch_pending := false
+if short_confirm
+    short_touch_pending := false
+
+// Invalidate: trend flips or price closes wrong side of 200 EMA
+if trend_down or (long_touch_pending and close < ema_slow)
+    long_touch_pending := false
+if trend_up or (short_touch_pending and close > ema_slow)
+    short_touch_pending := false
+
+// ============================================================
+// SESSION
+// ============================================================
+bar_hr     = hour(time, "America/New_York")
+in_ny      = bar_hr >= session_start and bar_hr < session_end
+in_fut     = use_fut_sess and (bar_hr >= fut_start_hr or bar_hr < fut_end_hr)
+in_session = not use_session or in_ny or in_fut
+
+// ============================================================
+// DAILY TRACKING
+// ============================================================
+var float daily_pnl    = 0.0
+var bool  daily_lock   = false
+var int   last_ct      = 0
+var int   trades_today = 0
+var int   prev_day     = -1
+
+if dayofmonth(time) != prev_day
+    prev_day     := dayofmonth(time)
+    daily_pnl    := 0.0
+    daily_lock   := false
+    last_ct      := strategy.closedtrades
+    trades_today := 0
+
+if strategy.closedtrades > last_ct
+    for i = last_ct to strategy.closedtrades - 1
+        daily_pnl += strategy.closedtrades.profit(i)
+    last_ct := strategy.closedtrades
+
+if daily_loss_lim > 0 and daily_pnl <= -daily_loss_lim
+    daily_lock := true
+
+// ============================================================
+// COOLDOWN
+// ============================================================
+var int  last_exit_bar = -999
+var bool last_was_loss = false
+
+if strategy.position_size[1] != 0 and strategy.position_size == 0
+    last_exit_bar := bar_index
+    if strategy.closedtrades > 0
+        last_was_loss := strategy.closedtrades.profit(strategy.closedtrades - 1) < 0
+    else
+        last_was_loss := false
+
+int active_cool = last_was_loss ? loss_cool_bars : cool_bars
+bool cooled     = (bar_index - last_exit_bar) >= active_cool
+
+bool can_enter = strategy.position_size == 0 and in_session and trades_today < max_trades_day and not daily_lock and cooled
+
+// ============================================================
+// EXIT LEVELS
+// ============================================================
+var float long_stop  = na
+var float long_tp    = na
+var float short_stop = na
+var float short_tp   = na
+
+// ============================================================
+// LONG ENTRY — simple bracket: stop + TP
+// ============================================================
+bool bull_cond = can_enter and long_confirm
+if bull_cond
+    if stop_mode == "Below 55 EMA"
+        long_stop := ema_mid - stop_buffer
+    else if stop_mode == "Entry Candle"
+        long_stop := low - stop_buffer
+    else if stop_mode == "Below 200 EMA"
+        long_stop := ema_slow - stop_buffer
+    else if stop_mode == "ATR"
+        long_stop := close - atr_val * atr_stop_mult
+    else
+        long_stop := close - stop_pts
+    risk_pts = close - long_stop
+    long_tp  := tp_mode == "R Multiple" ? close + risk_pts * take_profit_r : close + take_profit_pts
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_tp)
+    trades_today += 1
+
+// ============================================================
+// SHORT ENTRY — simple bracket: stop + TP
+// ============================================================
+bool bear_cond = can_enter and short_confirm
+if bear_cond
+    if stop_mode == "Below 55 EMA"
+        short_stop := ema_mid + stop_buffer
+    else if stop_mode == "Entry Candle"
+        short_stop := high + stop_buffer
+    else if stop_mode == "Below 200 EMA"
+        short_stop := ema_slow + stop_buffer
+    else if stop_mode == "ATR"
+        short_stop := close + atr_val * atr_stop_mult
+    else
+        short_stop := close + stop_pts
+    risk_pts  = short_stop - close
+    short_tp  := tp_mode == "R Multiple" ? close - risk_pts * take_profit_r : close - take_profit_pts
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_tp)
+    trades_today += 1
+
+if daily_lock and strategy.position_size != 0
+    strategy.close_all(comment="Daily Limit")
+
+// ============================================================
+// PLOTS
+// ============================================================
+plot(show_mas ? sma_fast : na, "25 SMA", color.new(color.blue, 0), 1)
+plot(show_mas ? ema_mid : na, "55 EMA", color.new(color.purple, 0), 1)
+plot(show_mas ? ema_slow : na, "200 EMA", trend_up ? color.green : trend_down ? color.red : color.gray, 3)
+
+float active_stop = strategy.position_size > 0 ? long_stop : strategy.position_size < 0 ? short_stop : na
+plot(strategy.position_size != 0 ? active_stop : na, "Stop", color.fuchsia, 2, plot.style_stepline)
+
+float active_tp = strategy.position_size > 0 ? long_tp : strategy.position_size < 0 ? short_tp : na
+plot(strategy.position_size != 0 and not na(active_tp) ? active_tp : na, "Take Profit", color.lime, 2, plot.style_stepline)
+
+plotshape(bull_cond, "Long Entry", shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(bear_cond, "Short Entry", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plotshape(show_touches and long_touch_now, "Long Touch", shape.circle, location.belowbar, color.new(color.lime, 30), size=size.tiny)
+plotshape(show_touches and short_touch_now, "Short Touch", shape.circle, location.abovebar, color.new(color.orange, 30), size=size.tiny)
+
+// Debug: background tint shows when trend is active (green = long allowed, red = short allowed)
+bgcolor(show_debug and trend_up ? color.new(color.green, 93) : show_debug and trend_down ? color.new(color.red, 93) : in_session ? color.new(color.blue, 96) : na)
+
+// Data window
+plot(slow_angle, "200 EMA Angle", display=display.data_window)
+plot(mid_angle, "55 EMA Angle", display=display.data_window)
+plot(trend_up ? 1 : trend_down ? -1 : 0, "Trend (1=up, -1=dn, 0=flat)", display=display.data_window)
+plot(mid_diff, "55-200 Separation", display=display.data_window)
+plot(trend_up ? low - ema_slow : trend_down ? ema_slow - high : na, "Price-to-EMA Gap", display=display.data_window)
+plot(math.abs(mid_diff), "55-200 Separation", display=display.data_window)
+plot(ema_sep_long or ema_sep_short ? 1 : 0, "Separation OK", display=display.data_window)
+plot(trades_today, "Trades Today", display=display.data_window)

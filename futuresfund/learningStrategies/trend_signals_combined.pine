@@ -1,0 +1,242 @@
+//@version=5
+strategy("UAlgo Trend Signals Strategy", shorttitle="Trend Signals [Opt]", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ─── INPUTS ──────────────────────────────────────────────────
+grp_st = "SuperTrend"
+i_src        = input(hl2,        title="Source",                      group=grp_st)
+i_mult       = input.float(2.0,  title="Sensitivity (Multiplier)",    step=0.1, minval=0.5, maxval=5.0, group=grp_st)
+i_atr_len    = input.int(12,     title="ATR Length",                  minval=1,  group=grp_st)
+i_atr_method = input.string("Method 1", title="ATR Method", options=["Method 1","Method 2"], group=grp_st)
+
+grp_sl = "EMA Slope Filter"
+i_use_slope  = input.bool(true,  title="Enable Slope Filter",        group=grp_sl)
+i_slope_ema  = input.int(30,     title="Slope EMA Length",           minval=5,  group=grp_sl)
+i_slope_lb   = input.int(5,      title="Slope Lookback Bars",        minval=1,  group=grp_sl)
+i_min_slope  = input.float(0.75, title="Min Slope (points)",         step=0.1,  group=grp_sl)
+
+grp_macd = "MACD Cloud Filter"
+i_use_macd   = input.bool(false, title="Enable MACD Filter",         group=grp_macd)
+i_macd_fast  = input.int(12,     title="MACD Fast",                  group=grp_macd)
+i_macd_slow  = input.int(26,     title="MACD Slow",                  group=grp_macd)
+i_macd_sig   = input.int(9,      title="MACD Signal",                group=grp_macd)
+
+grp_rsi = "RSI Guard"
+i_use_rsi    = input.bool(false, title="Enable RSI Filter",          group=grp_rsi)
+i_rsi_len    = input.int(14,     title="RSI Length",                  group=grp_rsi)
+i_rsi_ob     = input.int(70,     title="RSI Overbought",             group=grp_rsi)
+i_rsi_os     = input.int(30,     title="RSI Oversold",               group=grp_rsi)
+
+grp_vol = "Volume Filter"
+i_use_vol    = input.bool(false, title="Enable Volume Filter",       group=grp_vol)
+i_vol_len    = input.int(20,     title="Volume MA Length",            group=grp_vol)
+
+grp_cd = "Cooldown"
+i_cooldown   = input.int(7,      title="Min Bars Between Trades",    minval=1, group=grp_cd)
+
+grp_sess = "Session"
+i_use_sess   = input.bool(true,  title="Enable Session Filter",      group=grp_sess)
+i_sess       = input.session("1800-0800", title="Session (ET)",      group=grp_sess)
+
+grp_risk = "Risk Management"
+i_stop       = input.float(550,  title="Stop Loss ($)",              group=grp_risk)
+i_tp         = input.float(600,  title="Take Profit ($)",            group=grp_risk)
+i_use_be     = input.bool(true,  title="Enable Breakeven",           group=grp_risk)
+i_be_trigger = input.float(200,  title="BE Trigger ($)",             group=grp_risk)
+i_use_rev    = input.bool(false, title="Reversal on SL Hit",         group=grp_risk)
+
+grp_viz = "Display"
+i_show_cloud = input.bool(true,  title="Show Cloud MA",              group=grp_viz)
+i_cloud_len  = input.int(10,     title="Cloud MA Length",             group=grp_viz)
+i_show_sigs  = input.bool(true,  title="Show Buy/Sell Labels",       group=grp_viz)
+
+// ─── CONSTANTS ───────────────────────────────────────────────
+float PV = 50.0
+float stop_pts = i_stop / PV
+float tp_pts   = i_tp   / PV
+float be_pts   = i_be_trigger / PV
+
+// ─── SUPERTREND ──────────────────────────────────────────────
+atr2 = ta.sma(ta.tr, i_atr_len)
+float atr_val = i_atr_method == "Method 1" ? ta.atr(i_atr_len) : atr2
+
+float raw_up = i_src - i_mult * atr_val
+float raw_dn = i_src + i_mult * atr_val
+
+var float up_band = na
+var float dn_band = na
+var int   trend   = 1
+
+up_band := nz(close[1]) > nz(up_band[1]) ? math.max(raw_up, nz(up_band[1])) : raw_up
+dn_band := nz(close[1]) < nz(dn_band[1]) ? math.min(raw_dn, nz(dn_band[1])) : raw_dn
+
+if trend[1] == -1 and close > nz(dn_band[1])
+    trend := 1
+else if trend[1] == 1 and close < nz(up_band[1])
+    trend := -1
+else
+    trend := nz(trend[1], 1)
+
+float trail = trend == 1 ? up_band : dn_band
+
+bool buy_raw  = trend == 1 and trend[1] == -1
+bool sell_raw = trend == -1 and trend[1] == 1
+
+// ─── EMA SLOPE FILTER ───────────────────────────────────────
+float slope_ema = ta.ema(close, i_slope_ema)
+float slope_val = slope_ema - slope_ema[i_slope_lb]
+
+bool slope_ok_long  = not i_use_slope or slope_val >= i_min_slope
+bool slope_ok_short = not i_use_slope or slope_val <= -i_min_slope
+
+// ─── MACD FILTER ────────────────────────────────────────────
+[macdLine, signalLine, histLine] = ta.macd(close, i_macd_fast, i_macd_slow, i_macd_sig)
+bool macd_ok_long  = not i_use_macd or histLine > 0
+bool macd_ok_short = not i_use_macd or histLine < 0
+
+// ─── RSI GUARD ──────────────────────────────────────────────
+float rsi_val = ta.rsi(close, i_rsi_len)
+bool rsi_ok_long  = not i_use_rsi or rsi_val < i_rsi_ob
+bool rsi_ok_short = not i_use_rsi or rsi_val > i_rsi_os
+
+// ─── VOLUME FILTER ──────────────────────────────────────────
+float vol_ma = ta.sma(volume, i_vol_len)
+bool vol_ok  = not i_use_vol or volume > vol_ma
+
+// ─── SESSION ────────────────────────────────────────────────
+bool in_session = not i_use_sess or not na(time(timeframe.period, i_sess, "America/New_York"))
+
+// ─── COOLDOWN ───────────────────────────────────────────────
+var int last_trade_bar = -9999
+bool cooled = bar_index - last_trade_bar >= i_cooldown
+
+// ─── FINAL SIGNALS ──────────────────────────────────────────
+bool long_sig  = buy_raw  and slope_ok_long  and macd_ok_long  and rsi_ok_long  and vol_ok and in_session and cooled and strategy.position_size <= 0
+bool short_sig = sell_raw and slope_ok_short and macd_ok_short and rsi_ok_short and vol_ok and in_session and cooled and strategy.position_size >= 0
+
+// ─── TRADE LEGEND (comment) ─────────────────────────────────
+build_legend(dir, sl_v) =>
+    string base = dir > 0 ? "LONG flip" : "SHORT flip"
+    string sl_txt = i_use_slope ? " | slope=" + str.tostring(sl_v, "#.##") : ""
+    string rsi_txt = i_use_rsi ? " | RSI=" + str.tostring(rsi_val, "#") : ""
+    string macd_txt = i_use_macd ? " | MACD=" + (histLine > 0 ? "bull" : "bear") : ""
+    base + sl_txt + rsi_txt + macd_txt
+
+// ─── ENTRIES ────────────────────────────────────────────────
+var float entry_price   = na
+var bool  be_active     = false
+var int   last_dir      = 0
+var bool  is_reversal   = false
+var bool  rev_pending   = false
+var float prev_pos      = 0.0
+
+float cur_pos = strategy.position_size
+
+// Reversal detection
+if cur_pos == 0 and prev_pos != 0
+    if i_use_rev and not is_reversal and last_dir != 0 and not be_active
+        if strategy.closedtrades > 0
+            float last_pnl = strategy.closedtrades.profit(strategy.closedtrades - 1)
+            if last_pnl < 0
+                rev_pending := true
+    be_active   := false
+    is_reversal := false
+
+if long_sig
+    string legend = build_legend(1, slope_val)
+    entry_price   := close
+    be_active     := false
+    is_reversal   := false
+    last_trade_bar := bar_index
+    last_dir      := 1
+    strategy.entry("Long", strategy.long, comment=legend)
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+
+else if short_sig
+    string legend = build_legend(-1, slope_val)
+    entry_price   := close
+    be_active     := false
+    is_reversal   := false
+    last_trade_bar := bar_index
+    last_dir      := -1
+    strategy.entry("Short", strategy.short, comment=legend)
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+
+else if rev_pending and cur_pos == 0 and in_session
+    rev_pending := false
+    is_reversal := true
+    be_active   := false
+    last_trade_bar := bar_index
+    float rev_stop_pts = stop_pts / 2.0
+    float rev_tp_pts   = stop_pts
+    if last_dir == 1
+        string legend = "REV | " + build_legend(-1, slope_val)
+        entry_price := close
+        last_dir    := -1
+        strategy.entry("RevShort", strategy.short, comment=legend)
+        strategy.exit("XRS", "RevShort", stop=close + rev_stop_pts, limit=close - rev_tp_pts)
+    else if last_dir == -1
+        string legend = "REV | " + build_legend(1, slope_val)
+        entry_price := close
+        last_dir    := 1
+        strategy.entry("RevLong", strategy.long, comment=legend)
+        strategy.exit("XRL", "RevLong", stop=close - rev_stop_pts, limit=close + rev_tp_pts)
+
+// ─── BREAKEVEN ──────────────────────────────────────────────
+if i_use_be and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and (close - entry_price) >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0 and (entry_price - close) >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+prev_pos := strategy.position_size
+
+// ─── SESSION CLOSE ──────────────────────────────────────────
+bool sess_ended = i_use_sess and in_session[1] and not in_session
+if sess_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ─── PLOTS ──────────────────────────────────────────────────
+color trail_color = trend == 1 ? color.new(color.teal, 0) : color.new(color.red, 0)
+plot(trail, "Trail", color=trail_color, linewidth=2)
+
+plotshape(long_sig  and i_show_sigs ? up_band : na, "Buy",  text="Buy",  location=location.belowbar, style=shape.labelup,   size=size.tiny, color=color.new(color.teal, 50), textcolor=color.white)
+plotshape(short_sig and i_show_sigs ? dn_band : na, "Sell", text="Sell", location=location.abovebar, style=shape.labeldown, size=size.tiny, color=color.new(color.red, 50),  textcolor=color.white)
+
+// Cloud
+float smaSrcHigh = ta.ema(high, i_cloud_len)
+float smaSrcLow  = ta.ema(low,  i_cloud_len)
+p_hi = plot(i_show_cloud ? smaSrcHigh : na, color=na, editable=false)
+p_lo = plot(i_show_cloud ? smaSrcLow  : na, color=na, editable=false)
+fill(p_hi, p_lo, color = macdLine > 0 ? color.new(color.aqua, 85) : color.new(color.red, 85), title="Cloud")
+
+// Slope indicator
+plot(slope_ema, "Slope EMA", color=color.new(color.orange, 60), linewidth=1)
+
+// ─── INFO TABLE ─────────────────────────────────────────────
+var table info = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black, 80), border_color=color.gray)
+if barstate.islast
+    table.cell(info, 0, 0, "Trend",    text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 0, trend == 1 ? "BULL" : "BEAR", text_color=trend == 1 ? color.teal : color.red, text_size=size.small)
+    table.cell(info, 0, 1, "Slope",    text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 1, str.tostring(slope_val, "#.##"), text_color=slope_val > 0 ? color.teal : color.red, text_size=size.small)
+    table.cell(info, 0, 2, "RSI",      text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 2, str.tostring(rsi_val, "#.#"), text_color=color.white, text_size=size.small)
+    table.cell(info, 0, 3, "MACD",     text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 3, histLine > 0 ? "Bull" : "Bear", text_color=histLine > 0 ? color.teal : color.red, text_size=size.small)
+    table.cell(info, 0, 4, "Cooldown", text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 4, cooled ? "Ready" : str.tostring(i_cooldown - (bar_index - last_trade_bar)) + " bars", text_color=cooled ? color.teal : color.orange, text_size=size.small)
+    table.cell(info, 0, 5, "Session",  text_color=color.white, text_size=size.small)
+    table.cell(info, 1, 5, in_session ? "Active" : "Closed", text_color=in_session ? color.teal : color.gray, text_size=size.small)
+
+// ─── ALERTS ─────────────────────────────────────────────────
+alertcondition(long_sig,  "Long Signal",  "Trend Signals: LONG entry")
+alertcondition(short_sig, "Short Signal", "Trend Signals: SHORT entry")
+alertcondition(trend != trend[1], "Trend Change", "Trend direction changed")

@@ -1,0 +1,231 @@
+//@version=5
+strategy("Post-Open POC (ORB v5) — Overnight 18–8", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== MODE PRESETS =====
+mode = input.string("Profit", "Mode", options=["Profit","Balanced","Safe"],
+  tooltip="Profit: m1.0 no OR filter | 82% win streak≤1 $12k/60d.\nBalanced: m1.0 OR 2-30 | 81% win streak≤1 $8.4k.\nSafe: m0.5 OR 2-20 | 100% win 0 losses $4.5k.")
+
+// ===== TIMING (Overnight session 18:00–8:00) =====
+session_start_hr = 18
+session_end_hr   = 8
+gather_min       = input.int(15, "Gather Minutes", minval=5, maxval=60, step=5,
+  tooltip="Minutes after 18:00 to build opening range. 15 = optimal.")
+entry_end_hr     = input.int(18, "Entry End Hour", minval=0, maxval=23,
+  tooltip="Stop new entries at this hour. 8 = session end.")
+entry_end_mn     = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5)
+eod_hr           = input.int(8, "EOD Flatten Hour")
+eod_mn           = input.int(45, "EOD Flatten Min")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+i_tp         = input.float(500.0, "Take Profit ($)", tooltip="Overridden by mode preset")
+i_trail_act  = input.float(400.0, "Trail Activate ($)")
+i_trail_pct  = input.float(45.0, "Trail Keep %")
+max_stop     = input.float(500.0, "Max Stop Cap ($)", minval=0, step=50,
+  tooltip="Hard cap on max loss per trade. 1500 = absolute max drawdown per trade.")
+
+// ===== FILTERS =====
+i_margin     = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25,
+  tooltip="Close must be this many pts beyond OR boundary. 1.0 = best. Eliminates fake breakouts.")
+i_or_min     = input.float(0.0, "OR Min Size (pts)", minval=0, step=1,
+  tooltip="Skip days with opening range < this. 2 for Safe/Balanced.")
+i_or_max     = input.float(9999.0, "OR Max Size (pts)", minval=1, step=5,
+  tooltip="Skip days with opening range > this. 20-30 filters choppy days.")
+i_poc_filter = input.bool(false, "POC Directional Filter")
+max_attempts = input.int(2, "Max Attempts / Day", minval=1, maxval=5)
+
+// Apply mode presets
+float tp_dollars    = mode == "Profit" ? 500.0 : mode == "Balanced" ? 500.0 : 500.0
+float trail_act_d   = mode == "Profit" ? 400.0 : mode == "Balanced" ? 400.0 : 400.0
+float trail_pct     = mode == "Profit" ? 45.0  : mode == "Balanced" ? 45.0  : 45.0
+float margin_pts    = mode == "Profit" ? 1.0   : mode == "Balanced" ? 1.0   : 0.5
+float or_min_pts    = mode == "Profit" ? 0.0   : mode == "Balanced" ? 2.0   : 2.0
+float or_max_pts    = mode == "Profit" ? 9999.0: mode == "Balanced" ? 30.0  : 20.0
+bool  poc_filter    = false
+
+float tp_pts        = tp_dollars / pv
+float trail_act_pts = trail_act_d / pv
+float max_stop_pts  = max_stop / pv
+
+// ===== PREV DAY POC (pivot approximation) =====
+[prev_hi, prev_lo, prev_cl] = request.security(syminfo.tickerid, "D",
+  [high[1], low[1], close[1]], lookahead=barmerge.lookahead_off)
+float prev_poc = (prev_hi + prev_lo + prev_cl) / 3.0
+
+// ===== TIME HELPERS (Overnight 18:00–8:00) =====
+hrs      = hour(time, "America/New_York")
+mns      = minute(time, "America/New_York")
+int bar_time = hrs * 100 + mns
+
+// Session: 18:00–8:00 (crosses midnight)
+bool in_session = bar_time >= (session_start_hr * 100) or bar_time < (session_end_hr * 100)
+
+// New session = when we cross into 18:00
+bool is_new_session = bar_time >= (session_start_hr * 100) and bar_time[1] < (session_start_hr * 100)
+
+// Gather: first N minutes after 18:00 = 18:00 to 18:00+gather_min
+bool in_gather = bar_time >= (session_start_hr * 100) and bar_time < (session_start_hr * 100 + gather_min)
+
+// Gather done: after 18:00+gather_min, for rest of session (until 8:00)
+bool gather_done = in_session and (bar_time >= (session_start_hr * 100 + gather_min) or bar_time < (session_end_hr * 100))
+
+// Entry window: gather_done until entry_end (8:00). bar_time wraps so: 18:15–23:59 OR 00:00–7:59
+int entry_end_time = entry_end_hr * 100 + entry_end_mn
+bool in_entry_window = gather_done and (bar_time >= (session_start_hr * 100) or bar_time < entry_end_time)
+
+// EOD flatten: only in morning window (8:45–18:00), NOT during evening session (18:00–8:00)
+// bar_time>=845 was true at 19:00, wrongly flattening evening positions
+int eod_time = eod_hr * 100 + eod_mn
+bool at_eod = bar_time >= eod_time and bar_time < (session_start_hr * 100)
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+var bool  or_valid = false
+
+if is_new_session
+    or_high  := na
+    or_low   := na
+    or_built := false
+    or_valid := false
+
+if in_gather
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+
+if gather_done and not or_built
+    or_built := true
+    float or_range = nz(or_high) - nz(or_low)
+    or_valid := or_range >= or_min_pts and or_range <= or_max_pts and or_range > 0
+
+// ===== ATTEMPT COUNTER =====
+var int day_attempts = 0
+if is_new_session
+    day_attempts := 0
+
+// ===== TRAILING STOP STATE =====
+var float peak_profit   = 0.0
+var float current_stop  = na
+var float plot_stop     = na
+var float entry_stop_px = na
+
+if is_new_session
+    peak_profit    := 0.0
+    current_stop   := na
+    plot_stop      := na
+    entry_stop_px  := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== ENTRY SIGNALS =====
+bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts
+
+bool breakout_long  = can_trade and close > (or_high + margin_pts)
+bool breakout_short = can_trade and close < (or_low - margin_pts)
+
+if poc_filter and not na(prev_poc)
+    if close <= prev_poc
+        breakout_long := false
+    if close >= prev_poc
+        breakout_short := false
+
+// Only enter on breakout CROSSOVER — prevents multiple entries when breakout stays true for many bars
+bool long_sig  = breakout_long and not breakout_long[1] and strategy.position_size == 0
+bool short_sig = breakout_short and not breakout_short[1] and strategy.position_size == 0
+
+// ===== ENTRY + IMMEDIATE EXIT (stop must be set on entry so position is protected) =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    entry_stop_px := (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if short_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== TRAILING STOP — update strategy.exit when in position (barstate.isconfirmed prevents tick churn) =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+// ===== RESET ON FLAT =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS =====
+color or_hi_col = or_built and or_valid ? color.new(color.lime, 20) : or_built ? color.new(color.gray, 60) : na
+color or_lo_col = or_built and or_valid ? color.new(color.red, 20) : or_built ? color.new(color.gray, 60) : na
+
+plot(or_built ? or_high : na, "OR High", or_hi_col, linewidth=2, style=plot.style_stepline)
+plot(or_built ? or_low : na, "OR Low", or_lo_col, linewidth=2, style=plot.style_stepline)
+
+// Margin lines (dashed) — show where breakout actually triggers
+plot(or_built and or_valid ? or_high + margin_pts : na, "Breakout Long", color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(or_built and or_valid ? or_low - margin_pts : na, "Breakout Short", color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+
+plot(not na(prev_poc) ? prev_poc : na, "Prev POC", color.new(color.fuchsia, 40), linewidth=1, style=plot.style_stepline)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+
+bgcolor(in_gather ? color.new(color.blue, 90) : na, title="Gather Period")
+bgcolor(or_built and not or_valid ? color.new(color.red, 95) : na, title="Skipped Day (OR out of range)")
+
+// Mode & OR info label
+var label info_lbl = na
+if barstate.islast
+    label.delete(info_lbl)
+    string or_info = or_valid ? "VALID" : "SKIPPED"
+    float or_rng = nz(or_high) - nz(or_low)
+    info_lbl := label.new(bar_index, high,
+      "Mode: " + mode +
+      "\nOR: " + str.tostring(or_high, "#.##") + " / " + str.tostring(or_low, "#.##") +
+      " (" + str.tostring(or_rng, "#.#") + " pts) " + or_info +
+      "\nMargin: " + str.tostring(margin_pts, "#.##") + " pts" +
+      "\nPrev POC: " + str.tostring(prev_poc, "#.##") +
+      "\nAttempts: " + str.tostring(day_attempts) + "/" + str.tostring(max_attempts),
+      style=label.style_label_down, color=color.new(color.gray, 70), textcolor=color.white, size=size.small)

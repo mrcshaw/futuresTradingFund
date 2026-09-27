@@ -1,0 +1,333 @@
+// SuperTrend AI Clustering Strategy
+// Based on LuxAlgo SuperTrend AI indicator — converted to strategy
+// with session filter, risk management, and no-repaint safeguards.
+//
+// Original indicator: © LuxAlgo (CC BY-NC-SA 4.0)
+
+//@version=5
+strategy("SuperTrend AI Strategy", shorttitle="ST-AI Strat", overlay=true,
+     initial_capital=25000, default_qty_type=strategy.fixed,
+     default_qty_value=1, commission_type=strategy.commission.cash_per_contract,
+     commission_value=5.50, slippage=1, pyramiding=0,
+     process_orders_on_close=true, calc_on_every_tick=false,
+     max_labels_count=500)
+
+// ─── SUPERTREND AI INPUTS ─────────────────────────────────────────
+length    = input.int(22,   "ATR Length",          group="SuperTrend AI")
+minMult   = input.int(1,    "Factor Range Min",    minval=0, group="SuperTrend AI")
+maxMult   = input.int(6,    "Factor Range Max",    minval=0, group="SuperTrend AI")
+step      = input.float(0.5,"Factor Step",         minval=0.1, step=0.1, group="SuperTrend AI")
+perfAlpha = input.float(15, "Performance Memory",  minval=2, group="SuperTrend AI")
+fromClstr = input.string("Best", "From Cluster",   options=["Best","Average","Worst"], group="SuperTrend AI")
+
+maxIter   = input.int(1000, "Max Iteration Steps", minval=0, group="Optimization")
+maxData   = input.int(10000,"Historical Bars",     minval=0, group="Optimization")
+
+// ─── RISK MANAGEMENT ──────────────────────────────────────────────
+pv            = input.float(50.0, "Point Value ($)", group="Risk")
+stop_dollars  = input.float(275.0,"Stop Loss ($)",   group="Risk", step=25)
+tp_dollars    = input.float(600.0,"Take Profit ($)", group="Risk", step=25)
+cooldown_bars = input.int(4,      "Cooldown Bars",   minval=0, group="Risk")
+
+use_breakeven    = input.bool(false, "Use Breakeven",       group="Breakeven")
+be_trigger_dol   = input.float(150.0,"BE Trigger ($)",      step=25, group="Breakeven")
+
+// ─── SESSION FILTER ───────────────────────────────────────────────
+use_session   = input.bool(true, "Use Session Filter",  group="Session")
+sess_start_hr = input.int(18,    "Start Hour (ET)",     group="Session")
+sess_start_mn = input.int(0,     "Start Minute",        group="Session")
+sess_end_hr   = input.int(8,     "End Hour (ET)",       group="Session")
+sess_end_mn   = input.int(0,     "End Minute",          group="Session")
+
+// ─── STYLE ────────────────────────────────────────────────────────
+bearCss      = input.color(color.red,  "Trail Bear", inline="ts", group="Style")
+bullCss      = input.color(color.teal, "Trail Bull", inline="ts", group="Style")
+showGradient = input.bool(true,  "Candle Coloring",     group="Style")
+showSignals  = input.bool(true,  "Show Signals",        group="Style")
+showDash     = input.bool(true,  "Show Dashboard",      group="Style")
+dashLoc      = input.string("Top Right", "Dash Location", options=["Top Right","Bottom Right","Bottom Left"], group="Style")
+textSize     = input.string("Small", "Dash Size",         options=["Tiny","Small","Normal"], group="Style")
+
+if minMult > maxMult
+    runtime.error("Min factor > Max factor")
+
+// ─── SUPERTREND AI CORE (unchanged from indicator) ────────────────
+type supertrend
+    float upper = hl2
+    float lower = hl2
+    float output
+    float perf = 0
+    float factor
+    int   trend = 0
+
+type vector
+    array<float> out
+
+var holder  = array.new<supertrend>(0)
+var factors = array.new<float>(0)
+
+if barstate.isfirst
+    for i = 0 to int((maxMult - minMult) / step)
+        factors.push(minMult + i * step)
+        holder.push(supertrend.new())
+
+atr = ta.atr(length)
+
+k = 0
+for factor in factors
+    get_spt = holder.get(k)
+    up = hl2 + atr * factor
+    dn = hl2 - atr * factor
+    get_spt.trend  := close > get_spt.upper ? 1 : close < get_spt.lower ? 0 : get_spt.trend
+    get_spt.upper  := close[1] < get_spt.upper ? math.min(up, get_spt.upper) : up
+    get_spt.lower  := close[1] > get_spt.lower ? math.max(dn, get_spt.lower) : dn
+    diff = nz(math.sign(close[1] - get_spt.output))
+    get_spt.perf  += 2 / (perfAlpha + 1) * (nz(close - close[1]) * diff - get_spt.perf)
+    get_spt.output := get_spt.trend == 1 ? get_spt.lower : get_spt.upper
+    get_spt.factor := factor
+    k += 1
+
+// ─── K-MEANS CLUSTERING ──────────────────────────────────────────
+factor_array = array.new<float>(0)
+data         = array.new<float>(0)
+
+if last_bar_index - bar_index <= maxData
+    for element in holder
+        data.push(element.perf)
+        factor_array.push(element.factor)
+
+centroids = array.new<float>(0)
+centroids.push(data.percentile_linear_interpolation(25))
+centroids.push(data.percentile_linear_interpolation(50))
+centroids.push(data.percentile_linear_interpolation(75))
+
+var array<vector> factors_clusters = na
+var array<vector> perfclusters     = na
+
+if last_bar_index - bar_index <= maxData
+    for _ = 0 to maxIter
+        factors_clusters := array.from(vector.new(array.new<float>(0)),
+             vector.new(array.new<float>(0)), vector.new(array.new<float>(0)))
+        perfclusters := array.from(vector.new(array.new<float>(0)),
+             vector.new(array.new<float>(0)), vector.new(array.new<float>(0)))
+        i2 = 0
+        for value in data
+            dist = array.new<float>(0)
+            for centroid in centroids
+                dist.push(math.abs(value - centroid))
+            idx = dist.indexof(dist.min())
+            perfclusters.get(idx).out.push(value)
+            factors_clusters.get(idx).out.push(factor_array.get(i2))
+            i2 += 1
+        new_centroids = array.new<float>(0)
+        for cluster_ in perfclusters
+            new_centroids.push(cluster_.out.avg())
+        if new_centroids.get(0) == centroids.get(0) and
+             new_centroids.get(1) == centroids.get(1) and
+             new_centroids.get(2) == centroids.get(2)
+            break
+        centroids := new_centroids
+
+// ─── SIGNALS / TRAILING STOP ──────────────────────────────────────
+var float target_factor = na
+var float perf_idx      = na
+
+var from_cl = switch fromClstr
+    "Best"    => 2
+    "Average" => 1
+    "Worst"   => 0
+
+den = ta.ema(math.abs(close - close[1]), int(perfAlpha))
+
+if not na(perfclusters)
+    target_factor := nz(factors_clusters.get(from_cl).out.avg(), target_factor)
+    perf_idx      := math.max(nz(perfclusters.get(from_cl).out.avg()), 0) / den
+
+var upper_f = hl2
+var lower_f = hl2
+var os      = 0
+
+up_f = hl2 + atr * target_factor
+dn_f = hl2 - atr * target_factor
+upper_f := close[1] < upper_f ? math.min(up_f, upper_f) : up_f
+lower_f := close[1] > lower_f ? math.max(dn_f, lower_f) : dn_f
+os := close > upper_f ? 1 : close < lower_f ? 0 : os
+ts = os == 1 ? lower_f : upper_f
+
+// ─── SESSION HELPERS ──────────────────────────────────────────────
+cur_hr  = hour(time, "America/New_York")
+cur_mn  = minute(time, "America/New_York")
+bar_t   = cur_hr * 100 + cur_mn
+s_start = sess_start_hr * 100 + sess_start_mn
+s_end   = sess_end_hr   * 100 + sess_end_mn
+in_session = use_session ? (s_start > s_end ? (bar_t >= s_start or bar_t < s_end)
+     : (bar_t >= s_start and bar_t < s_end)) : true
+
+prev_hr  = hour(time[1], "America/New_York")
+prev_mn  = minute(time[1], "America/New_York")
+prev_t   = prev_hr * 100 + prev_mn
+prev_in  = use_session ? (s_start > s_end ? (prev_t >= s_start or prev_t < s_end)
+     : (prev_t >= s_start and prev_t < s_end)) : true
+sess_end = prev_in and not in_session
+
+if sess_end and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ─── ANTI-REPAINT + ENTRY LOGIC ───────────────────────────────────
+// Use [1] values: signal confirmed on prior bar, enter on this bar.
+sig_long  = os[1] == 1 and os[2] == 0
+sig_short = os[1] == 0 and os[2] == 1
+
+var int  last_trade_bar = -9999
+var bool in_trade       = false
+var float entry_price   = na
+var bool  be_active     = false
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+flat = strategy.position_size == 0 and not in_trade
+
+cooled = bar_index - last_trade_bar >= cooldown_bars
+
+stop_pts = stop_dollars / pv
+tp_pts   = tp_dollars   / pv
+be_pts   = be_trigger_dol / pv
+
+long_ok  = sig_long  and flat and in_session and cooled
+short_ok = sig_short and flat and in_session and cooled
+
+if long_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long, comment="AI Long")
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+
+if short_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short, comment="AI Short")
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+
+// ─── BREAKEVEN ────────────────────────────────────────────────────
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and close - entry_price >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick, limit=entry_price + tp_pts)
+    if strategy.position_size < 0 and entry_price - close >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick, limit=entry_price - tp_pts)
+
+// ─── PLOTS ────────────────────────────────────────────────────────
+css = os == 1 ? bullCss : bearCss
+plot(ts, "Trailing Stop", os != os[1] ? na : css, linewidth=2)
+
+barcolor(showGradient ? color.from_gradient(nz(perf_idx), 0, 1, color.new(css, 80), css) : na)
+
+// Entry markers
+plotshape(long_ok,  "Long Entry",  shape.triangleup,   location.belowbar, color.lime,  size=size.small)
+plotshape(short_ok, "Short Entry", shape.triangledown,  location.abovebar, color.red,   size=size.small)
+
+// Signal labels with perf index
+n = bar_index
+if showSignals
+    if os > os[1]
+        label.new(n, ts, str.tostring(int(nz(perf_idx) * 10)),
+             color=bullCss, style=label.style_label_up,
+             textcolor=color.white, size=size.tiny,
+             tooltip="Bull flip | Perf=" + str.tostring(nz(perf_idx), "#.##") +
+                     " | Factor=" + str.tostring(nz(target_factor), "#.##"))
+    if os < os[1]
+        label.new(n, ts, str.tostring(int(nz(perf_idx) * 10)),
+             color=bearCss, style=label.style_label_down,
+             textcolor=color.white, size=size.tiny,
+             tooltip="Bear flip | Perf=" + str.tostring(nz(perf_idx), "#.##") +
+                     " | Factor=" + str.tostring(nz(target_factor), "#.##"))
+
+// Entry labels with tooltip
+if long_ok
+    sl_price = close - stop_pts
+    tp_price = close + tp_pts
+    label.new(n, low - 2 * syminfo.mintick,
+         "L", color=color.lime, style=label.style_label_up,
+         textcolor=color.white, size=size.small,
+         tooltip="LONG @ " + str.tostring(close, "#.##") +
+                 "\nSL: " + str.tostring(sl_price, "#.##") + " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_price, "#.##") + " ($" + str.tostring(tp_dollars) + ")" +
+                 "\nPerf Idx: " + str.tostring(nz(perf_idx), "#.##") +
+                 "\nFactor: " + str.tostring(nz(target_factor), "#.##") +
+                 "\nATR: " + str.tostring(atr, "#.##") +
+                 (use_breakeven ? "\nBE trigger: $" + str.tostring(be_trigger_dol) : ""))
+
+if short_ok
+    sl_price = close + stop_pts
+    tp_price = close - tp_pts
+    label.new(n, high + 2 * syminfo.mintick,
+         "S", color=color.red, style=label.style_label_down,
+         textcolor=color.white, size=size.small,
+         tooltip="SHORT @ " + str.tostring(close, "#.##") +
+                 "\nSL: " + str.tostring(sl_price, "#.##") + " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(tp_price, "#.##") + " ($" + str.tostring(tp_dollars) + ")" +
+                 "\nPerf Idx: " + str.tostring(nz(perf_idx), "#.##") +
+                 "\nFactor: " + str.tostring(nz(target_factor), "#.##") +
+                 "\nATR: " + str.tostring(atr, "#.##") +
+                 (use_breakeven ? "\nBE trigger: $" + str.tostring(be_trigger_dol) : ""))
+
+// ─── DASHBOARD ────────────────────────────────────────────────────
+var table_position = dashLoc == "Bottom Left" ? position.bottom_left
+     : dashLoc == "Top Right" ? position.top_right
+     : position.bottom_right
+
+var table_size = textSize == "Tiny" ? size.tiny
+     : textSize == "Small" ? size.small
+     : size.normal
+
+var tb = table.new(table_position, 4, 5,
+     bgcolor=#1e222d, border_color=#373a46,
+     border_width=1, frame_color=#373a46, frame_width=1)
+
+if showDash
+    if barstate.isfirst
+        tb.cell(0, 0, "Cluster",    text_color=color.white, text_size=table_size)
+        tb.cell(0, 1, "Best",       text_color=color.white, text_size=table_size)
+        tb.cell(0, 2, "Average",    text_color=color.white, text_size=table_size)
+        tb.cell(0, 3, "Worst",      text_color=color.white, text_size=table_size)
+        tb.cell(0, 4, "Strategy",   text_color=color.white, text_size=table_size)
+        tb.cell(1, 0, "Size",       text_color=color.white, text_size=table_size)
+        tb.cell(2, 0, "Dispersion", text_color=color.white, text_size=table_size)
+        tb.cell(3, 0, "Factors",    text_color=color.white, text_size=table_size)
+
+    if barstate.islast
+        topN = perfclusters.get(2).out.size()
+        midN = perfclusters.get(1).out.size()
+        btmN = perfclusters.get(0).out.size()
+        tb.cell(1, 1, str.tostring(topN), text_color=color.white, text_size=table_size)
+        tb.cell(1, 2, str.tostring(midN), text_color=color.white, text_size=table_size)
+        tb.cell(1, 3, str.tostring(btmN), text_color=color.white, text_size=table_size)
+        tb.cell(3, 1, str.tostring(factors_clusters.get(2).out), text_color=color.white, text_size=table_size, text_halign=text.align_left)
+        tb.cell(3, 2, str.tostring(factors_clusters.get(1).out), text_color=color.white, text_size=table_size, text_halign=text.align_left)
+        tb.cell(3, 3, str.tostring(factors_clusters.get(0).out), text_color=color.white, text_size=table_size, text_halign=text.align_left)
+        i3 = 0
+        for cluster_ in perfclusters
+            disp = 0.
+            cnt = cluster_.out.size()
+            if cnt > 1
+                for value in cluster_.out
+                    disp += math.abs(value - centroids.get(i3))
+            disp /= cnt > 0 ? cnt : 1
+            i3 += 1
+            tb.cell(2, 4 - i3, str.tostring(disp, "#.####"), text_color=color.white, text_size=table_size)
+
+        // Strategy status row
+        dir_str   = os == 1 ? "BULL" : "BEAR"
+        dir_clr   = os == 1 ? color.lime : color.red
+        sess_str  = in_session ? "YES" : "NO"
+        sess_clr  = in_session ? color.lime : color.gray
+        pos_str   = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+        pos_clr   = strategy.position_size > 0 ? color.lime : strategy.position_size < 0 ? color.red : color.gray
+        tb.cell(1, 4, "Dir: " + dir_str, text_color=dir_clr, text_size=table_size)
+        tb.cell(2, 4, "Sess: " + sess_str, text_color=sess_clr, text_size=table_size)
+        tb.cell(3, 4, "Pos: " + pos_str, text_color=pos_clr, text_size=table_size)

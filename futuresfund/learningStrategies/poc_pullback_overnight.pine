@@ -1,0 +1,170 @@
+//@version=5
+// OVERNIGHT VWMA PULLBACK
+// Logic:
+// 1. Compute a VWMA over the session as the "fair value" line.
+// 2. VWMA slope determines direction (rising = bullish, falling = bearish).
+// 3. Enter when price pulls back and touches the VWMA from the trend side.
+// 4. One trade per night, strict risk management.
+strategy("Overnight VWMA Pullback", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== TIMING =====
+session_start_hr = input.int(18, "Session Start Hour")
+session_end_hr   = input.int(8,  "Session End Hour")
+entry_end_hr     = input.int(6,  "Entry End Hour", tooltip="Stop looking after 6 AM")
+eod_hr           = input.int(8,  "EOD Flatten Hour")
+
+// ===== VWMA SETTINGS =====
+vwma_len         = input.int(20, "VWMA Length", minval=5, maxval=100, tooltip="20 bars on 5m = 100 min lookback")
+slope_bars       = input.int(4, "Slope Lookback (bars)", minval=1, maxval=20, tooltip="How many bars to measure VWMA direction")
+min_slope_pts    = input.float(0.5, "Min Slope (pts)", minval=0, step=0.25, tooltip="VWMA must be moving at least this much to confirm trend. 0 = any direction.")
+pullback_margin  = input.float(1.0, "Pullback Margin (pts)", minval=0, step=0.25, tooltip="How close price must get to VWMA to trigger entry. 1 = within 1 pt.")
+wait_bars        = input.int(6, "Wait After Session Start (bars)", minval=0, maxval=50, tooltip="Wait N bars after 18:00 before looking for trades. 6 bars on 5m = 30 min.")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+i_tp         = input.float(500.0, "Take Profit ($)", group="Risk")
+max_stop     = input.float(500.0, "Stop Loss ($)", step=50, group="Risk")
+use_trail    = input.bool(true, "Use Trailing Stop?", group="Risk")
+i_trail_act  = input.float(300.0, "Trail Activate ($)", group="Risk")
+i_trail_pct  = input.float(50.0, "Trail Keep %", group="Risk")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float max_stop_pts  = max_stop / pv
+
+// ===== TIME HELPERS =====
+hrs      = hour(time, "America/New_York")
+mns      = minute(time, "America/New_York")
+int bar_time = hrs * 100 + mns
+
+int sess_start = session_start_hr * 100
+int sess_end   = session_end_hr * 100
+int eod_time   = eod_hr * 100
+
+bool in_session     = bar_time >= sess_start or bar_time < sess_end
+bool is_new_session = bar_time >= sess_start and bar_time[1] < sess_start
+bool in_entry_window = in_session and (bar_time >= sess_start or bar_time < (entry_end_hr * 100))
+
+bool at_eod = bar_time >= eod_time and bar_time < sess_start
+
+// ===== VWMA =====
+float vwma_val = ta.vwma(close, vwma_len)
+float vwma_slope = vwma_val - vwma_val[slope_bars]
+
+bool trend_up = vwma_slope > min_slope_pts
+bool trend_dn = vwma_slope < -min_slope_pts
+
+// ===== PULLBACK DETECTION =====
+// Price "touches" the VWMA when the bar's range reaches within pullback_margin of it.
+// For a long: price was above VWMA and low dips near it.
+// For a short: price was below VWMA and high rises near it.
+bool price_above = close > vwma_val
+bool price_below = close < vwma_val
+bool touch_from_above = low <= vwma_val + pullback_margin and close > vwma_val
+bool touch_from_below = high >= vwma_val - pullback_margin and close < vwma_val
+
+// ===== SESSION COUNTER =====
+var int session_attempts = 0
+var int bars_since_open  = 0
+
+if is_new_session
+    session_attempts := 0
+    bars_since_open  := 0
+else if in_session
+    bars_since_open += 1
+
+// ===== ENTRY SIGNALS =====
+bool ready = in_entry_window and bars_since_open >= wait_bars and session_attempts < 1 and strategy.position_size == 0
+
+bool long_sig  = ready and trend_up and touch_from_above
+bool short_sig = ready and trend_dn and touch_from_below
+
+bool valid_long  = long_sig and not long_sig[1]
+bool valid_short = short_sig and not short_sig[1]
+
+// ===== RISK STATE =====
+var float peak_profit   = 0.0
+var float current_stop  = na
+var float plot_stop     = na
+var float entry_stop_px = na
+
+if is_new_session
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== ENTRY =====
+bool entry_ok = barstate.isconfirmed
+
+if valid_long and entry_ok
+    session_attempts += 1
+    peak_profit   := 0.0
+    entry_stop_px := close - max_stop_pts
+    current_stop  := entry_stop_px
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if valid_short and entry_ok
+    session_attempts += 1
+    peak_profit   := 0.0
+    entry_stop_px := close + max_stop_pts
+    current_stop  := entry_stop_px
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== TRAILING STOP =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if use_trail and peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if use_trail and peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS =====
+plot(vwma_val, "VWMA", trend_up ? color.lime : trend_dn ? color.red : color.gray, linewidth=2)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+
+bgcolor(in_session and bars_since_open < wait_bars ? color.new(color.blue, 92) : na, title="Wait Period")
+bgcolor(trend_up and in_entry_window ? color.new(color.lime, 95) : trend_dn and in_entry_window ? color.new(color.red, 95) : na, title="Trend Direction")
+
+plotshape(valid_long, "Long Entry", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(valid_short, "Short Entry", shape.triangledown, location.abovebar, color.red, size=size.small)

@@ -1,0 +1,222 @@
+//@version=5
+// ICT Unicorn + ORB Hybrid — ORB + FVG confirmation
+// Consistent: require FVG in breakout direction | Profit: FVG optional
+strategy("ICT Unicorn + ORB", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== MODE =====
+mode = input.string("Profit", "Mode", options=["Profit","Consistent"],
+  tooltip="Profit: FVG optional, more trades.\nConsistent: FVG required, fewer trades.")
+
+// ===== TIMING =====
+gather_min   = input.int(15, "Gather Minutes", minval=5, maxval=60, step=5)
+entry_end_hr = input.int(11, "Entry End Hour", minval=10, maxval=14)
+entry_end_mn = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5)
+eod_hr       = input.int(15, "EOD Flatten Hour")
+eod_mn       = input.int(45, "EOD Flatten Min")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+i_tp         = input.float(500.0, "Take Profit ($)")
+i_trail_act  = input.float(400.0, "Trail Activate ($)")
+i_trail_pct  = input.float(40.0, "Trail Keep %")
+max_stop     = input.float(750.0, "Max Stop Cap ($)", minval=0, step=50)
+
+// ===== FILTERS =====
+i_margin     = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25)
+i_or_min     = input.float(0.0, "OR Min Size (pts)", minval=0, step=1)
+i_or_max     = input.float(9999.0, "OR Max Size (pts)", minval=1, step=5)
+max_attempts = input.int(2, "Max Attempts / Day", minval=1, maxval=5)
+
+// ===== FVG (ICT Unicorn) =====
+fvg_lookback = input.int(30, "FVG Lookback (bars)", minval=10, maxval=100)
+fvg_min_atr  = input.float(0.04, "FVG Min Size (ATR ratio)", minval=0.02, step=0.01)
+atr_len      = input.int(14, "ATR Length")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float max_stop_pts  = max_stop / pv
+
+// ===== TIME HELPERS =====
+is_new_day = ta.change(time("D")) != 0
+t = time("1", "0930-1600", "America/New_York")
+in_rth = not na(t)
+
+hrs = hour(time, "America/New_York")
+mns = minute(time, "America/New_York")
+float mins_from_open = (hrs - 9) * 60.0 + (mns - 30)
+bool in_gather = in_rth and mins_from_open >= 0 and mins_from_open < gather_min
+bool gather_done = in_rth and mins_from_open >= gather_min
+int bar_time = hrs * 100 + mns
+bool in_entry_window = gather_done and bar_time < (entry_end_hr * 100 + entry_end_mn)
+bool at_eod = bar_time >= (eod_hr * 100 + eod_mn)
+
+// ===== ATR + FVG (all 3 candles closed: [1]=newest, [2]=middle, [3]=oldest) =====
+float atr_conf = ta.atr(atr_len)[1]
+
+bool bull_fvg = low[3] > high[1] and (low[3] - high[1]) >= atr_conf * fvg_min_atr
+bool bear_fvg = high[3] < low[1] and (low[1] - high[3]) >= atr_conf * fvg_min_atr
+
+// Recent FVG: rolling counter when FVG detected
+var int recent_bull_cnt = 0
+var int recent_bear_cnt = 0
+if bull_fvg
+    recent_bull_cnt := fvg_lookback
+else if recent_bull_cnt > 0
+    recent_bull_cnt := recent_bull_cnt - 1
+if bear_fvg
+    recent_bear_cnt := fvg_lookback
+else if recent_bear_cnt > 0
+    recent_bear_cnt := recent_bear_cnt - 1
+
+bool recent_bull_fvg = recent_bull_cnt > 0
+bool recent_bear_fvg = recent_bear_cnt > 0
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+var bool  or_valid = false
+
+if is_new_day
+    or_high  := na
+    or_low   := na
+    or_built := false
+    or_valid := false
+
+if in_gather and barstate.isconfirmed
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+
+if gather_done and not or_built
+    or_built := true
+    float or_range = nz(or_high) - nz(or_low)
+    or_valid := or_range >= i_or_min and or_range <= i_or_max and or_range > 0
+
+// ===== ATTEMPT COUNTER =====
+var int day_attempts = 0
+if is_new_day
+    day_attempts := 0
+
+// ===== TRAILING STOP STATE =====
+var float peak_profit     = 0.0
+var float current_stop   = na
+var float plot_stop      = na
+var float entry_stop_px  = na
+
+if is_new_day
+    peak_profit    := 0.0
+    current_stop   := na
+    plot_stop      := na
+    entry_stop_px  := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit    := 0.0
+    current_stop   := na
+    entry_stop_px  := na
+
+// ===== ENTRY SIGNALS =====
+bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts
+
+bool breakout_long  = can_trade and close[1] > (or_high + i_margin)
+bool breakout_short = can_trade and close[1] < (or_low - i_margin)
+
+// FVG filter: Consistent mode requires FVG in breakout direction
+if mode == "Consistent"
+    if not recent_bull_fvg
+        breakout_long := false
+    if not recent_bear_fvg
+        breakout_short := false
+
+bool long_sig  = breakout_long and not breakout_long[1] and strategy.position_size == 0
+bool short_sig = breakout_short and not breakout_short[1] and strategy.position_size == 0
+
+// ===== ENTRY + EXIT =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    entry_stop_px := (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if short_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== TRAILING STOP -- update strategy.exit() as trail moves =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high[1] - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low[1]
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+// ===== RESET ON FLAT =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS =====
+color or_hi_col = or_built and or_valid ? color.new(color.lime, 20) : or_built ? color.new(color.gray, 60) : na
+color or_lo_col = or_built and or_valid ? color.new(color.red, 20) : or_built ? color.new(color.gray, 60) : na
+
+plot(or_built ? or_high : na, "OR High", or_hi_col, linewidth=2, style=plot.style_stepline)
+plot(or_built ? or_low : na, "OR Low", or_lo_col, linewidth=2, style=plot.style_stepline)
+plot(or_built and or_valid ? or_high + i_margin : na, "Breakout Long", color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(or_built and or_valid ? or_low - i_margin : na, "Breakout Short", color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+
+bgcolor(in_gather ? color.new(color.blue, 90) : na, title="Gather Period")
+bgcolor(or_built and not or_valid ? color.new(color.red, 95) : na, title="Skipped Day")
+
+// FVG highlights
+bgcolor(bull_fvg ? color.new(color.lime, 85) : na, title="Bull FVG")
+bgcolor(bear_fvg ? color.new(color.red, 85) : na, title="Bear FVG")
+
+var label info_lbl = na
+if barstate.islast
+    label.delete(info_lbl)
+    string or_info = or_valid ? "VALID" : "SKIPPED"
+    float or_rng = nz(or_high) - nz(or_low)
+    info_lbl := label.new(bar_index, high,
+      "Mode: " + mode + " | " + or_info +
+      "\nOR: " + str.tostring(or_high, "#.##") + " / " + str.tostring(or_low, "#.##") +
+      " (" + str.tostring(or_rng, "#.#") + " pts)" +
+      "\nFVG Bull: " + str.tostring(recent_bull_fvg) + "  Bear: " + str.tostring(recent_bear_fvg) +
+      "\nAttempts: " + str.tostring(day_attempts) + "/" + str.tostring(max_attempts),
+      style=label.style_label_down, color=color.new(color.gray, 70), textcolor=color.white, size=size.small)

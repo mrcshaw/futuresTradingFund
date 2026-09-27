@@ -1,0 +1,245 @@
+//@version=5
+// Delta Volume Breakout Night Shift — OPTIMIZED v2
+// Session: 18:00–8:00 EST (includes Asian session ~2am).
+// Max 1 trade/night, delta 18%+, 5 EMA / 75 EMA cross entry after POC breakout.
+strategy("Delta Volume Breakout Night Shift [Optimized]", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(80, "Profile Lookback (bars)", minval=20, maxval=500, step=10, group="Profile")
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=50, step=5, group="Profile")
+
+// ===== DELTA — Very strict for quality =====
+min_delta_pct = input.float(18.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, group="Filters", tooltip="18%+ = only strongest setups. Fewer trades, higher quality.")
+
+// ===== TREND =====
+ema_len       = input.int(50, "Trend EMA Length", minval=1, group="Filters")
+ema_slope_len = input.int(5, "EMA Slope Lookback (bars)", minval=1, group="Filters")
+min_slope     = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, group="Filters")
+require_price_vs_ema = input.bool(true, "Require Price vs EMA (Long: close>EMA, Short: close<EMA)", group="Filters", tooltip="Extra direction filter: only long when price above EMA, short when below.")
+
+// ===== ENTRY =====
+cooldown_bars   = input.int(30, "Cooldown (bars)", minval=0, maxval=100, step=1, group="Entry")
+max_trades_session = input.int(1, "Max Trades Per Session", minval=1, maxval=5, group="Entry", tooltip="1 = only best setup per night.")
+
+// ===== SESSION — Overnight 18:00–8:00 EST (includes Asian session ~2am) =====
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18, "Session Start Hour (ET)", group="Session")
+sess_start_mn = input.int(0,  "Session Start Minute", group="Session")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)", group="Session")
+sess_end_mn   = input.int(0,  "Session End Minute", group="Session")
+
+// ===== RISK — Tight for evening =====
+pv                = input.float(50.0, "Point Value ($)", group="Risk")
+stop_dollars      = input.float(200.0, "Stop ($)", minval=100, step=25, group="Risk")
+tp_dollars        = input.float(350.0, "Take Profit ($)", minval=200, step=50, group="Risk")
+use_trail         = input.bool(false, "Enable Trailing Stop", group="Risk")
+
+// ===== BREAKEVEN — Early protection =====
+use_breakeven      = input.bool(true, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(75.0, "BE Trigger ($)", minval=50, step=25, group="Breakeven")
+
+float stop_pts = stop_dollars / pv
+float tp_pts   = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+bool session_started = not was_in_session and in_session
+
+var int session_trades = 0
+if session_started
+    session_trades := 0
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== EMA TREND =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  ema_up    = min_slope <= 0 or ema_slope > min_slope
+bool  ema_dn    = min_slope <= 0 or ema_slope < -min_slope
+
+// ===== FAST EMA (5) =====
+float ema5 = ta.ema(close, 5)
+bool ema5_cross_above = ta.crossover(ema5, ema_val)
+bool ema5_cross_below = ta.crossunder(ema5, ema_val)
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if array.size(arr) != rows
+            array.clear(arr)
+            for i = 0 to rows - 1
+                array.push(arr, 0.0)
+        else
+            for i = 0 to rows - 1
+                array.set(arr, i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+
+        if span <= 0
+            continue
+
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                array.set(vol_total, r, array.get(vol_total, r) + per_row)
+                if bar_up
+                    array.set(vol_up, r, array.get(vol_up, r) + per_row)
+                else
+                    array.set(vol_dn, r, array.get(vol_dn, r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = array.get(vol_total, r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    float poc_up  = array.get(vol_up, poc_row)
+    float poc_dn  = array.get(vol_dn, poc_row)
+    float poc_tot = array.get(vol_total, poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+// ===== BREAKOUT SIGNALS =====
+bool above_poc = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi
+bool below_poc = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo
+
+bool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)
+bool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)
+
+bool price_above_ema = not require_price_vs_ema or close > ema_val
+bool price_below_ema = not require_price_vs_ema or close < ema_val
+
+// ===== ARM ON POC BREAKOUT, ENTER ON 5 EMA / 75 EMA CROSS =====
+var int armed_dir = 0
+
+// Arm when price leaves POC with delta + trend alignment
+if above_poc and ema_up and delta_bull and price_above_ema
+    armed_dir := 1
+else if below_poc and ema_dn and delta_bear and price_below_ema
+    armed_dir := -1
+
+// Disarm if price returns fully inside POC
+if armed_dir == 1 and not na(poc_lo) and close <= poc_lo
+    armed_dir := 0
+else if armed_dir == -1 and not na(poc_hi) and close >= poc_hi
+    armed_dir := 0
+
+// Entry: armed long + 5 EMA crosses above 75 EMA (pullback resolved, momentum resuming up)
+// Entry: armed short + 5 EMA crosses below 75 EMA (pullback resolved, momentum resuming down)
+bool confirmed_long  = armed_dir == 1 and ema5_cross_above
+bool confirmed_short = armed_dir == -1 and ema5_cross_below
+
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+bool under_max_trades = session_trades < max_trades_session
+
+bool long_sig  = confirmed_long and in_session and cooled_down and under_max_trades and strategy.position_size <= 0
+bool short_sig = confirmed_short and in_session and cooled_down and under_max_trades and strategy.position_size >= 0
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var bool  be_active       = false
+
+if long_sig
+    session_trades += 1
+    current_stop    := close - stop_pts
+    entry_price     := close
+    be_active       := false
+    last_trade_bar  := bar_index
+    armed_dir       := 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig
+    session_trades += 1
+    current_stop    := close + stop_pts
+    entry_price     := close
+    be_active       := false
+    last_trade_bar  := bar_index
+    armed_dir       := 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== PLOTS =====
+plot(ema5, "5 EMA", color.aqua, linewidth=1)
+plot(ema_val, "EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+bgcolor(in_session ? color.new(color.blue, 97) : na, title="Overnight Session")

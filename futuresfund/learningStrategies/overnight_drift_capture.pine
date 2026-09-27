@@ -1,0 +1,178 @@
+//@version=5
+// OVERNIGHT DRIFT CAPTURE
+// Specifically tuned for the 18:00 - 08:00 EST overnight session on 5m timeframe
+// Based on 12,000+ bar Python Engine optimization using yfinance ES=F data.
+strategy("Overnight Drift Capture [Optimized]", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== TIMING (Overnight 18:00 - 08:00) =====
+// Optimization showed waiting 45 minutes (until 18:45) is the best window to establish the range
+session_start_hr = input.int(18, "Session Start Hour")
+session_end_hr   = input.int(8,  "Session End Hour")
+gather_min       = input.int(45, "Gather Minutes", tooltip="Wait 45m for initial chop to settle")
+entry_end_hr     = input.int(2,  "Entry End Hour", tooltip="Stop looking for new entries at 2 AM EST")
+entry_end_mn     = input.int(0,  "Entry End Minute")
+eod_hr           = input.int(8,  "EOD Flatten Hour")
+eod_mn           = input.int(0,  "EOD Flatten Min")
+
+// ===== OPTIMIZED RISK PARAMETERS =====
+// Lower volatility means we need a looser trailing stop to let the drift play out,
+// while letting the Take Profit be enormous so we capture huge 50-point trends.
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+i_tp         = input.float(2500.0, "Take Profit ($)", group="Risk", tooltip="Let winners run massive")
+i_trail_act  = input.float(800.0, "Trail Activate ($)", group="Risk", tooltip="Start trailing late ($800)")
+i_trail_pct  = input.float(25.0, "Trail Keep %", group="Risk", tooltip="Very loose trail (25%) to survive chop")
+max_stop     = input.float(1000.0, "Max Stop Cap ($)", minval=0, step=50, group="Risk", tooltip="Wide stop ($1000 = 20pts) to avoid wicks")
+
+// ===== FILTERS =====
+i_margin     = input.float(0.5, "Breakout Margin (pts)", minval=0, step=0.25, group="Filters")
+max_attempts = input.int(1, "Max Attempts / Session", minval=1, maxval=5, group="Filters", tooltip="Take only the first valid breakout")
+ema_len      = input.int(20, "Trend EMA Length", group="Filters")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float max_stop_pts  = max_stop / pv
+
+// ===== TIME HELPERS =====
+hrs      = hour(time, "America/New_York")
+mns      = minute(time, "America/New_York")
+int bar_time = hrs * 100 + mns
+
+int sess_start = session_start_hr * 100
+int sess_end   = session_end_hr * 100
+int gather_end = sess_start + gather_min
+int eod_time   = eod_hr * 100 + eod_mn
+int entry_end  = entry_end_hr * 100 + entry_end_mn
+
+bool in_session     = bar_time >= sess_start or bar_time < sess_end
+bool is_new_session = bar_time >= sess_start and bar_time[1] < sess_start
+bool in_gather      = bar_time >= sess_start and bar_time < gather_end
+bool gather_done    = in_session and (bar_time >= gather_end or bar_time < sess_end)
+
+// Entry window: after gather, before entry_end (handles midnight wrap)
+bool in_entry_window = gather_done and (bar_time >= gather_end or bar_time < entry_end)
+
+// EOD: flatten in the morning
+bool at_eod = bar_time >= eod_time and bar_time < sess_start
+
+// ===== EMA TREND FILTER =====
+float ema_val = ta.ema(close, ema_len)
+bool ema_up = close > ema_val
+bool ema_dn = close < ema_val
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+
+if is_new_session
+    or_high  := na
+    or_low   := na
+    or_built := false
+
+if in_gather
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+
+if gather_done and not or_built
+    or_built := true
+
+// ===== ATTEMPT COUNTER =====
+var int session_attempts = 0
+if is_new_session
+    session_attempts := 0
+
+// ===== TRAILING STOP STATE =====
+var float peak_profit   = 0.0
+var float current_stop  = na
+var float plot_stop     = na
+var float entry_stop_px = na
+
+if is_new_session
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== ENTRY SIGNALS =====
+bool can_trade = in_entry_window and or_built and session_attempts < max_attempts
+
+bool breakout_long  = can_trade and close > (or_high + i_margin) and ema_up
+bool breakout_short = can_trade and close < (or_low - i_margin) and ema_dn
+
+// Crossover check — prevents multiple entries in quick succession
+bool long_sig  = breakout_long and not breakout_long[1] and strategy.position_size == 0
+bool short_sig = breakout_short and not breakout_short[1] and strategy.position_size == 0
+
+// ===== ENTRY + IMMEDIATE EXIT (Guaranteed Stop Fills) =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    session_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    entry_stop_px := (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if short_sig and entry_ok
+    session_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== TRAILING STOP =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS =====
+plot(ema_val, "EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)
+plot(or_built ? or_high : na, "OR High", color.new(color.lime, 30), linewidth=2, style=plot.style_stepline)
+plot(or_built ? or_low : na, "OR Low", color.new(color.red, 30), linewidth=2, style=plot.style_stepline)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+bgcolor(in_gather ? color.new(color.blue, 90) : na, title="Gather Period")
+plotshape(long_sig, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)

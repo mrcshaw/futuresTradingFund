@@ -36,9 +36,12 @@ def complete(prompt: str) -> str:
     else:
         script = "No lead strategy is on headquarters yet.\n"
     from futuresfund.session import meeting_note
+    from futuresfund.learn import notes_digest
 
     full = (
         f"Desk clock: {clock}. {meeting_note()} Do not hold a meeting outside those times. "
+        "Strategy notes already learned, use these before any other source:\n"
+        f"{notes_digest()}\n"
         f"{describe(size)} "
         "Reason from these limits and from the numbers in the prompt. "
         "Do not invent a profit, a drawdown, or a trade count. "

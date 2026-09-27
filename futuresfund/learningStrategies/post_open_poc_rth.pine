@@ -1,0 +1,293 @@
+//@version=5
+strategy("Post-Open POC (ORB v5)", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== TIMING =====
+gather_min   = input.int(15, "Gather Minutes", minval=5, maxval=60, step=5,
+  tooltip="Minutes after 9:30 to build opening range. 15 = optimal.")
+entry_end_hr = input.int(11, "Entry End Hour", minval=10, maxval=14)
+entry_end_mn = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5)
+eod_hr       = input.int(15, "EOD Flatten Hour")
+eod_mn       = input.int(45, "EOD Flatten Min")
+
+// ===== RISK (fully controllable) =====
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+tp_dollars   = input.float(500.0, "Take Profit ($)", minval=50, step=50, group="Risk")
+trail_act_d  = input.float(400.0, "Trail Activate ($)", minval=50, step=50, group="Risk",
+  tooltip="Start trailing after this much unrealized profit.")
+trail_pct    = input.float(40.0, "Trail Keep %", minval=10, maxval=90, step=5, group="Risk",
+  tooltip="Lock in this % of peak unrealized profit.")
+max_stop     = input.float(1000.0, "Max Stop Cap ($)", minval=0, step=50, group="Risk",
+  tooltip="Cap stop loss when OR is wide. 0 = no cap.")
+
+// ===== FILTERS =====
+margin_pts   = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25, group="Filters",
+  tooltip="Close must be this many pts beyond OR boundary.")
+or_min_pts   = input.float(0.0, "OR Min Size (pts)", minval=0, step=1, group="Filters",
+  tooltip="Skip days with opening range smaller than this.")
+or_max_pts   = input.float(30.0, "OR Max Size (pts)", minval=1, step=5, group="Filters",
+  tooltip="Skip days with opening range larger than this.")
+poc_filter   = input.bool(false, "POC Directional Filter", group="Filters")
+max_attempts = input.int(2, "Max Attempts / Day", minval=1, maxval=5, group="Filters")
+
+float tp_pts        = tp_dollars / pv
+float trail_act_pts = trail_act_d / pv
+float max_stop_pts  = max_stop / pv
+
+// ===== PREV DAY POC (pivot approximation) =====
+[prev_hi, prev_lo, prev_cl] = request.security(syminfo.tickerid, "D",
+  [high[1], low[1], close[1]], lookahead=barmerge.lookahead_off)
+float prev_poc = (prev_hi + prev_lo + prev_cl) / 3.0
+
+// ===== TIME HELPERS =====
+is_new_day = ta.change(time("D")) != 0
+t = time("1", "0930-1600", "America/New_York")
+in_rth = not na(t)
+
+hrs = hour(time, "America/New_York")
+mns = minute(time, "America/New_York")
+float mins_from_open = (hrs - 9) * 60.0 + (mns - 30)
+bool in_gather = in_rth and mins_from_open >= 0 and mins_from_open < gather_min
+bool gather_done = in_rth and mins_from_open >= gather_min
+int bar_time = hrs * 100 + mns
+bool in_entry_window = gather_done and bar_time < (entry_end_hr * 100 + entry_end_mn)
+bool at_eod = bar_time >= (eod_hr * 100 + eod_mn)
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+var bool  or_valid = false
+
+if is_new_day
+    or_high  := na
+    or_low   := na
+    or_built := false
+    or_valid := false
+
+if in_gather
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+
+if gather_done and not or_built
+    or_built := true
+    float or_range = nz(or_high) - nz(or_low)
+    or_valid := or_range >= or_min_pts and or_range <= or_max_pts and or_range > 0
+
+// ===== ATTEMPT COUNTER =====
+var int day_attempts = 0
+if is_new_day
+    day_attempts := 0
+
+// ===== TRAILING STOP STATE =====
+var float peak_profit   = 0.0
+var float current_stop  = na
+var float plot_stop     = na
+var float entry_stop_px = na
+
+if is_new_day
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== ENTRY CRITERIA (individual booleans for display) =====
+float or_range_pts = nz(or_high) - nz(or_low)
+
+bool c_or_ready     = or_built and or_valid
+bool c_entry_window = in_entry_window
+bool c_attempts_ok  = day_attempts < max_attempts
+bool c_flat         = strategy.position_size == 0
+
+bool c_breakout_long  = not na(or_high) and close > (or_high + margin_pts)
+bool c_breakout_short = not na(or_low) and close < (or_low - margin_pts)
+
+bool c_poc_long  = not poc_filter or (not na(prev_poc) and close > prev_poc)
+bool c_poc_short = not poc_filter or (not na(prev_poc) and close < prev_poc)
+
+// ===== ENTRY SIGNALS =====
+bool can_trade = c_entry_window and c_or_ready and c_attempts_ok
+
+bool breakout_long  = can_trade and c_breakout_long and c_poc_long
+bool breakout_short = can_trade and c_breakout_short and c_poc_short
+
+// Crossover check: only enter on first bar of new breakout, prevents re-entry after stop
+bool long_sig  = breakout_long and not breakout_long[1] and c_flat
+bool short_sig = breakout_short and not breakout_short[1] and c_flat
+
+// ===== ENTRY + IMMEDIATE strategy.exit() (native stop fills AT stop price) =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    entry_stop_px := (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if short_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== TRAILING STOP -- update strategy.exit() as trail moves =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+// ===== RESET ON FLAT =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 12, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+// Row 1: OR Ready
+string or_status = c_or_ready ? "VALID" : or_built ? "SKIP" : "WAIT"
+table.cell(crit_table, 0, 1, "OR (" + str.tostring(or_range_pts, "#.#") + " pts)", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, or_status, text_color=c_or_ready ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, or_status, text_color=c_or_ready ? color.lime : color.gray, text_size=size.tiny)
+
+// Row 2: Entry Window
+table.cell(crit_table, 0, 2, "Entry Window", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, c_entry_window ? "1" : "0", text_color=c_entry_window ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, c_entry_window ? "1" : "0", text_color=c_entry_window ? color.lime : color.gray, text_size=size.tiny)
+
+// Row 3: Breakout
+table.cell(crit_table, 0, 3, "Breakout", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, c_breakout_long ? "1" : "0", text_color=c_breakout_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, c_breakout_short ? "1" : "0", text_color=c_breakout_short ? color.red : color.gray, text_size=size.tiny)
+
+// Row 4: POC Filter
+string poc_lbl = poc_filter ? "POC Filter" : "POC (off)"
+table.cell(crit_table, 0, 4, poc_lbl, text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, c_poc_long ? "1" : "0", text_color=c_poc_long ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, c_poc_short ? "1" : "0", text_color=c_poc_short ? color.red : color.gray, text_size=size.tiny)
+
+// Row 5: Attempts
+table.cell(crit_table, 0, 5, "Attempts", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, str.tostring(day_attempts) + "/" + str.tostring(max_attempts), text_color=c_attempts_ok ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 5, "", text_size=size.tiny)
+
+// Row 6: Flat
+table.cell(crit_table, 0, 6, "Flat", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, c_flat ? "1" : "0", text_color=c_flat ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 6, "", text_size=size.tiny)
+
+// Row 7: Signal
+string sig_txt = long_sig ? "LONG TRIGGERED" : short_sig ? "SHORT TRIGGERED" : "---"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(crit_table, 0, 7, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 7, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 7, "", text_size=size.tiny)
+
+// Row 8: Risk params
+table.cell(crit_table, 0, 8, "TP / Trail / Stop", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 8, "$" + str.tostring(tp_dollars, "#") + " / $" + str.tostring(trail_act_d, "#") + "@" + str.tostring(trail_pct, "#") + "% / $" + str.tostring(max_stop, "#"), text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 2, 8, "", text_size=size.tiny)
+
+// Row 9: OR levels
+table.cell(crit_table, 0, 9, "OR High/Low", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 9, or_built ? str.tostring(or_high, "#.##") + " / " + str.tostring(or_low, "#.##") : "---", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 2, 9, "", text_size=size.tiny)
+
+// Row 10: Prev POC
+table.cell(crit_table, 0, 10, "Prev POC", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 10, not na(prev_poc) ? str.tostring(prev_poc, "#.##") : "---", text_color=color.fuchsia, text_size=size.tiny)
+table.cell(crit_table, 2, 10, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+if long_sig
+    float stop_used = (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
+    float risk_dollars = (close - stop_used) * pv
+    string tt = "LONG ENTRY\n" +
+      "──────────────────\n" +
+      (c_or_ready      ? "✓" : "✗") + "  OR valid  (" + str.tostring(or_range_pts, "#.#") + " pts range)\n" +
+      (c_entry_window  ? "✓" : "✗") + "  Entry window\n" +
+      (c_breakout_long ? "✓" : "✗") + "  Breakout  (close " + str.tostring(close - or_high, "#.##") + " pts above OR)\n" +
+      (c_poc_long      ? "✓" : "✗") + "  POC filter" + (poc_filter and not na(prev_poc) ? "  (" + str.tostring(close - prev_poc, "#.##") + " pts)" : " (off)") + "\n" +
+      (c_attempts_ok   ? "✓" : "✗") + "  Attempts  (" + str.tostring(day_attempts) + "/" + str.tostring(max_attempts) + ")\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(stop_used, "#.##") + "  ($" + str.tostring(risk_dollars, "#") + " risk)\n" +
+      "TP: " + str.tostring(close + tp_pts, "#.##") + "  ($" + str.tostring(tp_dollars, "#") + ")\n" +
+      "Trail: $" + str.tostring(trail_act_d, "#") + " activate, keep " + str.tostring(trail_pct, "#") + "%"
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    float stop_used = (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
+    float risk_dollars = (stop_used - close) * pv
+    string tt = "SHORT ENTRY\n" +
+      "──────────────────\n" +
+      (c_or_ready       ? "✓" : "✗") + "  OR valid  (" + str.tostring(or_range_pts, "#.#") + " pts range)\n" +
+      (c_entry_window   ? "✓" : "✗") + "  Entry window\n" +
+      (c_breakout_short ? "✓" : "✗") + "  Breakout  (close " + str.tostring(or_low - close, "#.##") + " pts below OR)\n" +
+      (c_poc_short      ? "✓" : "✗") + "  POC filter" + (poc_filter and not na(prev_poc) ? "  (" + str.tostring(prev_poc - close, "#.##") + " pts)" : " (off)") + "\n" +
+      (c_attempts_ok    ? "✓" : "✗") + "  Attempts  (" + str.tostring(day_attempts) + "/" + str.tostring(max_attempts) + ")\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(stop_used, "#.##") + "  ($" + str.tostring(risk_dollars, "#") + " risk)\n" +
+      "TP: " + str.tostring(close - tp_pts, "#.##") + "  ($" + str.tostring(tp_dollars, "#") + ")\n" +
+      "Trail: $" + str.tostring(trail_act_d, "#") + " activate, keep " + str.tostring(trail_pct, "#") + "%"
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== PLOTS =====
+color or_hi_col = or_built and or_valid ? color.new(color.lime, 20) : or_built ? color.new(color.gray, 60) : na
+color or_lo_col = or_built and or_valid ? color.new(color.red, 20) : or_built ? color.new(color.gray, 60) : na
+
+plot(or_built ? or_high : na, "OR High", or_hi_col, linewidth=2, style=plot.style_stepline)
+plot(or_built ? or_low : na, "OR Low", or_lo_col, linewidth=2, style=plot.style_stepline)
+
+plot(or_built and or_valid ? or_high + margin_pts : na, "Breakout Long", color.new(color.lime, 60), linewidth=1, style=plot.style_stepline)
+plot(or_built and or_valid ? or_low - margin_pts : na, "Breakout Short", color.new(color.red, 60), linewidth=1, style=plot.style_stepline)
+
+plot(not na(prev_poc) ? prev_poc : na, "Prev POC", color.new(color.fuchsia, 40), linewidth=1, style=plot.style_stepline)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+
+bgcolor(in_gather ? color.new(color.blue, 90) : na, title="Gather Period")
+bgcolor(or_built and not or_valid ? color.new(color.red, 95) : na, title="Skipped Day (OR out of range)")

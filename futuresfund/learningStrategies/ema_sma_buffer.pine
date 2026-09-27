@@ -1,0 +1,174 @@
+//@version=5
+strategy("EMA/SMA Buffer", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== MOVING AVERAGES =====
+ema_len       = input.int(200, "Trend EMA Length", minval=1)
+sma_len       = input.int(10, "Entry SMA Length", minval=1)
+ema_slope_len = input.int(5, "EMA Slope Lookback (bars)", minval=1)
+sma_slope_len = input.int(3, "SMA Slope Lookback (bars)", minval=1)
+min_ema_slope = input.float(0.2, "Min EMA Slope (pts)", minval=0.0, tooltip="Minimum 200 EMA slope to count as trending.")
+min_sma_slope = input.float(0.1, "Min SMA Slope (pts)", minval=0.0, tooltip="Minimum SMA slope to confirm entry direction.")
+
+// ===== BUFFER =====
+buffer_dollars = input.float(50.0, "Buffer ($)", tooltip="How close to the SMA price must be to enter.")
+pv             = input.float(50.0, "Point Value ($)")
+
+// ===== RISK =====
+stop_dollars      = input.float(300.0, "Stop ($)")
+tp_dollars        = input.float(300.0, "Take Profit ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(45.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(300.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(10.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(150.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== SESSION =====
+use_session_filter = input.bool(true, "Use Session Filter")
+sess_start_hr  = input.int(18, "Session Start Hour (ET)")
+sess_start_mn  = input.int(0,  "Session Start Minute")
+sess_end_hr    = input.int(0,  "Session End Hour (ET)")
+sess_end_mn    = input.int(0,  "Session End Minute")
+
+// ===== COMPUTED =====
+float buffer_pts = buffer_dollars / pv
+float stop_pts   = stop_dollars / pv
+float tp_pts     = tp_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr     = hour(time, "America/New_York")
+bar_mn     = minute(time, "America/New_York")
+bar_t      = bar_hr * 100 + bar_mn
+sess_start = sess_start_hr * 100 + sess_start_mn
+sess_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session_filter or (sess_start > sess_end ? (bar_t >= sess_start or bar_t < sess_end) : (bar_t >= sess_start and bar_t < sess_end))
+
+prev_hr    = hour(time[1], "America/New_York")
+prev_mn    = minute(time[1], "America/New_York")
+prev_t     = prev_hr * 100 + prev_mn
+bool was_in = sess_start > sess_end ? (prev_t >= sess_start or prev_t < sess_end) : (prev_t >= sess_start and prev_t < sess_end)
+bool session_ended = was_in and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== 200 EMA (trend) =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  trend_up  = ema_slope > min_ema_slope
+bool  trend_dn  = ema_slope < -min_ema_slope
+
+// ===== SMA (entry reference) =====
+float sma_val   = ta.sma(close, sma_len)
+float sma_slope = sma_val - sma_val[sma_slope_len]
+bool  sma_up    = sma_slope > min_sma_slope
+bool  sma_dn    = sma_slope < -min_sma_slope
+
+// ===== BUFFER LEVELS =====
+float sma_upper = sma_val + buffer_pts
+float sma_lower = sma_val - buffer_pts
+
+// ===== ENTRY CONDITIONS =====
+bool long_zone  = trend_up and sma_up and close > sma_upper and close > ema_val
+bool short_zone = trend_dn and sma_dn and close < sma_lower and close < ema_val
+
+// ===== BUFFER RE-ENTRY EXIT =====
+bool buffer_exit_long  = strategy.position_size > 0 and close <= sma_upper
+bool buffer_exit_short = strategy.position_size < 0 and close >= sma_lower
+
+if buffer_exit_long
+    strategy.close("Long", comment="Buffer Exit")
+if buffer_exit_short
+    strategy.close("Short", comment="Buffer Exit")
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float peak_profit_pts = 0.0
+
+if strategy.position_size == 0 and in_session
+    if long_zone
+        current_stop    := close - stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Long", strategy.long)
+        strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+    else if short_zone
+        current_stop    := close + stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Short", strategy.short)
+        strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+
+// ===== LOGGING =====
+bool outside_upper = close > sma_upper
+bool outside_lower = close < sma_lower
+
+if barstate.islast
+    log.info("EMA={0} ema_slope={1} trend_up={2} trend_dn={3}", ema_val, ema_slope, trend_up, trend_dn)
+    log.info("SMA={0} sma_slope={1} sma_up={2} sma_dn={3}", sma_val, sma_slope, sma_up, sma_dn)
+    log.info("SESSION in={0} bar_t={1}", in_session, bar_t)
+
+if long_zone and strategy.position_size == 0
+    log.info("LONG SIGNAL bar={0} close={1} sma={2} sma_slope={3} ema={4} ema_slope={5}", bar_index, close, sma_val, sma_slope, ema_val, ema_slope)
+
+if short_zone and strategy.position_size == 0
+    log.info("SHORT SIGNAL bar={0} close={1} sma={2} sma_slope={3} ema={4} ema_slope={5}", bar_index, close, sma_val, sma_slope, ema_val, ema_slope)
+
+if outside_upper and not long_zone and strategy.position_size == 0
+    log.info("MISSED LONG bar={0} close={1} trend_up={2} sma_up={3} above_ema={4} in_sess={5}", bar_index, close, trend_up, sma_up, close > ema_val, in_session)
+
+if outside_lower and not short_zone and strategy.position_size == 0
+    log.info("MISSED SHORT bar={0} close={1} trend_dn={2} sma_dn={3} below_ema={4} in_sess={5}", bar_index, close, trend_dn, sma_dn, close < ema_val, in_session)
+
+if buffer_exit_long or buffer_exit_short
+    log.info("BUFFER EXIT bar={0} close={1} sma={2} upper={3} lower={4}", bar_index, close, sma_val, sma_upper, sma_lower)
+
+if strategy.position_size[1] != 0 and strategy.position_size == 0 and strategy.closedtrades > 0
+    log.info("TRADE CLOSED bar={0} pnl={1}", bar_index, strategy.closedtrades.profit(strategy.closedtrades - 1))
+
+if use_trail and strategy.position_size != 0
+    log.info("TRAIL bar={0} pos={1} stop={2} peak_profit={3}", bar_index, strategy.position_size, current_stop, peak_profit_pts * pv)
+
+// ===== PLOT =====
+plot(ema_val, "200 EMA", trend_up ? color.lime : trend_dn ? color.red : color.gray, linewidth=2)
+plot(sma_val, "SMA", sma_up ? color.lime : sma_dn ? color.red : color.white, linewidth=1)
+p_upper = plot(sma_upper, "Buffer Upper", color.new(color.aqua, 60), style=plot.style_line, linewidth=1)
+p_lower = plot(sma_lower, "Buffer Lower", color.new(color.aqua, 60), style=plot.style_line, linewidth=1)
+fill(p_upper, p_lower, color.new(color.aqua, 90), "Buffer Zone")
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_zone  and strategy.position_size == 0, "Long Signal",  shape.triangleup,   location.belowbar, color.lime, size=size.small)
+plotshape(short_zone and strategy.position_size == 0, "Short Signal", shape.triangledown, location.abovebar, color.red,  size=size.small)
+
+plot(ema_slope,  "EMA Slope", color.white,  display=display.data_window)
+plot(sma_slope,  "SMA Slope", color.yellow, display=display.data_window)

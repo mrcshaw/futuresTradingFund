@@ -1,0 +1,288 @@
+//@version=5
+strategy("Volume Profile + Smart Trail", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+
+// ===== PROFILE SETTINGS =====
+profile_lookback = input.int(240, "Profile Lookback (bars)", minval=50, maxval=2000, step=20)
+profile_rows     = input.int(50, "Price Levels (rows)", minval=10, maxval=100, step=5, tooltip="More rows = finer resolution but slower.")
+lvn_pct          = input.float(3.0, "LVN Threshold (%)", minval=1, maxval=80, step=5, tooltip="Rows below this % of POC volume are Low Volume Nodes. Lower = stricter, fewer trades.")
+gauss_sigma      = input.float(0.2, "Gaussian Sigma", minval=0.05, maxval=1.0, step=0.05, tooltip="Width of Gaussian distribution when spreading volume across rows.")
+cooldown_bars    = input.int(10, "Cooldown (bars)", minval=0, maxval=100, step=1, tooltip="Minimum bars between trades. Prevents rapid re-entry after stop-out.")
+
+// ===== SMART TRAIL SETTINGS =====
+sensitivity = input.int(13, "Smart Trail Sensitivity", minval=1, tooltip="Adjusts the agility of the Smart Trail.")
+
+// ===== TREND FILTER (200 EMA) =====
+ema_len       = input.int(21, "Trend EMA Length", minval=1)
+ema_slope_len = input.int(5, "EMA Slope Lookback (bars)", minval=1)
+min_slope     = input.float(15.0, "Min EMA Slope (pts)", minval=0.0, tooltip="Minimum slope to confirm trending. 0 = disabled.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+skip_open     = input.bool(true, "Skip Market Open Window", tooltip="Block new entries during the open window to avoid early volatility.")
+skip_start_hr = input.int(9,  "Skip Window Start Hour (ET)")
+skip_start_mn = input.int(30, "Skip Window Start Minute")
+skip_end_hr   = input.int(11, "Skip Window End Hour (ET)")
+skip_end_mn   = input.int(30, "Skip Window End Minute")
+
+// ===== EXIT OPTIONS =====
+use_zone_exit = input.bool(false, "Enable Zone Exit", tooltip="When off, trades only exit via stop loss, take profit, or trailing stop.")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(200.0, "Stop ($)")
+tp_dollars        = input.float(1000.0, "Take Profit ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(45.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(1000.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(10.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(1000.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== COMPUTED =====
+float stop_pts   = stop_dollars / pv
+float tp_pts     = tp_dollars / pv
+float lvn_thresh = lvn_pct / 100.0
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+int sk_start = skip_start_hr * 100 + skip_start_mn
+int sk_end   = skip_end_hr * 100 + skip_end_mn
+bool in_skip_window = skip_open and (sk_start > sk_end ? (bar_t >= sk_start or bar_t < sk_end) : (bar_t >= sk_start and bar_t < sk_end))
+bool entry_allowed = in_session and not in_skip_window
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== 200 EMA TREND FILTER =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  ema_up    = ema_slope > min_slope
+bool  ema_dn    = ema_slope < -min_slope
+
+// ===== SMART TRAIL (SuperTrend-style) =====
+atr_val  = ta.atr(sensitivity)
+up_level = hl2 - (sensitivity * 0.3) * atr_val
+dn_level = hl2 + (sensitivity * 0.3) * atr_val
+
+var float trail = na
+var int   trend = 1
+
+trail := na(trail) ? hl2 : trail
+
+if trend == 1
+    if close < trail
+        trend := -1
+        trail := dn_level
+    else
+        trail := math.max(trail, up_level)
+else
+    if close > trail
+        trend := 1
+        trail := up_level
+    else
+        trail := math.min(trail, dn_level)
+
+// ===== REVERSAL ZONES (exit trigger) =====
+zone_basis = ta.ema(close, 20)
+zone_rang  = ta.atr(20) * 2.0
+zone_upper = zone_basis + zone_rang
+zone_lower = zone_basis - zone_rang
+
+// ===== VOLUME PROFILE CALCULATION =====
+int lb = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_row = array.new_float(100, 0.0)
+
+int cur_row = na
+int prev_row = na
+bool cur_is_lvn = false
+bool prev_is_hvn = false
+float poc_price = na
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    if vol_row.size() != rows
+        vol_row.clear()
+        for i = 0 to rows - 1
+            vol_row.push(0.0)
+    else
+        for i = 0 to rows - 1
+            vol_row.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+
+        float bar_lo = low[iBar]
+        float bar_hi = high[iBar]
+
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span = e_row - s_row + 1
+
+        if span <= 0
+            continue
+
+        float mu = 0.5
+        float sum_w = 0.0
+
+        for k = 0 to span - 1
+            float t = span == 1 ? 0.5 : k / (span - 1.0)
+            float z = (t - mu) / gauss_sigma
+            float w = math.exp(-0.5 * z * z)
+            sum_w += w
+
+        if sum_w <= 0
+            continue
+
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                float t = span == 1 ? 0.5 : k / (span - 1.0)
+                float z = (t - mu) / gauss_sigma
+                float w = math.exp(-0.5 * z * z)
+                float contrib = bar_vol * (w / sum_w)
+                vol_row.set(r, vol_row.get(r) + contrib)
+
+    float max_vol = 0.0
+    int poc_row = 0
+    for r = 0 to rows - 1
+        float v = vol_row.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+
+    float threshold = max_vol * lvn_thresh
+
+    int row_now = math.min(math.max(math.floor((close - prof_lo) / step_size), 0), rows - 1)
+    int row_prev = math.min(math.max(math.floor((close[1] - prof_lo) / step_size), 0), rows - 1)
+
+    cur_row := row_now
+    prev_row := row_prev
+
+    float vol_now = vol_row.get(row_now)
+    float vol_prev = vol_row.get(row_prev)
+
+    cur_is_lvn := vol_now < threshold
+    prev_is_hvn := vol_prev >= threshold
+
+// ===== COMBINED ENTRY SIGNALS =====
+bool hvn_to_lvn = not na(cur_row) and not na(prev_row) and prev_is_hvn and cur_is_lvn
+bool moving_up  = not na(cur_row) and not na(prev_row) and cur_row > prev_row
+bool moving_dn  = not na(cur_row) and not na(prev_row) and cur_row < prev_row
+
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+bool long_sig  = hvn_to_lvn and moving_up and ema_up and trend == 1 and entry_allowed and strategy.position_size <= 0 and cooled_down
+bool short_sig = hvn_to_lvn and moving_dn and ema_dn and trend == -1 and entry_allowed and strategy.position_size >= 0 and cooled_down
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float peak_profit_pts = 0.0
+
+if long_sig
+    current_stop    := close - stop_pts
+    peak_profit_pts := 0.0
+    last_trade_bar  := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+    log.info("ENTRY LONG bar={0} close={1} stop={2} tp={3} | stop$={4} tp$={5} trail_min$={6} trail_pct={7}", bar_index, close, current_stop, close + tp_pts, stop_dollars, tp_dollars, trail_min_dollars, trail_pct)
+else if short_sig
+    current_stop    := close + stop_pts
+    peak_profit_pts := 0.0
+    last_trade_bar  := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+    log.info("ENTRY SHORT bar={0} close={1} stop={2} tp={3} | stop$={4} tp$={5} trail_min$={6} trail_pct={7}", bar_index, close, current_stop, close - tp_pts, stop_dollars, tp_dollars, trail_min_dollars, trail_pct)
+
+// ===== ZONE EXITS =====
+// Only fire zone exit once the trade has moved at least stop_dollars in profit,
+// preventing the zone bands from closing trades immediately on a small retracement.
+float avg_price_l = strategy.position_size > 0 ? strategy.position_avg_price : na
+float avg_price_s = strategy.position_size < 0 ? strategy.position_avg_price : na
+float profit_l_pts = not na(avg_price_l) ? high - avg_price_l : 0.0
+float profit_s_pts = not na(avg_price_s) ? avg_price_s - low : 0.0
+bool zone_exit_armed_l = profit_l_pts * pv >= stop_dollars
+bool zone_exit_armed_s = profit_s_pts * pv >= stop_dollars
+
+bool exit_long  = use_zone_exit and strategy.position_size > 0 and close < zone_lower and zone_exit_armed_l
+bool exit_short = use_zone_exit and strategy.position_size < 0 and close > zone_upper and zone_exit_armed_s
+
+if exit_long
+    strategy.close("Long", comment="Zone Exit")
+if exit_short
+    strategy.close("Short", comment="Zone Exit")
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+                log.info("TRAIL LONG bar={0} peak={1} keep%={2} new_stop={3} trail_min$={4}", bar_index, peak_profit_pts * pv, keep_pct, current_stop, trail_min_dollars)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+                log.info("TRAIL SHORT bar={0} peak={1} keep%={2} new_stop={3} trail_min$={4}", bar_index, peak_profit_pts * pv, keep_pct, current_stop, trail_min_dollars)
+
+// ===== PLOT =====
+plot(ema_val, "200 EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)
+plot(trail, "Smart Trail", color = trend == 1 ? #00e676 : #ff5252, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+
+p_up = plot(zone_upper, "Zone Upper", color=color.new(#ff5252, 50))
+p_dn = plot(zone_lower, "Zone Lower", color=color.new(#00e676, 50))
+fill(p_up, p_dn, color = trend == 1 ? color.new(#00e676, 95) : color.new(#ff5252, 95), title="Zone Fill")
+
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+bgcolor(cur_is_lvn ? color.new(color.orange, 93) : na)

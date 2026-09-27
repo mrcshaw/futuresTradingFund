@@ -1,0 +1,234 @@
+//@version=5
+strategy("POC Break Retest + EMA (Simple)", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_boxes_count=300, max_labels_count=300)
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5)
+min_delta_pct    = input.float(0.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=1)
+
+// ===== TREND (EMA) =====
+ema_len          = input.int(50, "EMA Length", minval=1)
+
+// ===== STRUCTURE =====
+pivot_left       = input.int(5, "Pivot Left", minval=2, maxval=20)
+pivot_right      = input.int(5, "Pivot Right", minval=2, maxval=20)
+setup_expiry     = input.int(40, "Setup Expiry (bars)", minval=5, maxval=300)
+show_pivots      = input.bool(true, "Show Pivot Markers")
+
+// ===== ENTRY =====
+cooldown_bars    = input.int(10, "Cooldown (bars)", minval=0, maxval=200)
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(8, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr   = input.int(16, "Session End Hour (ET)")
+sess_end_mn   = input.int(0, "Session End Minute")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+stop_dollars = input.float(300.0, "Stop ($)")
+tp_dollars   = input.float(1000.0, "Take Profit ($)")
+
+float stop_pts     = stop_dollars / pv
+float tp_pts       = tp_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+if was_in and not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== EMA =====
+float ema_val   = ta.ema(close, ema_len)
+bool  ema_up    = close > ema_val
+bool  ema_down  = close < ema_val
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price     = na
+float poc_hi        = na
+float poc_lo        = na
+float poc_delta_pct = na
+int   poc_row       = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo = low[iBar]
+        float bar_hi = high[iBar]
+        bool  bar_up = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    float poc_up_vol = vol_up.get(poc_row)
+    float poc_dn_vol = vol_dn.get(poc_row)
+    float poc_tot    = vol_total.get(poc_row)
+    poc_delta_pct    := poc_tot > 0 ? ((poc_up_vol - poc_dn_vol) / poc_tot) * 100 : 0.0
+
+bool poc_valid = not na(poc_hi) and not na(poc_lo)
+bool poc_green = not na(poc_delta_pct) and poc_delta_pct > 0 and (min_delta_pct <= 0 or poc_delta_pct > min_delta_pct)
+bool poc_red   = not na(poc_delta_pct) and poc_delta_pct < 0 and (min_delta_pct <= 0 or poc_delta_pct < -min_delta_pct)
+
+// ===== PIVOTS =====
+float ph = ta.pivothigh(high, pivot_left, pivot_right)
+float pl = ta.pivotlow(low, pivot_left, pivot_right)
+
+var float prev_ph = na
+var float last_ph = na
+var int   prev_ph_bar = na
+var int   last_ph_bar = na
+if not na(ph)
+    prev_ph := last_ph
+    last_ph := ph
+    prev_ph_bar := last_ph_bar
+    last_ph_bar := bar_index - pivot_right
+
+var float prev_pl = na
+var float last_pl = na
+var int   prev_pl_bar = na
+var int   last_pl_bar = na
+if not na(pl)
+    prev_pl := last_pl
+    last_pl := pl
+    prev_pl_bar := last_pl_bar
+    last_pl_bar := bar_index - pivot_right
+
+plotshape(show_pivots ? ph : na, "Pivot High", shape.xcross, location.absolute, color=color.red, size=size.tiny, offset=-pivot_right)
+plotshape(show_pivots ? pl : na, "Pivot Low",  shape.xcross, location.absolute, color=color.lime, size=size.tiny, offset=-pivot_right)
+
+// ===== SETUP LOGIC (simple) =====
+// Short setup:
+// 1) Break below a GREEN POC
+// 2) A RED POC forms after that break
+// 3) Recent pivot highs are decreasing
+bool broke_down = poc_valid and close < poc_lo and close[1] >= poc_lo and poc_green[1]
+bool broke_up   = poc_valid and close > poc_hi and close[1] <= poc_hi and poc_red[1]
+
+var int short_break_bar = na
+var int long_break_bar  = na
+if broke_down
+    short_break_bar := bar_index
+if broke_up
+    long_break_bar := bar_index
+
+if not na(short_break_bar) and bar_index - short_break_bar > setup_expiry
+    short_break_bar := na
+if not na(long_break_bar) and bar_index - long_break_bar > setup_expiry
+    long_break_bar := na
+
+bool lower_highs = not na(last_ph) and not na(prev_ph) and not na(last_ph_bar) and last_ph_bar > short_break_bar and last_ph < prev_ph
+bool higher_lows = not na(last_pl) and not na(prev_pl) and not na(last_pl_bar) and last_pl_bar > long_break_bar and last_pl > prev_pl
+
+bool red_after_break   = not na(short_break_bar) and bar_index > short_break_bar and poc_red and poc_valid and poc_hi < close
+bool green_after_break = not na(long_break_bar) and bar_index > long_break_bar and poc_green and poc_valid and poc_lo > close
+
+// ===== SIGNALS =====
+var int last_trade_bar = -9999
+bool cooled = bar_index - last_trade_bar >= cooldown_bars
+bool flat_or_opposite_long  = strategy.position_size <= 0
+bool flat_or_opposite_short = strategy.position_size >= 0
+
+// Sell model:
+// 1) price broke below POC,
+// 2) red POC formed after break,
+// 3) recent highs are decreasing.
+bool short_sig = not na(short_break_bar) and red_after_break and lower_highs and ema_down and in_session and cooled and flat_or_opposite_short
+
+// Buy is symmetric opposite.
+bool long_sig = not na(long_break_bar) and green_after_break and higher_lows and ema_up and in_session and cooled and flat_or_opposite_long
+
+// ===== ORDERS =====
+var float current_stop = na
+if long_sig
+    current_stop := close - stop_pts
+    last_trade_bar := bar_index
+    long_break_bar := na
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig
+    current_stop := close + stop_pts
+    last_trade_bar := bar_index
+    short_break_bar := na
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// ===== VISUALS =====
+color channel_fill = na
+if not na(poc_delta_pct)
+    if poc_delta_pct > 0
+        channel_fill := color.new(color.green, 82)
+    else if poc_delta_pct < 0
+        channel_fill := color.new(color.red, 82)
+
+plot(ema_val, "EMA", color=color.silver, linewidth=2)
+float ppoc = not na(poc_price) ? poc_price : na
+float phi  = not na(poc_hi) ? poc_hi : na
+float plo  = not na(poc_lo) ? poc_lo : na
+plot(ppoc, "POC", color=color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_lo = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+fill(plot_lo, plot_hi, channel_fill)
+
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color=color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color=color.red, size=size.small)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)

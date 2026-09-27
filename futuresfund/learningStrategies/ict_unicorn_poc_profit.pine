@@ -1,0 +1,297 @@
+//@version=5
+// ICT Unicorn + Delta Volume POC — PROFIT MODE
+// Combines: ORB breakout + FVG (optional) + POC directional filter + Delta confirmation
+// More trades, wider TP, trailing stop
+strategy("ICT Unicorn + POC [Profit]", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+
+// ===== ORB (ICT Unicorn) =====
+gather_min   = input.int(15, "ORB Gather Minutes", minval=5, maxval=60, step=5, group="ORB")
+entry_end_hr = input.int(11, "Entry End Hour", minval=10, maxval=14, group="ORB")
+entry_end_mn = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5, group="ORB")
+eod_hr       = input.int(15, "EOD Flatten Hour", group="ORB")
+eod_mn       = input.int(45, "EOD Flatten Min", group="ORB")
+i_margin     = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25, group="ORB")
+i_or_min     = input.float(0.0, "OR Min Size (pts)", minval=0, step=1, group="ORB")
+i_or_max     = input.float(50.0, "OR Max Size (pts)", minval=1, step=5, group="ORB")
+max_attempts = input.int(2, "Max Attempts / Day", minval=1, maxval=5, group="ORB")
+
+// ===== FVG (optional in Profit mode) =====
+fvg_lookback = input.int(20, "FVG Lookback (bars)", minval=10, maxval=100, group="FVG")
+fvg_min_atr  = input.float(0.04, "FVG Min Size (ATR ratio)", minval=0.02, step=0.01, group="FVG")
+atr_len      = input.int(14, "ATR Length", group="FVG")
+
+// ===== VOLUME PROFILE + DELTA (from Delta script) =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=500, step=10, group="POC")
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=50, step=5, group="POC")
+min_delta_pct    = input.float(5.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, group="POC", tooltip="0 = disabled")
+ema_len          = input.int(50, "Trend EMA Length", minval=1, group="POC")
+ema_slope_len    = input.int(5, "EMA Slope Lookback (bars)", minval=1, group="POC")
+min_slope        = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, group="POC", tooltip="0 = disabled")
+
+// ===== POC FILTER =====
+poc_filter_mode = input.string("Off", "POC Filter Mode", options=["Off","Reject","Confirm"], group="POC", tooltip="Off: pure ICT. Reject: skip when POC contradicts. Confirm: require POC+delta+EMA align.")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+i_tp         = input.float(1000.0, "Take Profit ($)", group="Risk")
+i_trail_act  = input.float(350.0, "Trail Activate ($)", group="Risk")
+i_trail_pct  = input.float(45.0, "Trail Keep %", group="Risk")
+i_be_trigger = input.float(150.0, "Breakeven Trigger ($)", minval=0, step=50, group="Risk", tooltip="0 = disabled. Move stop to entry after this much profit.")
+max_stop     = input.float(750.0, "Max Stop Cap ($)", minval=0, step=50, group="Risk")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float be_trigger_pts = i_be_trigger > 0 ? i_be_trigger / pv : 0.0
+float max_stop_pts  = max_stop / pv
+
+// ===== TIME =====
+is_new_day = ta.change(time("D")) != 0
+t = time("1", "0930-1600", "America/New_York")
+in_rth = not na(t)
+hrs = hour(time, "America/New_York")
+mns = minute(time, "America/New_York")
+float mins_from_open = (hrs - 9) * 60.0 + (mns - 30)
+bool in_gather = in_rth and mins_from_open >= 0 and mins_from_open < gather_min
+bool gather_done = in_rth and mins_from_open >= gather_min
+int bar_time = hrs * 100 + mns
+bool in_entry_window = gather_done and bar_time < (entry_end_hr * 100 + entry_end_mn)
+bool at_eod = bar_time >= (eod_hr * 100 + eod_mn)
+
+// ===== ATR + FVG (all 3 candles closed: [1]=newest, [2]=middle, [3]=oldest) =====
+float atr_conf = ta.atr(atr_len)[1]
+bool bull_fvg = low[3] > high[1] and (low[3] - high[1]) >= atr_conf * fvg_min_atr
+bool bear_fvg = high[3] < low[1] and (low[1] - high[3]) >= atr_conf * fvg_min_atr
+var int recent_bull_cnt = 0
+var int recent_bear_cnt = 0
+if bull_fvg
+    recent_bull_cnt := fvg_lookback
+else if recent_bull_cnt > 0
+    recent_bull_cnt := recent_bull_cnt - 1
+if bear_fvg
+    recent_bear_cnt := fvg_lookback
+else if recent_bear_cnt > 0
+    recent_bear_cnt := recent_bear_cnt - 1
+bool recent_bull_fvg = recent_bull_cnt > 0
+bool recent_bear_fvg = recent_bear_cnt > 0
+
+// ===== OPENING RANGE =====
+var float or_high = na
+var float or_low  = na
+var bool  or_built = false
+var bool  or_valid = false
+if is_new_day
+    or_high  := na
+    or_low   := na
+    or_built := false
+    or_valid := false
+// Only update OR on confirmed bars so it doesn't repaint during the gather bar
+if in_gather and barstate.isconfirmed
+    or_high := na(or_high) ? high : math.max(or_high, high)
+    or_low  := na(or_low)  ? low  : math.min(or_low, low)
+if gather_done and not or_built
+    or_built := true
+    float or_range = nz(or_high) - nz(or_low)
+    or_valid := or_range >= i_or_min and or_range <= i_or_max and or_range > 0
+
+// ===== VOLUME PROFILE + DELTA (closed bars only = no repaint) =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+int lb_closed = math.max(0, lb - 1)
+float prof_hi   = lb_closed >= 1 ? ta.highest(high[1], lb_closed) : high
+float prof_lo   = lb_closed >= 1 ? ta.lowest(low[1], lb_closed) : low
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price    = na
+float poc_hi       = na
+float poc_lo       = na
+float poc_delta_pct = na
+int   poc_row      = 0
+
+if not na(step_size) and prof_span > 0 and lb > 2
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if array.size(arr) != rows
+            array.clear(arr)
+            for i = 0 to rows - 1
+                array.push(arr, 0.0)
+        else
+            for i = 0 to rows - 1
+                array.set(arr, i, 0.0)
+    for iBar = 1 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                array.set(vol_total, r, array.get(vol_total, r) + per_row)
+                if bar_up
+                    array.set(vol_up, r, array.get(vol_up, r) + per_row)
+                else
+                    array.set(vol_dn, r, array.get(vol_dn, r) + per_row)
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = array.get(vol_total, r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+    poc_price    := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo       := prof_lo + poc_row * step_size
+    poc_hi       := prof_lo + (poc_row + 1) * step_size
+    float poc_up  = array.get(vol_up, poc_row)
+    float poc_dn  = array.get(vol_dn, poc_row)
+    float poc_tot = array.get(vol_total, poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+// ===== EMA TREND (use [1] so signal references only closed-bar data) =====
+float ema_raw   = ta.ema(close, ema_len)
+float ema_val   = ema_raw[1]
+float ema_slope = ema_val - ema_raw[1 + ema_slope_len]
+bool  ema_up    = min_slope <= 0 or ema_slope > min_slope
+bool  ema_dn    = min_slope <= 0 or ema_slope < -min_slope
+
+// ===== POC FILTERS (close[1] = last confirmed close) =====
+bool poc_bull = not na(poc_price) and close[1] > poc_price
+bool poc_bear = not na(poc_price) and close[1] < poc_price
+bool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)
+bool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)
+
+// ===== ATTEMPT COUNTER =====
+var int day_attempts = 0
+if is_new_day
+    day_attempts := 0
+
+// ===== TRAILING STOP STATE =====
+var float peak_profit   = 0.0
+var float current_stop  = na
+var float plot_stop    = na
+var float entry_stop_px = na
+if is_new_day
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== ENTRY SIGNALS (ORB + optional POC) =====
+bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts
+
+bool breakout_long  = can_trade and close[1] > (or_high + i_margin)
+bool breakout_short = can_trade and close[1] < (or_low - i_margin)
+
+bool just_broke_long  = breakout_long and close[2] <= (or_high + i_margin)
+bool just_broke_short = breakout_short and close[2] >= (or_low - i_margin)
+
+// POC filter: Off = pure ICT | Reject = skip when POC contradicts | Confirm = require POC+delta+EMA
+float reject_thresh = math.max(min_delta_pct, 3.0)
+if poc_filter_mode == "Confirm"
+    if just_broke_long and not (poc_bull and delta_bull and ema_up)
+        just_broke_long := false
+    if just_broke_short and not (poc_bear and delta_bear and ema_dn)
+        just_broke_short := false
+else if poc_filter_mode == "Reject"
+    if just_broke_long and not na(poc_price) and close[1] < poc_price and not na(poc_delta_pct) and poc_delta_pct < -reject_thresh
+        just_broke_long := false
+    if just_broke_short and not na(poc_price) and close[1] > poc_price and not na(poc_delta_pct) and poc_delta_pct > reject_thresh
+        just_broke_short := false
+// Off: no POC filter
+
+bool long_sig  = just_broke_long and strategy.position_size == 0
+bool short_sig = just_broke_short and strategy.position_size == 0
+
+// ===== ENTRY + EXIT (strategy.exit for stops/TP — broker emulator, no repaint) =====
+bool entry_ok = barstate.isconfirmed
+
+if long_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    entry_stop_px := (max_stop_pts > 0 and (close[1] - or_low) > max_stop_pts) ? (close[1] - max_stop_pts) : or_low
+    float init_stop = math.max(nz(entry_stop_px), current_stop)
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=init_stop, limit=close[1] + tp_pts)
+else if short_sig and entry_ok
+    day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close[1]) > max_stop_pts) ? (close[1] + max_stop_pts) : or_high
+    float init_stop = math.min(nz(entry_stop_px), current_stop)
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=init_stop, limit=close[1] - tp_pts)
+else if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float tp_price = avg + tp_pts
+    float profit_now = high[1] - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if be_trigger_pts > 0 and profit_now >= be_trigger_pts and (na(current_stop) or current_stop < avg)
+        current_stop := avg
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    strategy.exit("XL", "Long", stop=eff_stop, limit=tp_price)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float tp_price = avg - tp_pts
+    float profit_now = avg - low[1]
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if be_trigger_pts > 0 and profit_now >= be_trigger_pts and (na(current_stop) or current_stop > avg)
+        current_stop := avg
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    strategy.exit("XS", "Short", stop=eff_stop, limit=tp_price)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS (trackprice=false to avoid chart scale shrinking) =====
+plot(ema_val, "EMA (confirmed)", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2, trackprice=false)
+plot(not na(poc_price) ? poc_price : na, "POC", color.yellow, style=plot.style_stepline, linewidth=1, trackprice=false)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", #2962FF, style=plot.style_stepline, linewidth=1, trackprice=false)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", #2962FF, style=plot.style_stepline, linewidth=1, trackprice=false)
+plot(or_built ? or_high : na, "OR High", color.new(color.lime, 30), linewidth=2, style=plot.style_stepline, trackprice=false)
+plot(or_built ? or_low : na, "OR Low", color.new(color.red, 30), linewidth=2, style=plot.style_stepline, trackprice=false)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles, trackprice=false)
+bgcolor(in_gather ? color.new(color.blue, 90) : na)
+// Use close[1] so POC zone highlight doesn't repaint intra-bar
+bgcolor(not na(poc_hi) and not na(poc_lo) and close[1] >= poc_lo and close[1] <= poc_hi ? color.new(#2962FF, 92) : na)
+// Only draw entry shapes when bar is confirmed so they don't appear then disappear
+plotshape(long_sig and barstate.isconfirmed, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig and barstate.isconfirmed, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)

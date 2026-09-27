@@ -301,8 +301,6 @@ def _startup():
 
         count = load_chart_file()
         stored = len(load_bars())
-        from futuresfund.strategy import get_strategy
-
         if count:
             board.post(
                 "System",
@@ -336,20 +334,8 @@ def _startup():
             kind="report",
             channel="Compliance & Operations",
         )
-        approved = [
-            item for item in (get_strategy() or {}).get("strategies") or []
-            if item.get("proven") and item.get("accepted")
-        ]
-        if len(approved) < 3:
-            from futuresfund.discuss import run_discussion
+        from futuresfund.learn import run_learning
 
-            run_discussion(board, "Research")
-        else:
-            board.post(
-                "Portfolio Manager",
-                "Three rules have passed risk. The vote is at 8:00am.",
-                kind="report",
-                channel="Portfolio Manager",
-            )
+        run_learning(board)
 
     threading.Thread(target=_boot, daemon=True, name="futures-boot").start()

@@ -1,0 +1,131 @@
+//@version=5
+strategy("VWAP Breakout (Intraday)", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.percent, commission_value=0.0,
+  slippage=0, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+
+// ===== VWAP =====
+// Session VWAP resets each calendar day; uses typical price (H+L+C)/3 like the Python add_vwap.
+use_session   = input.bool(true, "Use Session Filter (intraday)", group="Session")
+sess_start_hr = input.int(0, "Session Start Hour", group="Session")
+sess_start_mn = input.int(0, "Session Start Minute", group="Session")
+sess_end_hr   = input.int(23, "Session End Hour", group="Session")
+sess_end_mn   = input.int(59, "Session End Minute", group="Session")
+
+// ===== ENTRY =====
+trade_direction = input.string("Long and Short", "Direction", options=["Long Only", "Short Only", "Long and Short"], group="Entry")
+vwap_cross_type = input.string("Close", "VWAP Price", options=["Close", "Typical"], group="Entry",
+  tooltip="Close: use close vs VWAP. Typical: use (H+L+C)/3 vs VWAP.")
+
+// ===== TRADE FILTERS =====
+min_cross_pts  = input.float(2.0, "Min Cross Distance (pts)", minval=0.0, step=0.25, group="Filters",
+  tooltip="Price must be at least this far past VWAP to enter. Filters out small wiggles.")
+cooldown_bars  = input.int(10, "Cooldown After Exit (bars)", minval=0, maxval=100, group="Filters",
+  tooltip="Wait this many bars after a trade closes before entering again.")
+max_trades_day = input.int(5, "Max Trades Per Day", minval=1, maxval=50, group="Filters")
+
+// ===== EXIT (ATR stop from notebook optimization) =====
+atr_len   = input.int(14, "ATR Length", minval=1, group="Risk")
+atr_stop  = input.float(1.5, "ATR Stop Multiplier", minval=0.25, maxval=5.0, step=0.25, group="Risk",
+  tooltip="Exit when price moves against position by this many ATRs. Notebook optimized ~1.5.")
+pv        = input.float(50.0, "Point Value ($)", group="Risk", tooltip="Dollar value per point. ES=50, NQ=20, etc.")
+tp_dollars = input.float(500.0, "Take Profit ($)", minval=0, step=50, group="Risk",
+  tooltip="Close trade after this much profit in dollars. 0=disabled.")
+use_trail = input.bool(false, "Trailing ATR Stop", group="Risk")
+atr_trail = input.float(1.5, "Trail ATR Multiplier", minval=0.25, maxval=5.0, step=0.25, group="Risk")
+
+// ===== SESSION =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+// New calendar day → reset session VWAP (cumulative per day, same as Python groupby(day).cumsum())
+var float cum_pv   = 0.0
+var float cum_vol  = 0.0
+var int   last_day = -1
+
+// Pine has no dayofyear; use year*10000+month*100+day as unique day id
+int bar_day   = dayofmonth(time, "America/New_York")
+int bar_month = month(time, "America/New_York")
+int bar_year  = year(time, "America/New_York")
+int day_num   = bar_year * 10000 + bar_month * 100 + bar_day
+bool new_day  = day_num != last_day
+
+if new_day
+    cum_pv  := 0.0
+    cum_vol := 0.0
+    last_day := day_num
+
+// Typical price and VWAP (match Python: (H+L+C)/3 * volume)
+float typical = (high + low + close) / 3.0
+cum_pv  := cum_pv + typical * volume
+cum_vol := cum_vol + volume
+float vwap = cum_vol > 0 ? cum_pv / cum_vol : na
+
+// Price used for crossover vs VWAP
+float price_for_cross = vwap_cross_type == "Typical" ? typical : close
+
+// Cross conditions — require minimum distance past VWAP
+bool cross_above = ta.crossover(price_for_cross, vwap) and (close - vwap) >= min_cross_pts
+bool cross_below = ta.crossunder(price_for_cross, vwap) and (vwap - close) >= min_cross_pts
+
+// ATR
+float atr_val = ta.atr(atr_len)
+
+// Cooldown: track bars since last exit
+var int last_exit_bar = -9999
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    last_exit_bar := bar_index
+bool cooled_off = (bar_index - last_exit_bar) >= cooldown_bars
+
+// Daily trade counter
+var int trades_today = 0
+if new_day
+    trades_today := 0
+
+// Entry — only when flat, cooled off, and under daily limit
+bool is_flat   = strategy.position_size == 0
+bool can_long  = trade_direction == "Long Only" or trade_direction == "Long and Short"
+bool can_short = trade_direction == "Short Only" or trade_direction == "Long and Short"
+bool do_long  = in_session and is_flat and can_long and cross_above and cooled_off and trades_today < max_trades_day
+bool do_short = in_session and is_flat and can_short and cross_below and cooled_off and trades_today < max_trades_day
+
+if do_long
+    strategy.entry("Long", strategy.long)
+    trades_today += 1
+if do_short
+    strategy.entry("Short", strategy.short)
+    trades_today += 1
+
+// Exit: ATR-based stop + take profit (and optional trail)
+float long_stop  = strategy.position_avg_price - atr_stop * atr_val
+float short_stop = strategy.position_avg_price + atr_stop * atr_val
+float tp_pts     = tp_dollars > 0 ? tp_dollars / pv : na
+float long_tp    = tp_dollars > 0 ? strategy.position_avg_price + tp_pts : na
+float short_tp   = tp_dollars > 0 ? strategy.position_avg_price - tp_pts : na
+
+int bars_since_entry = strategy.position_size != 0 ? bar_index - strategy.opentrades.entry_bar_index(0) + 1 : 1
+int trail_lookback   = math.min(bars_since_entry, 500)
+
+if use_trail and strategy.position_size > 0
+    float trail_level = math.max(ta.highest(high, trail_lookback) - atr_trail * atr_val, long_stop)
+    strategy.exit("Exit Long", "Long", stop=trail_level, limit=long_tp)
+else if strategy.position_size > 0
+    strategy.exit("Exit Long", "Long", stop=long_stop, limit=long_tp)
+
+if use_trail and strategy.position_size < 0
+    float trail_level = math.min(ta.lowest(low, trail_lookback) + atr_trail * atr_val, short_stop)
+    strategy.exit("Exit Short", "Short", stop=trail_level, limit=short_tp)
+else if strategy.position_size < 0
+    strategy.exit("Exit Short", "Short", stop=short_stop, limit=short_tp)
+
+// Close at session end if desired (optional, like notebook intraday)
+if use_session and not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// Plot
+plot(vwap, "VWAP", color=color.new(color.teal, 0), linewidth=2)

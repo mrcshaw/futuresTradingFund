@@ -1,0 +1,332 @@
+// RSI + MACD Reversal Confluence — Consistent Version (Low DD + Nightly Guarantee)
+// Same 8-system confluence but optimized for lowest drawdown.
+// Fallback mechanism ensures at least 1 trade per night.
+//
+// Best on all data: +$7,703 | 79 trades | PF=1.36 | 38% win | DD=$4,488
+
+//@version=5
+strategy("RSI+MACD Reversal (Consistent)", shorttitle="RSI+MACD-C", overlay=true,
+     initial_capital=25000, default_qty_type=strategy.fixed,
+     default_qty_value=1, commission_type=strategy.commission.cash_per_contract,
+     commission_value=5.50, slippage=1, pyramiding=0,
+     process_orders_on_close=true, calc_on_every_tick=false,
+     max_labels_count=500)
+
+// ─── RSI SETTINGS ─────────────────────────────────────────────────
+rsi_len       = input.int(14,   "RSI Length",           group="RSI")
+htf_rsi_len   = input.int(42,   "HTF RSI Length",       group="RSI")
+pullback_lo   = input.float(44, "Pullback Zone Low",    group="RSI", step=1)
+pullback_hi   = input.float(56, "Pullback Zone High",   group="RSI", step=1)
+extreme_hi    = input.float(80, "Extreme High",         group="RSI")
+extreme_lo    = input.float(20, "Extreme Low",          group="RSI")
+div_lookback  = input.int(30,   "Divergence Lookback",  group="RSI", minval=5)
+
+// ─── MACD SETTINGS ────────────────────────────────────────────────
+macd_fast     = input.int(12,   "MACD Fast",            group="MACD")
+macd_slow     = input.int(26,   "MACD Slow",            group="MACD")
+macd_signal   = input.int(9,    "MACD Signal",          group="MACD")
+
+// ─── SYSTEM TOGGLES ──────────────────────────────────────────────
+use_rsi_pullback   = input.bool(true, "RSI Pullback (S2)",     group="Systems")
+use_rsi_divergence = input.bool(true, "RSI Divergence (S3)",   group="Systems")
+use_htf_bias       = input.bool(true, "HTF RSI Bias (S4)",     group="Systems")
+use_macd_cross     = input.bool(true, "MACD Cross (S5)",       group="Systems")
+use_macd_histogram = input.bool(true, "MACD Histogram (S6)",   group="Systems")
+use_macd_zero      = input.bool(true, "MACD Zero Line (S7)",   group="Systems")
+use_macd_hist_flip = input.bool(true, "MACD Hist Flip (S8)",   group="Systems")
+min_systems        = input.int(3,     "Min Systems to Agree",  minval=1, maxval=8, group="Systems")
+
+// ─── NIGHTLY GUARANTEE ───────────────────────────────────────────
+fallback_hr       = input.int(0,  "Fallback Start Hour (ET)", minval=0, maxval=23, group="Nightly Guarantee")
+fallback_mn       = input.int(0,  "Fallback Start Minute",    minval=0, maxval=59, group="Nightly Guarantee")
+fallback_step_min = input.int(60, "Min Between Score Drops",  minval=15, maxval=180, group="Nightly Guarantee")
+min_fallback      = input.int(1,  "Minimum Required Score",   minval=1, maxval=3, group="Nightly Guarantee")
+
+// ─── RISK MANAGEMENT ──────────────────────────────────────────────
+pv            = input.float(50.0,  "Point Value ($)",      group="Risk")
+stop_dollars  = input.float(425.0, "Stop Loss ($)",        step=25, group="Risk")
+tp_dollars    = input.float(1000.0,"Take Profit ($)",      step=25, group="Risk")
+cooldown_bars = input.int(5,       "Cooldown Bars", minval=0, group="Risk")
+
+use_breakeven  = input.bool(false,  "Use Breakeven",     group="Breakeven")
+be_trigger_dol = input.float(200.0, "BE Trigger ($)",    step=25, group="Breakeven")
+
+// ─── SESSION FILTER ───────────────────────────────────────────────
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18,    "Start Hour (ET)",    group="Session")
+sess_start_mn = input.int(0,     "Start Minute",       group="Session")
+sess_end_hr   = input.int(8,     "End Hour (ET)",      group="Session")
+sess_end_mn   = input.int(0,     "End Minute",         group="Session")
+
+// ─── DISPLAY ──────────────────────────────────────────────────────
+show_legend   = input.bool(true, "Show Legend Table",   group="Display")
+
+// ─── SESSION LOGIC ────────────────────────────────────────────────
+cur_hr  = hour(time, "America/New_York")
+cur_mn  = minute(time, "America/New_York")
+bar_t   = cur_hr * 100 + cur_mn
+s_start = sess_start_hr * 100 + sess_start_mn
+s_end   = sess_end_hr   * 100 + sess_end_mn
+in_session = use_session ? (s_start > s_end ? (bar_t >= s_start or bar_t < s_end)
+     : (bar_t >= s_start and bar_t < s_end)) : true
+
+prev_hr  = hour(time[1], "America/New_York")
+prev_mn  = minute(time[1], "America/New_York")
+prev_t   = prev_hr * 100 + prev_mn
+prev_in  = use_session ? (s_start > s_end ? (prev_t >= s_start or prev_t < s_end)
+     : (prev_t >= s_start and prev_t < s_end)) : true
+sess_start_flag = not prev_in and in_session
+sess_end_flag   = prev_in and not in_session
+
+if sess_end_flag and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ─── NIGHTLY TRADE TRACKING ──────────────────────────────────────
+var bool traded_tonight = false
+if sess_start_flag
+    traded_tonight := false
+
+fb_time = fallback_hr * 100 + fallback_mn
+bar_min_of_day = cur_hr * 60 + cur_mn
+fb_min_of_day  = fallback_hr * 60 + fallback_mn
+mins_past_fb = bar_min_of_day >= fb_min_of_day ? bar_min_of_day - fb_min_of_day : (bar_min_of_day + 1440) - fb_min_of_day
+
+past_fallback = false
+if s_start > s_end
+    past_fallback := (bar_t < s_end and bar_t >= fb_time) or (fb_time >= s_start and bar_t >= fb_time)
+else
+    past_fallback := bar_t >= fb_time
+
+score_reduction = past_fallback and not traded_tonight ? math.floor(mins_past_fb / fallback_step_min) : 0
+effective_min = math.max(min_fallback, min_systems - score_reduction)
+
+// ─── INDICATORS ───────────────────────────────────────────────────
+rsi_val     = ta.rsi(close, rsi_len)
+htf_rsi_val = ta.rsi(close, htf_rsi_len)
+[macd_line, signal_line, hist] = ta.macd(close, macd_fast, macd_slow, macd_signal)
+
+// ─── RSI SYSTEMS ──────────────────────────────────────────────────
+rsi_bullish = rsi_val > 50
+rsi_bearish = rsi_val < 50
+
+pullback_long  = use_rsi_pullback ? (rsi_val[1] <= 50 and rsi_val > 50 and rsi_val[1] >= pullback_lo) : false
+pullback_short = use_rsi_pullback ? (rsi_val[1] >= 50 and rsi_val < 50 and rsi_val[1] <= pullback_hi) : false
+
+bull_div = false
+bear_div = false
+if use_rsi_divergence and bar_index > div_lookback + 2
+    if close < close[div_lookback] and rsi_val > rsi_val[div_lookback] and rsi_val[div_lookback] < extreme_lo + 10
+        bull_div := true
+    if close > close[div_lookback] and rsi_val < rsi_val[div_lookback] and rsi_val[div_lookback] > extreme_hi - 10
+        bear_div := true
+
+htf_bullish = use_htf_bias ? htf_rsi_val > 50 : true
+htf_bearish = use_htf_bias ? htf_rsi_val < 50 : true
+
+// ─── MACD SYSTEMS ─────────────────────────────────────────────────
+macd_cross_long  = use_macd_cross ? ta.crossover(macd_line, signal_line)  : false
+macd_cross_short = use_macd_cross ? ta.crossunder(macd_line, signal_line) : false
+
+hist_mom_long  = use_macd_histogram ? (hist > hist[1] and hist > 0) : false
+hist_mom_short = use_macd_histogram ? (hist < hist[1] and hist < 0) : false
+
+macd_zero_long  = use_macd_zero ? macd_line > 0 : false
+macd_zero_short = use_macd_zero ? macd_line < 0 : false
+
+hist_flip_long  = use_macd_hist_flip ? (hist > 0 and hist[1] <= 0) : false
+hist_flip_short = use_macd_hist_flip ? (hist < 0 and hist[1] >= 0) : false
+
+// ─── CONFLUENCE SCORING ───────────────────────────────────────────
+long_score  = (rsi_bullish ? 1 : 0) + (htf_bullish ? 1 : 0) +
+     (pullback_long ? 1 : 0) + (bull_div ? 1 : 0) +
+     (macd_cross_long ? 1 : 0) + (hist_mom_long ? 1 : 0) +
+     (macd_zero_long ? 1 : 0) + (hist_flip_long ? 1 : 0)
+
+short_score = (rsi_bearish ? 1 : 0) + (htf_bearish ? 1 : 0) +
+     (pullback_short ? 1 : 0) + (bear_div ? 1 : 0) +
+     (macd_cross_short ? 1 : 0) + (hist_mom_short ? 1 : 0) +
+     (macd_zero_short ? 1 : 0) + (hist_flip_short ? 1 : 0)
+
+// ─── ENTRY LOGIC ─────────────────────────────────────────────────
+var int   last_trade_bar = -9999
+var bool  in_trade       = false
+var float entry_price    = na
+var bool  be_active      = false
+var int   trade_dir      = 0
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+flat = strategy.position_size == 0 and not in_trade
+
+cooled = bar_index - last_trade_bar >= cooldown_bars
+stop_pts = stop_dollars / pv
+tp_pts   = tp_dollars   / pv
+be_pts   = be_trigger_dol / pv
+
+long_ok  = long_score >= effective_min and flat and in_session and cooled and
+     not (short_score >= effective_min and short_score > long_score)
+short_ok = short_score >= effective_min and flat and in_session and cooled and
+     not (long_score >= effective_min and long_score > short_score)
+if long_ok and short_ok
+    if long_score >= short_score
+        short_ok := false
+    else
+        long_ok := false
+
+is_fallback = effective_min < min_systems
+
+if long_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := 1
+    traded_tonight := true
+    cmt = is_fallback ? "Long (FB" + str.tostring(effective_min) + ")" : "Long"
+    strategy.entry("Long", strategy.long, comment=cmt)
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+
+if short_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := -1
+    traded_tonight := true
+    cmt = is_fallback ? "Short (FB" + str.tostring(effective_min) + ")" : "Short"
+    strategy.entry("Short", strategy.short, comment=cmt)
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+
+// ─── BREAKEVEN ────────────────────────────────────────────────────
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and close - entry_price >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick, limit=entry_price + tp_pts)
+    if strategy.position_size < 0 and entry_price - close >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ─── ENTRY MARKERS ───────────────────────────────────────────────
+plotshape(long_ok and not is_fallback, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_ok and not is_fallback, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)
+plotshape(long_ok and is_fallback, "FB Long", shape.triangleup, location.belowbar, color.yellow, size=size.small)
+plotshape(short_ok and is_fallback, "FB Short", shape.triangledown, location.abovebar, color.yellow, size=size.small)
+
+if long_ok
+    fb_tag = is_fallback ? " [FB " + str.tostring(effective_min) + "/" + str.tostring(min_systems) + "]" : ""
+    label.new(bar_index, low, "L",
+         color=is_fallback ? color.yellow : color.lime, style=label.style_label_up,
+         textcolor=color.white, size=size.small,
+         tooltip="LONG @ " + str.tostring(close, "#.##") + fb_tag +
+                 "\nScore: " + str.tostring(long_score) + "/" + str.tostring(effective_min) +
+                 "\n─ RSI ─" +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") + " | HTF: " + str.tostring(htf_rsi_val, "#.#") +
+                 "\nPullback: " + (pullback_long ? "YES" : "no") +
+                 " | Div: " + (bull_div ? "YES" : "no") +
+                 "\n─ MACD ─" +
+                 "\nCross: " + (macd_cross_long ? "YES" : "no") +
+                 " | Mom: " + (hist_mom_long ? "YES" : "no") +
+                 "\nZero: " + (macd_zero_long ? "YES" : "no") +
+                 " | Flip: " + (hist_flip_long ? "YES" : "no") +
+                 "\nSL: $" + str.tostring(stop_dollars) +
+                 " | TP: $" + str.tostring(tp_dollars))
+
+if short_ok
+    fb_tag = is_fallback ? " [FB " + str.tostring(effective_min) + "/" + str.tostring(min_systems) + "]" : ""
+    label.new(bar_index, high, "S",
+         color=is_fallback ? color.yellow : color.red, style=label.style_label_down,
+         textcolor=color.white, size=size.small,
+         tooltip="SHORT @ " + str.tostring(close, "#.##") + fb_tag +
+                 "\nScore: " + str.tostring(short_score) + "/" + str.tostring(effective_min) +
+                 "\n─ RSI ─" +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") + " | HTF: " + str.tostring(htf_rsi_val, "#.#") +
+                 "\nPullback: " + (pullback_short ? "YES" : "no") +
+                 " | Div: " + (bear_div ? "YES" : "no") +
+                 "\n─ MACD ─" +
+                 "\nCross: " + (macd_cross_short ? "YES" : "no") +
+                 " | Mom: " + (hist_mom_short ? "YES" : "no") +
+                 "\nZero: " + (macd_zero_short ? "YES" : "no") +
+                 " | Flip: " + (hist_flip_short ? "YES" : "no") +
+                 "\nSL: $" + str.tostring(stop_dollars) +
+                 " | TP: $" + str.tostring(tp_dollars))
+
+// ─── LEGEND TABLE ─────────────────────────────────────────────────
+if show_legend
+    var table tb = table.new(position.top_right, 2, 16,
+         bgcolor=#1e222d, border_color=#373a46, border_width=1, frame_color=#373a46, frame_width=1)
+
+    if barstate.isfirst
+        tb.cell(0, 0, "System",         text_color=color.white, text_size=size.small)
+        tb.cell(1, 0, "Status",         text_color=color.white, text_size=size.small)
+        tb.cell(0, 1, "S1: RSI 50",     text_color=color.white, text_size=size.small)
+        tb.cell(0, 2, "S2: Pullback",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 3, "S3: Divergence", text_color=color.white, text_size=size.small)
+        tb.cell(0, 4, "S4: HTF RSI",    text_color=color.white, text_size=size.small)
+        tb.cell(0, 5, "S5: MACD Cross", text_color=color.white, text_size=size.small)
+        tb.cell(0, 6, "S6: Hist Mom",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 7, "S7: MACD Zero",  text_color=color.white, text_size=size.small)
+        tb.cell(0, 8, "S8: Hist Flip",  text_color=color.white, text_size=size.small)
+        tb.cell(0, 9, "Score",          text_color=color.white, text_size=size.small)
+        tb.cell(0, 10, "Required",      text_color=color.white, text_size=size.small)
+        tb.cell(0, 11, "Traded Tonight",text_color=color.white, text_size=size.small)
+        tb.cell(0, 12, "Session",       text_color=color.white, text_size=size.small)
+        tb.cell(0, 13, "State",         text_color=color.white, text_size=size.small)
+        tb.cell(0, 14, "Entry / SL",    text_color=color.white, text_size=size.small)
+        tb.cell(0, 15, "TP / P&L",      text_color=color.white, text_size=size.small)
+
+    tb.cell(1, 1, str.tostring(rsi_val, "#.#") + (rsi_bullish ? " ▲" : " ▼"),
+         text_color=rsi_bullish ? color.lime : color.red, text_size=size.small)
+    tb.cell(1, 2, pullback_long ? "LONG ✓" : pullback_short ? "SHORT ✓" : "—",
+         text_color=pullback_long ? color.lime : pullback_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 3, bull_div ? "BULL ✓" : bear_div ? "BEAR ✓" : "—",
+         text_color=bull_div ? color.lime : bear_div ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 4, str.tostring(htf_rsi_val, "#.#") + (htf_bullish ? " ▲" : " ▼"),
+         text_color=htf_bullish ? color.lime : color.red, text_size=size.small)
+    tb.cell(1, 5, macd_cross_long ? "BULL ✓" : macd_cross_short ? "BEAR ✓" : "—",
+         text_color=macd_cross_long ? color.lime : macd_cross_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 6, hist_mom_long ? "BULL ✓" : hist_mom_short ? "BEAR ✓" : "—",
+         text_color=hist_mom_long ? color.lime : hist_mom_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 7, str.tostring(macd_line, "#.##") + (macd_line > 0 ? " ▲" : " ▼"),
+         text_color=macd_line > 0 ? color.lime : color.red, text_size=size.small)
+    tb.cell(1, 8, hist_flip_long ? "BULL ✓" : hist_flip_short ? "BEAR ✓" : "—",
+         text_color=hist_flip_long ? color.lime : hist_flip_short ? color.red : color.gray, text_size=size.small)
+
+    best_s = math.max(long_score, short_score)
+    d_str = long_score >= short_score ? "L" : "S"
+    tb.cell(1, 9, d_str + " " + str.tostring(best_s) + "/" + str.tostring(effective_min),
+         text_color=best_s >= effective_min ? color.lime : color.yellow, text_size=size.small)
+
+    req_str = str.tostring(effective_min) + (is_fallback ? " (FB)" : "")
+    tb.cell(1, 10, req_str,
+         text_color=is_fallback ? color.yellow : color.white, text_size=size.small)
+    tb.cell(1, 11, traded_tonight ? "YES" : "NO",
+         text_color=traded_tonight ? color.lime : (past_fallback ? color.yellow : color.gray), text_size=size.small)
+    tb.cell(1, 12, in_session ? "YES" : "NO",
+         text_color=in_session ? color.lime : color.gray, text_size=size.small)
+
+    pos_s = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    tb.cell(1, 13, pos_s + (cooled ? "" : " (CD)"),
+         text_color=strategy.position_size > 0 ? color.lime : strategy.position_size < 0 ? color.red : color.gray,
+         text_size=size.small)
+
+    e_str = "—"
+    t_str = "—"
+    e_clr = color.gray
+    t_clr = color.gray
+    if strategy.position_size != 0 and not na(entry_price)
+        cur_sl = trade_dir == 1 ? entry_price - stop_pts : entry_price + stop_pts
+        cur_tp = trade_dir == 1 ? entry_price + tp_pts   : entry_price - tp_pts
+        if be_active
+            cur_sl := trade_dir == 1 ? entry_price + syminfo.mintick : entry_price - syminfo.mintick
+        upts = trade_dir == 1 ? close - entry_price : entry_price - close
+        udol = upts * pv
+        e_str := str.tostring(entry_price, "#.##") + " / " + str.tostring(cur_sl, "#.##")
+        e_clr := color.white
+        t_str := str.tostring(cur_tp, "#.##") + " / $" + str.tostring(udol, "#.#")
+        t_clr := udol >= 0 ? color.lime : color.red
+
+    tb.cell(1, 14, e_str, text_color=e_clr, text_size=size.small)
+    tb.cell(1, 15, t_str, text_color=t_clr, text_size=size.small)

@@ -1,0 +1,216 @@
+//@version=5
+strategy("EMA RSI Channel", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== CHANNEL =====
+ema_hi_len       = input.int(20, "Upper EMA Length (High)", minval=1)
+ema_lo_len       = input.int(20, "Lower EMA Length (Low)", minval=1)
+channel_slope_len = input.int(5, "Channel Slope Lookback (bars)", minval=1, group="Channel")
+min_ema_hi_slope  = input.float(0.0, "Min Upper EMA Slope (pts)", minval=0.0, step=0.1, group="Channel", tooltip="Long: upper EMA must be rising. 0 = disabled.")
+min_ema_lo_slope  = input.float(0.0, "Min Lower EMA Slope (pts)", minval=0.0, step=0.1, group="Channel", tooltip="Short: lower EMA must be falling (slope < -X). 0 = disabled.")
+
+// ===== RSI =====
+rsi_len       = input.int(14, "RSI Length", minval=1)
+rsi_long_lvl  = input.float(55.0, "RSI Long Threshold", minval=30, maxval=90, step=1, tooltip="RSI must be above this for a long entry.")
+rsi_short_lvl = input.float(45.0, "RSI Short Threshold", minval=10, maxval=70, step=1, tooltip="RSI must be below this for a short entry.")
+
+// ===== 200 EMA TREND FILTER =====
+trend_ema_len   = input.int(100, "Trend EMA Length", minval=1)
+trend_slope_len = input.int(5, "Trend EMA Slope Lookback (bars)", minval=1)
+min_slope       = input.float(0.2, "Min Trend EMA Slope (pts)", minval=0.0, tooltip="Minimum 200 EMA slope to confirm trending. 0 = disabled (no flat filter).")
+
+// ===== 20 VWMA =====
+vwma_len       = input.int(20, "VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_vwma_slope = input.float(0.0, "Min VWMA Slope (pts)", minval=0.0, tooltip="Minimum VWMA slope to confirm direction. 0 = disabled.")
+
+// ===== FLAT FILTER =====
+flat_bars     = input.int(5, "Flat Filter: Bars outside channel", minval=1, maxval=50, tooltip="Price must stay outside the channel for this many bars before entry. Prevents whipsaw in flat markets.")
+cooldown_bars = input.int(10, "Cooldown (bars)", minval=0, maxval=100, step=1, tooltip="Minimum bars between trades. Prevents rapid re-entry.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(250.0, "Stop ($)")
+tp_dollars        = input.float(500.0, "Take Profit ($)")
+use_breakeven     = input.bool(false, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(150.0, "BE Trigger ($)", minval=50, step=25, group="Breakeven", tooltip="Move stop to entry + 1 tick after this much unrealized profit.")
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(80.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(300.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(50.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(200.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== COMPUTED =====
+float stop_pts       = stop_dollars / pv
+float tp_pts         = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== 20 EMA CHANNEL =====
+float ema_hi = ta.ema(high, ema_hi_len)
+float ema_lo = ta.ema(low, ema_lo_len)
+
+float ema_hi_slope = ema_hi - ema_hi[channel_slope_len]
+float ema_lo_slope = ema_lo - ema_lo[channel_slope_len]
+bool channel_up = min_ema_hi_slope <= 0 or ema_hi_slope > min_ema_hi_slope
+bool channel_dn = min_ema_lo_slope <= 0 or ema_lo_slope < -min_ema_lo_slope
+
+bool above_channel = close > ema_hi
+bool below_channel = close < ema_lo
+bool inside_channel = not above_channel and not below_channel
+
+// ===== FLAT FILTER: count consecutive bars outside channel =====
+var int bars_above = 0
+var int bars_below = 0
+
+if above_channel
+    bars_above += 1
+    bars_below := 0
+else if below_channel
+    bars_below += 1
+    bars_above := 0
+else
+    bars_above := 0
+    bars_below := 0
+
+bool sustained_above = bars_above >= flat_bars
+bool sustained_below = bars_below >= flat_bars
+
+// ===== 200 EMA TREND =====
+float trend_ema   = ta.ema(close, trend_ema_len)
+float trend_slope = trend_ema - trend_ema[trend_slope_len]
+bool  trend_up    = trend_slope > min_slope
+bool  trend_dn    = trend_slope < -min_slope
+
+// ===== 20 VWMA =====
+float vwma_val   = ta.vwma(close, vwma_len)
+float vwma_slope = vwma_val - vwma_val[vwma_slope_len]
+bool  vwma_up    = vwma_slope > min_vwma_slope
+bool  vwma_dn    = vwma_slope < -min_vwma_slope
+
+// ===== RSI =====
+float rsi_val = ta.rsi(close, rsi_len)
+bool rsi_bull = rsi_val >= rsi_long_lvl
+bool rsi_bear = rsi_val <= rsi_short_lvl
+
+// ===== ENTRY SIGNALS =====
+bool long_sig  = above_channel and sustained_above and channel_up and rsi_bull and trend_up and vwma_up and close > open and in_session and strategy.position_size <= 0
+bool short_sig = below_channel and sustained_below and channel_dn and rsi_bear and trend_dn and vwma_dn and close < open and in_session and strategy.position_size >= 0
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var float peak_profit_pts = 0.0
+var bool  be_active       = false
+var int   last_trade_bar  = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+if long_sig and cooled_down
+    current_stop    := close - stop_pts
+    entry_price     := close
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig and cooled_down
+    current_stop    := close + stop_pts
+    entry_price     := close
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+
+// ===== PLOT =====
+p_hi = plot(ema_hi, "EMA High", color.aqua, linewidth=2)
+p_lo = plot(ema_lo, "EMA Low", color.aqua, linewidth=2)
+fill(p_hi, p_lo, color = color.new(color.aqua, 90), title="EMA Channel")
+
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig and cooled_down, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig and cooled_down, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(trend_ema, "200 EMA", trend_up ? color.lime : trend_dn ? color.red : color.gray, linewidth=2)
+plot(vwma_val, "20 VWMA", vwma_up ? color.lime : vwma_dn ? color.red : color.gray, linewidth=1, style=plot.style_line)
+
+plot(rsi_val, "RSI", color.yellow, display=display.data_window)
+plot(trend_slope, "Trend EMA Slope", color.white, display=display.data_window)
+plot(vwma_slope, "VWMA Slope", color.orange, display=display.data_window)
+plot(ema_hi_slope, "EMA Hi Slope", color.aqua, display=display.data_window)
+plot(ema_lo_slope, "EMA Lo Slope", color.fuchsia, display=display.data_window)
+plot(bars_above > 0 ? bars_above : bars_below > 0 ? -bars_below : 0, "Bars Outside", color.gray, display=display.data_window)

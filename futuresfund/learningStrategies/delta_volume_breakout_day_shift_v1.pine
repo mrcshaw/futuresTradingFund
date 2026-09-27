@@ -1,0 +1,419 @@
+//@version=5
+strategy("POC S/R + EMA", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500, max_lines_count=500)
+
+// Last 5 POC zones build a S/R map. EMA slope gives direction.
+// EMA bullish + price touches any POC support -> long
+// EMA bearish + price touches any POC resistance -> short
+// TP targets the next S/R level in the trade direction (or fixed TP).
+//
+// Optimized on ES 2m (Feb 26 - Mar 4 2026):
+//   A (default): shift=8, stop=800, tp=1700, zone=1.5, cd=8, ema=50, sl=3  -> $11,959, 23t, PF 2.45
+//   B (robust):  shift=3, stop=400, tp=1500, zone=3,   cd=10, ema=100, sl=5 -> $9,285, 76t, PF 1.68
+//   C (active):  shift=1.5, stop=300, tp=1500, zone=3, cd=10, ema=100, sl=5 -> $8,678, 52t, PF 1.73
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5)
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(5.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, tooltip="0 = disabled.")
+
+// ===== POC HISTORY =====
+poc_shift_pts     = input.float(8.0, "POC Shift Threshold (pts)", minval=0.25, step=0.25, group="POC History")
+poc_history_count = input.int(5, "POC Levels to Track", minval=2, maxval=10, group="POC History")
+sr_zone_pts       = input.float(1.5, "S/R Touch Zone (pts)", minval=0.25, step=0.25, group="POC History", tooltip="How close price must get to a POC level to count as touching it.")
+
+// ===== EMA =====
+ema_len       = input.int(50, "EMA Length", minval=1)
+ema_slope_len = input.int(3, "EMA Slope Lookback", minval=1, maxval=20)
+min_slope     = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, step=0.25, tooltip="0 = any direction counts.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16, "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== FILTERS =====
+cooldown_bars = input.int(8, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+stop_dollars = input.float(800.0, "Stop ($)")
+tp_dollars   = input.float(1700.0, "Take Profit ($)")
+use_sr_tp    = input.bool(false, "Use Next S/R as TP", tooltip="If on, TP is placed at the next S/R level in the trade direction (capped by fixed TP). If off, uses fixed TP only.")
+
+use_trail         = input.bool(false, "Enable Trailing Stop", group="Trailing")
+trail_pct         = input.float(60.0, "Trail: Keep % of Peak Profit", minval=10, maxval=90, group="Trailing")
+trail_step_amt    = input.float(500.0, "Trail: Tighten every $X profit", minval=100, group="Trailing")
+trail_step_pct    = input.float(50.0, "Trail: Tighten by X% per step", minval=1, maxval=50, group="Trailing")
+trail_min_dollars = input.float(300.0, "Trail: Min Profit Before Trailing ($)", minval=25, group="Trailing")
+
+use_breakeven      = input.bool(false, "Enable Breakeven", group="Breakeven")
+be_trigger_dollars = input.float(200.0, "BE Trigger ($)", minval=25, group="Breakeven")
+
+// ===== COMPUTED =====
+float stop_pts       = stop_dollars / pv
+float tp_pts         = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== EMA + SLOPE =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  ema_bull  = ema_slope > min_slope
+bool  ema_bear  = ema_slope < -min_slope
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+    float poc_up_v = vol_up.get(poc_row)
+    float poc_dn_v = vol_dn.get(poc_row)
+    float poc_tot  = vol_total.get(poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up_v - poc_dn_v) / poc_tot) * 100 : 0.0
+
+// ===== POC HISTORY =====
+var array<float> hist_poc_price = array.new_float(0)
+var array<float> hist_poc_hi    = array.new_float(0)
+var array<float> hist_poc_lo    = array.new_float(0)
+var array<float> hist_poc_delta = array.new_float(0)
+var float last_rec_poc = na
+
+if not na(poc_price)
+    bool is_new_poc = na(last_rec_poc) or math.abs(poc_price - last_rec_poc) >= poc_shift_pts
+    if is_new_poc
+        if not na(last_rec_poc)
+            float half_step = not na(step_size) ? step_size / 2 : 0.5
+            array.unshift(hist_poc_price, last_rec_poc)
+            array.unshift(hist_poc_hi, last_rec_poc + half_step)
+            array.unshift(hist_poc_lo, last_rec_poc - half_step)
+            array.unshift(hist_poc_delta, nz(poc_delta_pct))
+            while array.size(hist_poc_price) > poc_history_count
+                array.pop(hist_poc_price)
+                array.pop(hist_poc_hi)
+                array.pop(hist_poc_lo)
+                array.pop(hist_poc_delta)
+        last_rec_poc := poc_price
+
+int hist_size = array.size(hist_poc_price)
+
+// ===== SCAN ALL 5 POC LEVELS FOR S/R TOUCHES =====
+// Levels ABOVE price = resistance, levels BELOW price = support.
+// Find the nearest support touched and nearest resistance touched.
+bool   hit_support    = false
+float  support_level  = na
+float  next_res_above = na  // nearest historical POC above entry for TP target
+
+bool   hit_resistance = false
+float  resist_level   = na
+float  next_sup_below = na  // nearest historical POC below entry for TP target
+
+if hist_size > 0
+    float best_sup_dist = 99999.0
+    float best_res_dist = 99999.0
+
+    for k = 0 to hist_size - 1
+        float poc_mid = array.get(hist_poc_price, k)
+        float poc_h   = array.get(hist_poc_hi, k)
+        float poc_l   = array.get(hist_poc_lo, k)
+
+        // Support: this POC is below current close, and low wicked into it
+        if poc_h < close
+            float dist = close - poc_h
+            if low <= poc_h + sr_zone_pts and close > poc_h
+                if dist < best_sup_dist
+                    best_sup_dist := dist
+                    hit_support   := true
+                    support_level := poc_mid
+
+        // Resistance: this POC is above current close, and high wicked into it
+        if poc_l > close
+            float dist = poc_l - close
+            if high >= poc_l - sr_zone_pts and close < poc_l
+                if dist < best_res_dist
+                    best_res_dist := dist
+                    hit_resistance := true
+                    resist_level   := poc_mid
+
+    // Find next S/R level for TP targeting
+    float best_above = 99999.0
+    float best_below = 99999.0
+    for k = 0 to hist_size - 1
+        float poc_l = array.get(hist_poc_lo, k)
+        float poc_h = array.get(hist_poc_hi, k)
+        // Nearest resistance above price (for long TP)
+        if poc_l > close and poc_l - close < best_above
+            best_above := poc_l - close
+            next_res_above := poc_l
+        // Nearest support below price (for short TP)
+        if poc_h < close and close - poc_h < best_below
+            best_below := close - poc_h
+            next_sup_below := poc_h
+
+    // Also include current POC as potential S/R target
+    if not na(poc_hi) and poc_hi > close and poc_hi - close < best_above
+        next_res_above := poc_hi
+    if not na(poc_lo) and poc_lo < close and close - poc_lo < best_below
+        next_sup_below := poc_lo
+
+// ===== SIGNALS =====
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+bool long_sig  = hit_support and ema_bull and in_session and cooled_down and strategy.position_size <= 0
+bool short_sig = hit_resistance and ema_bear and in_session and cooled_down and strategy.position_size >= 0
+
+// ===== TP CALCULATION =====
+float long_tp_price  = na
+float short_tp_price = na
+
+if long_sig
+    if use_sr_tp and not na(next_res_above)
+        long_tp_price := math.min(next_res_above, close + tp_pts)
+    else
+        long_tp_price := close + tp_pts
+    if not na(long_tp_price) and long_tp_price - close < 1.0
+        long_tp_price := close + tp_pts
+
+if short_sig
+    if use_sr_tp and not na(next_sup_below)
+        short_tp_price := math.max(next_sup_below, close - tp_pts)
+    else
+        short_tp_price := close - tp_pts
+    if not na(short_tp_price) and close - short_tp_price < 1.0
+        short_tp_price := close - tp_pts
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var float peak_profit_pts = 0.0
+var bool  be_active       = false
+var float active_tp       = 0.0
+
+if long_sig
+    current_stop    := close - stop_pts
+    entry_price     := close
+    active_tp       := nz(long_tp_price, close + tp_pts)
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=active_tp)
+else if short_sig
+    current_stop    := close + stop_pts
+    entry_price     := close
+    active_tp       := nz(short_tp_price, close - tp_pts)
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=active_tp)
+
+// Reset on flat
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit_pts := 0.0
+    be_active       := false
+
+// ===== BREAKEVEN =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        if close - entry_price >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=active_tp)
+    else if strategy.position_size < 0
+        if entry_price - close >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=active_tp)
+if strategy.position_size == 0
+    be_active := false
+
+// ===== TRAILING STOP =====
+if use_trail and strategy.position_size != 0
+    if strategy.position_size > 0
+        float avg = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=active_tp)
+    else if strategy.position_size < 0
+        float avg = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=active_tp)
+
+// ===== POC DELTA FILL COLOR =====
+color channel_fill = na
+if not na(poc_delta_pct)
+    if poc_delta_pct > 0
+        float s = math.min(math.abs(poc_delta_pct) / math.max(min_delta_pct, 1), 1.0)
+        channel_fill := color.new(color.green, 95 - math.round(s * 50))
+    else if poc_delta_pct < 0
+        float s = math.min(math.abs(poc_delta_pct) / math.max(min_delta_pct, 1), 1.0)
+        channel_fill := color.new(color.red, 95 - math.round(s * 50))
+
+// ===== POC DELTA LABEL =====
+var label lbl_delta = na
+if not na(poc_price) and not na(poc_delta_pct)
+    string dtxt = (poc_delta_pct >= 0 ? "+" : "") + str.tostring(poc_delta_pct, "#.#") + "%"
+    if na(lbl_delta)
+        lbl_delta := label.new(bar_index, poc_price, dtxt, style=label.style_label_center, color=color.new(color.gray, 60), textcolor=color.white, size=size.small)
+    else
+        label.set_xy(lbl_delta, bar_index, poc_price)
+        label.set_text(lbl_delta, dtxt)
+
+// ===== PLOT HISTORICAL POC LEVELS =====
+var array<line> sr_lines = array.new<line>(0)
+
+if barstate.islast and hist_size > 0
+    for ln in sr_lines
+        line.delete(ln)
+    array.clear(sr_lines)
+
+    for k = 0 to math.min(hist_size - 1, poc_history_count - 1)
+        float h = array.get(hist_poc_hi, k)
+        float l = array.get(hist_poc_lo, k)
+        float p = array.get(hist_poc_price, k)
+        int alpha = 20 + k * 12
+        bool is_above = p > close
+        color lc = is_above ? color.new(color.red, alpha) : color.new(color.green, alpha)
+        array.push(sr_lines, line.new(bar_index - profile_lookback, h, bar_index + 10, h, color=lc, width=1, style=line.style_dashed))
+        array.push(sr_lines, line.new(bar_index - profile_lookback, l, bar_index + 10, l, color=lc, width=1, style=line.style_dashed))
+        array.push(sr_lines, line.new(bar_index - profile_lookback, p, bar_index + 10, p, color=color.new(color.white, alpha + 20), width=1, style=line.style_dotted))
+
+// ===== S/R TABLE =====
+var table poc_table = table.new(position.top_right, 3, 7, bgcolor=color.new(color.black, 70), border_width=1)
+if barstate.islast
+    table.cell(poc_table, 0, 0, "#", text_color=color.white, text_size=size.tiny)
+    table.cell(poc_table, 1, 0, "POC Price", text_color=color.white, text_size=size.tiny)
+    table.cell(poc_table, 2, 0, "Role", text_color=color.white, text_size=size.tiny)
+
+    string ema_txt = ema_bull ? "EMA BULL" : ema_bear ? "EMA BEAR" : "EMA FLAT"
+    color ema_col = ema_bull ? color.lime : ema_bear ? color.red : color.gray
+    table.cell(poc_table, 0, 1, "Bias", text_color=color.white, text_size=size.tiny)
+    table.cell(poc_table, 1, 1, ema_txt, text_color=ema_col, text_size=size.tiny)
+    table.cell(poc_table, 2, 1, str.tostring(ema_slope, "#.##") + " pts", text_color=ema_col, text_size=size.tiny)
+
+    for k = 0 to math.min(hist_size - 1, 4)
+        float p = array.get(hist_poc_price, k)
+        float d = array.get(hist_poc_delta, k)
+        string price_txt = str.tostring(p, "#.##") + " (" + (d >= 0 ? "+" : "") + str.tostring(d, "#.#") + "%)"
+        bool above = p > close
+        string role_txt = above ? "RESIST" : "SUPPORT"
+        color role_col = above ? color.red : color.lime
+        table.cell(poc_table, 0, k + 2, str.tostring(k + 1), text_color=color.white, text_size=size.tiny)
+        table.cell(poc_table, 1, k + 2, price_txt, text_color=d > 0 ? color.lime : d < 0 ? color.red : color.gray, text_size=size.tiny)
+        table.cell(poc_table, 2, k + 2, role_txt, text_color=role_col, text_size=size.tiny)
+
+// ===== PLOT =====
+plot(ema_val, "EMA", ema_bull ? color.lime : ema_bear ? color.red : color.gray, linewidth=2)
+float plo = not na(poc_lo) ? poc_lo : na
+float ppoc = not na(poc_price) ? poc_price : na
+float phi = not na(poc_hi) ? poc_hi : na
+plot_lo = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_poc = plot(ppoc, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+fill(plot_lo, plot_hi, channel_fill)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(poc_delta_pct, "POC Delta %", color.orange, display=display.data_window)
+bgcolor(ema_bull ? color.new(color.lime, 97) : ema_bear ? color.new(color.red, 97) : na)

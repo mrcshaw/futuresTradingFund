@@ -1,0 +1,413 @@
+//@version=5
+// ============================================================
+// Fair Value Gap (FVG) Strategy -- QO1 / Any Instrument
+// ============================================================
+//
+// CONCEPT:
+//   FVG = 3-candle imbalance. Price moved so fast it left a void.
+//     Bullish FVG: high[2] < low[0]  (gap between candle 1 high and candle 3 low)
+//     Bearish FVG: low[2] > high[0]  (gap between candle 3 high and candle 1 low)
+//
+// ENTRY:
+//   "Bounce": price wick dips into the FVG zone top, but the candle
+//     CLOSES back outside (above zone top for bull) = surface rejection.
+//   "Fill" (default): price reaches the OPPOSITE side of the FVG
+//     (bottom for bull, top for bear) and forms a REJECTION candle
+//     (bullish close for bull FVG, bearish close for bear FVG).
+//     Stop placed right outside the FVG boundary.
+//   "Breakout": enter when price breaks past the far side of the gap.
+//
+// ONE-SHOT: Each FVG only gets ONE trade attempt. Once entered, the
+//   FVG is marked "used" and will never trigger again. A new FVG
+//   must form for the next trade.
+//
+// FVG INVALIDATION:
+//   If price closes through the entire gap (below bull bot / above bear top),
+//   the FVG is invalidated.
+// ============================================================
+
+strategy("Fair Value Gap (FVG)", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.percent, commission_value=0.04,
+  slippage=2, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true)
+
+// ===== TIMEFRAME =====
+use_htf_filter   = input.bool(false, "Use Higher Timeframe Filter", group="Timeframe")
+htf_timeframe    = input.timeframe("60", "HTF Timeframe (for filter)", group="Timeframe")
+
+// ===== SMA TREND FILTER =====
+use_sma_filter   = input.bool(true, "Use SMA Trend Filter", group="SMA")
+sma_len          = input.int(200, "SMA Length", minval=5, group="SMA")
+sma_slope_bars   = input.int(10, "SMA Slope Lookback (bars)", minval=2, group="SMA")
+sma_min_angle    = input.float(3.0, "Min SMA Angle (degrees)", minval=0, step=0.5, group="SMA")
+
+// ===== FVG SETTINGS =====
+min_gap_pct      = input.float(50.0, "Min Gap Size (% of ATR)", minval=0, step=1.0, group="FVG")
+min_body_ratio   = input.float(1.5, "Min Middle Candle Body vs Avg", minval=0.5, step=0.1, group="FVG")
+fvg_lookback     = input.int(50, "Max Bars to Track FVG", minval=5, group="FVG")
+require_trend    = input.bool(false, "Require Trend Direction (mid candle)", group="FVG")
+
+// ===== ENTRY =====
+entry_type       = input.string("Fill", "Entry Type", options=["Bounce", "Fill", "Breakout"], group="Entry")
+fill_tolerance   = input.float(1.0, "Fill: Proximity tolerance (pts)", minval=0, step=0.25, group="Entry", tooltip="Price doesn't need to touch the exact FVG boundary. Enter if wick gets within this many pts.")
+breakout_buffer  = input.float(0.5, "Breakout: Buffer past gap (pts)", minval=0, group="Entry")
+fail_break_pts   = input.float(3.0, "Failure Break: Min pts past zone", minval=0, step=0.5, group="Entry", tooltip="How far price must close beyond the FVG zone to count as a failure breakout. Larger = only decisive breaks trigger.")
+stop_buffer_pts  = input.float(0.5, "Fill: Stop buffer outside FVG (pts)", minval=0, step=0.25, group="Entry")
+cool_bars        = input.int(5, "Cooldown After Exit (bars)", minval=0, group="Entry")
+loss_cool_bars   = input.int(15, "Cooldown After Loss (bars)", minval=0, group="Entry")
+
+// ===== EXIT =====
+pv               = input.float(100.0, "Point Value ($)", minval=0.1, group="Exit")
+stop_dollars     = input.float(200.0, "Stop Loss ($)", minval=1, group="Exit")
+stop_mode        = input.string("Below Gap", "Stop Placement", options=["Below Gap", "Fixed"], group="Exit")
+min_stop_dollars = input.float(100.0, "Min Stop Distance ($)", minval=0, group="Exit")
+use_trailing     = input.bool(true, "Use Trailing Stop", group="Exit")
+trail_min_dollars = input.float(300.0, "Trail: Min Profit Before Trailing ($)", minval=0, group="Exit", tooltip="Don't start trailing until unrealized profit reaches this amount. Prevents choking small moves.")
+trail_pct        = input.float(60.0, "Trail: Keep % of Peak Profit", minval=5, maxval=95, group="Exit")
+take_profit_r    = input.float(1.5, "Take Profit (R multiple, 0=off)", minval=0, step=0.5, group="Exit")
+
+// ===== SESSION =====
+use_session      = input.bool(true, "Session Filter", group="Session")
+session_start    = input.int(9, "NY Session Start (ET hour)", minval=0, maxval=23, group="Session")
+session_end      = input.int(16, "NY Session End (ET hour)", minval=0, maxval=23, group="Session")
+use_fut_sess     = input.bool(true, "Enable Futures Session (overnight)", group="Session")
+fut_start_hr     = input.int(20, "Futures Start Hour (ET)", minval=0, maxval=23, group="Session")
+fut_end_hr       = input.int(8, "Futures End Hour (ET)", minval=0, maxval=23, group="Session")
+max_trades_day   = input.int(5, "Max Trades Per Day", minval=1, group="Session")
+daily_loss_lim   = input.float(500.0, "Daily Loss Limit ($)", minval=0, group="Session")
+
+// ===== VISUALS =====
+show_fvg_zones   = input.bool(true, "Draw FVG Zones", group="Visuals")
+show_sma_line   = input.bool(true, "Show SMA on Chart", group="Visuals")
+show_htf_ema     = input.bool(false, "Show HTF EMA (when filter on)", group="Visuals")
+
+// ===== COMPUTED =====
+atr_val          = ta.atr(14)
+stop_pts         = stop_dollars / pv
+min_stop_pts     = min_stop_dollars / pv
+
+// ===== SMA TREND =====
+sma_val          = ta.sma(close, sma_len)
+float sma_now    = sma_val
+float sma_prev   = sma_val[sma_slope_bars]
+float sma_rise   = sma_now - sma_prev
+float sma_angle  = math.todegrees(math.atan(sma_rise / sma_slope_bars))
+
+bool sma_up      = sma_angle >= sma_min_angle and close > sma_val
+bool sma_down    = sma_angle <= -sma_min_angle and close < sma_val
+
+// ===== HTF FILTER =====
+htf_close        = request.security(syminfo.tickerid, htf_timeframe, close, barmerge.gaps_off, barmerge.lookahead_off)
+htf_ema          = request.security(syminfo.tickerid, htf_timeframe, ta.ema(close, 50), barmerge.gaps_off, barmerge.lookahead_off)
+htf_bullish      = htf_close > htf_ema
+htf_bearish      = htf_close < htf_ema
+
+// ===== FVG DETECTION =====
+bull_fvg_top     = low
+bull_fvg_bot     = high[2]
+bull_fvg_valid   = high[2] < low
+
+bear_fvg_top     = low[2]
+bear_fvg_bot     = high
+bear_fvg_valid   = low[2] > high
+
+// Middle candle momentum check
+avg_body         = (math.abs(close[1] - open[1]) + math.abs(close[2] - open[2]) + math.abs(close[3] - open[3])) / 3
+mid_body         = math.abs(close[1] - open[1])
+has_momentum     = avg_body > 0 and mid_body >= avg_body * min_body_ratio
+
+bull_trend_ok    = not require_trend or (close[1] > open[1])
+bear_trend_ok    = not require_trend or (close[1] < open[1])
+
+// Min gap size filter
+min_gap_pts      = atr_val * (min_gap_pct / 100.0)
+bull_gap_ok      = bull_fvg_valid and (bull_fvg_top - bull_fvg_bot) >= min_gap_pts
+bear_gap_ok      = bear_fvg_valid and (bear_fvg_top - bear_fvg_bot) >= min_gap_pts
+
+// ===== TRACK LAST VALID FVG =====
+var float last_bull_top  = na
+var float last_bull_bot  = na
+var int   last_bull_bar  = -999
+var bool  bull_invalid   = false
+var bool  bull_used      = false     // one-shot: already traded this FVG
+
+var float last_bear_top  = na
+var float last_bear_bot  = na
+var int   last_bear_bar  = -999
+var bool  bear_invalid   = false
+var bool  bear_used      = false     // one-shot: already traded this FVG
+
+// Register new bullish FVG (replaces any previous one)
+if bull_fvg_valid and bull_gap_ok and has_momentum and bull_trend_ok
+    last_bull_top := bull_fvg_top
+    last_bull_bot := bull_fvg_bot
+    last_bull_bar := bar_index
+    bull_invalid  := false
+    bull_used     := false
+
+// Register new bearish FVG
+if bear_fvg_valid and bear_gap_ok and has_momentum and bear_trend_ok
+    last_bear_top := bear_fvg_top
+    last_bear_bot := bear_fvg_bot
+    last_bear_bar := bar_index
+    bear_invalid  := false
+    bear_used     := false
+
+// Snapshot "still active" BEFORE invalidation runs (needed for failure breakout)
+bool bull_still_alive = not na(last_bull_top) and not bull_invalid and not bull_used and (bar_index - last_bull_bar) <= fvg_lookback and bar_index > last_bull_bar
+bool bear_still_alive = not na(last_bear_top) and not bear_invalid and not bear_used and (bar_index - last_bear_bar) <= fvg_lookback and bar_index > last_bear_bar
+
+// FAILURE BREAKOUT: FVG was still active but price broke DECISIVELY through.
+// Requires candle body fully through the zone + fail_break_pts buffer.
+// Bull FVG broken downward → SHORT (bullish gap failed, confirms bears)
+// Bear FVG broken upward  → LONG  (bearish gap failed, confirms bulls)
+bool bull_fail_short = entry_type == "Breakout" and bull_still_alive and close < last_bull_bot - fail_break_pts and open < last_bull_bot
+bool bear_fail_long  = entry_type == "Breakout" and bear_still_alive and close > last_bear_top + fail_break_pts and open > last_bear_top
+
+// Invalidate: price closes CLEARLY through the gap (must exceed fail_break_pts).
+// Zone stays valid until a decisive break -- not killed by wicks or marginal closes.
+if not na(last_bull_bot) and close < last_bull_bot - fail_break_pts and open < last_bull_bot
+    bull_invalid := true
+if not na(last_bear_top) and close > last_bear_top + fail_break_pts and open > last_bear_top
+    bear_invalid := true
+
+// Active = not expired, not invalidated, not already traded
+bull_fvg_active  = not na(last_bull_top) and not bull_invalid and not bull_used and (bar_index - last_bull_bar) <= fvg_lookback
+bear_fvg_active  = not na(last_bear_top) and not bear_invalid and not bear_used and (bar_index - last_bear_bar) <= fvg_lookback
+
+// ===== SESSION =====
+bar_hr           = hour(time, "America/New_York")
+in_ny            = bar_hr >= session_start and bar_hr < session_end
+in_fut           = use_fut_sess and (bar_hr >= fut_start_hr or bar_hr < fut_end_hr)
+in_session       = not use_session or in_ny or in_fut
+
+// ===== DAILY TRACKING =====
+var float daily_pnl    = 0.0
+var bool  daily_lock   = false
+var int   last_ct      = 0
+var int   trades_today = 0
+var int   prev_day     = -1
+
+if dayofmonth(time) != prev_day
+    prev_day     := dayofmonth(time)
+    daily_pnl    := 0.0
+    daily_lock   := false
+    last_ct      := strategy.closedtrades
+    trades_today := 0
+
+if strategy.closedtrades > last_ct
+    for i = last_ct to strategy.closedtrades - 1
+        daily_pnl += strategy.closedtrades.profit(i)
+    last_ct := strategy.closedtrades
+
+if daily_loss_lim > 0 and daily_pnl <= -daily_loss_lim
+    daily_lock := true
+
+// ===== COOLDOWN =====
+var int  last_exit_bar = -999
+var bool last_was_loss = false
+
+if strategy.position_size[1] != 0 and strategy.position_size == 0
+    last_exit_bar := bar_index
+    if strategy.closedtrades > 0
+        last_was_loss := strategy.closedtrades.profit(strategy.closedtrades - 1) < 0
+    else
+        last_was_loss := false
+
+int active_cool = last_was_loss ? loss_cool_bars : cool_bars
+bool cooled     = (bar_index - last_exit_bar) >= active_cool
+
+can_enter = strategy.position_size == 0 and in_session and trades_today < max_trades_day and not daily_lock and cooled
+
+// HTF filter
+bull_htf_ok = not use_htf_filter or htf_bullish
+bear_htf_ok = not use_htf_filter or htf_bearish
+
+// SMA trend filter: only long when SMA trending up, only short when SMA trending down
+bull_sma_ok = not use_sma_filter or sma_up
+bear_sma_ok = not use_sma_filter or sma_down
+
+// ===== ENTRY LOGIC =====
+retest_bull = bar_index > last_bull_bar
+retest_bear = bar_index > last_bear_bar
+
+// BOUNCE: wick dips into zone top, candle closes OUTSIDE (above for bull, below for bear)
+bull_bounce = entry_type == "Bounce" and retest_bull and low <= last_bull_top and close >= last_bull_top
+bear_bounce = entry_type == "Bounce" and retest_bear and high >= last_bear_bot and close <= last_bear_bot
+
+// FILL: two-bar confirmation pattern
+// Bar 1 (touch): wick reaches (within tolerance) the opposite side of the FVG.
+// Bar 2 (confirm): closes beyond Bar 1's close in the trade direction.
+//   Bearish: Bar 2 close < Bar 1 close  (price continuing down after rejecting the fill line)
+//   Bullish: Bar 2 close > Bar 1 close  (price continuing up after rejecting the fill line)
+// Stop is placed just outside the gap boundary (stop_buffer_pts beyond it).
+
+var bool bull_touch_pending = false
+var bool bear_touch_pending = false
+
+// Detect touch bar (bar 1)
+bool bull_touch_now = entry_type == "Fill" and retest_bull and low <= last_bull_bot + fill_tolerance and close > last_bull_bot
+bool bear_touch_now = entry_type == "Fill" and retest_bear and high >= last_bear_top - fill_tolerance and close < last_bear_top
+
+if bull_touch_now
+    bull_touch_pending := true
+if bear_touch_now
+    bear_touch_pending := true
+
+// Confirm bar (bar 2): close beyond the touch bar's close
+// close[1] is the touch bar's close since we're now on the next bar
+bull_fill = bull_touch_pending and not bull_touch_now and close > close[1] and close > last_bull_bot
+bear_fill = bear_touch_pending and not bear_touch_now and close < close[1] and close < last_bear_top
+
+// Clear pending after confirm or if FVG dies
+if bull_fill or not bull_fvg_active
+    bull_touch_pending := false
+if bear_fill or not bear_fvg_active
+    bear_touch_pending := false
+
+// BREAKOUT (continuation): price breaks past the far side of the gap
+bull_break  = entry_type == "Breakout" and close > last_bull_top + breakout_buffer and low <= last_bull_top
+bear_break  = entry_type == "Breakout" and close < last_bear_bot - breakout_buffer and high >= last_bear_bot
+
+// Stored exit levels
+var float long_stop  = na
+var float long_tp    = na
+var float short_stop = na
+var float short_tp   = na
+
+// LONG entry (includes bear FVG failure breakout → price broke above bear FVG)
+bool bull_normal = bull_fvg_active and (bull_bounce or bull_fill or bull_break)
+bool bull_fail   = bear_fail_long
+bull_cond = can_enter and bull_htf_ok and bull_sma_ok and (bull_normal or bull_fail)
+if bull_cond
+    if bull_fail
+        // Failure breakout: stop below the bear FVG bottom (the zone that just broke)
+        long_stop := last_bear_bot - stop_buffer_pts
+    else if bull_fill
+        long_stop := last_bull_bot - stop_buffer_pts
+    else if stop_mode == "Below Gap"
+        long_stop := last_bull_bot - stop_pts
+    else
+        long_stop := close - stop_pts
+    if close - long_stop < min_stop_pts
+        long_stop := close - min_stop_pts
+    risk_pts  = close - long_stop
+    long_tp  := take_profit_r > 0 ? close + risk_pts * take_profit_r : na
+    strategy.entry("Long", strategy.long)
+    if na(long_tp)
+        strategy.exit("XL", "Long", stop=long_stop)
+    else
+        strategy.exit("XL", "Long", stop=long_stop, limit=long_tp)
+    trades_today += 1
+    if bull_fail
+        bear_used := true
+    else
+        bull_used := true
+
+// SHORT entry (includes bull FVG failure breakout → price broke below bull FVG)
+bool bear_normal = bear_fvg_active and (bear_bounce or bear_fill or bear_break)
+bool bear_fail   = bull_fail_short
+bear_cond = can_enter and bear_htf_ok and bear_sma_ok and (bear_normal or bear_fail)
+if bear_cond
+    if bear_fail
+        // Failure breakout: stop above the bull FVG top (the zone that just broke)
+        short_stop := last_bull_top + stop_buffer_pts
+    else if bear_fill
+        short_stop := last_bear_top + stop_buffer_pts
+    else if stop_mode == "Below Gap"
+        short_stop := last_bear_top + stop_pts
+    else
+        short_stop := close + stop_pts
+    if short_stop - close < min_stop_pts
+        short_stop := close + min_stop_pts
+    risk_pts    = short_stop - close
+    short_tp   := take_profit_r > 0 ? close - risk_pts * take_profit_r : na
+    strategy.entry("Short", strategy.short)
+    if na(short_tp)
+        strategy.exit("XS", "Short", stop=short_stop)
+    else
+        strategy.exit("XS", "Short", stop=short_stop, limit=short_tp)
+    trades_today += 1
+    if bear_fail
+        bull_used := true
+    else
+        bear_used := true
+
+// ===== CUT ON FIRST OPPOSING CANDLE =====
+// Long: first red candle (close < open) = out. Short: first green candle (close > open) = out.
+if strategy.position_size > 0 and close < open
+    strategy.close("Long", comment="Cut")
+else if strategy.position_size < 0 and close > open
+    strategy.close("Short", comment="Cut")
+
+// ===== TRAILING STOP =====
+var float peak_profit = 0.0
+trail_min_pts = trail_min_dollars / pv
+
+if use_trailing
+    if strategy.position_size > 0
+        avg_px     = strategy.position_avg_price
+        profit_pts = high - avg_px
+        if profit_pts > peak_profit
+            peak_profit := profit_pts
+        if peak_profit >= trail_min_pts
+            trail_stop = avg_px + peak_profit * (trail_pct / 100.0)
+            if na(long_tp)
+                strategy.exit("XL", "Long", stop=trail_stop)
+            else
+                strategy.exit("XL", "Long", stop=trail_stop, limit=long_tp)
+    else if strategy.position_size < 0
+        avg_px     = strategy.position_avg_price
+        profit_pts = avg_px - low
+        if profit_pts > peak_profit
+            peak_profit := profit_pts
+        if peak_profit >= trail_min_pts
+            trail_stop = avg_px - peak_profit * (trail_pct / 100.0)
+            if na(short_tp)
+                strategy.exit("XS", "Short", stop=trail_stop)
+            else
+                strategy.exit("XS", "Short", stop=trail_stop, limit=short_tp)
+    else
+        peak_profit := 0.0
+
+// Force close on daily limit
+if daily_lock and strategy.position_size != 0
+    strategy.close_all(comment="Daily Limit")
+
+// ===== PLOTS =====
+// SMA line: green when trending up, red when trending down, gray when flat
+plot(show_sma_line or use_sma_filter ? sma_val : na, "SMA", color=sma_up ? color.green : sma_down ? color.red : color.gray, linewidth=2)
+plot(show_htf_ema and use_htf_filter ? htf_ema : na, "HTF EMA", color.blue, 2)
+
+// FVG zone lines (only show active/tradeable zones)
+c_bull = color.new(#00E5FF, 0)
+c_bear = color.new(#FF5252, 0)
+plot(show_fvg_zones and bull_fvg_active ? last_bull_top : na, "Bull FVG Top", c_bull, 2, plot.style_stepline)
+plot(show_fvg_zones and bull_fvg_active ? last_bull_bot : na, "Bull FVG Bot", color.new(c_bull, 40), 2, plot.style_stepline)
+plot(show_fvg_zones and bear_fvg_active ? last_bear_top : na, "Bear FVG Top", color.new(c_bear, 40), 2, plot.style_stepline)
+plot(show_fvg_zones and bear_fvg_active ? last_bear_bot : na, "Bear FVG Bot", c_bear, 2, plot.style_stepline)
+
+// Stop line while in trade
+float active_stop = strategy.position_size > 0 ? long_stop : strategy.position_size < 0 ? short_stop : na
+plot(strategy.position_size != 0 ? active_stop : na, "Stop", color.fuchsia, 2, plot.style_stepline)
+
+// Entry markers
+plotshape(bull_cond and not bull_fail, "Long Signal", shape.triangleup, location.belowbar, color.green, size=size.small)
+plotshape(bear_cond and not bear_fail, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+plotshape(bull_cond and bull_fail, "Long Fail Break", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(bear_cond and bear_fail, "Short Fail Break", shape.triangledown, location.abovebar, color.orange, size=size.small)
+
+// Background: session
+bgcolor(in_session ? color.new(color.blue, 96) : na)
+
+// Data window diagnostics
+plot(sma_angle, "SMA Angle", display=display.data_window)
+plot(bull_fvg_active ? last_bull_top - last_bull_bot : na, "Bull Gap Size", display=display.data_window)
+plot(bear_fvg_active ? last_bear_top - last_bear_bot : na, "Bear Gap Size", display=display.data_window)
+plot(trades_today, "Trades Today", display=display.data_window)
+// FVG state: 1=active, 0=inactive/used, -1=invalid
+plot(not na(last_bull_top) ? (bull_fvg_active ? 1 : bull_invalid ? -1 : 0) : na, "Bull FVG State (1=active,-1=invalid,0=used/exp)", display=display.data_window)
+plot(not na(last_bear_top) ? (bear_fvg_active ? 1 : bear_invalid ? -1 : 0) : na, "Bear FVG State (1=active,-1=invalid,0=used/exp)", display=display.data_window)
+// Distance from current close to FVG levels
+plot(bull_fvg_active ? close - last_bull_bot : na, "Close-to-BullBot (+ = above gap bot)", display=display.data_window)
+plot(bear_fvg_active ? last_bear_top - close : na, "BearTop-to-Close (+ = below gap top)", display=display.data_window)

@@ -1,0 +1,408 @@
+// RSI + MACD Reversal Strategy — Proper Pivot-Based Implementation
+//
+// Uses exact logic from TradingView's built-in indicators:
+//   RSI: Wilder smoothing (ta.rsi), divergence via ta.pivotlow/ta.pivothigh
+//   MACD: Standard EMA-based 12/26/9 with 4-state histogram
+//
+// Architecture: Trend Filters gate direction, Entry Triggers fire trades.
+//   FILTERS: RSI > 50, HTF RSI > 50
+//   TRIGGERS: RSI divergence (pivot), RSI pullback, MACD cross,
+//             MACD hist flip, MACD hist momentum
+//
+// Best on ES 2-min night: +$10,988 | 50 trades | PF=2.13 | 40% win | DD=$2,595
+
+//@version=6
+strategy("RSI+MACD Reversal v3", shorttitle="RSI+MACD-v3", overlay=true,
+     initial_capital=25000, default_qty_type=strategy.fixed,
+     default_qty_value=1, commission_type=strategy.commission.cash_per_contract,
+     commission_value=5.50, slippage=1, pyramiding=0,
+     process_orders_on_close=true, calc_on_every_tick=false,
+     max_labels_count=500)
+
+// ─── RSI SETTINGS ─────────────────────────────────────────────────
+rsi_len       = input.int(14,   "RSI Length",          group="RSI")
+htf_rsi_len   = input.int(70,   "HTF RSI Length",      group="RSI",
+     tooltip="Longer-period RSI simulates higher timeframe bias.")
+pullback_lo   = input.float(42, "Pullback Zone Low",   group="RSI", step=1)
+pullback_hi   = input.float(58, "Pullback Zone High",  group="RSI", step=1)
+
+// ─── DIVERGENCE SETTINGS (from TradingView RSI Divergence indicator) ──
+lbL           = input.int(6,    "Pivot Lookback Left",  group="Divergence", minval=1)
+lbR           = input.int(6,    "Pivot Lookback Right", group="Divergence", minval=1)
+rangeUpper    = input.int(60,   "Max Lookback Range",   group="Divergence", minval=5)
+rangeLower    = input.int(5,    "Min Lookback Range",   group="Divergence", minval=1)
+div_window    = input.int(3,    "Divergence Window",    group="Divergence", minval=0, maxval=20,
+     tooltip="Bars after divergence is confirmed that it stays active as a trigger.")
+
+// ─── MACD SETTINGS (from TradingView MACD indicator) ──────────────
+macd_fast     = input.int(12,   "MACD Fast",           group="MACD")
+macd_slow     = input.int(26,   "MACD Slow",           group="MACD")
+macd_signal   = input.int(9,    "MACD Signal",         group="MACD")
+
+// ─── FILTER TOGGLES ────────────────────────────────────────────────
+use_rsi_50_filter  = input.bool(true,  "RSI 50-Line Filter",  group="Filters",
+     tooltip="Require RSI above/below 50 for trade direction.")
+use_htf_filter     = input.bool(true,  "HTF RSI Filter",      group="Filters",
+     tooltip="Require HTF RSI to agree with direction.")
+
+// ─── TRIGGER TOGGLES ───────────────────────────────────────────────
+use_rsi_divergence = input.bool(true,  "RSI Divergence",      group="Triggers")
+use_rsi_pullback   = input.bool(true,  "RSI Pullback",        group="Triggers")
+use_macd_cross     = input.bool(true,  "MACD Signal Cross",   group="Triggers")
+use_macd_hist_flip = input.bool(true,  "MACD Hist Flip",      group="Triggers")
+use_macd_histogram = input.bool(true,  "MACD Hist Momentum",  group="Triggers")
+min_triggers       = input.int(1,      "Min Triggers",        minval=1, maxval=5, group="Triggers",
+     tooltip="Number of trigger events needed to enter a trade.")
+
+// ─── RISK MANAGEMENT ──────────────────────────────────────────────
+pv            = input.float(50.0, "Point Value ($)",     group="Risk")
+stop_dollars  = input.float(300.0,"Stop Loss ($)",       step=25, group="Risk")
+tp_dollars    = input.float(1000.0,"Take Profit ($)",    step=25, group="Risk")
+cooldown_bars = input.int(30,     "Cooldown Bars",       minval=0, group="Risk")
+
+use_breakeven  = input.bool(false,  "Use Breakeven",    group="Breakeven")
+be_trigger_dol = input.float(200.0, "BE Trigger ($)",   step=25, group="Breakeven")
+
+// ─── SESSION FILTER ───────────────────────────────────────────────
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18,    "Start Hour (ET)",    group="Session")
+sess_start_mn = input.int(0,     "Start Minute",       group="Session")
+sess_end_hr   = input.int(8,     "End Hour (ET)",      group="Session")
+sess_end_mn   = input.int(0,     "End Minute",         group="Session")
+
+// ─── DISPLAY ──────────────────────────────────────────────────────
+show_legend   = input.bool(true, "Show Legend Table",   group="Display")
+
+// ─── SESSION LOGIC ────────────────────────────────────────────────
+cur_hr  = hour(time, "America/New_York")
+cur_mn  = minute(time, "America/New_York")
+bar_t   = cur_hr * 100 + cur_mn
+s_start = sess_start_hr * 100 + sess_start_mn
+s_end   = sess_end_hr   * 100 + sess_end_mn
+in_session = use_session ? (s_start > s_end ? (bar_t >= s_start or bar_t < s_end)
+     : (bar_t >= s_start and bar_t < s_end)) : true
+
+prev_hr  = hour(time[1], "America/New_York")
+prev_mn  = minute(time[1], "America/New_York")
+prev_t   = prev_hr * 100 + prev_mn
+prev_in  = use_session ? (s_start > s_end ? (prev_t >= s_start or prev_t < s_end)
+     : (prev_t >= s_start and prev_t < s_end)) : true
+sess_end_flag = prev_in and not in_session
+
+if sess_end_flag and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ═══════════════════════════════════════════════════════════════════
+// INDICATORS — exact logic from provided TradingView code
+// ═══════════════════════════════════════════════════════════════════
+
+// ── RSI (Wilder smoothing — same as ta.rsi) ──
+rsi_val     = ta.rsi(close, rsi_len)
+htf_rsi_val = ta.rsi(close, htf_rsi_len)
+
+// ── RSI DIVERGENCE (from TradingView RSI Divergence Indicator) ──
+// Exact pivot-based detection using ta.pivotlow / ta.pivothigh
+_inRange(bool cond) =>
+    bars = ta.barssince(cond)
+    rangeLower <= bars and bars <= rangeUpper
+
+rsiLBR = rsi_val[lbR]
+
+// Pivot detection on RSI
+plFound = not na(ta.pivotlow(rsi_val, lbL, lbR))
+phFound = not na(ta.pivothigh(rsi_val, lbL, lbR))
+
+// Regular Bullish Divergence: Price lower low + RSI higher low
+inRangePl      = _inRange(plFound[1])
+oscHL          = rsiLBR > ta.valuewhen(plFound, rsiLBR, 1) and inRangePl
+priceLL        = low[lbR] < ta.valuewhen(plFound, low[lbR], 1)
+bullDivRaw     = priceLL and oscHL and plFound
+
+// Regular Bearish Divergence: Price higher high + RSI lower high
+inRangePh      = _inRange(phFound[1])
+oscLH          = rsiLBR < ta.valuewhen(phFound, rsiLBR, 1) and inRangePh
+priceHH        = high[lbR] > ta.valuewhen(phFound, high[lbR], 1)
+bearDivRaw     = priceHH and oscLH and phFound
+
+// Divergence window: keep signal active for N bars after detection
+bullDivActive = bullDivRaw
+bearDivActive = bearDivRaw
+for shift = 1 to 20
+    if shift <= div_window
+        bullDivActive := bullDivActive or bullDivRaw[shift]
+        bearDivActive := bearDivActive or bearDivRaw[shift]
+
+// ── MACD (from TradingView MACD indicator) ──
+maFast   = ta.ema(close, macd_fast)
+maSlow   = ta.ema(close, macd_slow)
+macd     = maFast - maSlow
+signal   = ta.ema(macd, macd_signal)
+hist     = macd - signal
+
+// Histogram 4-state coloring (from provided MACD code)
+hColor = hist >= 0 ? (hist > hist[1] ? #26a69a : #b2dfdb) : (hist > hist[1] ? #ffcdd2 : #ff5252)
+
+// ═══════════════════════════════════════════════════════════════════
+// STRATEGY LOGIC — Filters + Triggers
+// ═══════════════════════════════════════════════════════════════════
+
+// ── TREND FILTERS (all must agree for direction) ──
+filter_long  = true
+filter_short = true
+if use_rsi_50_filter
+    filter_long  := filter_long  and rsi_val > 50
+    filter_short := filter_short and rsi_val < 50
+if use_htf_filter
+    filter_long  := filter_long  and htf_rsi_val > 50
+    filter_short := filter_short and htf_rsi_val < 50
+
+// ── ENTRY TRIGGERS (count events) ──
+trig_long  = 0
+trig_short = 0
+
+// T1: RSI Divergence (proper pivot-based)
+t1_long  = use_rsi_divergence ? bullDivActive : false
+t1_short = use_rsi_divergence ? bearDivActive : false
+trig_long  += t1_long  ? 1 : 0
+trig_short += t1_short ? 1 : 0
+
+// T2: RSI Pullback zone crossover (RSI crosses 50 from pullback zone)
+t2_long  = use_rsi_pullback ? (rsi_val[1] <= 50 and rsi_val > 50 and rsi_val[1] >= pullback_lo) : false
+t2_short = use_rsi_pullback ? (rsi_val[1] >= 50 and rsi_val < 50 and rsi_val[1] <= pullback_hi) : false
+trig_long  += t2_long  ? 1 : 0
+trig_short += t2_short ? 1 : 0
+
+// T3: MACD signal cross (from provided MACD code)
+t3_long  = use_macd_cross ? ta.crossover(macd, signal)  : false
+t3_short = use_macd_cross ? ta.crossunder(macd, signal) : false
+trig_long  += t3_long  ? 1 : 0
+trig_short += t3_short ? 1 : 0
+
+// T4: MACD histogram sign flip
+t4_long  = use_macd_hist_flip ? (hist > 0 and hist[1] <= 0) : false
+t4_short = use_macd_hist_flip ? (hist < 0 and hist[1] >= 0) : false
+trig_long  += t4_long  ? 1 : 0
+trig_short += t4_short ? 1 : 0
+
+// T5: MACD histogram momentum building
+t5_long  = use_macd_histogram ? (hist > hist[1] and hist > 0) : false
+t5_short = use_macd_histogram ? (hist < hist[1] and hist < 0) : false
+trig_long  += t5_long  ? 1 : 0
+trig_short += t5_short ? 1 : 0
+
+// ── ENTRY LOGIC ──
+var int   last_trade_bar = -9999
+var bool  in_trade       = false
+var float entry_price    = na
+var bool  be_active      = false
+var int   trade_dir      = 0
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    in_trade := false
+flat = strategy.position_size == 0 and not in_trade
+
+cooled   = bar_index - last_trade_bar >= cooldown_bars
+stop_pts = stop_dollars / pv
+tp_pts   = tp_dollars   / pv
+be_pts   = be_trigger_dol / pv
+
+long_ok  = filter_long  and trig_long  >= min_triggers and flat and in_session and cooled
+short_ok = filter_short and trig_short >= min_triggers and flat and in_session and cooled
+if long_ok and short_ok
+    if trig_long >= trig_short
+        short_ok := false
+    else
+        long_ok := false
+
+if long_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := 1
+    strategy.entry("Long", strategy.long, comment="Long")
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+
+if short_ok
+    in_trade       := true
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    trade_dir      := -1
+    strategy.entry("Short", strategy.short, comment="Short")
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+
+// ── BREAKEVEN ──
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0 and close - entry_price >= be_pts
+        be_active := true
+        strategy.exit("XL", "Long", stop=entry_price + syminfo.mintick, limit=entry_price + tp_pts)
+    if strategy.position_size < 0 and entry_price - close >= be_pts
+        be_active := true
+        strategy.exit("XS", "Short", stop=entry_price - syminfo.mintick, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ═══════════════════════════════════════════════════════════════════
+// VISUALIZATION
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Entry markers ──
+plotshape(long_ok,  "Long",  shape.triangleup,   location.belowbar, color.lime, size=size.small)
+plotshape(short_ok, "Short", shape.triangledown,  location.abovebar, color.red,  size=size.small)
+
+// ── Divergence markers (on price chart, at the pivot bar) ──
+plotshape(bullDivRaw, "Bull Div", shape.diamond, location.belowbar, #26a69a,
+     size=size.tiny, offset=-lbR)
+plotshape(bearDivRaw, "Bear Div", shape.diamond, location.abovebar, #ff5252,
+     size=size.tiny, offset=-lbR)
+
+// ── Entry tooltips ──
+if long_ok
+    triggers_str = ""
+    if t1_long
+        triggers_str += "Div "
+    if t2_long
+        triggers_str += "PB "
+    if t3_long
+        triggers_str += "MX "
+    if t4_long
+        triggers_str += "HF "
+    if t5_long
+        triggers_str += "HM "
+    label.new(bar_index, low, "L",
+         color=color.lime, style=label.style_label_up, textcolor=color.white, size=size.small,
+         tooltip="LONG @ " + str.tostring(close, "#.##") +
+                 "\nTriggers: " + str.tostring(trig_long) + "/" + str.tostring(min_triggers) +
+                 " [" + triggers_str + "]" +
+                 "\n--- Filters ---" +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") + (rsi_val > 50 ? " PASS" : " fail") +
+                 "\nHTF RSI: " + str.tostring(htf_rsi_val, "#.#") + (htf_rsi_val > 50 ? " PASS" : (use_htf_filter ? " fail" : " OFF")) +
+                 "\n--- Triggers ---" +
+                 "\nDivergence: " + (t1_long ? "YES" : "no") +
+                 "\nPullback: " + (t2_long ? "YES" : "no") +
+                 "\nMACD Cross: " + (t3_long ? "YES" : "no") +
+                 "\nHist Flip: " + (t4_long ? "YES" : "no") +
+                 "\nHist Mom: " + (t5_long ? "YES" : "no") +
+                 "\n--- MACD ---" +
+                 "\nMACD: " + str.tostring(macd, "#.##") +
+                 "\nSignal: " + str.tostring(signal, "#.##") +
+                 "\nHist: " + str.tostring(hist, "#.##") +
+                 "\n--- Trade ---" +
+                 "\nSL: " + str.tostring(close - stop_pts, "#.##") + " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(close + tp_pts, "#.##") + " ($" + str.tostring(tp_dollars) + ")")
+
+if short_ok
+    triggers_str = ""
+    if t1_short
+        triggers_str += "Div "
+    if t2_short
+        triggers_str += "PB "
+    if t3_short
+        triggers_str += "MX "
+    if t4_short
+        triggers_str += "HF "
+    if t5_short
+        triggers_str += "HM "
+    label.new(bar_index, high, "S",
+         color=color.red, style=label.style_label_down, textcolor=color.white, size=size.small,
+         tooltip="SHORT @ " + str.tostring(close, "#.##") +
+                 "\nTriggers: " + str.tostring(trig_short) + "/" + str.tostring(min_triggers) +
+                 " [" + triggers_str + "]" +
+                 "\n--- Filters ---" +
+                 "\nRSI: " + str.tostring(rsi_val, "#.#") + (rsi_val < 50 ? " PASS" : " fail") +
+                 "\nHTF RSI: " + str.tostring(htf_rsi_val, "#.#") + (htf_rsi_val < 50 ? " PASS" : (use_htf_filter ? " fail" : " OFF")) +
+                 "\n--- Triggers ---" +
+                 "\nDivergence: " + (t1_short ? "YES" : "no") +
+                 "\nPullback: " + (t2_short ? "YES" : "no") +
+                 "\nMACD Cross: " + (t3_short ? "YES" : "no") +
+                 "\nHist Flip: " + (t4_short ? "YES" : "no") +
+                 "\nHist Mom: " + (t5_short ? "YES" : "no") +
+                 "\n--- MACD ---" +
+                 "\nMACD: " + str.tostring(macd, "#.##") +
+                 "\nSignal: " + str.tostring(signal, "#.##") +
+                 "\nHist: " + str.tostring(hist, "#.##") +
+                 "\n--- Trade ---" +
+                 "\nSL: " + str.tostring(close + stop_pts, "#.##") + " ($" + str.tostring(stop_dollars) + ")" +
+                 "\nTP: " + str.tostring(close - tp_pts, "#.##") + " ($" + str.tostring(tp_dollars) + ")")
+
+// ═══════════════════════════════════════════════════════════════════
+// LEGEND TABLE
+// ═══════════════════════════════════════════════════════════════════
+if show_legend
+    var table tb = table.new(position.top_right, 2, 14,
+         bgcolor=#1e222d, border_color=#373a46, border_width=1, frame_color=#373a46, frame_width=1)
+
+    if barstate.isfirst
+        tb.cell(0, 0, "Component",         text_color=color.white, text_size=size.small)
+        tb.cell(1, 0, "Status",            text_color=color.white, text_size=size.small)
+        tb.cell(0, 1, "F: RSI 50",         text_color=#aaaaaa, text_size=size.small)
+        tb.cell(0, 2, "F: HTF RSI",        text_color=#aaaaaa, text_size=size.small)
+        tb.cell(0, 3, "T: Divergence",     text_color=color.white, text_size=size.small)
+        tb.cell(0, 4, "T: RSI Pullback",   text_color=color.white, text_size=size.small)
+        tb.cell(0, 5, "T: MACD Cross",     text_color=color.white, text_size=size.small)
+        tb.cell(0, 6, "T: Hist Flip",      text_color=color.white, text_size=size.small)
+        tb.cell(0, 7, "T: Hist Mom",       text_color=color.white, text_size=size.small)
+        tb.cell(0, 8, "MACD",              text_color=#aaaaaa, text_size=size.small)
+        tb.cell(0, 9, "Histogram",         text_color=#aaaaaa, text_size=size.small)
+        tb.cell(0, 10, "Triggers",         text_color=color.white, text_size=size.small)
+        tb.cell(0, 11, "Session",          text_color=color.white, text_size=size.small)
+        tb.cell(0, 12, "State",            text_color=color.white, text_size=size.small)
+        tb.cell(0, 13, "Entry / SL / TP",  text_color=color.white, text_size=size.small)
+
+    // Filters
+    tb.cell(1, 1, str.tostring(rsi_val, "#.#") + (rsi_val > 50 ? " Bull" : " Bear"),
+         text_color=rsi_val > 50 ? color.lime : color.red, text_size=size.small)
+    htf_txt = use_htf_filter ? str.tostring(htf_rsi_val, "#.#") + (htf_rsi_val > 50 ? " Bull" : " Bear") : "OFF"
+    tb.cell(1, 2, htf_txt,
+         text_color=not use_htf_filter ? color.gray : htf_rsi_val > 50 ? color.lime : color.red, text_size=size.small)
+
+    // Triggers
+    div_txt = bullDivActive ? "BULL" : bearDivActive ? "BEAR" : "-"
+    tb.cell(1, 3, div_txt,
+         text_color=bullDivActive ? color.lime : bearDivActive ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 4, t2_long ? "LONG" : t2_short ? "SHORT" : "-",
+         text_color=t2_long ? color.lime : t2_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 5, t3_long ? "BULL" : t3_short ? "BEAR" : "-",
+         text_color=t3_long ? color.lime : t3_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 6, t4_long ? "BULL" : t4_short ? "BEAR" : "-",
+         text_color=t4_long ? color.lime : t4_short ? color.red : color.gray, text_size=size.small)
+    tb.cell(1, 7, t5_long ? "BULL" : t5_short ? "BEAR" : "-",
+         text_color=t5_long ? color.lime : t5_short ? color.red : color.gray, text_size=size.small)
+
+    // MACD info
+    tb.cell(1, 8, str.tostring(macd, "#.##") + " / " + str.tostring(signal, "#.##"),
+         text_color=macd > signal ? color.lime : color.red, text_size=size.small)
+    tb.cell(1, 9, str.tostring(hist, "#.##"),
+         text_color=hColor, text_size=size.small)
+
+    // Triggers count
+    best_t = math.max(trig_long, trig_short)
+    d_str  = trig_long >= trig_short ? "L" : "S"
+    tb.cell(1, 10, d_str + " " + str.tostring(best_t) + "/" + str.tostring(min_triggers),
+         text_color=best_t >= min_triggers ? color.lime : color.yellow, text_size=size.small)
+    tb.cell(1, 11, in_session ? "YES" : "NO",
+         text_color=in_session ? color.lime : color.gray, text_size=size.small)
+
+    // Position state
+    pos_s = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    state_str = pos_s + (cooled ? "" : " (CD)")
+    tb.cell(1, 12, state_str,
+         text_color=strategy.position_size > 0 ? color.lime : strategy.position_size < 0 ? color.red : color.gray,
+         text_size=size.small)
+
+    // Trade details
+    trade_str = "-"
+    trade_clr = color.gray
+    if strategy.position_size != 0 and not na(entry_price)
+        cur_sl = trade_dir == 1 ? entry_price - stop_pts : entry_price + stop_pts
+        cur_tp = trade_dir == 1 ? entry_price + tp_pts   : entry_price - tp_pts
+        if be_active
+            cur_sl := trade_dir == 1 ? entry_price + syminfo.mintick : entry_price - syminfo.mintick
+        upts = trade_dir == 1 ? close - entry_price : entry_price - close
+        udol = upts * pv
+        trade_str := str.tostring(entry_price, "#.##") + " | " + str.tostring(cur_sl, "#.##") + " | " + str.tostring(cur_tp, "#.##") + " $" + str.tostring(udol, "#.#")
+        trade_clr := udol >= 0 ? color.lime : color.red
+
+    tb.cell(1, 13, trade_str, text_color=trade_clr, text_size=size.small)

@@ -1,0 +1,328 @@
+//@version=5
+strategy("EMA BB Mean Reversion", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// EMA + Bollinger Band Mean Reversion (from notebook, optimized for ES 2min)
+// Long: uptrend (fast EMA > slow for backcandles) AND close <= lower BB
+// Short: downtrend (fast EMA < slow for backcandles) AND close >= upper BB
+// ATR-based stop and take profit. Best ES 2min: EMA 30/15 BC=5 BB 20/1.5 SLx=1.1 TPr=1.5
+
+// ===== EMA =====
+ema_slow       = input.int(55, "EMA Slow", minval=5, maxval=200, group="EMA")
+ema_fast       = input.int(15, "EMA Fast", minval=3, maxval=100, group="EMA")
+ema_backcandles = input.int(5, "EMA Back Candles", minval=2, maxval=20, group="EMA", tooltip="All bars in window must have fast above/below slow for trend.")
+
+// ===== BOLLINGER BANDS =====
+bb_length = input.int(25, "BB Length", minval=5, maxval=50, group="Bollinger")
+bb_std    = input.float(1.5, "BB Std Dev", minval=0.5, maxval=3.0, step=0.1, group="Bollinger")
+
+// ===== ATR RISK =====
+atr_length   = input.int(7, "ATR Length", minval=5, maxval=30, group="Risk")
+sl_atr_mult  = input.float(1.5, "SL ATR Multiplier", minval=0.5, maxval=3.0, step=0.1, group="Risk")
+tp_sl_ratio  = input.float(2.5, "TP / SL Ratio", minval=1.0, maxval=4.0, step=0.1, group="Risk", tooltip="TP distance = SL distance × this.")
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+
+// ===== COOLDOWN =====
+cooldown_bars = input.int(3, "Cooldown (bars)", minval=0, maxval=50, group="Entry")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18, "Session Start Hour (ET)", group="Session")
+sess_start_mn = input.int(0,  "Session Start Minute", group="Session")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)", group="Session")
+sess_end_mn   = input.int(0,  "Session End Minute", group="Session")
+
+// ===== TRAILING STOP =====
+use_trail         = input.bool(true, "Enable Trailing Stop", group="Trail")
+trail_pct         = input.float(80.0, "Trail: Keep % of Peak Profit", group="Trail")
+trail_step_amt    = input.float(500.0, "Trail: Tighten every $X profit", group="Trail")
+trail_step_pct    = input.float(50.0, "Trail: Tighten by X% per step", group="Trail")
+trail_min_dollars = input.float(300.0, "Trail: Min Profit Before Trailing ($)", group="Trail")
+
+// ===== BREAKEVEN =====
+use_breakeven      = input.bool(true, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(150.0, "BE Trigger ($)", minval=50, tooltip="Move stop to entry + 1 tick after this much unrealized profit.", group="Breakeven")
+rev_on_any_loss    = input.bool(false, "Reverse on Any Loss (incl. BE)", group="Breakeven",
+  tooltip="If true, reverse on ANY losing trade (including after BE triggered). If false, only reverse on full stop-outs where BE was never hit.")
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== VAR STATE (for signals) =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var float current_tp      = 0.0
+var float peak_profit_pts = 0.0
+var bool  be_active       = false
+var int   last_dir        = 0
+var bool  reversal_pending = false
+var bool  is_reversal     = false
+
+// ===== RESET AFTER TRADE (run first so reversal_pending is current for signals) =====
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit_pts := 0.0
+    if not is_reversal and last_dir != 0
+        bool loss_qualifies = rev_on_any_loss or not be_active
+        if loss_qualifies
+            int idx = strategy.closedtrades - 1
+            if idx >= 0 and strategy.closedtrades.profit(idx) < 0
+                reversal_pending := true
+    be_active   := false
+    is_reversal := false
+
+// ===== INDICATORS =====
+float ema_slow_val  = ta.ema(close, ema_slow)
+float ema_fast_val  = ta.ema(close, ema_fast)
+float bb_basis      = ta.sma(close, bb_length)
+float bb_dev        = ta.stdev(close, bb_length)
+float bb_upper      = bb_basis + bb_std * bb_dev
+float bb_lower      = bb_basis - bb_std * bb_dev
+float atr_val       = ta.atr(atr_length)
+
+// EMA trend: all backcandles must have fast > slow (bull) or fast < slow (bear)
+int ema_signal = 0
+if bar_index >= ema_backcandles
+    bool all_fast_above = true
+    bool all_fast_below = true
+    for k = 0 to ema_backcandles - 1
+        float f = ema_fast_val[k]
+        float s = ema_slow_val[k]
+        if not na(f) and not na(s)
+            if f <= s
+                all_fast_above := false
+            if f >= s
+                all_fast_below := false
+    if all_fast_above
+        ema_signal := 2
+    else if all_fast_below
+        ema_signal := 1
+
+// Entry conditions
+bool long_cond  = ema_signal == 2 and close <= bb_lower
+bool short_cond = ema_signal == 1 and close >= bb_upper
+
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+float sl_dist = not na(atr_val) and atr_val > 0 ? atr_val * sl_atr_mult : na
+float tp_dist = not na(sl_dist) ? sl_dist * tp_sl_ratio : na
+float be_trigger_pts = be_trigger_dollars / pv
+
+// Only one direction at a time: must be flat (no position)
+// Block main signals when reversal is pending (avoid double entry on same bar)
+bool flat = strategy.position_size == 0
+bool no_reversal_pending = not reversal_pending
+bool long_sig  = long_cond and in_session and cooled_down and flat and no_reversal_pending and not na(sl_dist) and not na(tp_dist)
+bool short_sig = short_cond and in_session and cooled_down and flat and no_reversal_pending and not na(sl_dist) and not na(tp_dist)
+
+// ===== ENTRIES =====
+if long_sig
+    current_stop    := close - sl_dist
+    entry_price     := close
+    current_tp      := close + tp_dist
+    peak_profit_pts := 0.0
+    be_active       := false
+    is_reversal     := false
+    last_trade_bar  := bar_index
+    last_dir        := 1
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=current_tp)
+else if short_sig
+    current_stop    := close + sl_dist
+    entry_price     := close
+    current_tp      := close - tp_dist
+    peak_profit_pts := 0.0
+    be_active       := false
+    is_reversal     := false
+    last_trade_bar  := bar_index
+    last_dir        := -1
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=current_tp)
+
+// ===== REVERSAL TRADE — opposite direction, half risk, 2:1 RR (respects cooldown) =====
+if reversal_pending and flat and in_session and cooled_down and not na(sl_dist)
+    reversal_pending := false
+    is_reversal      := true
+    peak_profit_pts  := 0.0
+    be_active        := false
+    last_trade_bar   := bar_index
+    float rev_stop_dist = sl_dist / 2.0
+    float rev_tp_dist   = sl_dist
+    if last_dir == 1
+        current_stop := close + rev_stop_dist
+        entry_price  := close
+        current_tp   := close - rev_tp_dist
+        last_dir     := -1
+        strategy.entry("RevShort", strategy.short)
+        strategy.exit("XRS", "RevShort", stop=current_stop, limit=current_tp)
+    else if last_dir == -1
+        current_stop := close - rev_stop_dist
+        entry_price  := close
+        current_tp   := close + rev_tp_dist
+        last_dir     := 1
+        strategy.entry("RevLong", strategy.long)
+        strategy.exit("XRL", "RevLong", stop=current_stop, limit=current_tp)
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=current_tp)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=current_tp)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=current_tp)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=current_tp)
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 9, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+table.cell(crit_table, 0, 1, "EMA Trend", text_color=color.white, text_size=size.tiny)
+string ema_txt = ema_signal == 2 ? "Bull" : ema_signal == 1 ? "Bear" : "Mixed"
+color ema_col = ema_signal == 2 ? color.lime : ema_signal == 1 ? color.red : color.gray
+table.cell(crit_table, 1, 1, ema_txt, text_color=ema_col, text_size=size.tiny)
+table.cell(crit_table, 2, 1, "", text_size=size.tiny)
+
+table.cell(crit_table, 0, 2, "Close vs BB", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, close <= bb_lower ? "<= BBL" : "---", text_color=close <= bb_lower ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, close >= bb_upper ? ">= BBU" : "---", text_color=close >= bb_upper ? color.red : color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 3, "In Session", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, in_session ? "YES" : "NO", text_color=in_session ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, "", text_size=size.tiny)
+
+table.cell(crit_table, 0, 4, "Cooled Down", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, cooled_down ? "YES" : "NO", text_color=cooled_down ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, "", text_size=size.tiny)
+
+table.cell(crit_table, 0, 5, "ATR", text_color=color.white, text_size=size.tiny)
+string atr_txt = not na(atr_val) ? str.tostring(atr_val, "#.##") : "n/a"
+table.cell(crit_table, 1, 5, atr_txt, text_color=color.orange, text_size=size.tiny)
+table.cell(crit_table, 2, 5, "", text_size=size.tiny)
+
+string be_txt = be_active ? "ACTIVE" : "---"
+color be_col = be_active ? color.lime : color.gray
+table.cell(crit_table, 0, 6, "Breakeven", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 6, be_txt, text_color=be_col, text_size=size.tiny)
+table.cell(crit_table, 2, 6, "", text_size=size.tiny)
+
+string rev_txt = is_reversal ? "ACTIVE" : reversal_pending ? "PENDING" : "---"
+color rev_col = is_reversal ? color.orange : reversal_pending ? color.yellow : color.gray
+table.cell(crit_table, 0, 7, "Reversal", text_color=color.orange, text_size=size.tiny)
+table.cell(crit_table, 1, 7, rev_txt, text_color=rev_col, text_size=size.tiny)
+table.cell(crit_table, 2, 7, "½R  2:1", text_color=color.gray, text_size=size.tiny)
+
+table.cell(crit_table, 0, 8, "Signal", text_color=color.yellow, text_size=size.tiny)
+string sig_txt = long_sig ? "LONG" : short_sig ? "SHORT" : "---"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(crit_table, 1, 8, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 8, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH TOOLTIP (NEVER REMOVE) =====
+if long_sig
+    string tt = "LONG (Mean Reversion)\n" +
+      "──────────────────\n" +
+      "✓  Uptrend: fast EMA > slow for " + str.tostring(ema_backcandles) + " bars\n" +
+      "✓  Close <= lower BB (oversold)\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close - sl_dist, "#.##") + " (" + str.tostring(sl_atr_mult, "#.#") + "x ATR)\n" +
+      "TP: " + str.tostring(close + tp_dist, "#.##") + " (" + str.tostring(tp_sl_ratio, "#.#") + "x SL)"
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    string tt = "SHORT (Mean Reversion)\n" +
+      "──────────────────\n" +
+      "✓  Downtrend: fast EMA < slow for " + str.tostring(ema_backcandles) + " bars\n" +
+      "✓  Close >= upper BB (overbought)\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close + sl_dist, "#.##") + " (" + str.tostring(sl_atr_mult, "#.#") + "x ATR)\n" +
+      "TP: " + str.tostring(close - tp_dist, "#.##") + " (" + str.tostring(tp_sl_ratio, "#.#") + "x SL)"
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+if is_reversal and strategy.position_size != 0 and strategy.position_size[1] == 0
+    float rev_risk_d = (sl_dist / 2.0) * pv
+    float rev_tp_d   = sl_dist * pv
+    if strategy.position_size > 0
+        string tt = "REVERSAL LONG  (prev short stopped)\n" +
+          "──────────────────\n" +
+          "Half risk: $" + str.tostring(rev_risk_d, "#") + "\n" +
+          "TP 2:1: $" + str.tostring(rev_tp_d, "#") + "\n" +
+          "──────────────────\n" +
+          "Entry: " + str.tostring(entry_price, "#.##")
+        label.new(bar_index, low, "▲R", style=label.style_label_up, color=color.orange, textcolor=color.white, size=size.small, tooltip=tt)
+    else if strategy.position_size < 0
+        string tt = "REVERSAL SHORT  (prev long stopped)\n" +
+          "──────────────────\n" +
+          "Half risk: $" + str.tostring(rev_risk_d, "#") + "\n" +
+          "TP 2:1: $" + str.tostring(rev_tp_d, "#") + "\n" +
+          "──────────────────\n" +
+          "Entry: " + str.tostring(entry_price, "#.##")
+        label.new(bar_index, high, "▼R", style=label.style_label_down, color=color.orange, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== PLOTS =====
+plot(ema_slow_val, "EMA Slow", color.blue, linewidth=2)
+plot(ema_fast_val, "EMA Fast", color.orange, linewidth=1)
+plot(bb_upper, "BB Upper", color.green, linewidth=1)
+plot(bb_lower, "BB Lower", color.green, linewidth=1)
+plot(bb_basis, "BB Basis", color.new(color.gray, 50), linewidth=1)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)

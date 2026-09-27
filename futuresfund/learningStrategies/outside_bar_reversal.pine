@@ -1,0 +1,203 @@
+//@version=5
+strategy("Night Session Outside Bar Reversal", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+
+// Outside Bar Reversal Strategy (from SimpleCandleStrategy01 notebook)
+//
+// LONG (signal 2): bearish outside bar that closes below previous low
+//   - Open > Close (bearish bar)
+//   - High > prev High (engulfs above)
+//   - Low < prev Low (engulfs below)
+//   - Close < prev Low (closes aggressively below)
+//   → Reversal long: expect snap-back up
+//
+// SHORT (signal 1): bullish outside bar that closes above previous high
+//   - Open < Close (bullish bar)
+//   - High > prev High (engulfs above)
+//   - Low < prev Low (engulfs below)
+//   - Close > prev High (closes aggressively above)
+//   → Reversal short: expect snap-back down
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(18, "Session Start Hour (ET)", group="Session")
+sess_start_mn = input.int(0,  "Session Start Minute", group="Session")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)", group="Session")
+sess_end_mn   = input.int(0,  "Session End Minute", group="Session")
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+stop_dollars = input.float(200.0, "Stop ($)", minval=50, step=25, group="Risk")
+tp_dollars   = input.float(400.0, "Take Profit ($)", minval=50, step=50, group="Risk")
+
+// ===== COOLDOWN =====
+cooldown_bars = input.int(0, "Cooldown (bars)", minval=0, maxval=50, step=1, group="Entry")
+
+// ===== BREAKEVEN =====
+use_breakeven      = input.bool(false, "Enable Breakeven Stop", group="Breakeven")
+be_trigger_dollars = input.float(200.0, "BE Trigger ($)", minval=50, step=25, group="Breakeven")
+
+// ===== FILTER: exclude doji bars (High == Low) =====
+bool valid_bar = high != low
+
+// ===== COMPUTED =====
+float stop_pts       = stop_dollars / pv
+float tp_pts         = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== OUTSIDE BAR DETECTION =====
+// Long signal: bearish outside bar closing below prev low (reversal up expected)
+bool is_bearish     = open > close
+bool engulfs_high_L = high > high[1]
+bool engulfs_low_L  = low < low[1]
+bool close_below    = close < low[1]
+bool long_pattern   = valid_bar and is_bearish and engulfs_high_L and engulfs_low_L and close_below
+
+// Short signal: bullish outside bar closing above prev high (reversal down expected)
+bool is_bullish     = open < close
+bool engulfs_low_S  = low < low[1]
+bool engulfs_high_S = high > high[1]
+bool close_above    = close > high[1]
+bool short_pattern  = valid_bar and is_bullish and engulfs_low_S and engulfs_high_S and close_above
+
+// ===== ENTRY LOGIC =====
+var int last_trade_bar = -9999
+var float current_stop = 0.0
+var float entry_price  = 0.0
+var bool  be_active    = false
+
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+bool long_sig  = long_pattern and in_session and cooled_down and strategy.position_size == 0
+bool short_sig = short_pattern and in_session and cooled_down and strategy.position_size == 0
+
+if long_sig
+    current_stop   := close - stop_pts
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig
+    current_stop   := close + stop_pts
+    entry_price    := close
+    be_active      := false
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// ===== BREAKEVEN MANAGEMENT =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        float unrealized_pts = close - entry_price
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0
+        float unrealized_pts = entry_price - close
+        if unrealized_pts >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====
+var table crit_table = table.new(position.top_right, 3, 7, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(crit_table, 0, 0, "Criterion", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(crit_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+// Row 1: Outside Bar
+bool is_outside_bar = (high > high[1]) and (low < low[1])
+table.cell(crit_table, 0, 1, "Outside Bar", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 1, is_outside_bar and is_bearish ? "1" : "0", text_color=is_outside_bar and is_bearish ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 1, is_outside_bar and is_bullish ? "1" : "0", text_color=is_outside_bar and is_bullish ? color.red : color.gray, text_size=size.tiny)
+
+// Row 2: Close Beyond Prev Range
+table.cell(crit_table, 0, 2, "Close Beyond Range", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 2, close_below ? "1" : "0", text_color=close_below ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 2, close_above ? "1" : "0", text_color=close_above ? color.red : color.gray, text_size=size.tiny)
+
+// Row 3: Session
+table.cell(crit_table, 0, 3, "In Session", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 3, in_session ? "YES" : "NO", text_color=in_session ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 3, "", text_size=size.tiny)
+
+// Row 4: Cooldown
+table.cell(crit_table, 0, 4, "Cooled Down", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 4, cooled_down ? "YES" : "NO", text_color=cooled_down ? color.lime : color.gray, text_size=size.tiny)
+table.cell(crit_table, 2, 4, "", text_size=size.tiny)
+
+// Row 5: Breakeven
+string be_txt = be_active ? "ACTIVE" : "---"
+color be_col = be_active ? color.lime : color.gray
+table.cell(crit_table, 0, 5, "Breakeven", text_color=color.white, text_size=size.tiny)
+table.cell(crit_table, 1, 5, be_txt, text_color=be_col, text_size=size.tiny)
+table.cell(crit_table, 2, 5, "", text_size=size.tiny)
+
+// Row 6: Signal
+string sig_txt = long_sig ? "LONG" : short_sig ? "SHORT" : "---"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(crit_table, 0, 6, "Signal", text_color=color.yellow, text_size=size.tiny)
+table.cell(crit_table, 1, 6, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(crit_table, 2, 6, "", text_size=size.tiny)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+if long_sig
+    string tt = "LONG ENTRY (Outside Bar Reversal)\n" +
+      "──────────────────\n" +
+      "✓  Bearish outside bar (Open > Close)\n" +
+      "✓  High > prev High (" + str.tostring(high, "#.##") + " > " + str.tostring(high[1], "#.##") + ")\n" +
+      "✓  Low < prev Low (" + str.tostring(low, "#.##") + " < " + str.tostring(low[1], "#.##") + ")\n" +
+      "✓  Close < prev Low (" + str.tostring(close, "#.##") + " < " + str.tostring(low[1], "#.##") + ")\n" +
+      "→  Reversal long: snap-back expected\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close - stop_pts, "#.##") + " ($" + str.tostring(stop_dollars, "#") + ")\n" +
+      "TP: " + str.tostring(close + tp_pts, "#.##") + " ($" + str.tostring(tp_dollars, "#") + ")"
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    string tt = "SHORT ENTRY (Outside Bar Reversal)\n" +
+      "──────────────────\n" +
+      "✓  Bullish outside bar (Open < Close)\n" +
+      "✓  High > prev High (" + str.tostring(high, "#.##") + " > " + str.tostring(high[1], "#.##") + ")\n" +
+      "✓  Low < prev Low (" + str.tostring(low, "#.##") + " < " + str.tostring(low[1], "#.##") + ")\n" +
+      "✓  Close > prev High (" + str.tostring(close, "#.##") + " > " + str.tostring(high[1], "#.##") + ")\n" +
+      "→  Reversal short: snap-back expected\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##") + "\n" +
+      "Stop: " + str.tostring(close + stop_pts, "#.##") + " ($" + str.tostring(stop_dollars, "#") + ")\n" +
+      "TP: " + str.tostring(close - tp_pts, "#.##") + " ($" + str.tostring(tp_dollars, "#") + ")"
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+// ===== PLOT =====
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+// Highlight outside bars
+barcolor(long_pattern ? color.lime : short_pattern ? color.red : na)

@@ -1,0 +1,142 @@
+//@version=5
+strategy("EMA 5/50/200 — SMA-VWMA Crossover", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=1, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+
+// ===== THREE LINES =====
+sma_len   = input.int(9, "5 SMA Length", minval=2, group="Lines")
+vwma_len  = input.int(50, "50 VWMA Length", minval=2, group="Lines")
+ema200_len = input.int(200, "200 EMA Length", minval=2, group="Lines")
+
+// ===== TREND: 200 EMA slope =====
+ema200_slope_len = input.int(10, "200 EMA Slope Lookback (bars)", minval=1, group="Trend")
+min_slope       = input.float(1.0, "Min 200 EMA Slope (pts)", minval=0.0, step=0.1, group="Trend",
+  tooltip="200 EMA must slope at least this many points to allow trades. 0 = disabled.")
+
+// ===== FAST SMA SLOPE =====
+sma_slope_bars = input.int(3, "Fast SMA Slope Lookback (bars)", minval=1, group="Fast SMA Slope")
+min_sma_slope  = input.float(0.0, "Min Fast SMA Slope (pts)", minval=0.0, step=0.1, group="Fast SMA Slope",
+  tooltip="Long: fast SMA slope must be > this. Short: slope must be < -this. 0 = disabled.")
+
+// ===== ENTRY =====
+cooldown_bars = input.int(5, "Cooldown (bars)", minval=0, group="Entry")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter", group="Session")
+sess_start_hr = input.int(8, "Session Start Hour (ET)", group="Session")
+sess_start_mn = input.int(0, "Session Start Minute", group="Session")
+sess_end_hr   = input.int(16, "Session End Hour (ET)", group="Session")
+sess_end_mn   = input.int(0, "Session End Minute", group="Session")
+
+// ===== RISK =====
+pv           = input.float(20.0, "Point Value ($)", group="Risk")
+stop_dollars = input.float(250.0, "Stop ($)", group="Risk")
+tp_dollars   = input.float(450.0, "Take Profit ($)", group="Risk")
+
+// ===== DAILY LIMITS =====
+use_daily_limits  = input.bool(true, "Enable Daily Limits", group="Risk")
+daily_loss_limit  = input.float(1000.0, "Daily Loss Limit ($)", minval=0, group="Risk")
+daily_profit_cap  = input.float(2000.0, "Daily Profit Cap ($)", minval=0, group="Risk")
+
+// ===== COMPUTED =====
+float stop_pts = stop_dollars / pv
+float tp_pts   = tp_dollars / pv
+
+// ===== THREE LINES =====
+float sma5   = ta.sma(close, sma_len)
+float vwma50 = ta.vwma(close, vwma_len)
+float ema200 = ta.ema(close, ema200_len)
+
+// ===== 200 EMA SLOPE — direction =====
+float ema200_slope = ema200 - ema200[ema200_slope_len]
+bool  trend_up     = min_slope <= 0 or ema200_slope > min_slope
+bool  trend_dn     = min_slope <= 0 or ema200_slope < -min_slope
+
+// ===== FAST SMA SLOPE =====
+float sma5_slope = sma5 - sma5[sma_slope_bars]
+bool  sma5_up   = min_sma_slope <= 0 or sma5_slope > min_sma_slope
+bool  sma5_dn   = min_sma_slope <= 0 or sma5_slope < -min_sma_slope
+
+// ===== CROSSOVER: fast SMA crosses 50 VWMA =====
+bool cross_up   = ta.crossover(sma5, vwma50)   // fast SMA crosses above 50 VWMA → long
+bool cross_down = ta.crossunder(sma5, vwma50)  // fast SMA crosses below 50 VWMA → short
+
+// ===== SESSION =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== DAILY P&L =====
+var float daily_pnl     = 0.0
+var int   last_reset_day = -1
+var bool  daily_locked   = false
+
+int today = dayofweek(time, "America/New_York") * 10000 + year(time) * 100 + dayofmonth(time, "America/New_York")
+if today != last_reset_day
+    daily_pnl     := 0.0
+    daily_locked  := false
+    last_reset_day := today
+
+if strategy.closedtrades > 0
+    float running = 0.0
+    for i = 0 to strategy.closedtrades - 1
+        int trade_day = dayofweek(strategy.closedtrades.exit_time(i), "America/New_York") * 10000 + year(strategy.closedtrades.exit_time(i)) * 100 + dayofmonth(strategy.closedtrades.exit_time(i), "America/New_York")
+        if trade_day == today
+            running += strategy.closedtrades.profit(i)
+    daily_pnl := running
+
+if use_daily_limits
+    if (daily_loss_limit > 0 and daily_pnl <= -daily_loss_limit) or (daily_profit_cap > 0 and daily_pnl >= daily_profit_cap)
+        daily_locked := true
+        if strategy.position_size != 0
+            strategy.close_all(comment="Daily Limit")
+
+// ===== COOLDOWN =====
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+// ===== SIGNALS =====
+// Long: 200 EMA slope up + fast SMA slope up + fast SMA crosses above 50 VWMA
+bool long_sig  = trend_up and sma5_up and cross_up and in_session and cooled_down and not daily_locked and strategy.position_size <= 0
+
+// Short: 200 EMA slope down + fast SMA slope down + fast SMA crosses below 50 VWMA
+bool short_sig = trend_dn and sma5_dn and cross_down and in_session and cooled_down and not daily_locked and strategy.position_size >= 0
+
+// ===== ENTRIES =====
+if long_sig
+    last_trade_bar := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=close - stop_pts, limit=close + tp_pts)
+else if short_sig
+    last_trade_bar := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=close + stop_pts, limit=close - tp_pts)
+
+// ===== PLOTS =====
+plot(sma5, "5 SMA", color.aqua, linewidth=1)
+plot(vwma50, "50 VWMA", color.purple, linewidth=2)
+plot(ema200, "200 EMA", trend_up ? color.lime : trend_dn ? color.red : color.gray, linewidth=2)
+
+plot(strategy.position_size != 0 ? (strategy.position_size > 0 ? strategy.position_avg_price - stop_pts : strategy.position_avg_price + stop_pts) : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(ema200_slope, "200 EMA Slope", color.orange, display=display.data_window)
+plot(sma5_slope, "Fast SMA Slope", color.aqua, display=display.data_window)
+plot(daily_pnl, "Daily P&L", daily_pnl >= 0 ? color.lime : color.red, display=display.data_window)
+bgcolor(daily_locked ? color.new(color.red, 85) : na)

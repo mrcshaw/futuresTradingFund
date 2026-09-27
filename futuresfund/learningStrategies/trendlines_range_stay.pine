@@ -1,0 +1,208 @@
+//@version=5
+strategy("60 Candle Range Stay", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== RANGE =====
+lookback     = input.int(60, "Lookback Candles", minval=2)
+cycle_mult   = input.int(3,  "Reset after N × Lookback", minval=2)
+zone_dollars = input.float(150.0, "Entry Zone ($)", tooltip="Zone width on each side of the range high/low.")
+confirm_len  = input.int(3, "Confirmation Set (candles)", minval=2, tooltip="Candles to gather a high/low, then next set must break it.")
+
+// ===== EMA TREND FILTER =====
+ema_len       = input.int(200, "EMA Length", minval=1)
+ema_slope_len = input.int(5, "EMA Slope Lookback", minval=1, tooltip="Number of bars to measure EMA slope over.")
+min_slope     = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, tooltip="Minimum absolute slope to count as trending. 0 = any slope.")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(300.0, "Stop ($)")
+tp_dollars        = input.float(300.0, "Take Profit ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(45.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(300.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(10.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(150.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== SESSION =====
+use_session_filter = input.bool(true, "Use Session Filter")
+use_ny_sess    = input.bool(true, "Enable NY Session")
+ny_start_hr    = input.int(9,  "NY Session Start Hour (ET)")
+ny_start_mn    = input.int(30, "NY Session Start Minute")
+ny_end_hr      = input.int(16, "NY Session End Hour (ET)")
+ny_end_mn      = input.int(0,  "NY Session End Minute")
+use_fut_sess   = input.bool(true, "Enable Futures Session")
+fut_start_hr   = input.int(18, "Futures Start Hour (ET)")
+fut_end_hr     = input.int(8,  "Futures End Hour (ET)")
+
+// ===== COMPUTED =====
+stop_pts  = stop_dollars / pv
+tp_pts    = tp_dollars / pv
+zone_pts  = zone_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr    = hour(time, "America/New_York")
+bar_mn    = minute(time, "America/New_York")
+bar_t     = bar_hr * 100 + bar_mn
+ny_start  = ny_start_hr * 100 + ny_start_mn
+ny_end    = ny_end_hr * 100 + ny_end_mn
+fut_start = fut_start_hr * 100
+fut_end   = fut_end_hr * 100
+in_ny     = use_ny_sess and bar_t >= ny_start and bar_t < ny_end
+in_fut    = use_fut_sess and (bar_t >= fut_start or bar_t < fut_end)
+in_session = not use_session_filter or (in_ny or in_fut)
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+was_ny  = use_ny_sess and prev_t >= ny_start and prev_t < ny_end
+was_fut = use_fut_sess and (prev_t >= fut_start or prev_t < fut_end)
+session_ended = (was_ny or was_fut) and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== STATIC RANGE (gather then lock) =====
+int cycle_len     = lookback * cycle_mult
+int pos           = bar_index % cycle_len
+bool gathering    = pos < lookback
+bool gather_done  = pos == lookback - 1
+
+var float run_hi   = high
+var float run_lo   = low
+var float range_hi = high
+var float range_lo = low
+var bool  range_ready = false
+
+if pos == 0
+    run_hi := high
+    run_lo := low
+else if gathering
+    run_hi := math.max(run_hi, high)
+    run_lo := math.min(run_lo, low)
+if gather_done
+    range_hi    := run_hi
+    range_lo    := run_lo
+    range_ready := true
+
+bool show_range = range_ready and not gathering
+
+// ===== EMA =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  ema_up    = ema_slope > min_slope
+bool  ema_down  = ema_slope < -min_slope
+
+// ===== ENTRY ZONES =====
+float sell_zone_lo = range_hi - zone_pts
+float buy_zone_hi  = range_lo + zone_pts
+
+bool in_sell_zone = show_range and close >= sell_zone_lo and close <= range_hi
+bool in_buy_zone  = show_range and close <= buy_zone_hi  and close >= range_lo
+bool red_candle   = close < open
+bool green_candle = close > open
+
+// ===== CONFIRMATION STATE =====
+var float current_stop    = 0.0
+var float peak_profit_pts = 0.0
+var int   conf_phase      = 0     // 0=idle, 1=gathering set, 2=watching for break
+var int   conf_dir        = 0     // +1 expecting long, -1 expecting short
+var int   conf_start      = 0
+var float conf_hi         = na
+var float conf_lo         = na
+
+// ===== PHASE 0: TRIGGER =====
+if conf_phase == 0 and strategy.position_size == 0 and in_session
+    if in_sell_zone and red_candle and ema_up
+        conf_phase := 1
+        conf_dir   := -1
+        conf_start := bar_index + 1
+        conf_hi    := na
+        conf_lo    := na
+    else if in_buy_zone and green_candle and ema_down
+        conf_phase := 1
+        conf_dir   := 1
+        conf_start := bar_index + 1
+        conf_hi    := na
+        conf_lo    := na
+
+// ===== PHASE 1: GATHER CONFIRMATION SET =====
+else if conf_phase == 1 and bar_index >= conf_start
+    int bars_in = bar_index - conf_start
+    if bars_in == 0
+        conf_hi := high
+        conf_lo := low
+    else
+        conf_hi := math.max(conf_hi, high)
+        conf_lo := math.min(conf_lo, low)
+    if bars_in >= confirm_len - 1
+        conf_phase := 2
+        conf_start := bar_index + 1
+
+// ===== PHASE 2: WATCH FOR BREAK =====
+else if conf_phase == 2 and bar_index >= conf_start and strategy.position_size == 0 and in_session
+    int watch_in = bar_index - conf_start
+    if conf_dir == -1 and close < conf_lo
+        current_stop    := close + stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Short", strategy.short)
+        strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+        conf_phase := 0
+    else if conf_dir == 1 and close > conf_hi
+        current_stop    := close - stop_pts
+        peak_profit_pts := 0.0
+        strategy.entry("Long", strategy.long)
+        strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+        conf_phase := 0
+    else if watch_in >= confirm_len - 1
+        conf_phase := 0
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+
+if strategy.position_size[1] != 0 and strategy.position_size == 0 and strategy.closedtrades > 0
+    log.info("TRADE CLOSED bar={0} pnl={1}", bar_index, strategy.closedtrades.profit(strategy.closedtrades - 1))
+
+// ===== PLOT =====
+plot(show_range ? range_hi : na, "Range High", color.aqua, style=plot.style_stepline, linewidth=2)
+plot(show_range ? range_lo : na, "Range Low",  color.aqua, style=plot.style_stepline, linewidth=2)
+plot(show_range ? sell_zone_lo : na, "Sell Zone", color.new(color.red, 50),  style=plot.style_stepline, linewidth=1)
+plot(show_range ? buy_zone_hi : na,  "Buy Zone",  color.new(color.lime, 50), style=plot.style_stepline, linewidth=1)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+plot(ema_val, "EMA", ema_up ? color.lime : ema_down ? color.red : color.gray, linewidth=2)
+
+bool show_conf = conf_phase == 1 or conf_phase == 2
+plot(show_conf and not na(conf_hi) ? conf_hi : na, "Conf Hi", color.yellow, style=plot.style_stepline, linewidth=1)
+plot(show_conf and not na(conf_lo) ? conf_lo : na, "Conf Lo", color.yellow, style=plot.style_stepline, linewidth=1)
+
+plotshape(in_sell_zone and red_candle   and ema_up   and conf_phase == 0 and strategy.position_size == 0, "Sell Trigger", shape.triangledown, location.abovebar, color.red,  size=size.tiny)
+plotshape(in_buy_zone  and green_candle and ema_down and conf_phase == 0 and strategy.position_size == 0, "Buy Trigger",  shape.triangleup,   location.belowbar, color.lime, size=size.tiny)
+
+bgcolor(gathering ? color.new(color.aqua, 93) : na)

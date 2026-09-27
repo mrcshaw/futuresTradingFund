@@ -1,0 +1,252 @@
+//@version=5
+// POC DELTA PULLBACK -- OVERNIGHT CONSISTENT MODE
+// Same core logic as Profit mode but:
+// - Tighter TP ($400) for higher win rate
+// - Only 1 trade per night
+// - Stricter delta filter (10%)
+// - EMA 20 for faster trend detection
+strategy("POC Pullback Night [Consistent]", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+
+// ===== SESSION =====
+sess_start_hr = input.int(18, "Session Start Hour")
+sess_end_hr   = input.int(8,  "Session End Hour")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=500, step=10, group="POC")
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=50, step=5, group="POC")
+min_delta_pct    = input.float(10.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, group="POC")
+
+// ===== TREND =====
+ema_len       = input.int(20, "Trend EMA Length", minval=5, group="Trend")
+ema_slope_len = input.int(5, "EMA Slope Lookback", minval=1, group="Trend")
+min_slope     = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, group="Trend")
+
+// ===== ENTRY =====
+breakaway_pts   = input.float(2.0, "Breakaway (pts)", step=0.5, group="Entry")
+pullback_margin = input.float(2.0, "Pullback Margin (pts)", step=0.5, group="Entry")
+max_attempts    = input.int(1, "Max Trades / Night", group="Entry")
+cooldown_bars   = input.int(5, "Cooldown (bars)", group="Entry")
+
+// ===== RISK -- Tighter for consistency =====
+pv           = input.float(50.0, "Point Value ($)", group="Risk")
+i_tp         = input.float(400.0, "Take Profit ($)", group="Risk")
+max_stop     = input.float(750.0, "Stop Loss ($)", step=50, group="Risk")
+use_be       = input.bool(true, "Enable Breakeven", group="Risk")
+be_trigger   = input.float(150.0, "BE Trigger ($)", minval=50, step=25, group="Risk", tooltip="Move stop to entry after this much unrealized profit.")
+use_trail    = input.bool(false, "Use Trailing Stop?", group="Risk")
+i_trail_act  = input.float(300.0, "Trail Activate ($)", group="Risk")
+i_trail_pct  = input.float(50.0, "Trail Keep %", group="Risk")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float max_stop_pts  = max_stop / pv
+float be_trigger_pts = use_be ? be_trigger / pv : 0.0
+
+// ===== TIME =====
+hrs      = hour(time, "America/New_York")
+mns      = minute(time, "America/New_York")
+int bar_time = hrs * 100 + mns
+int sess_start = sess_start_hr * 100
+int sess_end   = sess_end_hr * 100
+
+bool in_session     = bar_time >= sess_start or bar_time < sess_end
+bool is_new_session = bar_time >= sess_start and bar_time[1] < sess_start
+bool at_eod         = bar_time >= sess_end and bar_time < sess_start
+
+// ===== EMA =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+bool  ema_up    = min_slope <= 0 or ema_slope > min_slope
+bool  ema_dn    = min_slope <= 0 or ema_slope < -min_slope
+
+// ===== VOLUME PROFILE + DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price    = na
+float poc_hi       = na
+float poc_lo       = na
+float poc_delta_pct = na
+int   poc_row      = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if array.size(arr) != rows
+            array.clear(arr)
+            for i = 0 to rows - 1
+                array.push(arr, 0.0)
+        else
+            for i = 0 to rows - 1
+                array.set(arr, i, 0.0)
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                array.set(vol_total, r, array.get(vol_total, r) + per_row)
+                if bar_up
+                    array.set(vol_up, r, array.get(vol_up, r) + per_row)
+                else
+                    array.set(vol_dn, r, array.get(vol_dn, r) + per_row)
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = array.get(vol_total, r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+    poc_price    := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo       := prof_lo + poc_row * step_size
+    poc_hi       := prof_lo + (poc_row + 1) * step_size
+    float p_up  = array.get(vol_up, poc_row)
+    float p_dn  = array.get(vol_dn, poc_row)
+    float p_tot = array.get(vol_total, poc_row)
+    poc_delta_pct := p_tot > 0 ? ((p_up - p_dn) / p_tot) * 100 : 0.0
+
+// ===== DELTA FILTERS =====
+bool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)
+bool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)
+
+// ===== STATE =====
+var int direction        = 0
+var int session_attempts = 0
+var int last_trade_bar   = -9999
+var float peak_profit    = 0.0
+var float current_stop   = na
+var float plot_stop      = na
+var float entry_stop_px  = na
+
+if is_new_session
+    direction        := 0
+    session_attempts := 0
+    peak_profit      := 0.0
+    current_stop     := na
+    plot_stop        := na
+    entry_stop_px    := na
+
+// ===== EOD FLATTEN =====
+if at_eod and strategy.position_size != 0
+    strategy.close_all(comment="EOD")
+    peak_profit   := 0.0
+    current_stop  := na
+    entry_stop_px := na
+
+// ===== DIRECTION =====
+if direction == 0 and not na(poc_hi) and not na(poc_lo) and in_session
+    if close > poc_hi + breakaway_pts and ema_up and delta_bull
+        direction := 1
+    else if close < poc_lo - breakaway_pts and ema_dn and delta_bear
+        direction := -1
+
+// ===== PULLBACK ENTRY =====
+bool can_enter = in_session and session_attempts < max_attempts and strategy.position_size == 0 and (bar_index - last_trade_bar) >= cooldown_bars
+
+bool long_sig  = can_enter and direction == 1 and not na(poc_hi) and low <= poc_hi + pullback_margin and close > poc_lo
+bool short_sig = can_enter and direction == -1 and not na(poc_lo) and high >= poc_lo - pullback_margin and close < poc_hi
+
+bool valid_long  = long_sig and not long_sig[1]
+bool valid_short = short_sig and not short_sig[1]
+
+bool entry_ok = barstate.isconfirmed
+
+if valid_long and entry_ok
+    session_attempts += 1
+    last_trade_bar := bar_index
+    peak_profit    := 0.0
+    entry_stop_px  := close - max_stop_pts
+    current_stop   := entry_stop_px
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=entry_stop_px, limit=close + tp_pts)
+else if valid_short and entry_ok
+    session_attempts += 1
+    last_trade_bar := bar_index
+    peak_profit    := 0.0
+    entry_stop_px  := close + max_stop_pts
+    current_stop   := entry_stop_px
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=entry_stop_px, limit=close - tp_pts)
+
+// ===== BREAKEVEN + TRAILING STOP =====
+if strategy.position_size > 0
+    float avg = strategy.position_avg_price
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if be_trigger_pts > 0 and profit_now >= be_trigger_pts and (na(current_stop) or current_stop < avg)
+        current_stop := avg
+    if use_trail and peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XL", "Long", stop=eff_stop, limit=avg + tp_pts)
+else if strategy.position_size < 0
+    float avg = strategy.position_avg_price
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if be_trigger_pts > 0 and profit_now >= be_trigger_pts and (na(current_stop) or current_stop > avg)
+        current_stop := avg
+    if use_trail and peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if barstate.isconfirmed
+        strategy.exit("XS", "Short", stop=eff_stop, limit=avg - tp_pts)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+
+// ===== PLOTS =====
+plot(ema_val, "EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC Mid", color.yellow, style=plot.style_stepline, linewidth=1)
+plot(strategy.position_size != 0 and not na(plot_stop) ? plot_stop : na, "Stop", color.orange, linewidth=1, style=plot.style_circles)
+
+bgcolor(direction == 1 and in_session ? color.new(color.lime, 95) : direction == -1 and in_session ? color.new(color.red, 95) : na, title="Direction")
+
+plotshape(valid_long, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(valid_short, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+var label lbl_delta = na
+if not na(poc_delta_pct) and not na(poc_hi) and not na(poc_lo)
+    string txt = (poc_delta_pct >= 0 ? "+" : "") + str.tostring(poc_delta_pct, "#.#") + "%"
+    float mid_y = (poc_lo + poc_hi) / 2
+    if na(lbl_delta)
+        lbl_delta := label.new(bar_index, mid_y, txt, style=label.style_label_center, color=color.new(color.gray, 70), textcolor=color.white, size=size.normal)
+    else
+        label.set_xy(lbl_delta, bar_index, mid_y)
+        label.set_text(lbl_delta, txt)

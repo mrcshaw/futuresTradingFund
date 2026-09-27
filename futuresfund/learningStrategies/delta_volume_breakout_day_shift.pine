@@ -1,0 +1,500 @@
+//@version=5
+strategy("POC Confluence", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500, max_lines_count=500)
+
+// v3: Confluence scoring system.
+// IMPORTANT: Never remove the display - confluence table, S/R labels, historical POC lines, POC delta label.
+// 6 factors scored 0/1 each. Trade when score >= threshold.
+//   1. Price above/below POC   2. EMA slope direction
+//   3. POC delta pressure      4. POCs ascending/descending
+//   5. Touching historical S/R 6. SMA10 slope direction
+//
+// Best on ES 2m (Feb 26 - Mar 5 2026):
+//   shift=3 thr=4 stop=400 tp=600 cd=15 ema=100 sl=10 zone=1.5
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5)
+
+// ===== POC HISTORY =====
+poc_shift_pts     = input.float(3.0, "POC Shift Threshold (pts)", minval=0.25, step=0.25, group="POC History")
+poc_history_count = input.int(5, "POC Levels to Track", minval=2, maxval=10, group="POC History")
+sr_zone_pts       = input.float(1.5, "S/R Touch Zone (pts)", minval=0.25, step=0.25, group="POC History")
+
+// ===== EMA + SMA =====
+ema_len       = input.int(100, "EMA Length", minval=1)
+ema_slope_len = input.int(10, "EMA Slope Lookback", minval=1, maxval=20)
+sma10_len     = input.int(10, "SMA10 Length", minval=1)
+sma10_slope_len = input.int(2, "SMA10 Slope Lookback", minval=1, maxval=10)
+
+// ===== CONFLUENCE THRESHOLD =====
+conf_threshold = input.int(4, "Confluence Threshold", minval=1, maxval=6, group="Confluence", tooltip="Minimum score required to enter a trade (out of 6). Each factor is worth 1 point.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16, "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== FILTERS =====
+cooldown_bars = input.int(15, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== RISK =====
+pv           = input.float(50.0, "Point Value ($)")
+stop_dollars = input.float(400.0, "Stop ($)")
+tp_dollars   = input.float(600.0, "Take Profit ($)")
+
+use_trail         = input.bool(false, "Enable Trailing Stop", group="Trailing")
+trail_pct         = input.float(60.0, "Trail: Keep % of Peak Profit", minval=10, maxval=90, group="Trailing")
+trail_step_amt    = input.float(500.0, "Trail: Tighten every $X profit", minval=100, group="Trailing")
+trail_step_pct    = input.float(50.0, "Trail: Tighten by X% per step", minval=1, maxval=50, group="Trailing")
+trail_min_dollars = input.float(300.0, "Trail: Min Profit Before Trailing ($)", minval=25, group="Trailing")
+
+use_breakeven      = input.bool(false, "Enable Breakeven", group="Breakeven")
+be_trigger_dollars = input.float(200.0, "BE Trigger ($)", minval=25, group="Breakeven")
+
+// ===== COMPUTED =====
+float stop_pts       = stop_dollars / pv
+float tp_pts         = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+bool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== EMA + SLOPE =====
+float ema_val   = ta.ema(close, ema_len)
+float ema_slope = ema_val - ema_val[ema_slope_len]
+
+// ===== 10 SMA + SLOPE =====
+float sma10_val   = ta.sma(close, sma10_len)
+float sma10_slope = sma10_val - sma10_val[sma10_slope_len]
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+    float poc_up_v = vol_up.get(poc_row)
+    float poc_dn_v = vol_dn.get(poc_row)
+    float poc_tot  = vol_total.get(poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up_v - poc_dn_v) / poc_tot) * 100 : 0.0
+
+// ===== POC HISTORY =====
+var array<float> hist_poc_price = array.new_float(0)
+var array<float> hist_poc_hi    = array.new_float(0)
+var array<float> hist_poc_lo    = array.new_float(0)
+var array<float> hist_poc_delta = array.new_float(0)
+var float last_rec_poc = na
+
+if not na(poc_price)
+    bool is_new_poc = na(last_rec_poc) or math.abs(poc_price - last_rec_poc) >= poc_shift_pts
+    if is_new_poc
+        if not na(last_rec_poc)
+            float half_step = not na(step_size) ? step_size / 2 : 0.5
+            array.unshift(hist_poc_price, last_rec_poc)
+            array.unshift(hist_poc_hi, last_rec_poc + half_step)
+            array.unshift(hist_poc_lo, last_rec_poc - half_step)
+            array.unshift(hist_poc_delta, nz(poc_delta_pct))
+            while array.size(hist_poc_price) > poc_history_count
+                array.pop(hist_poc_price)
+                array.pop(hist_poc_hi)
+                array.pop(hist_poc_lo)
+                array.pop(hist_poc_delta)
+        last_rec_poc := poc_price
+
+int hist_size = array.size(hist_poc_price)
+
+// ===== S/R TOUCH DETECTION + NEAREST LEVELS =====
+bool hit_support    = false
+bool hit_resistance = false
+float nearest_support    = na
+float nearest_resistance = na
+
+if hist_size > 0
+    for k = 0 to hist_size - 1
+        float poc_h = array.get(hist_poc_hi, k)
+        float poc_l = array.get(hist_poc_lo, k)
+        float poc_p = array.get(hist_poc_price, k)
+        if poc_h < close and low <= poc_h + sr_zone_pts and close > poc_h
+            hit_support := true
+        if poc_l > close and high >= poc_l - sr_zone_pts and close < poc_l
+            hit_resistance := true
+        // Track nearest S/R for display
+        if poc_p < close and (na(nearest_support) or poc_p > nearest_support)
+            nearest_support := poc_p
+        if poc_p > close and (na(nearest_resistance) or poc_p < nearest_resistance)
+            nearest_resistance := poc_p
+
+// ===== CONFLUENCE SCORING =====
+// Each factor is worth 1 point. Scored separately for long and short.
+//
+// LONG factors:
+//   1. Price above current POC
+//   2. EMA slope positive
+//   3. Current POC delta is bullish (buying pressure)
+//   4. POCs ascending (newest > previous)
+//   5. Price touching a historical POC support level
+//   6. SMA10 slope positive
+//
+// SHORT factors:
+//   1. Price below current POC
+//   2. EMA slope negative
+//   3. Current POC delta is bearish (selling pressure)
+//   4. POCs descending (newest < previous)
+//   5. Price touching a historical POC resistance level
+//   6. SMA10 slope negative
+
+// --- Individual factor booleans ---
+bool f_price_above_poc = not na(poc_hi) and close > poc_hi
+bool f_price_below_poc = not na(poc_lo) and close < poc_lo
+
+bool f_ema_slope_up = ema_slope > 0
+bool f_ema_slope_dn = ema_slope < 0
+
+bool f_sma10_slope_up = sma10_slope > 0
+bool f_sma10_slope_dn = sma10_slope < 0
+
+bool f_cur_delta_bull = not na(poc_delta_pct) and poc_delta_pct > 0
+bool f_cur_delta_bear = not na(poc_delta_pct) and poc_delta_pct < 0
+
+// POC ascending/descending (combined criteria 4+5). Guard array.get to avoid bar 0 out-of-bounds error.
+bool f_pocs_ascending  = false
+bool f_pocs_descending = false
+if hist_size >= 2
+    f_pocs_ascending  := array.get(hist_poc_price, 0) > array.get(hist_poc_price, 1)
+    f_pocs_descending := array.get(hist_poc_price, 0) < array.get(hist_poc_price, 1)
+
+bool f_touching_support    = hit_support
+bool f_touching_resistance = hit_resistance
+
+// --- Score calculation ---
+int long_score = 0
+if f_price_above_poc
+    long_score += 1
+if f_ema_slope_up
+    long_score += 1
+if f_cur_delta_bull
+    long_score += 1
+if f_pocs_ascending
+    long_score += 1
+if f_touching_support
+    long_score += 1
+if f_sma10_slope_up
+    long_score += 1
+
+int short_score = 0
+if f_price_below_poc
+    short_score += 1
+if f_ema_slope_dn
+    short_score += 1
+if f_cur_delta_bear
+    short_score += 1
+if f_pocs_descending
+    short_score += 1
+if f_touching_resistance
+    short_score += 1
+if f_sma10_slope_dn
+    short_score += 1
+
+// ===== SIGNALS =====
+var int last_trade_bar = -9999
+bool cooled_down = bar_index - last_trade_bar >= cooldown_bars
+
+bool long_sig  = long_score >= conf_threshold and in_session and cooled_down and strategy.position_size <= 0
+bool short_sig = short_score >= conf_threshold and in_session and cooled_down and strategy.position_size >= 0
+
+// ===== ENTRIES =====
+var float current_stop    = 0.0
+var float entry_price     = 0.0
+var float peak_profit_pts = 0.0
+var bool  be_active       = false
+
+if long_sig
+    current_stop    := close - stop_pts
+    entry_price     := close
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+else if short_sig
+    current_stop    := close + stop_pts
+    entry_price     := close
+    peak_profit_pts := 0.0
+    be_active       := false
+    last_trade_bar  := bar_index
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+
+// Reset on flat
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    peak_profit_pts := 0.0
+    be_active       := false
+
+// ===== BREAKEVEN =====
+if use_breakeven and strategy.position_size != 0 and not be_active
+    if strategy.position_size > 0
+        if close - entry_price >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price + 0.25
+            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+    else if strategy.position_size < 0
+        if entry_price - close >= be_trigger_pts
+            be_active    := true
+            current_stop := entry_price - 0.25
+            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+if strategy.position_size == 0
+    be_active := false
+
+// ===== TRAILING STOP =====
+if use_trail and strategy.position_size != 0
+    if strategy.position_size > 0
+        float avg = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+    else if strategy.position_size < 0
+        float avg = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int steps = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+
+// ===== POC DELTA FILL COLOR =====
+color channel_fill = na
+if not na(poc_delta_pct)
+    if poc_delta_pct > 0
+        float s = math.min(math.abs(poc_delta_pct) / 5.0, 1.0)
+        channel_fill := color.new(color.green, 95 - math.round(s * 50))
+    else if poc_delta_pct < 0
+        float s = math.min(math.abs(poc_delta_pct) / 5.0, 1.0)
+        channel_fill := color.new(color.red, 95 - math.round(s * 50))
+
+// ===== POC DELTA LABEL =====
+var label lbl_delta = na
+if not na(poc_price) and not na(poc_delta_pct)
+    string dtxt = (poc_delta_pct >= 0 ? "+" : "") + str.tostring(poc_delta_pct, "#.#") + "%"
+    if na(lbl_delta)
+        lbl_delta := label.new(bar_index, poc_price, dtxt, style=label.style_label_center, color=color.new(color.gray, 60), textcolor=color.white, size=size.small)
+    else
+        label.set_xy(lbl_delta, bar_index, poc_price)
+        label.set_text(lbl_delta, dtxt)
+
+// ===== HISTORICAL POC LINES + S/R LABELS (NEVER REMOVE - user requires display) =====
+var array<line>   sr_lines  = array.new<line>(0)
+var array<label> sr_labels = array.new<label>(0)
+if barstate.islast and hist_size > 0
+    for ln in sr_lines
+        line.delete(ln)
+    for lb in sr_labels
+        label.delete(lb)
+    array.clear(sr_lines)
+    array.clear(sr_labels)
+    for k = 0 to math.min(hist_size - 1, poc_history_count - 1)
+        float h = array.get(hist_poc_hi, k)
+        float l = array.get(hist_poc_lo, k)
+        float p = array.get(hist_poc_price, k)
+        int alpha = 20 + k * 12
+        bool is_above = p > close
+        color lc = is_above ? color.new(color.red, alpha) : color.new(color.green, alpha)
+        array.push(sr_lines, line.new(bar_index - profile_lookback, h, bar_index + 10, h, color=lc, width=1, style=line.style_dashed))
+        array.push(sr_lines, line.new(bar_index - profile_lookback, l, bar_index + 10, l, color=lc, width=1, style=line.style_dashed))
+        array.push(sr_lines, line.new(bar_index - profile_lookback, p, bar_index + 10, p, color=color.new(color.white, alpha + 20), width=1, style=line.style_dotted))
+        string lbl_txt = (is_above ? "R: " : "S: ") + str.tostring(p, "#.##")
+        color lbl_col = is_above ? color.new(color.red, 30) : color.new(color.green, 30)
+        array.push(sr_labels, label.new(bar_index + 5, p, lbl_txt, style=label.style_label_left, color=lbl_col, textcolor=color.white, size=size.small))
+
+// ===== CONFLUENCE DISPLAY TABLE (NEVER REMOVE - user requires display) =====
+// Updated on EVERY bar so it always stays rendered and never disappears.
+var table conf_table = table.new(position.top_right, 3, 12, bgcolor=color.new(color.black, 70), border_width=1)
+
+table.cell(conf_table, 0, 0, "Factor", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 0, "Long", text_color=color.lime, text_size=size.tiny)
+table.cell(conf_table, 2, 0, "Short", text_color=color.red, text_size=size.tiny)
+
+// Row 1: Price vs POC
+table.cell(conf_table, 0, 1, "Price vs POC", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 1, f_price_above_poc ? "1" : "0", text_color=f_price_above_poc ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 1, f_price_below_poc ? "1" : "0", text_color=f_price_below_poc ? color.red : color.gray, text_size=size.tiny)
+
+// Row 2: EMA Slope
+table.cell(conf_table, 0, 2, "EMA Slope", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 2, f_ema_slope_up ? "1" : "0", text_color=f_ema_slope_up ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 2, f_ema_slope_dn ? "1" : "0", text_color=f_ema_slope_dn ? color.red : color.gray, text_size=size.tiny)
+
+// Row 3: POC Delta
+table.cell(conf_table, 0, 3, "POC Delta", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 3, f_cur_delta_bull ? "1" : "0", text_color=f_cur_delta_bull ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 3, f_cur_delta_bear ? "1" : "0", text_color=f_cur_delta_bear ? color.red : color.gray, text_size=size.tiny)
+
+// Row 4: POCs Ascending / Descending
+table.cell(conf_table, 0, 4, "POCs Asc/Desc", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 4, f_pocs_ascending ? "1" : "0", text_color=f_pocs_ascending ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 4, f_pocs_descending ? "1" : "0", text_color=f_pocs_descending ? color.red : color.gray, text_size=size.tiny)
+
+// Row 5: S/R Touch
+table.cell(conf_table, 0, 5, "S/R Touch", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 5, f_touching_support ? "1" : "0", text_color=f_touching_support ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 5, f_touching_resistance ? "1" : "0", text_color=f_touching_resistance ? color.red : color.gray, text_size=size.tiny)
+
+// Row 6: SMA10 Slope
+table.cell(conf_table, 0, 6, "SMA10 Slope", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 6, f_sma10_slope_up ? "1" : "0", text_color=f_sma10_slope_up ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 6, f_sma10_slope_dn ? "1" : "0", text_color=f_sma10_slope_dn ? color.red : color.gray, text_size=size.tiny)
+
+// Row 7: Score
+table.cell(conf_table, 0, 7, "SCORE", text_color=color.yellow, text_size=size.tiny)
+table.cell(conf_table, 1, 7, str.tostring(long_score) + "/" + str.tostring(conf_threshold), text_color=long_score >= conf_threshold ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 7, str.tostring(short_score) + "/" + str.tostring(conf_threshold), text_color=short_score >= conf_threshold ? color.red : color.gray, text_size=size.tiny)
+
+// Row 8: Signal
+string sig_txt = long_sig ? "LONG TRIGGERED" : short_sig ? "SHORT TRIGGERED" : "---"
+color sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray
+table.cell(conf_table, 0, 8, "Signal", text_color=color.white, text_size=size.tiny)
+table.cell(conf_table, 1, 8, sig_txt, text_color=sig_col, text_size=size.tiny)
+table.cell(conf_table, 2, 8, "", text_size=size.tiny)
+
+// Row 9: Support (NEVER REMOVE)
+string s_txt = not na(nearest_support) ? str.tostring(nearest_support, "#.##") + (hit_support ? " ✓" : "") : "---"
+table.cell(conf_table, 0, 9, "Support", text_color=color.green, text_size=size.tiny)
+table.cell(conf_table, 1, 9, s_txt, text_color=hit_support ? color.lime : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 9, "", text_size=size.tiny)
+
+// Row 10: Resistance (NEVER REMOVE)
+string r_txt = not na(nearest_resistance) ? str.tostring(nearest_resistance, "#.##") + (hit_resistance ? " ✓" : "") : "---"
+table.cell(conf_table, 0, 10, "Resistance", text_color=color.red, text_size=size.tiny)
+table.cell(conf_table, 1, 10, r_txt, text_color=hit_resistance ? color.red : color.gray, text_size=size.tiny)
+table.cell(conf_table, 2, 10, "", text_size=size.tiny)
+
+// ===== PLOT =====
+plot(ema_val, "EMA", ema_slope > 0 ? color.lime : ema_slope < 0 ? color.red : color.gray, linewidth=2)
+plot(sma10_val, "SMA10", sma10_slope > 0 ? color.teal : sma10_slope < 0 ? color.orange : color.gray, linewidth=1)
+float plo = not na(poc_lo) ? poc_lo : na
+float ppoc = not na(poc_price) ? poc_price : na
+float phi = not na(poc_hi) ? poc_hi : na
+plot_lo = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_poc = plot(ppoc, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+fill(plot_lo, plot_hi, channel_fill)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====
+if long_sig
+    string tt = "LONG  Score: " + str.tostring(long_score) + "/" + str.tostring(conf_threshold) + "\n" +
+      "──────────────────\n" +
+      (f_price_above_poc ? "✓" : "✗") + "  Price above POC  (" + str.tostring(close - nz(poc_price), "#.##") + " pts)\n" +
+      (f_ema_slope_up    ? "✓" : "✗") + "  EMA slope  (" + str.tostring(ema_slope, "#.##") + " pts)\n" +
+      (f_cur_delta_bull  ? "✓" : "✗") + "  POC delta  (" + str.tostring(nz(poc_delta_pct), "#.#") + "%)\n" +
+      (f_pocs_ascending  ? "✓" : "✗") + "  POCs ascending\n" +
+      (f_touching_support? "✓" : "✗") + "  S/R support touch" + (not na(nearest_support) ? "  (" + str.tostring(nearest_support, "#.##") + ")" : "") + "\n" +
+      (f_sma10_slope_up  ? "✓" : "✗") + "  SMA10 slope  (" + str.tostring(sma10_slope, "#.##") + " pts)\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##")
+    label.new(bar_index, low, "▲", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)
+
+if short_sig
+    string tt = "SHORT  Score: " + str.tostring(short_score) + "/" + str.tostring(conf_threshold) + "\n" +
+      "──────────────────\n" +
+      (f_price_below_poc    ? "✓" : "✗") + "  Price below POC  (" + str.tostring(close - nz(poc_price), "#.##") + " pts)\n" +
+      (f_ema_slope_dn       ? "✓" : "✗") + "  EMA slope  (" + str.tostring(ema_slope, "#.##") + " pts)\n" +
+      (f_cur_delta_bear     ? "✓" : "✗") + "  POC delta  (" + str.tostring(nz(poc_delta_pct), "#.#") + "%)\n" +
+      (f_pocs_descending    ? "✓" : "✗") + "  POCs descending\n" +
+      (f_touching_resistance? "✓" : "✗") + "  S/R resistance touch" + (not na(nearest_resistance) ? "  (" + str.tostring(nearest_resistance, "#.##") + ")" : "") + "\n" +
+      (f_sma10_slope_dn     ? "✓" : "✗") + "  SMA10 slope  (" + str.tostring(sma10_slope, "#.##") + " pts)\n" +
+      "──────────────────\n" +
+      "Entry: " + str.tostring(close, "#.##")
+    label.new(bar_index, high, "▼", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)
+
+plot(poc_delta_pct, "POC Delta %", color.orange, display=display.data_window)
+plot(long_score, "Long Score", color.lime, display=display.data_window)
+plot(short_score, "Short Score", color.red, display=display.data_window)

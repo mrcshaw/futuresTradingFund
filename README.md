@@ -7,7 +7,7 @@ An order is sent by a later TradingView alert, not by the meeting.
 1. Export 15-minute bars from TradingView, as far back as the chart will give you, and upload that CSV with the prop account, account size, and profit target.
 2. The desk tests moving-average, breakout, and RSI rules on those bars. Contract size is set from 1% of the account against recent range. A rule is armed only when the backtest profit is positive and the drawdown stays inside the account.
 3. TradingView then sends an alert on that same timeframe with the price, the open position, and the assigned account. The armed rule places, holds, or closes. Each alert is stored.
-4. Research continues until three rules pass risk. The portfolio manager leads the vote at 8:00am ET Monday through Friday, ahead of the 9:30 open, and at 5:00pm ET Sunday through Friday, while the futures market is closed. Saturday has no meeting. After a meeting the portfolio manager writes a report of what the fund has been doing and emails it when SMTP is set in `.env`.
+4. Researchers study each Pine script in `futuresfund/learningStrategies`, adjusting parameters for at most 200 engine runs. Notes stay in `futuresfund/researchNotes`. A finished script moves to `futuresfund/learnedStrategies`. The portfolio manager emails that study to the address in `REPORT_TO`. Meetings at 8:00am ET Monday through Friday and 5:00pm ET Sunday through Friday pause the study. Saturday has no meeting. TradingView alerts still go to the floor trader while a study is running.
 
 The CrossTrade secret stays in `.env`. The alert must not contain it. The account in the alert must be listed in `PROP_ACCOUNTS` and, once the strategy names an account, must be that account.
 

@@ -1,0 +1,264 @@
+//@version=5
+strategy("Trendlines Price Action", overlay=true,
+  initial_capital=25000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=3, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== GATHER WINDOW (builds W1 high/low) =====
+gather_start_hr = input.int(16, "Gather Start Hour (ET)")
+gather_start_mn = input.int(0,  "Gather Start Minute")
+gather_end_hr   = input.int(18, "Gather End Hour (ET)")
+gather_end_mn   = input.int(15,  "Gather End Minute")
+
+// ===== TRADE SESSION =====
+sess_start_hr = input.int(18, "Trade Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Trade Session Start Minute")
+sess_end_hr   = input.int(08, "Trade Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Trade Session End Minute")
+
+// ===== ENTRY =====
+allow_trades   = input.bool(true, "Allow Trades", tooltip="Off = only draw trend lines, no entries.")
+gather_len     = input.int(105, "Gather Candles After Breakout", minval=2)
+bounce_dollars = input.float(50.0, "Bounce Zone ($)", tooltip="How close price must be to range level for a bounce trade.")
+
+// ===== RISK =====
+pv                = input.float(50.0, "Point Value ($)")
+stop_dollars      = input.float(200.0, "Stop ($)")
+tp_dollars        = input.float(1000.0, "Take Profit ($)")
+use_trail         = input.bool(true, "Enable Trailing Stop")
+trail_pct         = input.float(75.0, "Trail: Keep % of Peak Profit")
+trail_step_amt    = input.float(600.0, "Trail: Tighten every $X profit")
+trail_step_pct    = input.float(80.0, "Trail: Tighten by X% per step")
+trail_min_dollars = input.float(200.0, "Trail: Min Profit Before Trailing ($)")
+
+// ===== COMPUTED =====
+stop_pts   = stop_dollars / pv
+tp_pts     = tp_dollars / pv
+bounce_pts = bounce_dollars / pv
+
+// ===== TIME =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+
+int g_start = gather_start_hr * 100 + gather_start_mn
+int g_end   = gather_end_hr * 100 + gather_end_mn
+int s_start = sess_start_hr * 100 + sess_start_mn
+int s_end   = sess_end_hr * 100 + sess_end_mn
+
+bool in_gather = g_start > g_end ? (bar_t >= g_start or bar_t < g_end) : (bar_t >= g_start and bar_t < g_end)
+bool in_session = s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end)
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end)
+bool session_ended = was_in_session and not in_session
+
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+
+// ===== W1 LEVELS (gathered during gather window) =====
+var float run_w1_hi  = na
+var float run_w1_lo  = na
+var float lock_w1_hi = na
+var float lock_w1_lo = na
+var bool  w1_ready   = false
+var bool  was_gathering = false
+
+bool gather_just_started = in_gather and not was_gathering
+bool gather_just_ended   = was_gathering and not in_gather
+
+// ===== RANGE MODE =====
+var bool  range_mode    = false
+var float range_hi      = na
+var float range_lo      = na
+var bool  range_ready   = false
+var bool  had_session   = false
+
+// ===== TRADE STATE =====
+type TradeState
+    int   phase        = 0    // 0=idle, 1=gathering, 2=watching, 3=done
+    int   breakout_dir = 0
+    int   gather_start = 0
+    float gather_hi    = na
+    float gather_lo    = na
+    int   watch_start  = 0
+
+var TradeState ts = TradeState.new()
+var float peak_profit_pts = 0.0
+var float current_stop    = 0.0
+var int   last_box_gather = -1
+
+// ===== DAILY RESET (when gather window starts) =====
+if gather_just_started
+    if had_session and ts.phase != 3
+        range_mode := true
+        range_hi   := high
+        range_lo   := low
+        range_ready := false
+        log.info("RANGE MODE: no trade last session, tracking range levels")
+    else
+        range_mode  := false
+        range_ready := false
+
+    run_w1_hi := high
+    run_w1_lo := low
+    w1_ready  := false
+    ts.phase        := 0
+    ts.breakout_dir := 0
+    last_box_gather := -1
+else if in_gather
+    run_w1_hi := math.max(nz(run_w1_hi, high), high)
+    run_w1_lo := math.min(nz(run_w1_lo, low), low)
+    if range_mode
+        range_hi := math.max(nz(range_hi, high), high)
+        range_lo := math.min(nz(range_lo, low), low)
+
+if gather_just_ended
+    lock_w1_hi := run_w1_hi
+    lock_w1_lo := run_w1_lo
+    w1_ready   := true
+    had_session := true
+    if range_mode
+        range_ready := true
+        log.info("RANGE LEVELS: hi={0} lo={1}", range_hi, range_lo)
+
+was_gathering := in_gather
+
+bool show_w1 = w1_ready and not in_gather
+
+// ===== BREAKOUT MODE (Phase 0/1/2) =====
+if not range_mode
+    if ts.phase == 0 and show_w1 and in_session
+        if close > lock_w1_hi
+            ts.phase        := 1
+            ts.breakout_dir := 1
+            ts.gather_start := bar_index + 1
+            ts.gather_hi    := na
+            ts.gather_lo    := na
+            log.info("BREAKOUT BULL bar={0} close={1} w1_hi={2}", bar_index, close, lock_w1_hi)
+        else if close < lock_w1_lo
+            ts.phase        := 1
+            ts.breakout_dir := -1
+            ts.gather_start := bar_index + 1
+            ts.gather_hi    := na
+            ts.gather_lo    := na
+            log.info("BREAKOUT BEAR bar={0} close={1} w1_lo={2}", bar_index, close, lock_w1_lo)
+
+    else if ts.phase == 1 and bar_index >= ts.gather_start
+        int bars_in = bar_index - ts.gather_start
+        if bars_in == 0
+            ts.gather_hi := high
+            ts.gather_lo := low
+        else
+            ts.gather_hi := math.max(ts.gather_hi, high)
+            ts.gather_lo := math.min(ts.gather_lo, low)
+        if bars_in >= gather_len - 1
+            ts.phase := 2
+            ts.watch_start := bar_index + 1
+            log.info("GATHER DONE bar={0} hi={1} lo={2}", bar_index, ts.gather_hi, ts.gather_lo)
+
+    else if ts.phase == 2 and bar_index >= ts.watch_start and in_session and strategy.position_size == 0
+        if ts.breakout_dir == -1
+            if close >= ts.gather_lo and close <= ts.gather_lo + bounce_pts
+                current_stop    := close - stop_pts
+                peak_profit_pts := 0.0
+                if allow_trades
+                    strategy.entry("Long", strategy.long)
+                    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+                ts.phase := 3
+                log.info("BOUNCE LONG bar={0} close={1} gather_lo={2}", bar_index, close, ts.gather_lo)
+            else if close < ts.gather_lo or close > ts.gather_hi
+                ts.phase := 3
+                log.info("GATHER INVALIDATED bar={0} close={1} hi={2} lo={3}", bar_index, close, ts.gather_hi, ts.gather_lo)
+        else if ts.breakout_dir == 1
+            if close <= ts.gather_hi and close >= ts.gather_hi - bounce_pts
+                current_stop    := close + stop_pts
+                peak_profit_pts := 0.0
+                if allow_trades
+                    strategy.entry("Short", strategy.short)
+                    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+                ts.phase := 3
+                log.info("BOUNCE SHORT bar={0} close={1} gather_hi={2}", bar_index, close, ts.gather_hi)
+            else if close > ts.gather_hi or close < ts.gather_lo
+                ts.phase := 3
+                log.info("GATHER INVALIDATED bar={0} close={1} hi={2} lo={3}", bar_index, close, ts.gather_hi, ts.gather_lo)
+
+// ===== RANGE MODE: BOUNCE TRADES =====
+if range_mode and range_ready and in_session and ts.phase != 3 and strategy.position_size == 0
+    bool at_resistance = close <= range_hi and close >= range_hi - bounce_pts
+    bool at_support    = close >= range_lo and close <= range_lo + bounce_pts
+    bool broke_out     = close > range_hi or close < range_lo
+
+    if broke_out
+        ts.phase := 3
+        log.info("RANGE BROKEN bar={0} close={1} range_hi={2} range_lo={3}", bar_index, close, range_hi, range_lo)
+    else if at_resistance
+        current_stop    := close + stop_pts
+        peak_profit_pts := 0.0
+        if allow_trades
+            strategy.entry("Short", strategy.short)
+            strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+        ts.phase := 3
+        log.info("BOUNCE SHORT bar={0} close={1} range_hi={2}", bar_index, close, range_hi)
+    else if at_support
+        current_stop    := close - stop_pts
+        peak_profit_pts := 0.0
+        if allow_trades
+            strategy.entry("Long", strategy.long)
+            strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+        ts.phase := 3
+        log.info("BOUNCE LONG bar={0} close={1} range_lo={2}", bar_index, close, range_lo)
+
+// ===== TRAILING STOP =====
+if use_trail
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+
+if strategy.position_size[1] != 0 and strategy.position_size == 0 and strategy.closedtrades > 0
+    log.info("TRADE CLOSED bar={0} pnl={1}", bar_index, strategy.closedtrades.profit(strategy.closedtrades - 1))
+
+// ===== PLOT =====
+plot(show_w1 ? lock_w1_hi : na, "W1 High", color.aqua, style=plot.style_stepline, linewidth=2)
+plot(show_w1 ? lock_w1_lo : na, "W1 Low",  color.aqua, style=plot.style_stepline, linewidth=2)
+
+bool show_gather = not range_mode and (ts.phase == 1 or ts.phase == 2)
+plot(show_gather and not na(ts.gather_hi) ? ts.gather_hi : na, "Gather Hi", color.lime, style=plot.style_stepline, linewidth=2)
+plot(show_gather and not na(ts.gather_lo) ? ts.gather_lo : na, "Gather Lo", color.red,  style=plot.style_stepline, linewidth=2)
+
+bool show_range = range_mode and range_ready
+plot(show_range ? range_hi : na, "Range Hi", color.orange, style=plot.style_stepline, linewidth=2)
+plot(show_range ? range_lo : na, "Range Lo", color.orange, style=plot.style_stepline, linewidth=2)
+
+if not range_mode and ts.phase >= 2 and not na(ts.gather_hi) and ts.gather_start != last_box_gather
+    box.new(ts.gather_start, ts.gather_hi, ts.gather_start + gather_len - 1, ts.gather_lo,
+      bgcolor=color.new(color.orange, 85), border_color=color.orange, border_width=2)
+    last_box_gather := ts.gather_start
+
+bgcolor(in_gather ? color.new(color.aqua, 93) : na)
+bgcolor(range_mode and in_session ? color.new(color.yellow, 95) : na)
