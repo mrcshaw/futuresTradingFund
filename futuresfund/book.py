@@ -23,6 +23,9 @@ def load() -> dict:
     data.setdefault("chat", [])
     data.setdefault("strategy", None)
     data.setdefault("intervals", [])
+    data.setdefault("notices", [])
+    data.setdefault("prop_updates", {})
+    data.setdefault("headquarters_rules", None)
     return data
 
 
@@ -125,6 +128,8 @@ def snapshot() -> dict:
         "lead": lead_script(),
         "intervals": list(reversed(book.get("intervals", [])[-15:])),
         "interval_count": len(book.get("intervals") or []),
+        "headquarters_rules": book.get("headquarters_rules"),
+        "prop_updates": book.get("prop_updates") or {},
         "next_meeting": "8:00am ET Monday through Friday, and 5:00pm ET Sunday through Friday. Saturday has no meeting.",
     }
 
@@ -187,7 +192,7 @@ def _key(account: str, instrument: str) -> str:
 
 
 def _fresh() -> dict:
-    return {"positions": {}, "orders": [], "chat": [], "strategy": None, "intervals": [], "last_morning": "", "last_afternoon": ""}
+    return {"positions": {}, "orders": [], "chat": [], "strategy": None, "intervals": [], "notices": [], "prop_updates": {}, "headquarters_rules": None, "last_morning": "", "last_afternoon": ""}
 
 
 def _now() -> str:

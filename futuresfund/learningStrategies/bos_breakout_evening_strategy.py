@@ -38,22 +38,22 @@ class BOSBreakoutEveningStrategy(Strategy):
     # EMA trend filter
     ema_length = 50
     ema_trend_window = 10  # how many bars must all be above/below EMA
-    use_ema_filter = True  # set False to skip the EMA alignment check
+    use_ema_filter = False  # Pine default is off
 
     # Pivot detection
-    pivot_window = 5  # bars on each side for pivot detection
+    pivot_window = 4  # bars on each side for pivot detection
 
     # BOS lookback
-    backcandles = 30  # how far back to look for the BOS pattern
+    backcandles = 25  # how far back to look for the BOS pattern
 
     # ATR for SL/TP
     atr_length = 14
-    atr_sl_mult = 1.5  # stop = ATR * this
-    atr_tp_mult = 2.0  # tp = ATR * this (or use dollar-based)
+    atr_sl_mult = 2.0  # stop = ATR * this, used only when stop_dollars is 0
+    atr_tp_mult = 4.0  # tp = ATR * this, used only when tp_dollars is 0
 
-    # Dollar-based SL/TP (override ATR if > 0)
-    stop_dollars = 0.0
-    tp_dollars = 0.0
+    # Dollar-based SL/TP (override ATR if > 0). Pine defaults are $500 / $1000.
+    stop_dollars = 500.0
+    tp_dollars = 1000.0
 
     # Cooldown
     cooldown_bars = 5
@@ -66,8 +66,19 @@ class BOSBreakoutEveningStrategy(Strategy):
     sess_end_mn = 0
 
     # Breakeven
-    use_breakeven = True
+    use_breakeven = False
     be_trigger_dollars = 200.0
+
+    # Reverse after a stop-out. Pine default is on.
+    flip_on_stopout = True
+    min_loss_to_flip = 100.0
+    # Bars after the broker flattens the stop before the reversal order.
+    # One bar matches TradingView: the script sees the flat position on the
+    # bar after the fill and enters on that bar's close.
+    # The broker flattens a stop before next() sees it. TradingView's script
+    # sees that flat position on the next bar and sends the reversal on the
+    # bar after that. Two bars reproduces the tester's reversal prices.
+    flip_delay_bars = 2
 
     def configure(self):
         if self.stop_dollars > 0:
@@ -126,6 +137,9 @@ class BOSBreakoutEveningStrategy(Strategy):
         self._current_stop = 0.0
         self._entry_price = 0.0
         self._be_active = False
+        self._prev_position_size = 0.0
+        self._flip_next = 0
+        self._flip_wait = 0
 
     def _precompute_bos(self, df, n):
         pw = self.pivot_window
@@ -231,6 +245,7 @@ class BOSBreakoutEveningStrategy(Strategy):
         lo = df["low"].iloc[i]
         atr = self.atr_val.iloc[i]
         if pd.isna(atr) or atr <= 0:
+            self._prev_position_size = self.position_size
             return
 
         # Determine stop/tp distances
@@ -247,24 +262,44 @@ class BOSBreakoutEveningStrategy(Strategy):
         sig = self._bos_signal[i]
         in_session = self._in_session(ts)
         cooled_down = i - self._last_trade_bar >= self.cooldown_bars
+        flat = self.position_size == 0
 
-        long_sig = sig == 2 and in_session and cooled_down and self.position_size == 0
-        short_sig = sig == 1 and in_session and cooled_down and self.position_size == 0
+        # The broker flattens a stop before next() runs. The reversal waits
+        # flip_delay_bars so the order goes out on the same bar as the tester.
+        just_closed = flat and self._prev_position_size != 0
+        fire_flip = 0
+        if self._flip_next:
+            self._flip_wait -= 1
+            if self._flip_wait <= 0:
+                fire_flip = self._flip_next
+                self._flip_next = 0
+        if self.flip_on_stopout and just_closed and self._broker.closed_trades:
+            last = self._broker.closed_trades[-1]
+            if last.profit < -self.min_loss_to_flip:
+                self._flip_next = 1 if last.direction == Direction.SHORT else -1
+                self._flip_wait = self.flip_delay_bars
 
-        if long_sig:
+        long_sig = sig == 2 and in_session and cooled_down and flat
+        short_sig = sig == 1 and in_session and cooled_down and flat
+        flip_long = fire_flip == 1 and in_session and flat
+        flip_short = fire_flip == -1 and in_session and flat
+
+        if long_sig or flip_long:
             self._current_stop = cl - sl_dist
             self._entry_price = cl
             self._be_active = False
             self._last_trade_bar = i
-            self.entry("Long", Direction.LONG)
+            self.entry("Long", Direction.LONG, comment="flip" if flip_long and not long_sig else "")
             self.exit("XL", from_entry="Long", stop=self._current_stop, limit=cl + tp_dist)
-        elif short_sig:
+        elif short_sig or flip_short:
             self._current_stop = cl + sl_dist
             self._entry_price = cl
             self._be_active = False
             self._last_trade_bar = i
-            self.entry("Short", Direction.SHORT)
+            self.entry("Short", Direction.SHORT, comment="flip" if flip_short and not short_sig else "")
             self.exit("XS", from_entry="Short", stop=self._current_stop, limit=cl - tp_dist)
+
+        self._prev_position_size = self.position_size
 
         if self.position_size == 0:
             self._be_active = False

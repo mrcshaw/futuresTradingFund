@@ -233,17 +233,12 @@ bool short_sig = bos_signal == 1 and in_session and cooled_down and strategy.pos
 
 // Detect fully stopped out: position just closed, last closed trade was a real loss (not breakeven)
 bool just_closed = strategy.position_size == 0 and strategy.position_size[1] != 0
-bool was_stopped_out = false
-int  stopped_out_side = 0  // 2 = was long (flip to short), 1 = was short (flip to long)
-if flip_on_stopout and just_closed and strategy.closedtrades > 0
-    float last_profit = strategy.closedtrades.profit(strategy.closedtrades - 1)
-    int   last_size   = strategy.closedtrades.size(strategy.closedtrades - 1)
-    if last_profit < -min_loss_to_flip
-        was_stopped_out := true
-        stopped_out_side := last_size > 0 ? 2 : 1
-
-bool flip_long  = flip_on_stopout and was_stopped_out and stopped_out_side == 1 and in_session and not na(sl_dist) and not na(tp_dist)
-bool flip_short = flip_on_stopout and was_stopped_out and stopped_out_side == 2 and in_session and not na(sl_dist) and not na(tp_dist)
+float last_profit = strategy.closedtrades > 0 ? strategy.closedtrades.profit(strategy.closedtrades - 1) : 0.0
+float last_size = strategy.closedtrades > 0 ? strategy.closedtrades.size(strategy.closedtrades - 1) : 0.0
+bool was_stopped_out = flip_on_stopout and just_closed and last_profit < -min_loss_to_flip
+bool was_long = last_size > 0
+bool flip_long  = was_stopped_out and not was_long and in_session and not na(sl_dist) and not na(tp_dist)
+bool flip_short = was_stopped_out and was_long and in_session and not na(sl_dist) and not na(tp_dist)
 
 if long_sig
     current_stop := close - sl_dist

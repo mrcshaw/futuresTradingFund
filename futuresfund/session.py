@@ -9,21 +9,18 @@ from zoneinfo import ZoneInfo
 
 from futuresfund.board import Board
 from futuresfund.book import apply_target, load, record_interval, record_order, save
-from futuresfund.contracts import POINT_VALUE, root_of, yahoo_symbol
-from futuresfund.crosstrade import send, send_flatten
-from futuresfund.csv_bars import _stamp
+from futuresfund.contracts import yahoo_symbol
+from futuresfund.ingestion import ingest_alert
 from futuresfund.research import (
-    absorb_alert,
     active_rules,
-    append_bar,
     follow_rules,
-    load_bars,
-    save_bars,
     stop_hit,
     tight_stop,
     trade_plan,
 )
-from futuresfund.strategy import get_strategy, series_match, store_strategy
+from futuresfund.trade_confirmation import request_confirmation
+from futuresfund.trade_manager import deliver, liquidation_reason, live_unrealized, point_value, reconcile_position
+from futuresfund.strategy import store_strategy
 from futuresfund.timeframe import bucket_open
 
 
@@ -61,38 +58,42 @@ def trading_halt(moment: datetime | None = None) -> str | None:
 
 
 def handle_interval(board: Board, signal: dict) -> dict:
-    """Watch every alert for the stop. Run the armed rule only when its own candle closes."""
-    strategy = get_strategy()
-    matched, detail = series_match(strategy, signal)
-    if not matched:
-        record_order(load(), signal, "skip", {"sent": False, "reason": detail})
-        board.post("Floor Trader", detail, kind="speech", channel="Floor Trader")
-        return {"ok": True, "sent": False, "reason": detail}
-    if signal.get("price") is None:
-        reason = "The interval alert needs a price so its bar can be added."
-        record_order(load(), signal, "skip", {"sent": False, "reason": reason})
-        board.post("Floor Trader", reason, kind="speech", channel="Floor Trader")
-        return {"ok": True, "sent": False, "reason": reason}
+    """Ingestion stores the bar. The floor trader places or manages the order."""
+    ingested = ingest_alert(board, signal)
+    if not ingested.get("ok"):
+        return {"ok": True, "sent": False, "reason": ingested.get("reason")}
 
-    strategy = dict(strategy)
-    frame = str(strategy.get("timeframe") or "15m")
-    alert_frame = str(signal.get("timeframe") or frame)
-    bar = _bar(signal)
-    closed, forming = absorb_alert(strategy.get("forming"), bar, alert_frame, frame)
-    bars = load_bars()
-    for candle in closed:
-        bars = append_bar(bars, candle)
-    if closed:
-        save_bars(bars)
-    strategy["forming"] = forming or None
-    held, entry = _desk_position(strategy, signal)
-    point = POINT_VALUE.get(root_of(signal["instrument"]), 50)
+    strategy = ingested["strategy"]
+    frame = ingested["frame"]
+    alert_frame = ingested["alert_frame"]
+    bar = ingested["bar"]
+    closed = ingested["closed"]
+    bars = ingested["bars"]
+    held, entry = reconcile_position(signal, *_desk_position(strategy, signal))
+    point = point_value(signal["instrument"])
     dollars = tight_stop(active_rules(strategy))
     bucket = bucket_open(bar["t"], frame)
+    updates = load().get("prop_updates") or {}
+    account_size = float(strategy.get("account_size") or 50000)
 
     if trading_halt() and int(held or 0) != 0:
         _remember(strategy, 0, None, None)
-        return _flatten_now(board, strategy, signal, held, HALT, "Compliance & Operations")
+        note = f"Floor trader, close this trade. The market halt can liquidate the account. {HALT}"
+        return _flatten_now(board, strategy, signal, held, note, "Trading Analyst")
+
+    loss_note = liquidation_reason(
+        account_size,
+        held,
+        entry,
+        signal.get("price"),
+        point,
+        live_unrealized(signal),
+        updates.get("daily_loss_limit"),
+        updates.get("max_drawdown"),
+    )
+    if loss_note:
+        _remember(strategy, 0, None, bucket)
+        return _flatten_now(board, strategy, signal, held, f"Floor trader, close this trade. {loss_note}", "Trading Analyst")
 
     if _stop_due(held, entry, bar, dollars, point):
         _remember(strategy, 0, None, bucket)
@@ -151,7 +152,9 @@ def handle_interval(board: Board, signal: dict) -> dict:
         _remember(strategy, plan["target"], entry, None)
     store_strategy(strategy)
     signal = {**signal, "qty": plan["qty"] or signal["qty"], "flatten_first": plan["flatten_first"], "yahoo": yahoo_symbol(signal["instrument"])}
-    result = _execute(signal, plan)
+    result = _execute(signal, plan, account_size)
+    if plan["action"] in {"place", "close"}:
+        _attach_confirmation(board, signal, result, closing=plan["action"] == "close")
     if agreed is None:
         result["reason"] = "Active strategies disagree, so the position stays."
     note = f"The {frame} candle {closed[-1]['t']} closed at {signal.get('price')}."
@@ -252,7 +255,8 @@ def _flatten_now(board: Board, strategy: dict, signal: dict, held: int, note: st
     store_strategy(strategy)
     plan = trade_plan(0, held, int(strategy.get("qty") or 1))
     signal = {**signal, "qty": plan["qty"] or signal["qty"], "flatten_first": False, "yahoo": yahoo_symbol(signal["instrument"])}
-    result = _execute(signal, plan)
+    result = _execute(signal, plan, float(strategy.get("account_size") or 50000))
+    _attach_confirmation(board, signal, result, closing=True)
     result["reason"] = f"{note} {result.get('reason') or ''}".strip()
     book = load()
     if result.get("sent") or result.get("dry_run"):
@@ -278,29 +282,15 @@ def _tell_floor(board: Board, signal: dict, frame: str, agreed: int | None, plan
     board.post("Trading Analyst", text, kind="report", channel="Trading Analyst")
 
 
-def _execute(signal: dict, plan: dict) -> dict:
-    if plan["action"] == "hold":
-        return {"sent": False, "reason": "Holding. The strategy is already at this position."}
-    try:
-        if plan["action"] == "close":
-            return send_flatten(signal)
-        rating = "Buy" if plan["side"] == "BUY" else "Sell"
-        return send(signal, rating)
-    except Exception as exc:
-        return {"sent": False, "side": plan.get("side"), "reason": str(exc)}
+def _execute(signal: dict, plan: dict, account_size: float) -> dict:
+    return deliver(signal, plan, account_size)
 
 
-def _bar(signal: dict) -> dict:
-    price = float(signal["price"])
-    stamp = _stamp(signal.get("bar_time"), None) or datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    return {
-        "t": stamp,
-        "o": signal.get("open") if signal.get("open") is not None else price,
-        "h": signal.get("high") if signal.get("high") is not None else price,
-        "l": signal.get("low") if signal.get("low") is not None else price,
-        "c": price,
-        "v": 0,
-    }
+def _attach_confirmation(board: Board, signal: dict, result: dict, *, closing: bool) -> None:
+    confirmation = request_confirmation(board, signal, result, closing=closing)
+    result["confirmation"] = confirmation.get("status")
+    if confirmation.get("reason"):
+        result["reason"] = f"{result.get('reason') or ''} {confirmation['reason']}".strip()
 
 
 def _interval_row(signal: dict, held, action: str, result: dict, plan: dict | None = None) -> dict:

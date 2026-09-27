@@ -1,0 +1,415 @@
+{
+  "file": "delta_volume_bos_day.pine",
+  "title": "Delta Volume BOS Day Shift",
+  "attempts": 28,
+  "best": {
+    "params": {
+      "fast": 12,
+      "slow": 50,
+      "stop": 125
+    },
+    "net_profit": -52.0,
+    "max_drawdown": 1999.0,
+    "trades": 4,
+    "win_rate": 0.25,
+    "error": null,
+    "runner": "ema_cross",
+    "passed": false
+  },
+  "quantitative_researcher": "Original profit -177.0, drawdown 1999.0, trades 4. Most consistent of this set: profit -52.0, drawdown 1999.0, trades 4, passed the $2,000 trail: no. Single changes that beat the original on profit and drawdown: slow 50 to 49 (profit -175.0, drawdown 1999.0); stop 250 to 125 (profit -52.0, drawdown 1999.0); stop 250 to 187 (profit -114.0, drawdown 1999.0); stop 250 to 248 (profit -175.0, drawdown 1999.0); stop 250 to 249 (profit -176.0, drawdown 1999.0).",
+  "indicator_researcher": "Indicator and filter settings were changed one at a time. The kept settings are fast=12, slow=50, stop=125. A longer length that lowered the trade count without raising profit is not an improvement. Attempts recorded: 28.",
+  "trials": [
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 6,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 9,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 15,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 18,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 24,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 10,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 11,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 13,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 14,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 25,
+        "stop": 250
+      },
+      "net_profit": -591.5,
+      "max_drawdown": 1999.0,
+      "trades": 5,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 37,
+        "stop": 250
+      },
+      "net_profit": -656.0,
+      "max_drawdown": 1999.0,
+      "trades": 7,
+      "win_rate": 0.1429,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 62,
+        "stop": 250
+      },
+      "net_profit": -252.0,
+      "max_drawdown": 1901.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 75,
+        "stop": 250
+      },
+      "net_profit": -833.0,
+      "max_drawdown": 1967.5,
+      "trades": 7,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 100,
+        "stop": 250
+      },
+      "net_profit": -1235.0,
+      "max_drawdown": 1984.0,
+      "trades": 9,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 48,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 49,
+        "stop": 250
+      },
+      "net_profit": -175.0,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 51,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 52,
+        "stop": 250
+      },
+      "net_profit": -177.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 125
+      },
+      "net_profit": -52.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 187
+      },
+      "net_profit": -114.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 312
+      },
+      "net_profit": -187.5,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 375
+      },
+      "net_profit": -187.5,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 500
+      },
+      "net_profit": -187.5,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 248
+      },
+      "net_profit": -175.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 249
+      },
+      "net_profit": -176.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 251
+      },
+      "net_profit": -178.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    },
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 252
+      },
+      "net_profit": -179.0,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "ema_cross",
+      "passed": false
+    }
+  ]
+}

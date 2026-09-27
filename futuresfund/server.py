@@ -33,7 +33,8 @@ board.post(
     "System",
     "Futures desk is online. Upload a TradingView bar file, with the account size and profit target. "
     "The desk tests several different rules on that file. Each profitable rule stays on the book, and you choose which ones are active. "
-    "Each interval alert places, holds, or closes only when the active rules agree and the account matches. "
+    "Ingestion adds each TradingView alert to the chart. The floor trader places and manages the order when the armed rules agree. "
+    "The trading analyst confirms the fill with NinjaTrader. "
     "Research continues until three rules pass risk. The vote is 8:00am Monday through Friday and 5:00pm Sunday through Friday.",
     kind="system",
     channel="headquarters",
@@ -151,6 +152,38 @@ async def tradingview(token: str, request: Request):
         raise HTTPException(status_code=409, detail="The desks are in a meeting or the initial analysis. This interval alert was not sent.")
     result = handle_interval(board, signal)
     return result
+
+
+@app.post("/hooks/mail/{token}")
+async def inbound_mail(token: str, request: Request):
+    """Prop-firm mail. The systems administrator records it for the 5:00pm meeting."""
+    import os
+
+    from futuresfund.account_mail import accept_mail
+
+    expected = os.environ.get("MAIL_WEBHOOK_TOKEN", "").strip()
+    if not expected:
+        raise HTTPException(status_code=503, detail="Set MAIL_WEBHOOK_TOKEN before prop-firm mail can reach this desk.")
+    if not secrets.compare_digest(token, expected):
+        raise HTTPException(status_code=404, detail="Unknown webhook.")
+    payload = await _mail_payload(request)
+    return accept_mail(board, payload)
+
+
+async def _mail_payload(request: Request) -> dict:
+    content_type = request.headers.get("content-type", "")
+    raw = (await request.body()).decode("utf-8", errors="replace")
+    if "application/json" in content_type:
+        import json
+
+        try:
+            body = json.loads(raw or "{}")
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="The email body was not JSON.") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="The email body must be an object.")
+        return body
+    return {"subject": request.headers.get("subject", ""), "from": request.headers.get("from", ""), "text": raw}
 
 
 class ToggleRequest(BaseModel):
@@ -294,6 +327,9 @@ def _ask(message: str) -> str:
 @app.on_event("startup")
 def _startup():
     threading.Thread(target=scheduler, args=(board,), daemon=True, name="futures-scheduler").start()
+    from futuresfund.ninjatrader import start_listener
+
+    start_listener(board)
 
     def _boot():
         from futuresfund.discuss import load_chart_file
@@ -304,14 +340,14 @@ def _startup():
         if count:
             board.post(
                 "System",
-                f"Loaded {count} bars from the 15-minute ES file. Alerts add the next bar onto this series.",
+                f"Loaded {count} bars from the 15-minute ES file. Ingestion adds the next TradingView alert onto this series.",
                 kind="system",
                 channel="headquarters",
             )
         elif stored:
             board.post(
                 "System",
-                f"Keeping {stored} bars. Alerts add the next bar, and the next meeting discusses that series.",
+                f"Keeping {stored} bars. Ingestion adds the next TradingView alert, and the next meeting discusses that series.",
                 kind="system",
                 channel="headquarters",
             )
@@ -324,13 +360,14 @@ def _startup():
         )
         board.post(
             "Systems Administrator",
-            f"This desk is running on this machine with {bars_on_disk} bars loaded. Alerts append the next bar. There is no exchange co-location.",
+            f"This desk is running on this machine with {bars_on_disk} bars loaded. Ingestion appends each TradingView alert. Prop-firm mail is posted to this desk. There is no exchange co-location.",
             kind="report",
             channel="Systems Administrator",
         )
         board.post(
             "Compliance & Operations",
-            "New risk stops at 4:45pm ET, 15 minutes before the 5:00pm ET futures halt. Open contracts are flattened until 6:00pm ET.",
+            "New risk stops at 4:45pm ET, 15 minutes before the 5:00pm ET futures halt. "
+            "Open contracts are flattened until 6:00pm ET. The trailing drawdown and any daily loss limit stated by the prop firm are enforced with the systems administrator.",
             kind="report",
             channel="Compliance & Operations",
         )

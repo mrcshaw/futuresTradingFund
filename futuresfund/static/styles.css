@@ -141,6 +141,15 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
 .lead h2 { margin: 0; font-size: 16px; }
 .lead .pine { max-height: 180px; }
 
+.hq-rules {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 22px 14px;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--panel);
+}
+.hq-rules h2 { margin: 0 0 8px; font-size: 16px; }
+
 .now {
   display: flex;
   justify-content: space-between;

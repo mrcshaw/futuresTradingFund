@@ -113,6 +113,11 @@ function renderFeed() {
   const lead = state.book.lead;
   const leadEl = document.querySelector("#lead");
   leadEl.hidden = state.channel !== "headquarters";
+  const rulesEl = document.querySelector("#hq-rules");
+  rulesEl.hidden = state.channel !== "headquarters";
+  const recorded = state.book?.headquarters_rules;
+  document.querySelector("#hq-rules-body").textContent = recorded?.text
+    || "The 5:00pm meeting has not recorded the prop-account rules yet.";
   if (lead && lead.pine) {
     document.querySelector("#lead-title").textContent = lead.title || "Lead strategy";
     document.querySelector("#lead-note").textContent =
@@ -198,6 +203,7 @@ function renderBook() {
   const accounts = (settings.accounts || []).join(", ") || "none yet";
   document.querySelector("#settings-note").textContent =
     `Prop accounts: ${accounts}. CrossTrade ${settings.crosstrade_configured ? "is configured" : "still needs a URL and key"}. `
+    + `NinjaTrader confirmation ${settings.nt_configured ? "is configured" : "needs an API token"}. `
     + "TradingView calls /hooks/tradingview/YOUR_TOKEN on a public address. This machine's localhost is not reachable from TradingView.";
   const strategy = state.book.strategy;
   const card = document.querySelector("#strategy-card");

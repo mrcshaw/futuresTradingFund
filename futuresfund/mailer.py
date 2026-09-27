@@ -48,6 +48,10 @@ def factual_report(book: dict, trials: list | None = None) -> str:
             f"trades {row.get('trades', 'not recorded')}, "
             f"passed {bool(row.get('proven'))}."
         )
+    rules = book.get("headquarters_rules") or {}
+    if isinstance(rules, dict) and rules.get("text"):
+        lines.append("Prop-account rules recorded for headquarters:")
+        lines.append(str(rules["text"]))
     return "\n".join(lines)
 
 
@@ -118,6 +122,7 @@ def deliver_report() -> str:
     strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
     payload = dict(strategy)
     payload["orders"] = book.get("orders") or []
+    payload["headquarters_rules"] = book.get("headquarters_rules")
     trials = (load_report() or {}).get("trials") or []
     written = write_report(factual_report(payload, trials))
     result = send_report(written)

@@ -20,6 +20,7 @@ NAMES = {
     "Quantitative Developer",
     "Systems Administrator",
     "Compliance & Operations",
+    "Ingestion",
 }
 
 

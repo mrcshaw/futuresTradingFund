@@ -237,6 +237,11 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
     if board.busy:
         board.post("System", "A discussion is already running. The 8:00am meeting waits.", kind="system", channel="headquarters")
         return
+    rules = ""
+    if when == "5:00pm":
+        from futuresfund.account_mail import brief_prop_accounts
+
+        rules = brief_prop_accounts(board)
     current = get_strategy() or {}
     eligible = [item for item in current.get("strategies") or [] if item.get("proven") and item.get("accepted")]
     board.begin_run(str(current.get("contract") or "ES1!"), when, ["portfolio"])
@@ -262,7 +267,7 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
             + "\n".join(transcript),
         )
         tally = _vote(board, eligible, transcript)
-        verdict = _speak(board, "Portfolio Manager", _manager_prompt(transcript, eligible, tally))
+        verdict = _speak(board, "Portfolio Manager", _manager_prompt(transcript, eligible, tally, rules))
         book = dict(current)
         book["strategies"] = list(current.get("strategies") or [])
         _apply_verdict(book, verdict)
@@ -458,7 +463,7 @@ def _ballot_prompt(name: str, lines: list[str]) -> str:
     )
 
 
-def _manager_prompt(transcript: list[str], strategies: list[dict], tally: dict[str, int]) -> str:
+def _manager_prompt(transcript: list[str], strategies: list[dict], tally: dict[str, int], rules: str = "") -> str:
     lines = [
         f"{item['id']}: profit {item['backtest']['net_profit']}, drawdown {item['backtest']['max_drawdown']}, votes {tally.get(item['id'], 0)}"
         for item in strategies
@@ -472,6 +477,7 @@ def _manager_prompt(transcript: list[str], strategies: list[dict], tally: dict[s
         + "\n".join(lines)
         + "\n"
         + heard
+        + (("\nMention these prop-account rules. Do not change the numbers.\n" + rules) if rules else "")
     )
 
 
@@ -513,7 +519,7 @@ def _vote(board: Board, eligible: list[dict], transcript: list[str]) -> dict[str
     tally = {item["id"]: 0 for item in eligible}
     known = set(tally)
     for agent in ROSTER:
-        if agent["name"] == "Portfolio Manager" or board.cancel.is_set():
+        if agent["name"] == "Portfolio Manager" or agent.get("votes") is False or board.cancel.is_set():
             continue
         raw = _speak(board, agent["name"], _ballot_prompt(agent["name"], lines))
         pick, score = _parse_ballot(raw, known)

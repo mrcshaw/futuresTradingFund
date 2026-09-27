@@ -31,6 +31,20 @@ class CandidateTests(unittest.TestCase):
         self.assertTrue(trials[-1]["passed"])
         self.assertLess(len(trials), 200)
 
+    def test_the_researcher_note_is_a_table_with_a_winner_and_a_loser(self):
+        from futuresfund.learn import adjustment_notes
+
+        origin = {"params": {"length": 10}, "net_profit": -100, "max_drawdown": 200, "trades": 4, "passed": False}
+        winner = {"params": {"length": 14}, "net_profit": 50, "max_drawdown": 80, "trades": 6, "passed": True}
+        loser = {"params": {"length": 20}, "net_profit": -400, "max_drawdown": 500, "trades": 9, "passed": False}
+        quant, _indicator = adjustment_notes([origin, winner, loser])
+        self.assertIn("Most profitable change", quant)
+        self.assertIn("A change that made money", quant)
+        self.assertIn("A change that lost money", quant)
+        self.assertIn("length 10 to 14", quant)
+        self.assertIn("$50.00", quant)
+        self.assertIn("-$400.00", quant)
+
 
 class ReportShapeTests(unittest.TestCase):
     def test_the_email_covers_the_eight_findings(self):

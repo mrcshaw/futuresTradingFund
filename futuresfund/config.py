@@ -79,4 +79,6 @@ def public_settings() -> dict:
         "accounts": sorted(prop_accounts()),
         "crosstrade_configured": bool(crosstrade_url() and crosstrade_key()),
         "webhook_configured": bool(webhook_token()),
+        "nt_configured": bool(os.environ.get("CROSSTRADE_API_TOKEN", "").strip() or crosstrade_key()),
+        "mail_webhook_configured": bool(os.environ.get("MAIL_WEBHOOK_TOKEN", "").strip()),
     }

@@ -182,29 +182,70 @@ def study_parameters(base: dict, execute, account_size: float = ACCOUNT_SIZE, li
 
 
 def adjustment_notes(trials: list[dict]) -> tuple[str, str]:
-    """What the researchers can defend from the attempt list."""
+    """A table the portfolio manager can put in the report without another pass."""
     if not trials:
         return "The engine recorded no attempts.", "The engine recorded no attempts."
     origin = trials[0]
-    best = max(trials, key=_rank)
-    changed = []
-    for row in trials[1:]:
-        keys = [key for key, value in row["params"].items() if origin["params"].get(key) != value]
-        if len(keys) == 1 and _better(row, origin):
-            changed.append(f"{keys[0]} {origin['params'].get(keys[0])} to {row['params'].get(keys[0])} (profit {row['net_profit']}, drawdown {row['max_drawdown']})")
-    quant = (
-        f"Original profit {origin.get('net_profit')}, drawdown {origin.get('max_drawdown')}, trades {origin.get('trades')}. "
-        f"Most consistent of this set: profit {best.get('net_profit')}, drawdown {best.get('max_drawdown')}, trades {best.get('trades')}, "
-        f"passed the $2,000 trail: {'yes' if best.get('passed') else 'no'}. "
-        + ("Single changes that beat the original on profit and drawdown: " + "; ".join(changed[:8]) + "." if changed else "No single change beat the original on both profit and drawdown.")
-    )
+    by_profit = sorted(trials, key=lambda row: float(row.get("net_profit") or -10**12), reverse=True)
+    made = [row for row in trials if float(row.get("net_profit") or 0) > 0]
+    lost = [row for row in trials if float(row.get("net_profit") or 0) < 0]
+    winner = max(made, key=lambda row: float(row["net_profit"])) if made else None
+    loser = min(lost, key=lambda row: float(row["net_profit"])) if lost else None
+    lines = [
+        "Attempt results. Each row changes one setting from the original.",
+        "",
+        f"{'Change':<44} {'Profit':>14} {'Drawdown':>14} {'Trades':>8} {'Trail':>7}",
+        f"{'-' * 44} {'-' * 14} {'-' * 14} {'-' * 8} {'-' * 7}",
+        _note_row("Original", origin),
+    ]
+    for row in by_profit[:5]:
+        if row is origin:
+            continue
+        lines.append(_note_row(_change_label(origin, row), row))
+    lines.append("")
+    lines.append("Most profitable change")
+    lines.append(_note_row(_change_label(origin, by_profit[0]), by_profit[0]))
+    lines.append("")
+    lines.append("A change that made money" if winner else "No change made money")
+    if winner:
+        lines.append(_note_row(_change_label(origin, winner), winner))
+    lines.append("")
+    lines.append("A change that lost money" if loser else "No change lost money")
+    if loser:
+        lines.append(_note_row(_change_label(origin, loser), loser))
+    quant = "\n".join(lines)
     indicator = (
         "Indicator and filter settings were changed one at a time. "
-        f"The kept settings are {_short_params(best.get('params') or {})}. "
-        "A longer length that lowered the trade count without raising profit is not an improvement. "
+        f"The most profitable settings are {_short_params((by_profit[0].get('params') or {}))}. "
         f"Attempts recorded: {len(trials)}."
     )
     return quant, indicator
+
+
+def _note_row(label: str, row: dict) -> str:
+    trail = "yes" if row.get("passed") else "no"
+    return (
+        f"{label:<44} {_money(row.get('net_profit')):>14} {_money(row.get('max_drawdown')):>14} "
+        f"{str(row.get('trades')):>8} {trail:>7}"
+    )
+
+
+def _change_label(origin: dict, row: dict) -> str:
+    keys = [key for key in origin.get("params") or {} if row.get("params", {}).get(key) != origin["params"].get(key)]
+    if not keys:
+        return "Original"
+    if len(keys) == 1:
+        key = keys[0]
+        return f"{key} {origin['params'].get(key)} to {row['params'].get(key)}"
+    return "several settings"
+
+
+def _money(value) -> str:
+    if value is None:
+        return "n/a"
+    number = float(value)
+    sign = "-" if number < 0 else ""
+    return f"{sign}${abs(number):,.2f}"
 
 
 def notes_digest(limit: int = 20) -> str:

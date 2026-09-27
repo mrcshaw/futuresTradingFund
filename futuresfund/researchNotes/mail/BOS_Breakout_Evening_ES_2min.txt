@@ -1,0 +1,39 @@
+FUTURES FUND
+Research report for the Chief Executive Officer
+
+Strategy: BOS Breakout Evening ES 2min
+Prepared by the Portfolio Manager from the Quantitative Researcher and the Indicator Researcher.
+Engine attempts used: 87 of 200.
+Best measured result: profit 179.98778886949913, drawdown 3897.901196797382, trades 33, win rate 18.181818181818183.
+Clears the $2,000 trailing drawdown with a profit: no.
+Parameters of that version: atr_length=14, atr_sl_mult=1.5, atr_tp_mult=2.0, backcandles=30, be_trigger_dollars=200.0, cooldown_bars=5, ema_length=50, ema_trend_window=10, is_futures=True, pivot_window=2, process_orders_on_close=True, sess_end_hr=8
+
+Quantitative Researcher
+Original profit -3207.8946921091865, drawdown 3401.8946921091847, trades 9. Most consistent of this set: profit 179.98778886949913, drawdown 3897.901196797382, trades 33, passed the $2,000 trail: no. Single changes that beat the original on profit and drawdown: process_orders_on_close True to False (profit -2808.268701387362, drawdown 3002.2687013873583); ema_length 50 to 25 (profit -1469.6759848637976, drawdown 1879.1759848637957); ema_length 50 to 37 (profit -2471.1635970631287, drawdown 2604.163597063125); ema_length 50 to 62 (profit -3110.3780721511175, drawdown 3331.878072151121); ema_length 50 to 48 (profit -2994.185714233794, drawdown 3182.6857142337903); ema_trend_window 10 to 12 (profit -3189.8946921091865, drawdown 3378.3946921091847); ema_trend_window 10 to 15 (profit -3189.8946921091865, drawdown 3378.3946921091847); ema_trend_window 10 to 20 (profit -3171.8946921091865, drawdown 3354.8946921091847).
+
+Indicator Researcher
+Indicator and filter settings were changed one at a time. The kept settings are atr_length=14, atr_sl_mult=1.5, atr_tp_mult=2.0, backcandles=30, be_trigger_dollars=200.0, cooldown_bars=5, ema_length=50, ema_trend_window=10. A longer length that lowered the trade count without raising profit is not an improvement. Attempts recorded: 87.
+
+1. The bet
+This version tries to catch a breakout. It can trade long and short. The coded conditions that build the entry signal must all be true, including any session filter and cooldown written in the file. The fill is at the signal bar's close.
+
+2. The stop that is actually active
+This version uses a fixed dollar stop. Initial risk is 0 points, $0. No fixed reward is coded beside the stop. The reward-to-risk ratio is not defined. The win rate required before commission and slippage is about not defined from a fixed stop and target. If the file codes more than one stop, the figures above are the inputs on the version the engine kept.
+
+3. The target
+Winners are capped at $0. This version does not describe a split. The position exits together when the target, the stop, or a session flat is hit.
+
+4. The trailing stop and breakeven
+The trailing stop is off in this version. Breakeven is on. The file does not state a separate arming price beyond the trail input it contains. Updates are on the bar close, so a bar-close trail gives back a full bar before it exits. A trail that is on sits under any fixed target the file also codes, and it can only be judged from that code, not from a version where the trail was switched off. Design judgment: where a trail is on, it locks profit only after price has moved in favor of the trade, and it can cut a winner before a fixed cap if both are present.
+
+5. Time of day
+The coded session is 18:00 to 08:00 Eastern Time. 9:30 is stood aside. The first hour is stood aside. Midday is stood aside. The cash close, 15:00–16:00, is stood aside. The 18:00 reopen is traded with the same rules. Positions are forced flat when the session ends. Where 9:30 uses the same rules as the rest of the day, that is stated above. The open is the least reliable part of a backtest when orders fill on the bar close and stops are not checked every tick, because one bar can hit both the stop and the target.
+
+6. Costs and size that change the result
+Point value is $50 per point. Contracts are 1. Commission is $5.5 a side. Slippage is 1. Pyramiding is 0. Cooldown after an exit is whatever cooldown input the file names; if it has none, the script does not wait. Round-trip commission is $11. Slippage is coded as 1 tick, taken as $12.5 at a 0.25 point tick. That is 0.47 points, which is the cost to set next to the stop and the target.
+
+7. What the backtest cannot prove
+Orders in this version fill on the close. Stops are not calculated every tick. Pivots in this file confirm only after later bars. No declared input was found unused in the entry. A level that needs future bars is not a live signal.
+
+8. Where this kind of rule set usually makes and loses money
+Winners are capped, so a large trend pays only the target. Losers take the full coded stop when a stop is hit. Trades still open at the session end are cut by the session flat. The open is outside the coded session, so the open itself is stood aside. Settled from the code and this engine pass: profit 179.98778886949913, drawdown 3897.901196797382, trades 33, trail cleared: no. Still to be tested on a trade list: result by hour, especially 9:30–10:00, and result with the trail on versus off.
