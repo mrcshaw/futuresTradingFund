@@ -1,0 +1,93 @@
+{
+  "file": "ict_unicorn_poc_overnight_consistent.pine",
+  "title": "ICT Unicorn + POC Overnight [Consistent]",
+  "attempts": 1,
+  "best": {
+    "params": {
+      "lookback": 50,
+      "rows": 12,
+      "stop": 250
+    },
+    "net_profit": 8242.0,
+    "max_drawdown": 1986.0,
+    "trades": 37,
+    "win_rate": 0.2973,
+    "error": null,
+    "runner": "poc_pullback",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "2m",
+    "frames": [
+      {
+        "timeframe": "5m",
+        "net_profit": 2150.0,
+        "max_drawdown": 1999.0,
+        "trades": 16,
+        "passed": false
+      },
+      {
+        "timeframe": "2m",
+        "net_profit": 8242.0,
+        "max_drawdown": 1986.0,
+        "trades": 37,
+        "passed": true
+      },
+      {
+        "timeframe": "15m",
+        "net_profit": -1008.0,
+        "max_drawdown": 1780.0,
+        "trades": 8,
+        "passed": false
+      }
+    ],
+    "passed": true,
+    "change": "Starting settings",
+    "take_profit": null
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                          $8,242.00      $1,986.00       37     yes\n\nMost profitable change\nOriginal                                          $8,242.00      $1,986.00       37     yes\n\nA change that made money\nOriginal                                          $8,242.00      $1,986.00       37     yes\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses lookback=50, rows=12, stop=250. Attempts recorded: 1.",
+  "trials": [
+    {
+      "params": {
+        "lookback": 50,
+        "rows": 12,
+        "stop": 250
+      },
+      "net_profit": 8242.0,
+      "max_drawdown": 1986.0,
+      "trades": 37,
+      "win_rate": 0.2973,
+      "error": null,
+      "runner": "poc_pullback",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "2m",
+      "frames": [
+        {
+          "timeframe": "5m",
+          "net_profit": 2150.0,
+          "max_drawdown": 1999.0,
+          "trades": 16,
+          "passed": false
+        },
+        {
+          "timeframe": "2m",
+          "net_profit": 8242.0,
+          "max_drawdown": 1986.0,
+          "trades": 37,
+          "passed": true
+        },
+        {
+          "timeframe": "15m",
+          "net_profit": -1008.0,
+          "max_drawdown": 1780.0,
+          "trades": 8,
+          "passed": false
+        }
+      ],
+      "passed": true,
+      "change": "Starting settings",
+      "take_profit": null
+    }
+  ]
+}

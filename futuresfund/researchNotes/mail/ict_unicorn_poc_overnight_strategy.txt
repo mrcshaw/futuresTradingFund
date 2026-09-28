@@ -1,0 +1,64 @@
+FUTURES FUND
+Research report for the Chief Executive Officer
+
+Strategy: ict_unicorn_poc_overnight_strategy
+This report is the best version the researchers kept, not the script as it was first given.
+The script is only the starting point. Settings after that follow what made or lost money.
+Prepared by the Portfolio Manager from the Quantitative Researcher and the Indicator Researcher.
+Engine attempts used: 200 of 200.
+The engine is set to the 5-minute chart. Every attempt is tested on the 2-minute, 5-minute, and 15-minute charts.
+This version was tested on the 5-minute chart.
+Chart results for this version:
+5-minute: profit 0.0, drawdown 0.0, trades 0.
+2-minute: profit 0.0, drawdown 0.0, trades 0.
+15-minute: profit 0.0, drawdown 0.0, trades 0.
+Best version: profit 0.0, drawdown 0.0, trades 0, win rate 0.
+The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+This version clears that rule: no.
+Take profit on this version: $500.
+Settings of the best version: atr_len=14, breakout_margin_pts=1.0, close_eod_hr=8, close_eod_mn=0, ema_len=50, ema_slope_len=5, entry_end_hr=8, entry_end_mn=0, fvg_lookback=30, fvg_min_atr=0.04, gather_minutes=15, is_futures=True
+
+Quantitative Researcher
+Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+process_orders_on_close True to False                 $0.00          $0.00        0      no
+is_futures True to False                              $0.00          $0.00        0      no
+sess_start_hr 18 to 17                                $0.00          $0.00        0      no
+sess_start_hr 18 to 19                                $0.00          $0.00        0      no
+
+Most profitable change
+Original                                              $0.00          $0.00        0      no
+
+No change made money
+
+No change lost money
+
+Indicator Researcher
+The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses atr_len=14, breakout_margin_pts=1.0, close_eod_hr=8, close_eod_mn=0, ema_len=50, ema_slope_len=5, entry_end_hr=8, entry_end_mn=0. Attempts recorded: 200.
+
+1. The bet
+This version tries to catch the behavior named in the script title. It can trade a side the script does not name. The coded conditions that build the entry signal must all be true, including any session filter and cooldown on this version. The fill is on the next bar's open, because the script does not set process_orders_on_close.
+
+2. The stop that is actually active
+This version uses a stop the script does not name as dollars, points, ATR, structure, time, or a session exit. Initial risk is not stated as a point distance. No fixed reward is coded beside the stop. The reward-to-risk ratio is not defined. The win rate required before commission and slippage is about not defined from a fixed stop and target. If the file codes more than one stop, the figures above are the inputs on the version the engine kept.
+
+3. The target
+Take profit on this version: $500. Winners are capped at that take profit. This version does not describe a split. The position exits together when the target, the stop, or a session flat is hit.
+
+4. The trailing stop and breakeven
+The trailing stop is off in this version, and breakeven is off. The backtest of this version says nothing about a strategy trail. A trail that is not in the code cannot lock profit, cut winners, or replace a profit cap. The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+
+5. Time of day
+The coded session is 18:00 to 08:00 Eastern Time. 9:30 is stood aside. The first hour is stood aside. Midday is stood aside. The cash close, 15:00–16:00, is stood aside. The 18:00 reopen is traded with the same rules. The file does not show a forced flat at the session end. Where 9:30 uses the same rules as the rest of the day, that is stated above. The open is the least reliable part of a backtest when orders fill on the bar close and stops are not checked every tick, because one bar can hit both the stop and the target.
+
+6. Costs and size that change the result
+Point value is not named in the header or inputs. Contracts are the strategy default. Commission is not in the header. Slippage is not in the header. Pyramiding is not in the header. Cooldown after an exit is whatever cooldown input the file names; if it has none, the script does not wait. Round-trip cost in points was not computed because point value or commission is missing from the file.
+
+7. What the backtest cannot prove
+The script does not set fills on the close. Stops are not calculated every tick. No declared input was found unused in the entry. A level that needs future bars is not a live signal.
+
+8. Where this kind of rule set usually makes and loses money
+Winners are capped, so a large trend pays only the target. Losers take the full coded stop when a stop is hit. The file does not cut trades with a session flat. The open is outside the coded session, so the open itself is stood aside. Settled for the best version: profit 0.0, drawdown 0.0, trades 0, trail cleared: no. Still to be tested on a trade list: result by hour, especially 9:30–10:00, and result with the trail on versus off.

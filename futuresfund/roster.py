@@ -9,6 +9,7 @@ ROSTER = [
         "team": "Core Trading",
         "role": "Systematic trader. Builds a futures rule, the engine tests it, and a proven rule can be armed.",
         "report": "strategy_report",
+        "model": "desk-quant-trader",
     },
     {
         "id": "portfolio",
@@ -16,6 +17,7 @@ ROSTER = [
         "team": "Core Trading",
         "role": "Weighs each desk's vote and recommends one rule that cleared the prop account. The user turns it live.",
         "report": "fund_meeting",
+        "model": "desk-portfolio",
     },
     {
         "id": "ingestion",
@@ -23,14 +25,16 @@ ROSTER = [
         "team": "Core Trading",
         "role": "Accepts each TradingView alert and adds that bar to the chart. Does not place an order.",
         "report": "ingestion_report",
+        "model": "desk-ingestion",
         "votes": False,
     },
     {
         "id": "floor",
         "name": "Floor Trader",
         "team": "Core Trading",
-        "role": "Places and manages the order the armed rule agrees on. Chart bars are not this desk's job.",
+        "role": "Executes the buy or sell from the TradingView strategy and builds the CrossTrade webhook. The stop stays in that script.",
         "report": "trader_investment_plan",
+        "model": "desk-floor",
     },
     {
         "id": "researcher",
@@ -38,6 +42,7 @@ ROSTER = [
         "team": "Research",
         "role": "Reads academic papers and factor notes, then asks the developer to test the part the engine can run.",
         "report": "market_report",
+        "model": "desk-researcher",
     },
     {
         "id": "indicator",
@@ -45,6 +50,7 @@ ROSTER = [
         "team": "Research",
         "role": "Pulls public chart indicators and asks the developer to change their settings until the backtest works or the idea is scrapped.",
         "report": "indicator_report",
+        "model": "desk-indicator",
     },
     {
         "id": "risk",
@@ -52,6 +58,7 @@ ROSTER = [
         "team": "Research",
         "role": "Checks the Apex intraday trailing floor, the contract cap, and the daily loss limit before a rule can be discussed.",
         "report": "risk_report",
+        "model": "desk-risk",
     },
     {
         "id": "analyst",
@@ -59,6 +66,7 @@ ROSTER = [
         "team": "Research",
         "role": "Confirms the fill with NinjaTrader and tells the floor trader to close when the halt or the drawdown can liquidate the account.",
         "report": "investment_plan",
+        "model": "desk-analyst",
     },
     {
         "id": "developer",
@@ -66,6 +74,7 @@ ROSTER = [
         "team": "Technology & Operations",
         "role": "Owns the fill engine: entries at the close, stops inside the bar, commission, and slippage.",
         "report": "engine_report",
+        "model": "desk-developer",
     },
     {
         "id": "systems",
@@ -73,6 +82,7 @@ ROSTER = [
         "team": "Technology & Operations",
         "role": "Handles prop-firm mail about the account and brings those rules to compliance.",
         "report": "systems_report",
+        "model": "desk-systems",
     },
     {
         "id": "compliance",
@@ -80,6 +90,7 @@ ROSTER = [
         "team": "Technology & Operations",
         "role": "Enforces the trailing drawdown, any daily loss limit the prop firm has stated, and the 4:45pm ET flatten, with the systems administrator.",
         "report": "compliance_report",
+        "model": "desk-compliance",
     },
 ]
 

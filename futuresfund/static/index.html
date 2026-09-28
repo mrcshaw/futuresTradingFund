@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=10" />
+  <link rel="stylesheet" href="/static/styles.css?v=23" />
 </head>
 <body>
   <div class="app">
@@ -38,22 +38,65 @@
           <p class="now-kicker">On the floor</p>
           <p class="now-text" id="now-text">Nobody is working. Send a contract when you are ready.</p>
         </div>
-        <button type="button" id="stop" class="stop" hidden aria-label="Stop analysis"><span class="stop-mark"></span></button>
+        <div class="run-controls">
+          <button type="button" id="start" class="power start" aria-label="Start processing">
+            <svg class="power-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M32 8v20" />
+              <path d="M20 16a20 20 0 1 0 24 0" />
+            </svg>
+            <span>START</span>
+          </button>
+          <button type="button" id="stop" class="power stop" hidden aria-label="Stop processing">STOP</button>
+        </div>
+      </section>
+      <section class="paper" id="hq-paper" hidden>
+        <div>
+          <p class="kicker">Paper</p>
+          <h2 id="paper-pnl">$0.00</h2>
+          <p>Active P&amp;L</p>
+        </div>
+        <div>
+          <p class="kicker">Drawdown</p>
+          <h2 id="paper-dd">$0.00</h2>
+          <p id="paper-equity">Paper account</p>
+        </div>
+      </section>
+      <section class="meeting-live" id="meeting-live" hidden>
+        <p class="kicker">Meeting</p>
+        <div id="meeting-lines"></div>
       </section>
       <section class="floor" id="floor"></section>
       <section class="lead" id="lead" hidden>
+        <div id="hq-leaders">
+          <p class="kicker">Profitable and consistent</p>
+          <h2>Three strategies</h2>
+          <p class="role">These made more than they gave back, and at least two charts finished green. The stop is inside the script. TradingView sends the buy or sell, and the floor trader builds the CrossTrade webhook.</p>
+          <div class="leader-grid" id="leader-list"></div>
+          <p class="hint" id="leader-status"></p>
+          <p class="hint" id="leader-note"></p>
+        </div>
         <div class="book-head">
           <div>
             <p class="kicker">Headquarters script</p>
             <h2 id="lead-title">No strategy script yet</h2>
-            <p class="role" id="lead-note">The most profitable rule the researchers have cleared stays here. Every desk can read this script.</p>
+            <p class="role" id="lead-note">The most profitable consistent version stays here until a meeting chooses another. Paste this script into TradingView.</p>
           </div>
         </div>
         <pre class="report-body pine" id="lead-pine"></pre>
       </section>
       <section class="hq-rules" id="hq-rules" hidden>
-        <p class="kicker">Prop account rules</p>
-        <h2>Recorded at the 5:00pm meeting</h2>
+        <p class="kicker">Account rules</p>
+        <h2>What the floor trader watches</h2>
+        <form id="account-rules" class="rules-form">
+          <label>Account <input name="account" maxlength="64" placeholder="Account name" /></label>
+          <label>Size <input name="size" type="number" min="1" step="1" required /></label>
+          <label>Profit target <input name="profit_target" type="number" min="1" step="1" required /></label>
+          <label>Drawdown <input name="max_drawdown" type="number" min="1" step="1" required /></label>
+          <label class="check"><input name="trailing" type="checkbox" checked /> Trailing</label>
+          <label>Max contracts <input name="max_contracts" type="number" min="1" step="1" required /></label>
+          <button type="submit">Save account rules</button>
+        </form>
+        <p class="hint" id="account-rules-note"></p>
         <pre class="report-body" id="hq-rules-body">The 5:00pm meeting has not recorded the prop-account rules yet.</pre>
       </section>
       <section class="feed" id="feed"></section>
@@ -62,7 +105,7 @@
           <div>
             <p class="kicker">Trading engine</p>
             <h2>Last research results</h2>
-            <p class="role" id="engine-note">Each rule the developer runs in a meeting is listed here, with the profit, drawdown, and trade count from that test.</p>
+            <p class="role" id="engine-note">PineForge runs each Pine script. The engine chart is 5 minutes, and every attempt also runs the 2-minute and 15-minute charts.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
@@ -76,16 +119,94 @@
         <h3>Recent trials</h3>
         <table id="engine-trials"><thead><tr><th>Rule</th><th>Profit</th><th>Drawdown</th><th>Trades</th><th>Result</th></tr></thead><tbody></tbody></table>
       </section>
+      <section class="book" id="active" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Active strategy</p>
+            <h2>What the floor trader follows</h2>
+            <p class="role">Two strategies can run, including on the same account. The alert names the strategy and the account the floor trader uses.</p>
+          </div>
+          <button type="button" id="active-add">Add</button>
+        </div>
+        <p class="hint" id="active-note"></p>
+        <div id="active-list"></div>
+      </section>
+      <section class="book chart-page" id="chart" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Chart</p>
+            <h2>Market candles</h2>
+            <p class="role">Each tab is one contract. Buy and sell alerts are marked on the candle they belong to. The stop stays in the strategy.</p>
+          </div>
+        </div>
+        <div class="chart-browser">
+          <div id="chart-tabs"></div>
+          <button type="button" id="chart-add" class="ghost">Open chart</button>
+        </div>
+        <form id="chart-open" class="library-tools" hidden>
+          <label>Contract
+            <select name="contract">
+              <option>ES1!</option>
+              <option>NQ1!</option>
+              <option>GC1!</option>
+              <option>CL1!</option>
+              <option>YM1!</option>
+            </select>
+          </label>
+          <label>Timeframe
+            <select name="timeframe">
+              <option>2m</option>
+              <option selected>5m</option>
+              <option>15m</option>
+            </select>
+          </label>
+          <button type="submit">Open</button>
+        </form>
+        <p class="hint" id="chart-readout"></p>
+        <canvas id="chart-canvas" width="1100" height="520"></canvas>
+      </section>
+      <section class="book" id="library" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Strategy library</p>
+            <h2>Profitable engine runs</h2>
+            <p class="role">ES and gold are separate. Each row is the most profitable timeframe from that engine run. Click a strategy to copy the script.</p>
+          </div>
+        </div>
+        <div class="library-tools">
+          <label>Contract
+            <select id="library-contract"></select>
+          </label>
+          <label>Search
+            <input id="library-search" type="search" placeholder="Strategy name" />
+          </label>
+        </div>
+        <table id="library-table">
+          <thead>
+            <tr>
+              <th data-sort="title">Strategy</th>
+              <th data-sort="contract_label">Contract</th>
+              <th data-sort="timeframe">Timeframe</th>
+              <th data-sort="net_profit">Profit</th>
+              <th data-sort="max_drawdown">Drawdown</th>
+              <th data-sort="trades">Trades</th>
+              <th data-sort="win_rate">Win rate</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="hint" id="library-empty"></p>
+      </section>
       <section class="book" id="rnd" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">R&amp;D</p>
             <h2>Research board</h2>
-            <p class="role">Research lands here, including the playbook of rules that reached the profit target without touching the trailing floor. The meeting votes on the ones that pass.</p>
+            <p class="role">The strategy being studied, then the next two waiting.</p>
           </div>
           <button type="button" id="rnd-run">Start research</button>
         </div>
-        <div id="rnd-feed" class="feed"></div>
+        <div id="rnd-board"></div>
       </section>
       <section class="book" id="book" hidden>
         <div class="book-head">
@@ -113,7 +234,7 @@
       <form class="chat-dock" id="chat">
         <div class="chat-log" id="chat-log"></div>
         <div class="chat-row">
-          <input name="message" maxlength="2000" placeholder="Message the portfolio manager" required />
+          <input name="message" maxlength="2000" placeholder="Ask the portfolio manager about the firm" required />
           <button type="submit" id="chat-send">Send</button>
         </div>
       </form>
@@ -123,8 +244,8 @@
           <label>Timeframe
             <select name="timeframe">
               <option>1m</option>
-              <option>5m</option>
-              <option selected>15m</option>
+              <option selected>5m</option>
+              <option>15m</option>
               <option>30m</option>
               <option>1h</option>
               <option>4h</option>
@@ -138,7 +259,7 @@
         </div>
         <div class="actions">
           <button type="submit" id="send">Develop strategy and backtest</button>
-          <p class="hint" id="hint">Export the chart from TradingView as a CSV. Point the strategy alert at this desk, not at CrossTrade, and leave the secret key out of the message. This desk sends the CrossTrade order only when the active strategies agree.</p>
+          <p class="hint" id="hint">Export the chart from TradingView as a CSV. Point the strategy alert at this desk, not at CrossTrade, and leave the secret key out of the message. The message names the strategy. The floor trader sends that order to the account in the message.</p>
         </div>
       </form>
     </main>
@@ -147,6 +268,19 @@
       <div id="report-body" class="report-body">Pick a desk to read its report.</div>
     </aside>
   </div>
-  <script type="module" src="/static/app.js?v=19"></script>
+  <div class="modal" id="script-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="script-title">
+      <div class="book-head">
+        <h2 id="script-title">Strategy</h2>
+        <div class="run-controls">
+          <button type="button" id="script-copy">Copy</button>
+          <button type="button" id="script-close" class="ghost">Close</button>
+        </div>
+      </div>
+      <p class="hint" id="script-note"></p>
+      <textarea id="script-body" readonly></textarea>
+    </div>
+  </div>
+  <script type="module" src="/static/app.js?v=41"></script>
 </body>
 </html>

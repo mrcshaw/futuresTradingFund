@@ -33,7 +33,7 @@ board.post(
     "System",
     "Futures desk is online. Upload a TradingView bar file, with the account size and profit target. "
     "The desk tests several different rules on that file. Each profitable rule stays on the book, and you choose which ones are active. "
-    "Ingestion adds each TradingView alert to the chart. The floor trader places and manages the order when the armed rules agree. "
+    "Ingestion adds each TradingView alert to the chart. Two strategies can run at once, each on the account assigned to it. "
     "The trading analyst confirms the fill with NinjaTrader. "
     "Research continues until three rules pass risk. The vote is 8:00am Monday through Friday and 5:00pm Sunday through Friday.",
     kind="system",
@@ -60,8 +60,12 @@ def state():
 @app.get("/api/lab")
 def lab_report():
     from futuresfund.lab import load_report, running
+    from futuresfund.learn import research_slate
+
     report = load_report()
     report["running"] = running()
+    report["studying"] = board.research in {"running", "stopping"}
+    report["slate"] = research_slate()
     report["trials"] = report.get("trials", [])[-40:]
     return report
 
@@ -74,6 +78,102 @@ def lab_run():
     if not start_search(board):
         raise HTTPException(status_code=409, detail="The developer is already running the engine.")
     return {"ok": True}
+
+
+class ActiveStrategies(BaseModel):
+    strategies: list[dict]
+
+
+@app.post("/api/active-strategies")
+def save_strategies(body: ActiveStrategies):
+    from futuresfund.book import save_active_strategies
+
+    return {"strategies": save_active_strategies(body.strategies)}
+
+
+class RunningStrategy(BaseModel):
+    id: str
+    account: str = "paper"
+    enabled: bool = True
+
+
+@app.post("/api/running")
+def run_strategy(body: RunningStrategy):
+    from futuresfund.book import set_running
+
+    try:
+        rows = set_running(body.id, body.account, body.enabled)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"running": rows}
+
+
+class AccountRules(BaseModel):
+    account: str = ""
+    size: float
+    profit_target: float
+    max_drawdown: float
+    trailing: bool = True
+    max_contracts: int
+
+
+@app.post("/api/account-rules")
+def account_rules(body: AccountRules):
+    from futuresfund.book import save_account_rules
+    from futuresfund.prop_rules import rules_sentence
+
+    try:
+        saved = save_account_rules({
+            "account": body.account,
+            "size": body.size,
+            "profit_target": body.profit_target,
+            "max_drawdown": body.max_drawdown,
+            "trailing": body.trailing,
+            "max_contracts": body.max_contracts,
+        })
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    sentence = rules_sentence(saved["size"])
+    board.post("Floor Trader", f"Account rules saved. {sentence}", kind="report", channel="Floor Trader")
+    board.post("Compliance & Operations", sentence, kind="report", channel="Compliance & Operations")
+    return {"rules": saved}
+
+
+@app.get("/api/chart")
+def chart(contract: str = "ES1!", timeframe: str = "5m", limit: int = 160):
+    from futuresfund.chart_view import chart_payload
+
+    try:
+        return chart_payload(contract, timeframe, limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/library")
+def library(contract: str = "ES1!", q: str = ""):
+    from futuresfund.library import search_library
+
+    return search_library(contract, q)
+
+
+@app.get("/api/library/{strategy_id}")
+def library_one(strategy_id: str):
+    from futuresfund.library import library_script
+
+    row = library_script(strategy_id)
+    if row is None or not row.get("pine"):
+        raise HTTPException(status_code=404, detail="That strategy script is not in the library.")
+    return row
+
+
+@app.get("/api/leaders/{strategy_id}")
+def leader(strategy_id: str):
+    from futuresfund.strategy import leader_script
+
+    row = leader_script(strategy_id)
+    if row is None or not row.get("pine"):
+        raise HTTPException(status_code=404, detail="That strategy script is not on headquarters.")
+    return row
 
 
 @app.get("/api/book")
@@ -92,7 +192,7 @@ def settings():
 async def research(
     file: UploadFile = File(...),
     contract: str = Form(...),
-    timeframe: str = Form("15m"),
+    timeframe: str = Form("5m"),
     account: str = Form(...),
     account_size: float = Form(...),
     profit_target: float = Form(...),
@@ -136,6 +236,26 @@ def stop_run():
     return {"ok": True}
 
 
+_learning_thread: threading.Thread | None = None
+
+
+@app.post("/api/runs/start")
+def start_run():
+    global _learning_thread
+    if _learning_thread and _learning_thread.is_alive():
+        return {"ok": True, "started": False}
+    board.cancel.clear()
+    board.post("System", "Start requested. The researchers will run the Pine scripts.", kind="system", channel="headquarters")
+
+    def _go():
+        from futuresfund.learn import run_learning
+        run_learning(board)
+
+    _learning_thread = threading.Thread(target=_go, daemon=True, name="futures-learning")
+    _learning_thread.start()
+    return {"ok": True, "started": True}
+
+
 @app.post("/hooks/tradingview/{token}")
 async def tradingview(token: str, request: Request):
     expected = webhook_token()
@@ -144,13 +264,28 @@ async def tradingview(token: str, request: Request):
     if not secrets.compare_digest(token, expected):
         raise HTTPException(status_code=404, detail="Unknown webhook.")
     raw = (await request.body()).decode("utf-8", errors="replace")
+    preview = " ".join(raw.split())
+    if len(preview) > 280:
+        preview = preview[:277].rstrip() + "..."
+    board.log("Ingestion", "Reading a TradingView alert")
+    board.post("Ingestion", f"TradingView alert arrived.\n{preview or '(empty body)'}", kind="report", channel="Ingestion")
     try:
         signal = parse_alert(raw)
     except ValueError as exc:
+        board.log("Ingestion", f"The alert was not recorded: {exc}")
+        board.post("Ingestion", f"The alert was not recorded: {exc}", kind="error", channel="Ingestion")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    if board.busy:
+    from futuresfund.alerts import BAR_FEED_ID
+
+    if board.busy and signal.get("id") != BAR_FEED_ID:
+        board.log("Ingestion", "A meeting is running. This alert was not recorded.")
         raise HTTPException(status_code=409, detail="The desks are in a meeting or the initial analysis. This interval alert was not sent.")
-    result = handle_interval(board, signal)
+    try:
+        result = handle_interval(board, signal)
+    except Exception as exc:
+        board.log("Floor Trader", f"The order was not sent: {exc}")
+        board.post("Floor Trader", f"The order was not sent: {exc}", kind="error", channel="Floor Trader")
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     return result
 
 
@@ -234,21 +369,28 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
 
+_chat_busy = False
+
+
 @app.post("/api/chat")
 def chat(body: ChatRequest):
-    if board.snapshot()["agent_status"].get("Portfolio Manager") == "working":
-        raise HTTPException(status_code=409, detail="The portfolio manager is busy.")
+    global _chat_busy
+    if _chat_busy:
+        raise HTTPException(status_code=409, detail="The portfolio manager is still answering.")
     text = body.message.strip()
     board.post("You", text, kind="chat", channel="Portfolio Manager")
+    _chat_busy = True
 
     def _reply():
-        board.set_status("Portfolio Manager", "working")
+        global _chat_busy
+        board.log("Portfolio Manager", "Reading the firm book")
         try:
             answer = _ask(text)
             board.post("Portfolio Manager", answer, kind="chat", channel="Portfolio Manager")
         except Exception as exc:
             board.post("Portfolio Manager", f"I could not answer just now: {exc}", kind="error", channel="Portfolio Manager")
-        board.set_status("Portfolio Manager", "done")
+        finally:
+            _chat_busy = False
 
     threading.Thread(target=_reply, daemon=True, name="futures-chat").start()
     return {"ok": True}
@@ -266,7 +408,13 @@ def _strategy_facts(view: dict) -> str:
         ]
     if not rows:
         return "No rule has cleared the Apex trailing drawdown yet. Nothing is up for discussion."
-    lines = ["The book is flat. No trade is open. These are backtests, not live positions."]
+    lines = []
+    if view.get("positions"):
+        from futuresfund.book import open_trade_brief
+
+        lines.append(open_trade_brief(view))
+    else:
+        lines.append("No trade is open. These are backtests, not live positions.")
     for number, item in enumerate(rows, start=1):
         backtest = item.get("backtest") or {}
         lines.append(
@@ -288,40 +436,25 @@ def _strategy_facts(view: dict) -> str:
 
 
 def _ask(message: str) -> str:
+    from futuresfund.book import firm_record, open_trade_brief
     from futuresfund.llm import complete
-    from futuresfund.prop_rules import describe, gate
 
     view = book_snapshot()
-    strategy = dict(view.get("strategy") or {})
-    account_size = float(strategy.get("account_size") or 50000)
-    eligible, rejected = [], []
-    for item in strategy.get("strategies") or []:
-        backtest = item.get("backtest") or {}
-        line = (
-            f"{item.get('title')}: {backtest.get('trades')} trades, "
-            f"profit {backtest.get('net_profit')}, drawdown {backtest.get('max_drawdown')}. "
-            f"{item.get('formula')}"
-        )
-        if gate(dict(item), account_size):
-            eligible.append(line)
-        else:
-            rejected.append(line)
     asked = message.lower()
-    if any(word in asked for word in ("strateg", "trade", "profit", "drawdown", "show", "pine")):
-        return _strategy_facts(view)
-
+    trade_detail = ""
+    if any(word in asked for word in ("stop", "take profit", "take-profit", "open trade", "current trade")):
+        trade_detail = open_trade_brief(view)
     prompt = (
-        "You are the portfolio manager of one prop futures account. Answer in plain sentences. "
-        "Do not place trades from this chat. The book is flat unless a position is listed. "
-        "Repeat the trade count from the list. Do not invent a trade, an open position, or an indicator. "
-        f"{describe(account_size)} "
-        "The next meeting may discuss only the eligible list.\n"
-        f"Eligible: {'; '.join(eligible) if eligible else 'none'}.\n"
-        f"Rejected: {'; '.join(rejected) if rejected else 'none'}.\n"
-        f"Positions: {view.get('positions') or 'flat'}.\n"
-        f"User: {message}"
+        "You are the portfolio manager of this futures firm. "
+        "Answer questions about the desk, the strategy library, the book, the meetings, and any open trade. "
+        "Use only the firm record. If a number is not in the record, say you do not have that number. "
+        "Do not invent a profit, a drawdown, a trade count, or an open position. "
+        "Do not place an order from this chat. Speak in plain sentences.\n\n"
+        f"Firm record:\n{firm_record(view)}\n\n"
+        + (f"Open trade detail:\n{trade_detail}\n\n" if trade_detail else "")
+        + f"User: {message}"
     )
-    return complete(prompt) or "I have nothing to add."
+    return complete(prompt, agent="Portfolio Manager") or "I have nothing to add."
 
 
 @app.on_event("startup")
@@ -371,8 +504,16 @@ def _startup():
             kind="report",
             channel="Compliance & Operations",
         )
-        from futuresfund.learn import run_learning
+        board.post(
+            "System",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. They share one backtest engine.",
+            kind="system",
+            channel="headquarters",
+        )
+        from futuresfund.crew import get_crew
+        from futuresfund.llm import ensure_agent_models
 
-        run_learning(board)
+        ensure_agent_models()
+        get_crew(board)
 
     threading.Thread(target=_boot, daemon=True, name="futures-boot").start()

@@ -77,7 +77,7 @@ def save_report(report: dict) -> None:
 
 
 def search(bars: list[dict], *, instrument: str, account_size: float, profit_target: float,
-           timeframe: str = "15m", account: str = "", board: Board | None = None,
+           timeframe: str = "5m", account: str = "", board: Board | None = None,
            frames: dict[str, list[dict]] | None = None) -> dict:
     """Keep testing until three rules clear the Apex trail. Scrap a family after 100 changes with no better profit, then post a new batch."""
     report = load_report()
@@ -245,7 +245,7 @@ def start_search(board: Board) -> bool:
                 instrument=str(strategy.get("contract") or "ES1!"),
                 account_size=float(strategy.get("account_size") or 50000),
                 profit_target=float(strategy.get("profit_target") or 3000),
-                timeframe=str(strategy.get("timeframe") or "15m"),
+                timeframe=str(strategy.get("timeframe") or "5m"),
                 account=str(strategy.get("account") or ""),
                 board=board,
                 frames=frames,

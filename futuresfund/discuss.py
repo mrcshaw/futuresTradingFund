@@ -12,7 +12,7 @@ from futuresfund.csv_bars import parse_tradingview_csv
 from futuresfund.prop_rules import describe, for_account, gate
 from futuresfund.research import assemble_book, bar_facts, evaluate_rule, load_bars, save_bars
 from futuresfund.roster import ROSTER
-from futuresfund.strategy import get_strategy, store_strategy
+from futuresfund.strategy import book_account, get_strategy, store_strategy
 
 _SPECS = {
     "ema_cross": {"fast": (5, 30), "slow": (20, 120)},
@@ -97,9 +97,9 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
         board.post("System", "The 15-minute ES file is not loaded, so the agents cannot backtest a strategy.", kind="error", channel="headquarters")
         return
     current = get_strategy() or {}
-    account = str(current.get("account") or "APEX4415870000042")
+    account = book_account(current)
     contract = str(current.get("contract") or "ES1!")
-    timeframe = str(current.get("timeframe") or "15m")
+    timeframe = str(current.get("timeframe") or "5m")
     account_size = float(current.get("account_size") or 50000)
     profit_target = float(current.get("profit_target") or 3000)
     previous = int(current.get("bar_count") or 0)
@@ -245,6 +245,7 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
     current = get_strategy() or {}
     eligible = [item for item in current.get("strategies") or [] if item.get("proven") and item.get("accepted")]
     board.begin_run(str(current.get("contract") or "ES1!"), when, ["portfolio"])
+    board.post("Portfolio Manager", f"The {when} meeting is open.", kind="speech", channel="headquarters")
     if len(eligible) < 3:
         board.post(
             "Portfolio Manager",
@@ -283,6 +284,9 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
         sync_lead(book)
         store_strategy(book)
         chosen = next((item for item in book["strategies"] if item.get("recommended")), None)
+        from futuresfund.strategy import remember_meeting
+
+        remember_meeting(chosen)
         board.post(
             "Portfolio Manager",
             f"The {when} vote closed. Headquarters shows {chosen['title'] if chosen else 'the current stand-in'}.",
@@ -552,8 +556,9 @@ def _speak(board: Board, name: str, prompt: str) -> str:
     if board.cancel.is_set():
         return ""
     board.set_status(name, "working")
+    board.set_activity(name, "Writing")
     try:
-        text = _model(prompt)
+        text = _model(prompt, name)
     finally:
         board.set_status(name, "done")
     if text:
@@ -561,7 +566,7 @@ def _speak(board: Board, name: str, prompt: str) -> str:
     return text
 
 
-def _model(prompt: str) -> str:
+def _model(prompt: str, agent: str) -> str:
     from futuresfund.llm import complete
 
-    return complete(prompt)
+    return complete(prompt, agent=agent)

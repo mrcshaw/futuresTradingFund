@@ -86,14 +86,14 @@ def develop(bars: list[dict], instrument: str, timeframe: str, account: str, acc
     return _assemble(ranked, instrument, timeframe, account, account_size, profit_target, qty)
 
 
-def evaluate_rule(bars: list[dict], instrument: str, account_size: float, profit_target: float, name: str, params: dict) -> dict | None:
+def evaluate_rule(bars: list[dict], instrument: str, account_size: float, profit_target: float, name: str, params: dict, *, qty: int | None = None, take_profit: float | None = None) -> dict | None:
     """Backtest one rule the agents proposed. Returns None when the bars are too short for it."""
     point = POINT_VALUE[root_of(instrument)]
-    qty = _size(bars, account_size, point)
+    size = int(qty) if qty else _size(bars, account_size, point)
     desired = _desired(bars, name, params)
     if not desired:
         return None
-    result = _simulate(bars, desired, qty, point, account_size, stop=_stop_amount(params))
+    result = _simulate(bars, desired, size, point, account_size, stop=_stop_amount(params), take_profit=take_profit)
     result["reached_target"] = result["net_profit"] >= profit_target
     title = _title(name, params)
     formula = _formula(name, params)
@@ -101,7 +101,7 @@ def evaluate_rule(bars: list[dict], instrument: str, account_size: float, profit
     if stop:
         title = f"{title}, stop ${stop:,.0f}"
         formula = formula + f" Flatten the trade when the open loss reaches ${stop:,.0f}, before the account trail is touched."
-    return _row(name, params, result, title, formula, point, account_size, qty)
+    return _row(name, params, result, title, formula, point, account_size, size)
 
 
 def compare_timeframes(frames: dict[str, list[dict]], instrument: str, account_size: float, profit_target: float, name: str, params: dict) -> dict | None:
@@ -785,7 +785,7 @@ def _stop_amount(params: dict) -> float | None:
     return amount if amount > 0 else None
 
 
-def _simulate(bars: list[dict], desired: list[int], qty: int, point: float, account: float, stop: float | None = None) -> dict:
+def _simulate(bars: list[dict], desired: list[int], qty: int, point: float, account: float, stop: float | None = None, take_profit: float | None = None) -> dict:
     from futuresfund.prop_rules import LOCK_BUFFER, for_account, passes
 
     tier = for_account(account)
@@ -813,6 +813,10 @@ def _simulate(bars: list[dict], desired: list[int], qty: int, point: float, acco
             open_pnl = 0.0
         change = (closes[i + 1] - closes[i]) * position * point * qty
         stopped = False
+        banked = False
+        if position != 0 and take_profit and take_profit > 0 and change > 0 and open_pnl + change >= take_profit:
+            change = take_profit - open_pnl
+            banked = True
         if position != 0 and stop and change < 0:
             room = max(0.0, stop + open_pnl)
             if -change > room:
@@ -824,7 +828,7 @@ def _simulate(bars: list[dict], desired: list[int], qty: int, point: float, acco
                 stopped = True
         open_pnl += change
         equity += change
-        if stopped:
+        if stopped or banked:
             if open_pnl > 0:
                 wins += 1
             trades += 1

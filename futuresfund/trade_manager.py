@@ -8,6 +8,22 @@ from futuresfund.crosstrade import send, send_flatten
 from futuresfund.prop_rules import for_account
 
 
+def plan_from_alert(signal: dict, held: int, qty: int) -> dict | None:
+    """Use the trade already named in the TradingView alert. None when the alert has no trade."""
+    from futuresfund.research import trade_plan
+
+    action = signal.get("hinted_action")
+    if action not in {"BUY", "SELL"}:
+        return None
+    size = int(signal.get("qty") or 0) or int(qty or 1)
+    if size < 1:
+        size = 1
+    sign = 1 if action == "BUY" else -1
+    plan = trade_plan(sign, int(held or 0), size)
+    plan["from_alert"] = True
+    return plan
+
+
 def reconcile_position(signal: dict, held: int, entry: float | None) -> tuple[int, float | None]:
     """Prefer the fresh NinjaTrader position over the desk's copy."""
     live = ninjatrader.cached_position(signal["account"], signal["instrument"])
@@ -46,13 +62,15 @@ def liquidation_reason(
     loss = open_loss(held, entry, price, point, unrealized)
     if loss is None:
         return None
+    from futuresfund.prop_rules import active_limits
+
+    rules = active_limits(account_size)
     tier = for_account(account_size)
-    limit = float(tier["max_drawdown"])
-    if trail_limit is not None:
-        limit = min(limit, float(trail_limit))
+    limit = float(trail_limit if trail_limit is not None else tier["max_drawdown"])
+    kind = "trailing drawdown" if rules.get("trailing", True) else "drawdown"
     if loss >= limit:
         return (
-            f"Open loss ${loss:,.2f} has reached the ${limit:,.0f} trailing drawdown. "
+            f"Open loss ${loss:,.2f} has reached the ${limit:,.0f} {kind}. "
             "Close the trade. Leaving it open can liquidate the account."
         )
     if daily_limit is not None and loss >= float(daily_limit):
@@ -68,6 +86,8 @@ def deliver(signal: dict, plan: dict, account_size: float) -> dict:
     if plan["action"] == "hold":
         return {"sent": False, "reason": "Holding. The strategy is already at this position."}
     try:
+        if _paper_only(signal.get("account") or ""):
+            return _paper_result(signal, plan)
         if plan["action"] == "close":
             return _close(signal)
         cap = contract_cap(account_size)
@@ -80,10 +100,11 @@ def deliver(signal: dict, plan: dict, account_size: float) -> dict:
 
 
 def contract_cap(account_size: float) -> int:
-    """The tighter of the Apex tier and a contract cap the prop firm has stated."""
+    """The contract cap entered for this account. Mail can only tighten it."""
     from futuresfund.book import load
+    from futuresfund.prop_rules import active_limits
 
-    cap = int(for_account(account_size)["max_contracts"])
+    cap = int(active_limits(account_size)["max_contracts"])
     stated = (load().get("prop_updates") or {}).get("max_contracts")
     if stated is None:
         return cap
@@ -99,6 +120,44 @@ def point_value(instrument: str) -> float:
         return POINT_VALUE[root_of(instrument)]
     except (ValueError, KeyError):
         return 50.0
+
+
+def _paper_only(account: str) -> bool:
+    """A dry-run account that is not configured is traded on the paper book."""
+    from futuresfund.config import dry_run, prop_accounts
+
+    name = str(account or "").strip()
+    if not dry_run() or not name or name in prop_accounts():
+        return False
+    if name.lower() == "paper":
+        return True
+    from futuresfund.book import load
+
+    for row in load().get("running") or []:
+        if str(row.get("account") or "").strip() == name:
+            return True
+    return False
+
+
+def _paper_result(signal: dict, plan: dict) -> dict:
+    side = plan.get("side") or ""
+    command = "FLATTEN" if plan.get("action") == "close" else "PLACE"
+    lines = [
+        "key=***;",
+        f"command={command};",
+        f"account={signal.get('account')};",
+        f"instrument={signal.get('instrument')};",
+    ]
+    if side:
+        lines.append(f"action={side};")
+    lines.append(f"qty={signal.get('qty')};")
+    return {
+        "sent": False,
+        "dry_run": True,
+        "side": side or None,
+        "preview": "\n".join(lines),
+        "reason": "DRY_RUN is on. The paper order was not sent.",
+    }
 
 
 def _close(signal: dict) -> dict:

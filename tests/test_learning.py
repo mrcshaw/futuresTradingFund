@@ -20,16 +20,16 @@ class CandidateTests(unittest.TestCase):
         self.assertTrue(all(plan["point_value"] == 50 for plan in plans))
         self.assertGreater(len(plans), 1)
 
-    def test_a_passing_adjustment_ends_the_study(self):
+    def test_a_passing_result_does_not_stop_the_remaining_attempts(self):
         from futuresfund.learn import study_parameters
 
         def execute(params):
-            profit = 100 if params["length"] >= 14 else -50
+            profit = 3000 if params["length"] >= 14 else -50
             return {"net_profit": profit, "max_drawdown": 400, "trades": 5, "win_rate": 40}
 
-        trials = study_parameters({"length": 10}, execute)
-        self.assertTrue(trials[-1]["passed"])
-        self.assertLess(len(trials), 200)
+        trials = study_parameters({"length": 10}, execute, limit=40)
+        self.assertEqual(len(trials), 40)
+        self.assertTrue(any(row["passed"] for row in trials))
 
     def test_the_researcher_note_is_a_table_with_a_winner_and_a_loser(self):
         from futuresfund.learn import adjustment_notes
@@ -44,6 +44,37 @@ class CandidateTests(unittest.TestCase):
         self.assertIn("length 10 to 14", quant)
         self.assertIn("$50.00", quant)
         self.assertIn("-$400.00", quant)
+
+    def test_a_decrease_that_loses_money_is_reversed(self):
+        from futuresfund.learn import next_plan
+
+        origin = {"length": 10}
+        trials = [
+            {"params": {"length": 10}, "net_profit": 100, "max_drawdown": 50, "trades": 2},
+            {"params": {"length": 8}, "net_profit": 40, "max_drawdown": 90, "trades": 2},
+        ]
+        plan = next_plan(origin, trials)
+        self.assertGreater(plan["length"], 10)
+
+    def test_the_trail_blocks_a_result_that_touched_it_before_the_target(self):
+        from futuresfund.learn import _passed
+
+        crossed = {"net_profit": 4000, "max_drawdown": 2500, "trades": 4, "stop_reason": "Trailing DD breached", "breached": True}
+        short = {"net_profit": 500, "max_drawdown": 400, "trades": 4, "stop_reason": ""}
+        kept = {"net_profit": 3000, "max_drawdown": 800, "trades": 4, "stop_reason": "Profit target reached"}
+        self.assertFalse(_passed(crossed, 50000))
+        self.assertFalse(_passed(short, 50000))
+        self.assertTrue(_passed(kept, 50000))
+
+    def test_a_script_uses_two_hundred_attempts_unless_the_goal_is_met(self):
+        from futuresfund.learn import study_parameters
+
+        def execute(params):
+            return {"net_profit": -10, "max_drawdown": 100, "trades": 1}
+
+        trials = study_parameters({"length": 10}, execute, limit=200)
+        self.assertEqual(len(trials), 200)
+        self.assertTrue(all(not row["passed"] for row in trials))
 
 
 class ReportShapeTests(unittest.TestCase):
@@ -77,6 +108,12 @@ class ReportShapeTests(unittest.TestCase):
         self.assertIn("9:30", report)
         self.assertIn("18:00", report)
         self.assertIn("Raising the stop did not help.", report)
+        self.assertIn("best version", report.lower())
+        self.assertIn("must not be crossed before the $3,000 profit target", report)
+        self.assertIn("Take profit on this version: $450", report)
+        self.assertIn("5-minute", report)
+        self.assertIn("2-minute", report)
+        self.assertIn("15-minute", report)
 
     def test_the_report_goes_to_the_fund_address_and_does_not_wait_on_smtp(self):
         from futuresfund.mailer import report_recipients, send_report
@@ -99,15 +136,18 @@ class QueueTests(unittest.TestCase):
             learned = root / "learnedStrategies"
             learning.mkdir()
             (learning / "ema_test.pine").write_text("strategy(\"EMA test\")", encoding="utf-8")
+            (learning / "ema_test.py").write_text("class Strategy: pass", encoding="utf-8")
             (learning / "test_helper.py").write_text("print('skip')", encoding="utf-8")
             jobs = learn.queue(learning)
             self.assertEqual([path.name for path in jobs], ["ema_test.pine"])
             previous = learn.LEARNED
             learn.LEARNED = learned
             try:
-                learn._file_away(jobs[0], None)
+                learn._file_away(jobs[0], learning / "ema_test.py")
             finally:
                 learn.LEARNED = previous
             self.assertFalse((learning / "ema_test.pine").exists())
             self.assertTrue((learned / "ema_test.pine").exists())
+            self.assertTrue((learning / "ema_test.py").exists())
+            self.assertFalse((learned / "ema_test.py").exists())
             self.assertTrue((learning / "test_helper.py").exists())

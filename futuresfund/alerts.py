@@ -22,14 +22,24 @@ _FIELDS = {
     "prev_market_position", "sync_strategy", "out_of_sync", "limit_price", "stop_price",
     "take_profit", "stop_loss", "flatten_first", "atm_strategy", "destination",
     "timeframe", "interval", "time", "bar_time", "open", "high", "low",
+    "volume", "vol", "id", "poc", "poc_volume", "delta", "delta_pct",
+    "strategy", "strategy_name",
 }
+
+# A candle-close order with this id is chart data. Ingestion records it and does not send it.
+BAR_FEED_ID = "desk-bar"
 
 
 def parse_alert(raw: str) -> dict:
     """Accept JSON or CrossTrade-style key=value text. Ignore any key= line."""
-    text = (raw or "").strip()
+    text = (raw or "").strip().lstrip("\ufeff")
     if not text:
         raise ValueError("The alert was empty.")
+    if not text.startswith("{"):
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            text = text[start:end + 1]
     fields = _json_fields(text) if text.startswith("{") else _text_fields(text)
     return normalize(fields)
 
@@ -109,7 +119,32 @@ def normalize(fields: dict) -> dict:
         "open": _optional_float(lowered.get("open")),
         "high": _optional_float(lowered.get("high")),
         "low": _optional_float(lowered.get("low")),
+        "volume": _optional_float(lowered.get("volume") if lowered.get("volume") not in (None, "") else lowered.get("vol")),
+        "poc": _optional_float(lowered.get("poc")),
+        "poc_volume": _optional_float(lowered.get("poc_volume")),
+        "delta": _optional_float(lowered.get("delta")),
+        "delta_pct": _optional_float(lowered.get("delta_pct")),
+        "id": _feed_id(lowered.get("id")),
+        "strategy": _strategy_name(lowered.get("strategy") if lowered.get("strategy") not in (None, "") else lowered.get("strategy_name")),
     }
+
+
+def _strategy_name(value) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if len(text) > 120 or any(mark in text for mark in (";", "\n", "\r")):
+        raise ValueError("strategy must be the strategy name.")
+    return text
+
+
+def _feed_id(value) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_\-]{0,40}", text):
+        raise ValueError("id must be letters, numbers, or a hyphen.")
+    return text
 
 
 def _qty(value) -> int:

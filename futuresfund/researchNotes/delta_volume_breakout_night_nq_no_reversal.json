@@ -1,0 +1,93 @@
+{
+  "file": "delta_volume_breakout_night_nq_no_reversal.pine",
+  "title": "Untitled strategy",
+  "attempts": 1,
+  "best": {
+    "params": {
+      "fast": 12,
+      "slow": 50,
+      "stop": 250
+    },
+    "net_profit": 4223.5,
+    "max_drawdown": 1999.0,
+    "trades": 5,
+    "win_rate": 0.2,
+    "error": null,
+    "runner": "ema_cross",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "5m",
+    "frames": [
+      {
+        "timeframe": "5m",
+        "net_profit": 4223.5,
+        "max_drawdown": 1999.0,
+        "trades": 5,
+        "passed": true
+      },
+      {
+        "timeframe": "2m",
+        "net_profit": -1122.0,
+        "max_drawdown": 1936.0,
+        "trades": 14,
+        "passed": false
+      },
+      {
+        "timeframe": "15m",
+        "net_profit": -177.0,
+        "max_drawdown": 1999.0,
+        "trades": 4,
+        "passed": false
+      }
+    ],
+    "passed": true,
+    "change": "Starting settings",
+    "take_profit": null
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                          $4,223.50      $1,999.00        5     yes\n\nMost profitable change\nOriginal                                          $4,223.50      $1,999.00        5     yes\n\nA change that made money\nOriginal                                          $4,223.50      $1,999.00        5     yes\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses fast=12, slow=50, stop=250. Attempts recorded: 1.",
+  "trials": [
+    {
+      "params": {
+        "fast": 12,
+        "slow": 50,
+        "stop": 250
+      },
+      "net_profit": 4223.5,
+      "max_drawdown": 1999.0,
+      "trades": 5,
+      "win_rate": 0.2,
+      "error": null,
+      "runner": "ema_cross",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "5m",
+      "frames": [
+        {
+          "timeframe": "5m",
+          "net_profit": 4223.5,
+          "max_drawdown": 1999.0,
+          "trades": 5,
+          "passed": true
+        },
+        {
+          "timeframe": "2m",
+          "net_profit": -1122.0,
+          "max_drawdown": 1936.0,
+          "trades": 14,
+          "passed": false
+        },
+        {
+          "timeframe": "15m",
+          "net_profit": -177.0,
+          "max_drawdown": 1999.0,
+          "trades": 4,
+          "passed": false
+        }
+      ],
+      "passed": true,
+      "change": "Starting settings",
+      "take_profit": null
+    }
+  ]
+}

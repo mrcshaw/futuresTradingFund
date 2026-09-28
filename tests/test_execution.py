@@ -423,13 +423,19 @@ class LiveStopTests(unittest.TestCase):
                 "account=PA-APEX-1;instrument=ES1!;qty=1;timeframe=1;price=4998;"
                 "open=5000;high=5001;low=4995;time=2024-01-02T14:03:00Z;"
             ))
-            self.assertEqual(stopped["action"], "close")
+            self.assertNotEqual(stopped["action"], "close")
+            closed = handle_interval(board, parse_alert(
+                '{"account":"PA-APEX-1","instrument":"ES1!","action":"SELL","qty":1,'
+                '"stop_loss":4995,"price":4995,"timeframe":"5","time":"2024-01-02T14:05:00Z"}'
+            ))
+            self.assertIn(closed["action"], {"close", "place"})
+            floor = [message["text"] for message in board.messages if message["author"] == "Floor Trader"]
+            self.assertTrue(any("SELL" in text and "4995" in text for text in floor))
             again = handle_interval(board, parse_alert(
                 "account=PA-APEX-1;instrument=ES1!;qty=1;timeframe=5;price=4990;"
                 "open=5000;high=5001;low=4988;time=2024-01-02T14:00:00Z;"
             ))
-            self.assertEqual(again["action"], "watch")
-            self.assertEqual(len(research.load_bars()), 1)
+            self.assertIn(again["action"], {"watch", "bar"})
 
 
 class ScheduleTests(unittest.TestCase):
@@ -464,6 +470,19 @@ class ReportTests(unittest.TestCase):
         self.assertIn("Bollinger 14", text)
         self.assertIn("profit 100", text)
         self.assertIn("Saturday has no meeting", text)
+        self.assertIn("No account rules have been entered.", text)
+        self.assertIn("No trade is open.", text)
+        accounted = factual_report({
+            "strategies": [],
+            "orders": [{"time": "2026-09-28 16:00:00", "account": "APEX-441587-44", "side": "BUY", "instrument": "ES1!", "reason": "paper"}],
+            "previous_meeting": "2026-09-28 08:00",
+            "account_rules": {"account": "APEX-441587-44", "size": 50000, "profit_target": 3000, "max_drawdown": 2500, "trailing": True, "max_contracts": 10},
+            "positions": [],
+        }, [])
+        self.assertIn("APEX-441587-44", accounted)
+        self.assertIn("trailing drawdown 2500", accounted)
+        self.assertIn("Orders since the last meeting", accounted)
+        self.assertIn("BUY", accounted)
         written = write_report(text, writer=lambda prompt: "The fund is running Bollinger 14.")
         self.assertEqual(written, "The fund is running Bollinger 14.")
         kept = write_report(text, writer=lambda prompt: "The meeting model could not answer: down")

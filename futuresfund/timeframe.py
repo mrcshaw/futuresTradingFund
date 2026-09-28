@@ -6,6 +6,9 @@ from datetime import datetime
 
 _MINUTES = {
     "1": "1m",
+    "2": "2m",
+    "2m": "2m",
+    "2min": "2m",
     "5": "5m",
     "15": "15m",
     "30": "30m",
@@ -16,6 +19,7 @@ _MINUTES = {
     "1day": "1d",
     "daily": "1d",
     "1m": "1m",
+    "2m": "2m",
     "5m": "5m",
     "15m": "15m",
     "30m": "30m",
@@ -27,6 +31,7 @@ _MINUTES = {
 # Yahoo's intraday history is shorter than its daily history.
 _YAHOO = {
     "1m": ("1m", 7, 1),
+    "2m": ("1m", 7, 2),
     "5m": ("5m", 59, 1),
     "15m": ("15m", 59, 1),
     "30m": ("30m", 59, 1),
@@ -35,9 +40,9 @@ _YAHOO = {
     "1d": ("1d", 365, 1),
 }
 
-LABELS = ("1m", "5m", "15m", "30m", "1h", "4h", "1d")
+LABELS = ("1m", "2m", "5m", "15m", "30m", "1h", "4h", "1d")
 
-_BAR_MINUTES = {"1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440}
+_BAR_MINUTES = {"1m": 1, "2m": 2, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440}
 
 
 def parse_timeframe(value) -> str:

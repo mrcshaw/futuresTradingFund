@@ -1,0 +1,129 @@
+{
+  "file": "bos_breakout_evening_1790491145.pine",
+  "title": "BOS Breakout Evening ES 2min",
+  "attempts": 7,
+  "best": {
+    "params": {
+      "length": 5,
+      "stop": 250
+    },
+    "net_profit": 3663.5,
+    "max_drawdown": 1999.0,
+    "trades": 25,
+    "win_rate": 0.2,
+    "error": null,
+    "runner": "donchian",
+    "stop_reason": "",
+    "breached": false,
+    "passed": true
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                            -$12.50      $1,999.00        2      no\nlength 20 to 5                                    $3,663.50      $1,999.00       25     yes\nlength 20 to 13                                     $165.00      $1,767.50        8      no\nlength 20 to 19                                     $108.50      $1,753.00        3      no\nlength 20 to 18                                     $108.50      $1,753.00        3      no\nlength 20 to 17                                     $108.50      $1,753.00        3      no\n\nMost profitable change\nlength 20 to 5                                    $3,663.50      $1,999.00       25     yes\n\nA change that made money\nlength 20 to 5                                    $3,663.50      $1,999.00       25     yes\n\nA change that lost money\nlength 20 to 21                                    -$175.00      $1,999.00        2      no",
+  "indicator_researcher": "The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses length=5, stop=250. Attempts recorded: 7.",
+  "trials": [
+    {
+      "params": {
+        "length": 20,
+        "stop": 250
+      },
+      "net_profit": -12.5,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 19,
+        "stop": 250
+      },
+      "net_profit": 108.5,
+      "max_drawdown": 1753.0,
+      "trades": 3,
+      "win_rate": 0.3333,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 18,
+        "stop": 250
+      },
+      "net_profit": 108.5,
+      "max_drawdown": 1753.0,
+      "trades": 3,
+      "win_rate": 0.3333,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 17,
+        "stop": 250
+      },
+      "net_profit": 108.5,
+      "max_drawdown": 1753.0,
+      "trades": 3,
+      "win_rate": 0.3333,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 21,
+        "stop": 250
+      },
+      "net_profit": -175.0,
+      "max_drawdown": 1999.0,
+      "trades": 2,
+      "win_rate": 0.0,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 13,
+        "stop": 250
+      },
+      "net_profit": 165.0,
+      "max_drawdown": 1767.5,
+      "trades": 8,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": false
+    },
+    {
+      "params": {
+        "length": 5,
+        "stop": 250
+      },
+      "net_profit": 3663.5,
+      "max_drawdown": 1999.0,
+      "trades": 25,
+      "win_rate": 0.2,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "passed": true
+    }
+  ]
+}

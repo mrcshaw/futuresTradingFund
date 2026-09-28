@@ -17,6 +17,51 @@ def for_account(account_size: float) -> dict:
     return min(TIERS, key=lambda tier: abs(tier["size"] - float(account_size)))
 
 
+def active_limits(account_size: float | None = None) -> dict:
+    """Rules entered for this firm. The published tier is used until an account is saved."""
+    tier = for_account(float(account_size or 50000))
+    saved = _saved_rules()
+    if not saved:
+        return {
+            "account": "",
+            "size": float(tier["size"]),
+            "profit_target": 3000.0,
+            "max_drawdown": float(tier["max_drawdown"]),
+            "trailing": True,
+            "max_contracts": int(tier["max_contracts"]),
+            "source": "tier",
+        }
+    return {
+        "account": str(saved.get("account") or ""),
+        "size": float(saved.get("size") or tier["size"]),
+        "profit_target": float(saved.get("profit_target") or 3000),
+        "max_drawdown": float(saved.get("max_drawdown")),
+        "trailing": bool(saved.get("trailing", True)),
+        "max_contracts": int(saved.get("max_contracts") or tier["max_contracts"]),
+        "source": "entered",
+    }
+
+
+def rules_sentence(account_size: float | None = None) -> str:
+    """The line the floor trader reads before an order."""
+    rules = active_limits(account_size)
+    kind = "trailing drawdown" if rules["trailing"] else "drawdown"
+    name = rules["account"] or "This account"
+    return (
+        f"{name}: ${rules['size']:,.0f} account, profit target ${rules['profit_target']:,.0f}, "
+        f"{kind} ${rules['max_drawdown']:,.0f}, max contracts {rules['max_contracts']}."
+    )
+
+
+def _saved_rules() -> dict:
+    from futuresfund.book import load
+
+    raw = load().get("account_rules")
+    if isinstance(raw, dict) and raw.get("max_drawdown") not in (None, ""):
+        return raw
+    return {}
+
+
 def passes(account_size: float, *, net_profit: float, max_drawdown: float, trades: int, breached: bool = False, qty: int = 1) -> bool:
     """A rule that loses money, trades too many contracts, or draws down past the tier cannot be used."""
     tier = for_account(account_size)
@@ -47,14 +92,14 @@ def gate(item: dict, account_size: float) -> bool:
 
 
 def describe(account_size: float) -> str:
-    tier = for_account(account_size)
-    lock = tier["max_drawdown"] + LOCK_BUFFER
+    rules = active_limits(account_size)
+    kind = "trailing" if rules["trailing"] else "fixed"
+    name = f" {rules['account']}" if rules["account"] else ""
     return (
-        f"Apex intraday trailing account ${tier['size']:,.0f}: "
-        f"the balance, including open profit, may not touch a floor "
-        f"${tier['max_drawdown']:,.0f} under the peak. "
-        f"The floor stops rising once profit reaches ${lock:,.0f}, and then sits $100 above the start. "
-        f"Max contracts {tier['max_contracts']}. "
-        f"Daily loss limit, contract scaling, and the inactivity rule are on. "
-        f"A breach liquidates the account."
+        f"Account{name}: ${rules['size']:,.0f}. "
+        f"Profit target ${rules['profit_target']:,.0f}. "
+        f"The {kind} drawdown is ${rules['max_drawdown']:,.0f}. "
+        f"Max contracts {rules['max_contracts']}. "
+        "No daily loss dollar amount is on file unless the prop firm stated one. "
+        "A breach can liquidate the account."
     )

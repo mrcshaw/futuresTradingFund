@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+import time
 from email.message import EmailMessage
 
 
@@ -15,6 +16,38 @@ def factual_report(book: dict, trials: list | None = None) -> str:
         "Futures desk report from the portfolio manager.",
         meeting_note(),
     ]
+    rules = book.get("account_rules") or {}
+    if isinstance(rules, dict) and rules.get("size"):
+        kind = "trailing" if rules.get("trailing", True) else "fixed"
+        lines.append(
+            f"Account {rules.get('account') or 'unnamed'}: size {rules.get('size')}, "
+            f"profit target {rules.get('profit_target')}, {kind} drawdown {rules.get('max_drawdown')}, "
+            f"max contracts {rules.get('max_contracts')}."
+        )
+    else:
+        lines.append("No account rules have been entered.")
+    paper = book.get("paper") or {}
+    if isinstance(paper, dict) and paper:
+        lines.append(
+            f"Paper book: realized {paper.get('realized')}, peak {paper.get('peak')}."
+        )
+    positions = book.get("positions") or []
+    if isinstance(positions, dict):
+        positions = list(positions.values())
+    if not positions:
+        lines.append("No trade is open.")
+    for position in positions:
+        lines.append(
+            f"Open trade: {position.get('account')} {position.get('instrument')} "
+            f"{position.get('contracts')} from {position.get('average_price')}."
+        )
+    active = book.get("active_strategies") or []
+    if active:
+        lines.append("Strategies on the floor: " + "; ".join(
+            f"{item.get('title') or 'Untitled'} on {item.get('account') or 'paper'}" for item in active
+        ) + ".")
+    else:
+        lines.append("No strategy is saved on the floor.")
     strategies = book.get("strategies") or []
     if not strategies:
         lines.append("No strategies are on the book.")
@@ -32,8 +65,17 @@ def factual_report(book: dict, trials: list | None = None) -> str:
             f"trades {backtest.get('trades', 'not recorded')}."
         )
     orders = book.get("orders") or []
+    since = str(book.get("previous_meeting") or "")
+    since_orders = [order for order in orders if not since or str(order.get("time") or "") >= since]
     lines.append(f"Orders on the book: {len(orders)}.")
-    for order in orders[-5:]:
+    if since:
+        lines.append(f"Orders since the last meeting ({since}): {len(since_orders)}.")
+    else:
+        lines.append("No earlier meeting time is stored, so the latest orders are listed.")
+    shown = since_orders if since else orders
+    if not shown:
+        lines.append("No orders were sent since the last meeting.")
+    for order in shown[-8:]:
         lines.append(
             f"Order {order.get('time', 'time not recorded')}: "
             f"{order.get('side') or 'side not recorded'} {order.get('instrument', '')} {order.get('reason', '')}".rstrip()
@@ -60,9 +102,11 @@ def write_report(facts: str, writer=None) -> str:
     if writer is None:
         from futuresfund.llm import complete
 
-        writer = complete
+        writer = lambda prompt: complete(prompt, agent="Portfolio Manager")
     text = writer(
         "You are the portfolio manager. Write a short report of what this futures fund has been doing. "
+        "Start with the account and whether any trade was sent since the last meeting. "
+        "If no trade is open and no order was sent, say that. A research backtest is not a live trade. "
         "Use only the facts below. Do not invent a profit, a drawdown, or a trade count.\n"
         f"{facts}"
     )
@@ -76,7 +120,14 @@ REPORT_ADDRESS = "thefutureoffuturestrading@gmail.com"
 
 def report_recipients() -> list[str]:
     raw = os.environ.get("REPORT_TO", "").strip() or REPORT_ADDRESS
-    return [part.strip() for part in raw.split(",") if part.strip()]
+    sender = os.environ.get("SMTP_USER", "").strip().lower()
+    recipients = []
+    for part in raw.split(","):
+        address = part.strip()
+        if not address or address.lower() == sender:
+            continue
+        recipients.append(address)
+    return recipients or [REPORT_ADDRESS]
 
 
 def send_report(body: str, subject: str = "Futures desk report") -> dict:
@@ -102,15 +153,25 @@ def send_report(body: str, subject: str = "Futures desk report") -> dict:
     message["From"] = sender
     message["To"] = ", ".join(recipients)
     message.set_content(body)
-    try:
-        with smtplib.SMTP(host, port, timeout=30) as smtp:
-            smtp.starttls()
-            if user:
-                smtp.login(user, password)
-            smtp.send_message(message)
-    except (OSError, smtplib.SMTPException) as exc:
-        return {"sent": False, "reason": f"The report was not emailed: {exc}"}
-    return {"sent": True, "reason": "sent", "to": ", ".join(recipients)}
+    last_error = "The report was not emailed."
+    for attempt in range(3):
+        try:
+            with smtplib.SMTP(host, port, timeout=30) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.ehlo()
+                if user:
+                    smtp.login(user, password)
+                refused = smtp.send_message(message)
+            if refused:
+                last_error = "Gmail refused " + ", ".join(refused)
+                time.sleep(2)
+                continue
+            return {"sent": True, "reason": "sent", "to": ", ".join(recipients)}
+        except (OSError, smtplib.SMTPException) as exc:
+            last_error = f"The report was not emailed: {exc}"
+            time.sleep(2)
+    return {"sent": False, "reason": last_error}
 
 
 def deliver_report() -> str:
@@ -123,6 +184,11 @@ def deliver_report() -> str:
     payload = dict(strategy)
     payload["orders"] = book.get("orders") or []
     payload["headquarters_rules"] = book.get("headquarters_rules")
+    payload["account_rules"] = book.get("account_rules")
+    payload["positions"] = list((book.get("positions") or {}).values())
+    payload["paper"] = book.get("paper")
+    payload["active_strategies"] = book.get("active_strategies") or []
+    payload["previous_meeting"] = book.get("previous_meeting") or ""
     trials = (load_report() or {}).get("trials") or []
     written = write_report(factual_report(payload, trials))
     result = send_report(written)

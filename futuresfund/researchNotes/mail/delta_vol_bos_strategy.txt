@@ -1,0 +1,66 @@
+FUTURES FUND
+Research report for the Chief Executive Officer
+
+Strategy: delta_vol_bos_strategy
+This report is the best version the researchers kept, not the script as it was first given.
+The script is only the starting point. Settings after that follow what made or lost money.
+Prepared by the Portfolio Manager from the Quantitative Researcher and the Indicator Researcher.
+Engine attempts used: 200 of 200.
+The engine is set to the 5-minute chart. Every attempt is tested on the 2-minute, 5-minute, and 15-minute charts.
+This version was tested on the 15-minute chart.
+Chart results for this version:
+5-minute: profit 854.5, drawdown 1939.0, trades 27.
+2-minute: profit -1392.5, drawdown 1803.5, trades 35.
+15-minute: profit 1448.0, drawdown 1852.5, trades 32.
+Best version: profit 1448.0, drawdown 1852.5, trades 32, win rate 0.1562.
+The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+This version clears that rule: no.
+Take profit on this version: $1,000.
+Settings of the best version: be_trigger_dollars=200.0, cooldown_bars=10, ema_len=50, ema_slope_len=5, is_futures=True, min_delta_pct=5.0, min_slope=0.0, process_orders_on_close=True, profile_lookback=120, profile_rows=10, pullback_margin=1.0, sess_end_hr=16
+
+Quantitative Researcher
+Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $974.00      $1,665.50       26      no
+stop_dollars 500.0 to 320.0                       $1,448.00      $1,852.50       32      no
+several settings                                  $1,448.00      $1,852.50       32      no
+several settings                                  $1,448.00      $1,852.50       32      no
+several settings                                  $1,448.00      $1,852.50       32      no
+several settings                                  $1,448.00      $1,852.50       32      no
+
+Most profitable change
+stop_dollars 500.0 to 320.0                       $1,448.00      $1,852.50       32      no
+
+A change that made money
+stop_dollars 500.0 to 320.0                       $1,448.00      $1,852.50       32      no
+
+No change lost money
+
+Indicator Researcher
+The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses be_trigger_dollars=200.0, cooldown_bars=10, ema_len=50, ema_slope_len=5, is_futures=True, min_delta_pct=5.0, min_slope=0.0, process_orders_on_close=True. Attempts recorded: 200.
+
+1. The bet
+This version tries to catch a breakout. It can trade a side the script does not name. The coded conditions that build the entry signal must all be true, including any session filter and cooldown on this version. The fill is on the next bar's open, because the script does not set process_orders_on_close.
+
+2. The stop that is actually active
+This version uses a fixed dollar stop. Initial risk is not stated as a point distance, $320. The coded reward is $1,000. The reward-to-risk ratio is 3.12. The win rate required before commission and slippage is about 24.2 percent. If the file codes more than one stop, the figures above are the inputs on the version the engine kept.
+
+3. The target
+Take profit on this version: $1,000. Winners are capped at that take profit. This version does not describe a split. The position exits together when the target, the stop, or a session flat is hit.
+
+4. The trailing stop and breakeven
+The trailing stop is off in this version. Breakeven is on. The file does not state a separate arming price beyond the trail input it contains. Updates are on the bar close, so a bar-close trail gives back a full bar before it exits. A trail that is on sits under any fixed target the file also codes, and it can only be judged from that code, not from a version where the trail was switched off. Design judgment: where a trail is on, it locks profit only after price has moved in favor of the trade, and it can cut a winner before a fixed cap if both are present. The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+
+5. Time of day
+The coded session is 08:00 to 16:00 Eastern Time. 9:30 is traded with the same rules. The first hour is traded with the same rules. Midday is traded with the same rules. The cash close, 15:00–16:00, is traded with the same rules. The 18:00 reopen is stood aside. The file does not show a forced flat at the session end. Where 9:30 uses the same rules as the rest of the day, that is stated above. The open is the least reliable part of a backtest when orders fill on the bar close and stops are not checked every tick, because one bar can hit both the stop and the target.
+
+6. Costs and size that change the result
+Point value is not named in the header or inputs. Contracts are the strategy default. Commission is not in the header. Slippage is not in the header. Pyramiding is not in the header. Cooldown after an exit is whatever cooldown input the file names; if it has none, the script does not wait. Round-trip cost in points was not computed because point value or commission is missing from the file.
+
+7. What the backtest cannot prove
+The script does not set fills on the close. Stops are not calculated every tick. No declared input was found unused in the entry. A level that needs future bars is not a live signal.
+
+8. Where this kind of rule set usually makes and loses money
+Winners are capped, so a large trend pays only the target. Losers take the full coded stop when a stop is hit. The file does not cut trades with a session flat. The open is inside the session, so the open can whipsaw a bar-close fill. Settled for the best version: profit 1448.0, drawdown 1852.5, trades 32, trail cleared: no. Still to be tested on a trade list: result by hour, especially 9:30–10:00, and result with the trail on versus off.

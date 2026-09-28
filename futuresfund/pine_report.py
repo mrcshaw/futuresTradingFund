@@ -25,6 +25,8 @@ def pine_facts(text: str) -> dict:
             "name": match.group("name"),
             "kind": match.group("kind"),
             "default": _first_value(match.group("kind"), raw),
+            "min": _bound(raw, "minval"),
+            "max": _bound(raw, "maxval"),
             "label": _quoted(raw) or match.group("name"),
         })
     named = {item["name"]: item["default"] for item in inputs}
@@ -55,10 +57,33 @@ def pine_facts(text: str) -> dict:
     }
 
 
+def _version(facts: dict, params: dict) -> dict:
+    """The script with the best version's settings written over the original inputs."""
+    named = dict(facts.get("named") or {})
+    for key, value in (params or {}).items():
+        if isinstance(value, (bool, int, float)):
+            named[key] = value
+    version = dict(facts)
+    version["named"] = named
+    version["stop"] = _overlay(params or {}, facts, ("stop_dollars", "stop_dollar", "sl_dollars", "stop_loss", "fixed_stop"), facts.get("stop"))
+    version["target"] = _overlay(params or {}, facts, ("tp_dollars", "take_profit", "tp_dollar", "target_dollars", "profit_target"), facts.get("target"))
+    session = _session(named, "session")
+    if session:
+        version["session"] = session
+    if "use_breakeven" in (params or {}):
+        version["breakeven"] = bool(params["use_breakeven"])
+    if (params or {}).get("added_indicator"):
+        version["added_indicator"] = params["added_indicator"]
+        version["added_length"] = params.get("added_length")
+    return version
+
+
 def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: str, attempts: int) -> str:
-    """The portfolio manager's report. Engine figures are copied. The script supplies the rules."""
+    """The portfolio manager's report. The sections describe the best version, not the file as given."""
     best = best or {}
     measured = best.get("measured") or {}
+    params = best.get("params") or {}
+    version = _version(facts, params)
     profit = measured.get("net_profit", "not recorded")
     drawdown = measured.get("max_drawdown", "not recorded")
     trades = measured.get("trades", "not recorded")
@@ -69,11 +94,18 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
         "Research report for the Chief Executive Officer",
         "",
         f"Strategy: {facts.get('title') or 'Untitled strategy'}",
+        "This report is the best version the researchers kept, not the script as it was first given.",
+        "The script is only the starting point. Settings after that follow what made or lost money.",
         "Prepared by the Portfolio Manager from the Quantitative Researcher and the Indicator Researcher.",
         f"Engine attempts used: {attempts} of 200.",
-        f"Best measured result: profit {profit}, drawdown {drawdown}, trades {trades}, win rate {win}.",
-        f"Clears the $2,000 trailing drawdown with a profit: {cleared}.",
-        f"Parameters of that version: {_params(best.get('params') or {})}",
+        "The engine is set to the 5-minute chart. Every attempt is tested on the 2-minute, 5-minute, and 15-minute charts.",
+        f"This version was tested on the {_chart_name(measured.get('timeframe'))} chart.",
+        _chart_lines(measured.get("frames")),
+        f"Best version: profit {profit}, drawdown {drawdown}, trades {trades}, win rate {win}.",
+        "The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.",
+        f"This version clears that rule: {cleared}.",
+        _take_profit_line(version, params),
+        f"Settings of the best version: {_params(best.get('params') or {})}",
         "",
         "Quantitative Researcher",
         quant_note.strip() or "No adjustment note was recorded.",
@@ -82,28 +114,28 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
         indicator_note.strip() or "No indicator note was recorded.",
         "",
         "1. The bet",
-        _bet(facts),
+        _bet(version),
         "",
         "2. The stop that is actually active",
-        _stop(facts, best.get("params") or {}),
+        _stop(version, params),
         "",
         "3. The target",
-        _target(facts, best.get("params") or {}),
+        _target(version, params),
         "",
         "4. The trailing stop and breakeven",
-        _trail(facts),
+        _trail(version),
         "",
         "5. Time of day",
-        _session_section(facts),
+        _session_section(version),
         "",
         "6. Costs and size that change the result",
-        _costs(facts),
+        _costs(version),
         "",
         "7. What the backtest cannot prove",
-        _cannot(facts),
+        _cannot(version),
         "",
         "8. Where this kind of rule set usually makes and loses money",
-        _where(facts, best),
+        _where(version, best),
     ]
     return "\n".join(lines)
 
@@ -119,10 +151,16 @@ def _bet(facts: dict) -> str:
     fill = "at the signal bar's close" if facts.get("on_close") else "on the next bar's open, because the script does not set process_orders_on_close"
     if facts.get("every_tick"):
         fill = "intrabar, because calc_on_every_tick is on"
-    must = "The coded conditions that build the entry signal must all be true, including any session filter and cooldown written in the file."
+    must = "The coded conditions that build the entry signal must all be true, including any session filter and cooldown on this version."
+    added = facts.get("added_indicator")
+    filter_text = ""
+    if added:
+        length = facts.get("added_length")
+        length_text = f" of length {length}" if length else ""
+        filter_text = f" New entries also have to agree with a {added} filter{length_text}."
     return (
         f"This version tries to catch {kind}. It can trade {side}. {must} "
-        f"The fill is {fill}."
+        f"The fill is {fill}.{filter_text}"
     )
 
 
@@ -162,23 +200,61 @@ def _stop(facts: dict, params: dict) -> str:
 
 
 def _target(facts: dict, params: dict) -> str:
-    target = _overlay(params, facts, ("tp_dollars", "take_profit", "tp_dollar", "target_dollars", "profit_target"), facts.get("target"))
-    if isinstance(target, (int, float)):
+    line = _take_profit_line(facts, params)
+    dollars = _overlay(params, facts, ("tp_dollars", "take_profit", "tp_dollar", "target_dollars", "profit_target"), facts.get("target"))
+    if isinstance(dollars, (int, float)) and dollars > 0:
         return (
-            f"Winners are capped at ${target:,.0f}. This version does not describe a split. "
+            f"{line} Winners are capped at that take profit. This version does not describe a split. "
             "The position exits together when the target, the stop, or a session flat is hit."
         )
     if facts.get("trail"):
-        return "No fixed profit cap is named. A trail is coded, so a winner can stay open until that trail or a session flat takes it. The position is not described as split."
-    return "No fixed target is named. A winner is left open until an opposite signal, a stop, or a session flat. The position exits together."
+        return f"{line} A trail is coded, so a winner can stay open until that trail or a session flat takes it. The position is not described as split."
+    return f"{line} A winner is left open until an opposite signal, a stop, or a session flat. The position exits together."
+
+
+def _chart_name(timeframe) -> str:
+    names = {"5m": "5-minute", "2m": "2-minute", "15m": "15-minute"}
+    return names.get(str(timeframe or "5m"), str(timeframe or "5-minute"))
+
+
+def _chart_lines(frames) -> str:
+    if not frames:
+        return "Chart results: the 2-minute, 5-minute, and 15-minute results were not attached to this version."
+    lines = ["Chart results for this version:"]
+    for item in frames:
+        lines.append(
+            f"{_chart_name(item.get('timeframe'))}: profit {item.get('net_profit')}, "
+            f"drawdown {item.get('max_drawdown')}, trades {item.get('trades')}."
+        )
+    return "\n".join(lines)
+
+
+def _take_profit_line(facts: dict, params: dict) -> str:
+    """The take profit on the best version, in dollars, points, or an ATR multiple."""
+    dollars = _overlay(params, facts, ("tp_dollars", "take_profit", "tp_dollar", "target_dollars", "profit_target"), facts.get("target"))
+    points = _overlay(params, facts, ("tp_points", "take_profit_points", "tp_pts"), None)
+    multiple = _overlay(params, facts, ("atr_tp_mult", "tp_mult", "atr_tp"), None)
+    parts = []
+    if isinstance(dollars, (int, float)) and dollars > 0:
+        parts.append(f"${dollars:,.0f}")
+    elif isinstance(dollars, (int, float)) and dollars == 0:
+        parts.append("the dollar take profit is off")
+    if isinstance(points, (int, float)) and points > 0:
+        parts.append(f"{points:g} points")
+    if isinstance(multiple, (int, float)) and multiple > 0:
+        parts.append(f"{multiple:g} times ATR")
+    if not parts:
+        return "Take profit on this version: no fixed take profit is set."
+    return "Take profit on this version: " + ", ".join(parts) + "."
 
 
 def _trail(facts: dict) -> str:
     if not facts.get("trail") and not facts.get("breakeven"):
         return (
             "The trailing stop is off in this version, and breakeven is off. "
-            "The backtest of this version says nothing about a trail. "
-            "A trail that is not in the code cannot lock profit, cut winners, or replace a profit cap."
+            "The backtest of this version says nothing about a strategy trail. "
+            "A trail that is not in the code cannot lock profit, cut winners, or replace a profit cap. "
+            "The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met."
         )
     trail = "on" if facts.get("trail") else "off"
     even = "on" if facts.get("breakeven") else "off"
@@ -187,7 +263,8 @@ def _trail(facts: dict) -> str:
         f"The trailing stop is {trail} in this version. Breakeven is {even}. "
         f"The file does not state a separate arming price beyond the trail input it contains. "
         f"Updates are {tick}. A trail that is on sits under any fixed target the file also codes, and it can only be judged from that code, not from a version where the trail was switched off. "
-        "Design judgment: where a trail is on, it locks profit only after price has moved in favor of the trade, and it can cut a winner before a fixed cap if both are present."
+        "Design judgment: where a trail is on, it locks profit only after price has moved in favor of the trade, and it can cut a winner before a fixed cap if both are present. "
+        "The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met."
     )
 
 
@@ -261,7 +338,7 @@ def _where(facts: dict, best: dict) -> str:
         else "The open is outside the coded session, so the open itself is stood aside. "
     )
     settled = (
-        f"Settled from the code and this engine pass: profit {((best.get('measured') or {}).get('net_profit', 'not recorded'))}, "
+        f"Settled for the best version: profit {((best.get('measured') or {}).get('net_profit', 'not recorded'))}, "
         f"drawdown {((best.get('measured') or {}).get('max_drawdown', 'not recorded'))}, "
         f"trades {((best.get('measured') or {}).get('trades', 'not recorded'))}, "
         f"trail cleared: {'yes' if best.get('passed') else 'no'}."
@@ -325,6 +402,14 @@ def _unused(body: str, inputs: list[dict]) -> list[str]:
         if len(re.findall(r"\b" + re.escape(name) + r"\b", body)) <= 1:
             unused.append(name)
     return unused
+
+
+def _bound(body: str, key: str):
+    match = re.search(rf"\b{key}\s*=\s*(-?\d+(?:\.\d+)?)", body or "")
+    if not match:
+        return None
+    number = float(match.group(1))
+    return int(number) if number.is_integer() else number
 
 
 def _quoted(text: str) -> str:

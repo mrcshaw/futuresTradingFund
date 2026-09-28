@@ -1,0 +1,67 @@
+FUTURES FUND
+Research report for the Chief Executive Officer
+
+Strategy: RSI+MACD Reversal v3
+This report is the best version the researchers kept, not the script as it was first given.
+The script is only the starting point. Settings after that follow what made or lost money.
+Prepared by the Portfolio Manager from the Quantitative Researcher and the Indicator Researcher.
+Engine attempts used: 200 of 200.
+The engine is set to the 5-minute chart. Every attempt is tested on the 2-minute, 5-minute, and 15-minute charts.
+This version was tested on the 15-minute chart.
+Chart results for this version:
+5-minute: profit 1576.0, drawdown 1455.0, trades 34.
+2-minute: profit -1259.0, drawdown 2540.0, trades 19.
+15-minute: profit 2490.0, drawdown 1008.0, trades 10.
+Best version: profit 2490.0, drawdown 1008.0, trades 10, win rate 50.0.
+The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+This version clears that rule: no.
+Take profit on this version: $1,000.
+Settings of the best version: be_trigger_dol=200.0, cooldown_bars=30, div_window=3, htf_rsi_len=101, lbL=6, lbR=6, macd_fast=13, macd_signal=9, macd_slow=26, min_triggers=1, pullback_hi=58.0, pullback_lo=42.0
+
+Quantitative Researcher
+Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                             $46.00      $2,016.00       39      no
+several settings                                  $2,490.00      $1,008.00       10      no
+several settings                                  $2,490.00      $1,008.00       10      no
+several settings                                  $2,490.00      $1,008.00       10      no
+several settings                                  $2,490.00      $1,008.00       10      no
+several settings                                  $2,490.00      $1,008.00       10      no
+
+Most profitable change
+several settings                                  $2,490.00      $1,008.00       10      no
+
+A change that made money
+several settings                                  $2,490.00      $1,008.00       10      no
+
+A change that lost money
+rsi_len 14 to 2                                  -$1,259.00      $2,540.00       19      no
+
+Indicator Researcher
+The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses be_trigger_dol=200.0, cooldown_bars=30, div_window=3, htf_rsi_len=101, lbL=6, lbR=6, macd_fast=13, macd_signal=9. Attempts recorded: 200.
+
+1. The bet
+This version tries to catch a mean-reversion move, a stretch back toward an average. It can trade long and short. The coded conditions that build the entry signal must all be true, including any session filter and cooldown on this version. The fill is at the signal bar's close.
+
+2. The stop that is actually active
+This version uses a fixed dollar stop. Initial risk is 6 points, $300. The coded reward is $1,000. The reward-to-risk ratio is 3.33. The win rate required before commission and slippage is about 23.1 percent. If the file codes more than one stop, the figures above are the inputs on the version the engine kept.
+
+3. The target
+Take profit on this version: $1,000. Winners are capped at that take profit. This version does not describe a split. The position exits together when the target, the stop, or a session flat is hit.
+
+4. The trailing stop and breakeven
+The trailing stop is off in this version, and breakeven is off. The backtest of this version says nothing about a strategy trail. A trail that is not in the code cannot lock profit, cut winners, or replace a profit cap. The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.
+
+5. Time of day
+The coded session is 18:00 to 08:00 Eastern Time. 9:30 is stood aside. The first hour is stood aside. Midday is stood aside. The cash close, 15:00–16:00, is stood aside. The 18:00 reopen is traded with the same rules. Positions are forced flat when the session ends. Where 9:30 uses the same rules as the rest of the day, that is stated above. The open is the least reliable part of a backtest when orders fill on the bar close and stops are not checked every tick, because one bar can hit both the stop and the target.
+
+6. Costs and size that change the result
+Point value is $50 per point. Contracts are 1. Commission is $5.5 a side. Slippage is 1. Pyramiding is 0. Cooldown after an exit is whatever cooldown input the file names; if it has none, the script does not wait. Round-trip commission is $11. Slippage is coded as 1 tick, taken as $12.5 at a 0.25 point tick. That is 0.47 points, which is the cost to set next to the stop and the target.
+
+7. What the backtest cannot prove
+Orders in this version fill on the close. Stops are not calculated every tick. Pivots in this file confirm only after later bars. No declared input was found unused in the entry. A level that needs future bars is not a live signal.
+
+8. Where this kind of rule set usually makes and loses money
+Winners are capped, so a large trend pays only the target. Losers take the full coded stop when a stop is hit. Trades still open at the session end are cut by the session flat. The open is outside the coded session, so the open itself is stood aside. Settled for the best version: profit 2490.0, drawdown 1008.0, trades 10, trail cleared: no. Still to be tested on a trade list: result by hour, especially 9:30–10:00, and result with the trail on versus off.

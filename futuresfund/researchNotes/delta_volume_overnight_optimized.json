@@ -1,0 +1,91 @@
+{
+  "file": "delta_volume_overnight_optimized.pine",
+  "title": "Delta Volume Breakout Night Shift [Optimized]",
+  "attempts": 1,
+  "best": {
+    "params": {
+      "length": 20,
+      "stop": 250
+    },
+    "net_profit": 4454.5,
+    "max_drawdown": 1999.0,
+    "trades": 4,
+    "win_rate": 0.25,
+    "error": null,
+    "runner": "donchian",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "5m",
+    "frames": [
+      {
+        "timeframe": "5m",
+        "net_profit": 4454.5,
+        "max_drawdown": 1999.0,
+        "trades": 4,
+        "passed": true
+      },
+      {
+        "timeframe": "2m",
+        "net_profit": 1476.0,
+        "max_drawdown": 1812.0,
+        "trades": 4,
+        "passed": false
+      },
+      {
+        "timeframe": "15m",
+        "net_profit": -12.5,
+        "max_drawdown": 1999.0,
+        "trades": 2,
+        "passed": false
+      }
+    ],
+    "passed": true,
+    "change": "Starting settings",
+    "take_profit": null
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                          $4,454.50      $1,999.00        4     yes\n\nMost profitable change\nOriginal                                          $4,454.50      $1,999.00        4     yes\n\nA change that made money\nOriginal                                          $4,454.50      $1,999.00        4     yes\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that lowers profit is reversed. A change that raises profit is continued. When those knobs stall, a filter such as VWMA, EMA, or RSI is added. The best version uses length=20, stop=250. Attempts recorded: 1.",
+  "trials": [
+    {
+      "params": {
+        "length": 20,
+        "stop": 250
+      },
+      "net_profit": 4454.5,
+      "max_drawdown": 1999.0,
+      "trades": 4,
+      "win_rate": 0.25,
+      "error": null,
+      "runner": "donchian",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "5m",
+      "frames": [
+        {
+          "timeframe": "5m",
+          "net_profit": 4454.5,
+          "max_drawdown": 1999.0,
+          "trades": 4,
+          "passed": true
+        },
+        {
+          "timeframe": "2m",
+          "net_profit": 1476.0,
+          "max_drawdown": 1812.0,
+          "trades": 4,
+          "passed": false
+        },
+        {
+          "timeframe": "15m",
+          "net_profit": -12.5,
+          "max_drawdown": 1999.0,
+          "trades": 2,
+          "passed": false
+        }
+      ],
+      "passed": true,
+      "change": "Starting settings",
+      "take_profit": null
+    }
+  ]
+}

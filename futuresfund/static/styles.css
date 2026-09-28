@@ -84,6 +84,7 @@ nav { padding: 8px; }
 .channel.active { background: Highlight; color: HighlightText; }
 .channel:hover { background: color-mix(in srgb, Highlight 35%, transparent); }
 .channel small { display: block; color: var(--accent); font-size: 11px; }
+.channel small.model { color: var(--muted); font-size: 10px; }
 .channel.active small { color: HighlightText; }
 .dot {
   width: 8px;
@@ -134,12 +135,55 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
 .lead {
   border-bottom: 1px solid var(--line);
   padding: 12px 22px 14px;
-  max-height: 280px;
+  max-height: 70vh;
   overflow: auto;
   background: var(--panel);
 }
 .lead h2 { margin: 0; font-size: 16px; }
 .lead .pine { max-height: 180px; }
+.leader-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 10px 0;
+}
+.leader-card {
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.leader-card h3 { margin: 0; font-size: 15px; }
+.leader-card p { margin: 0; color: var(--muted); font-size: 13px; }
+.leader-card label { display: grid; gap: 4px; }
+.rules-form { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 8px 0 12px; }
+.rules-form label.check { display: flex; gap: 6px; align-items: center; }
+.chart-browser { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chart-tab { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.chart-tab.active { background: var(--accent); color: var(--accent-text); }
+#chart-canvas { width: 100%; height: auto; background: var(--panel); border: 1px solid var(--line); }
+.meeting-live {
+  margin: 0 22px;
+  padding: 10px 0 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+.meeting-live[hidden] { display: none; }
+.meeting-live p { margin: 6px 0; white-space: pre-wrap; }
+.library-tools { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 8px 0 12px; }
+#library-table tbody tr { cursor: pointer; }
+#library-table th { cursor: pointer; }
+.alert-msg {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+}
+@media (max-width: 980px) {
+  .leader-grid { grid-template-columns: 1fr; }
+}
 
 .hq-rules {
   border-bottom: 1px solid var(--line);
@@ -150,6 +194,25 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
 }
 .hq-rules h2 { margin: 0 0 8px; font-size: 16px; }
 
+.active-card { display: grid; gap: 8px; margin: 12px 22px; }
+.active-card textarea {
+  width: 100%;
+  min-height: 220px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}
+.active-card .row { display: flex; gap: 8px; align-items: center; }
+.paper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.paper h2 { margin: 2px 0; font-size: 28px; }
+.paper p { margin: 0; color: var(--muted); }
+.paper[hidden] { display: none; }
 .now {
   display: flex;
   justify-content: space-between;
@@ -161,26 +224,53 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
   border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
   border-radius: 0;
+  position: relative;
+  z-index: 3;
 }
 .now-kicker { margin: 0; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .now-text { margin: 4px 0 0; font-size: 16px; font-weight: 650; }
-button.stop {
-  width: 44px;
-  height: 44px;
+button.power {
+  width: 84px;
+  height: 84px;
   padding: 0;
-  border-radius: 0;
-  border: 1px solid CanvasText;
-  background: var(--red);
-  color: Canvas;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  font: 700 13px/1 "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.08em;
   display: grid;
   place-items: center;
-  box-shadow: none;
+  position: relative;
+  z-index: 2;
 }
-button.stop .stop-mark {
-  width: 14px;
-  height: 14px;
-  background: Canvas;
+button.power[hidden] { display: none; }
+button.power:disabled { cursor: wait; filter: saturate(0.7); }
+button.power.stop {
+  border: 6px solid #1a1a1a;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.55), transparent 28%),
+    radial-gradient(circle at 50% 42%, #ff4d4d 0%, #e10600 46%, #9d0400 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35), inset 0 -8px 12px rgba(0, 0, 0, 0.25);
 }
+button.power.start {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 5px solid white;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.7), transparent 26%),
+    radial-gradient(circle at 50% 45%, #7dff57 0%, #21c41b 48%, #0d8a12 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28), inset 0 -8px 12px rgba(0, 0, 0, 0.18);
+}
+button.power.start .power-icon {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: white;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.run-controls { display: flex; gap: 10px; align-items: center; }
 .floor {
   display: flex;
   gap: 8px;
@@ -204,7 +294,9 @@ button.stop .stop-mark {
 .feed, .book { grid-row: 4; }
 .composer { grid-row: 5; }
 .chat-dock {
-  grid-row: 6;
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -280,6 +372,41 @@ button {
   cursor: pointer;
 }
 button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button.script-link {
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+}
+.modal[hidden] { display: none; }
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, Canvas 25%, black);
+}
+.modal-card {
+  width: min(880px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+.modal-card textarea {
+  width: 100%;
+  min-height: 52vh;
+  font-family: Consolas, monospace;
+  font-size: 12px;
+}
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .hint { margin: 0; font-size: 13px; }
 .actions { margin-top: 10px; }
