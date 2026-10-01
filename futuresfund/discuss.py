@@ -119,28 +119,12 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
         transcript = [f"Bar file: {facts}" + (f" Alerts added {added} bars since the last meeting." if added else "")]
         market = _speak(
             board,
-            "2 min researcher",
-            "You are the quantitative researcher for ES futures. Think through these bars and say what a systematic rule should use. "
+            "Chart researcher",
+            "You are the chart researcher for ES futures. Think through these bars and say what a systematic rule should use. "
             "Entry and exit must be different conditions. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
         )
-        transcript.append(f"2 min researcher: {market}")
-        board.post("2 min researcher", market, kind="speech", channel="R&D")
-        indicator = _speak(
-            board,
-            "5 min researcher",
-            "You are the indicator researcher for ES futures. Think about one public indicator and the settings the trader should test. "
-            "Name the entry and a different exit. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
-        )
-        transcript.append(f"5 min researcher: {indicator}")
-        board.post("5 min researcher", indicator, kind="speech", channel="R&D")
-        fifteen = _speak(
-            board,
-            "15 min researcher",
-            "You are the 15 min researcher for ES futures. Think about the 15-minute chart and the one setting the developer should test. "
-            "Name the entry and a different exit. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
-        )
-        transcript.append(f"15 min researcher: {fifteen}")
-        board.post("15 min researcher", fifteen, kind="speech", channel="R&D")
+        transcript.append(f"Chart researcher: {market}")
+        board.post("Chart researcher", market, kind="speech", channel="R&D")
         proposals: list[dict] = []
         tested: set[str] = set()
         round_number = 0
@@ -171,13 +155,9 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
             row, note = _developer_backtest(board, bars, contract, account_size, profit_target, name, params, round_number)
             transcript.append(note)
             analyst = _speak(board, "Trading Analyst", _analyst_prompt(transcript))
-            researcher_note = _speak(board, "2 min researcher", _review_prompt(transcript))
-            indicator_note = _speak(board, "5 min researcher", _indicator_prompt(transcript))
-            fifteen_note = _speak(board, "15 min researcher", _indicator_prompt(transcript))
+            researcher_note = _speak(board, "Chart researcher", _review_prompt(transcript))
             transcript.append(f"Trading Analyst: {analyst}")
-            transcript.append(f"2 min researcher: {researcher_note}")
-            transcript.append(f"5 min researcher: {indicator_note}")
-            transcript.append(f"15 min researcher: {fifteen_note}")
+            transcript.append(f"Chart researcher: {researcher_note}")
             risk = _speak(board, "Risk Manager", _risk_prompt(transcript, row))
             transcript.append(f"Risk Manager: {risk}")
             if _risk_approves(risk, row):
@@ -195,7 +175,7 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
             return
         _stand_in(board, proposals, contract, timeframe, account, account_size, profit_target, current)
         board.post(
-            "2 min researcher",
+            "Chart researcher",
             "Three rules passed risk. They wait on the book until the next meeting. "
             "That is 8:00am Monday through Friday or 5:00pm Sunday through Friday. Saturday has no meeting.",
             kind="report",
@@ -233,12 +213,12 @@ def _stand_in(board: Board, approved: list[dict], contract: str, timeframe: str,
     store_strategy(book)
     if pick is not None:
         board.post(
-            "2 min researcher",
+            "Chart researcher",
             f"No strategy was active. Until the 8:00am meeting, {pick['title']} is active. "
             f"It is the most profitable rule that passed risk, profit {pick['backtest']['net_profit']}, "
             f"drawdown {pick['backtest']['max_drawdown']}.",
             kind="report",
-            channel="2 min researcher",
+            channel="Chart researcher",
         )
 
 
@@ -336,26 +316,12 @@ def _pass_reports(board: Board, when: str, facts: list[str], rules: str) -> list
         carried.append(f"Compliance & Operations: {handed}")
     steps = (
         (
-            "2 min researcher",
-            "5 min researcher",
-            "You are the quantitative researcher in the {when} meeting. Write a research report for the indicator researcher. "
+            "Chart researcher",
+            "Trading Analyst",
+            "You are the chart researcher in the {when} meeting. Write one research report for the trading analyst covering the 2-minute, 5-minute, and 15-minute charts. "
             "Use headings Tested, Numbers, and Hand off. Use only the figures below. "
             "Do not invent a profit, a drawdown, or a trade count. Do not debate a live trade. "
             "The floor sends an alert as written and does not wait for this meeting.\n{facts}",
-        ),
-        (
-            "5 min researcher",
-            "15 min researcher",
-            "You are the 5 min researcher. You were handed the research report below. "
-            "Write the 5-minute chart report for the 15 min researcher. Use headings Settings, What to retest, and Hand off. "
-            "Use only the numbers already written. Do not invent numbers. Do not debate a live trade.\n{heard}",
-        ),
-        (
-            "15 min researcher",
-            "Trading Analyst",
-            "You are the 15 min researcher. You were handed the chart reports below. "
-            "Write the 15-minute chart report for the trading analyst. Use headings Settings, What to retest, and Hand off. "
-            "Use only the numbers already written. Do not invent numbers. Do not debate a live trade.\n{heard}",
         ),
         (
             "Trading Analyst",

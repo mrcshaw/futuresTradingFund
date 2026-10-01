@@ -1091,7 +1091,7 @@ function renderLab() {
       ? `Engine ${picked.id} is running ${picked.script || "a script"} on the ${chartLabel[picked.timeframe] || picked.timeframe} ${picked.instrument} chart.`
       : picked && picked.timeframe
         ? `Engine ${picked.id} is warm. ${picked.developer || "The chart developer"} runs only the ${chartLabel[picked.timeframe] || picked.timeframe} chart.`
-        : `Engine ${state.engineId} is warm and waiting.`;
+        : `Engine ${state.engineId} is warm. ${picked && picked.developer ? picked.developer : "The creation tester"} runs a new script once on the 2-minute, 5-minute, and 15-minute charts.`;
   }
   const status = document.querySelector("#engine-status");
   if (status) {

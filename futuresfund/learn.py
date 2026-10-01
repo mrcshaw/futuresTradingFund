@@ -276,7 +276,7 @@ def _run_learning(board) -> None:
     loaded = ", ".join(f"{name} {len(rows)} bars" for name, rows in frames.items())
     intro = (
         "The learning folder is only the starting point. Each chart uses 120 different results, even after a version meets the profit target, so a better one can still be found. "
-        "Four PineForge containers stay running. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 stays warm. "
+        "Four PineForge containers stay running. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 runs a new script once before those studies. "
         "The next test sends new inputs into the container that is already running. Each bar file is written once and reused. "
         f"Each script is tested once on every instrument ({instruments}) and on each of the three charts. It moves to the learned folder only after those charts are done. "
         f"Loaded {loaded}. "
@@ -285,8 +285,7 @@ def _run_learning(board) -> None:
         "A run that repeats an earlier profit, drawdown, and trade count is not counted, and the search keeps going until 120 different results. "
         + _risk_line()
     )
-    for desk in CHART_DESKS:
-        board.post(desk["researcher"], intro, kind="report", channel=desk["researcher"])
+    board.post(CHART_DESKS[0]["researcher"], intro, kind="report", channel=CHART_DESKS[0]["researcher"])
     import os
     from futuresfund.config import load_env
 
@@ -395,10 +394,13 @@ def _run_learning(board) -> None:
             elif studied == "waiting" and not _sleep(board, learning_pause, 60):
                 return
 
+    from futuresfund.strategy_team import run_creation
+
     workers = [
         threading.Thread(target=developer_loop, args=(desk,), daemon=True, name=desk["developer"])
         for desk in CHART_DESKS
     ]
+    workers.append(threading.Thread(target=run_creation, args=(board, learning_pause), daemon=True, name="strategy-creation"))
     for worker in workers:
         worker.start()
     for worker in workers:
@@ -453,7 +455,7 @@ def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, e
     return _force_new(current, seen)
 
 
-def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "2 min researcher"):
+def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher"):
     origin = {key: value for key, value in base.items() if key not in FROZEN and _tunable_value(value)}
     trials = []
     seen = set()
@@ -659,7 +661,7 @@ def notes_digest(limit: int = 20) -> str:
     return "\n".join(lines[-limit:])
 
 
-def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "2 min researcher") -> None:
+def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "Chart researcher") -> None:
     if path.suffix.lower() != ".pine":
         return
     from futuresfund.roster import chart_desk
@@ -769,7 +771,7 @@ def _file_ready(board, path: Path, notes: dict) -> None:
         names = ", ".join(sorted(tested_instruments(notes)))
         _file_away(path, None)
     board.post(
-        "2 min researcher",
+        "Chart researcher",
         f"Filed {path.name} after it was tested on {names}. It is not tested on those instruments again.",
         kind="report",
         channel="headquarters",
@@ -1228,7 +1230,7 @@ def _frame(bars: list):
     return DataLoader._normalize(frame)
 
 
-def _document(board, facts: dict, path: Path, row: dict, number: int, developer: str = "2min chart developer", researcher: str = "2 min researcher") -> None:
+def _document(board, facts: dict, path: Path, row: dict, number: int, developer: str = "2min chart developer", researcher: str = "Chart researcher") -> None:
     from futuresfund.lab import record_trial
 
     title = f"{facts.get('title') or path.stem} attempt {number}"

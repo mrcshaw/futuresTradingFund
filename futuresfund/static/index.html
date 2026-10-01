@@ -91,7 +91,7 @@
           <div>
             <p class="kicker">Trading engine</p>
             <h2>Last research results</h2>
-            <p class="role" id="engine-note">Four PineForge containers stay warm. The 2min chart developer runs engine 1, the 5 min chart developer runs engine 2, and the 15 min chart developer runs engine 3 only. Engine 4 stays warm.</p>
+            <p class="role" id="engine-note">Four PineForge containers stay warm. The chart developers run engines 1, 2, and 3. The creation tester runs a new script once on engine 4. One chart researcher reads all three studies.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
@@ -99,7 +99,7 @@
           <button type="button" class="chart-tab active" data-engine="1">Engine 1 · 2-minute</button>
           <button type="button" class="chart-tab" data-engine="2">Engine 2 · 5-minute</button>
           <button type="button" class="chart-tab" data-engine="3">Engine 3 · 15-minute</button>
-          <button type="button" class="chart-tab" data-engine="4">Engine 4 · warm</button>
+          <button type="button" class="chart-tab" data-engine="4">Engine 4 · new script</button>
         </div>
         <p class="hint" id="engine-live"></p>
         <p class="hint" id="engine-status"></p>
@@ -283,6 +283,6 @@
       <textarea id="script-body" readonly></textarea>
     </div>
   </div>
-  <script type="module" src="/static/app.js?v=63"></script>
+  <script type="module" src="/static/app.js?v=64"></script>
 </body>
 </html>

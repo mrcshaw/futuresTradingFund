@@ -19,7 +19,7 @@ _running = False
 
 SOURCES = (
     {
-        "desk": "5 min researcher",
+        "desk": "Chart researcher",
         "title": "Public chart indicators",
         "url": "https://www.tradingview.com/scripts/indicators/",
         "note": (
@@ -29,7 +29,7 @@ SOURCES = (
         ),
     },
     {
-        "desk": "2 min researcher",
+        "desk": "Chart researcher",
         "title": "Goldman Sachs quantitative strategy notes",
         "url": "https://github.com/s0ap/gs-quantitative-strategies-research-notes",
         "note": (
@@ -38,7 +38,7 @@ SOURCES = (
         ),
     },
     {
-        "desk": "2 min researcher",
+        "desk": "Chart researcher",
         "title": "Quantformer",
         "url": "https://arxiv.org/abs/2404.00424",
         "note": (
@@ -89,9 +89,9 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
     report.setdefault("playbook", [])
     rules = describe(account_size)
     _note(report, board, "Risk Manager", rules)
-    _note(report, board, "5 min researcher", SOURCES[0]["note"] + " " + SOURCES[0]["url"])
-    _note(report, board, "2 min researcher", SOURCES[1]["note"] + " " + SOURCES[1]["url"])
-    _note(report, board, "2 min researcher", SOURCES[2]["note"] + " " + SOURCES[2]["url"])
+    _note(report, board, "Chart researcher", SOURCES[0]["note"] + " " + SOURCES[0]["url"])
+    _note(report, board, "Chart researcher", SOURCES[1]["note"] + " " + SOURCES[1]["url"])
+    _note(report, board, "Chart researcher", SOURCES[2]["note"] + " " + SOURCES[2]["url"])
     if frames and len(frames) > 1:
         counts = ", ".join(f"{key} {len(frames[key])} bars" for key in ("2m", "5m", "15m") if key in frames)
         _note(
@@ -163,14 +163,14 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
             if decision == "passed":
                 weakest = min(accepted, key=lambda item: float(item["backtest"]["net_profit"]))
                 _note(
-                    report, board, "2 min researcher",
+                    report, board, "Chart researcher",
                     f"Compared {proven['title']} with the meeting list ({others}). "
                     f"Profit {proven['backtest']['net_profit']}, drawdown {proven['backtest']['max_drawdown']}. "
                     f"It clears the trail, and it does not beat {weakest['title']}, so it stays off the list.",
                 )
                 continue
             _note(
-                report, board, "2 min researcher",
+                report, board, "Chart researcher",
                 f"Compared {proven['title']} with the rules already kept. "
                 f"Profit {proven['backtest']['net_profit']}, drawdown {proven['backtest']['max_drawdown']}. "
                 f"{_frame_text(proven)} "
@@ -189,7 +189,7 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
             break
         batch += 1
         _note(
-            report, board, "5 min researcher",
+            report, board, "Chart researcher",
             f"{len(accepted)} of {MEETING_SLATE} rules clear the Apex trail. "
             "Posting another batch of settings for the developer to implement and backtest.",
             channels=("R&D", "2min chart developer"),
@@ -252,8 +252,8 @@ def start_search(board: Board) -> bool:
             )
         finally:
             if board is not None:
-                board.set_status("5 min researcher", "idle")
-                board.set_status("2 min researcher", "idle")
+                board.set_status("Chart researcher", "idle")
+                board.set_status("Chart researcher", "idle")
                 board.set_status("2min chart developer", "idle")
             with _lock:
                 _running = False
@@ -339,10 +339,10 @@ def _families(batch: int = 0) -> list[tuple[str, list[dict]]]:
 
 def _assign(report: dict, board: Board | None, name: str, batch: int) -> None:
     if board is not None:
-        board.set_status("5 min researcher", "working")
+        board.set_status("Chart researcher", "working")
         board.set_status("2min chart developer", "working")
     _note(
-        report, board, "5 min researcher",
+        report, board, "Chart researcher",
         f"Batch {batch + 1}: test {name} with a stop inside the trailing allowance. "
         "Developer, implement it and backtest the settings on the engine.",
         channels=("R&D", "2min chart developer"),

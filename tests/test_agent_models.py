@@ -14,12 +14,13 @@ class AgentModelTests(unittest.TestCase):
     def test_every_desk_has_a_different_model(self):
         names = [model_name(agent["name"]) for agent in ROSTER]
         self.assertEqual(len(names), len(set(names)))
-        self.assertEqual(len(names), 14)
+        self.assertEqual(len(names), 17)
         self.assertEqual(model_name("Portfolio Manager"), "desk-portfolio")
         self.assertEqual(model_name("2min chart developer"), "desk-developer")
         self.assertEqual(model_name("15 min chart developer"), "desk-developer-15")
-        self.assertEqual(model_name("15 min researcher"), "desk-researcher-15")
-        self.assertNotEqual(model_name("2 min researcher"), model_name("5 min researcher"))
+        self.assertEqual(model_name("Chart researcher"), "desk-researcher")
+        self.assertEqual(model_name("Strategy developer"), "desk-strategy-developer")
+        self.assertEqual(model_name("Creation tester"), "desk-creation-tester")
 
     def test_a_desk_log_is_not_copied_onto_the_others(self):
         board = Board()
@@ -40,18 +41,18 @@ class AgentModelTests(unittest.TestCase):
             return f"reply from {model}"
 
         with patch("futuresfund.llm._post", fake_post):
-            first = complete("researcher question", agent="2 min researcher")
-            second = complete("indicator question", agent="5 min researcher")
+            first = complete("researcher question", agent="Chart researcher")
+            second = complete("script question", agent="Strategy developer")
         self.assertEqual(first, "reply from desk-researcher")
-        self.assertEqual(second, "reply from desk-indicator")
+        self.assertEqual(second, "reply from desk-strategy-developer")
         self.assertEqual(sent[0][0], "desk-researcher")
-        self.assertEqual(sent[1][0], "desk-indicator")
-        researcher = client_for("2 min researcher")
-        indicator = client_for("5 min researcher")
+        self.assertEqual(sent[1][0], "desk-strategy-developer")
+        researcher = client_for("Chart researcher")
+        developer = client_for("Strategy developer")
         self.assertIn("researcher question", json.dumps(researcher.history))
-        self.assertNotIn("indicator question", json.dumps(researcher.history))
-        self.assertIn("indicator question", json.dumps(indicator.history))
-        self.assertNotIn("researcher question", json.dumps(indicator.history))
+        self.assertNotIn("script question", json.dumps(researcher.history))
+        self.assertIn("script question", json.dumps(developer.history))
+        self.assertNotIn("researcher question", json.dumps(developer.history))
 
 
 if __name__ == "__main__":

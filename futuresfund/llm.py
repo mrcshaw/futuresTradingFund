@@ -23,8 +23,11 @@ _BASES = {
     "desk-ingestion": "gemma2",
     "desk-floor": "qwen3",
     "desk-researcher": "deepseek-r1:32b",
-    "desk-indicator": "qwen3",
-    "desk-researcher-15": "qwen3",
+    "desk-card-keeper": "qwen3",
+    "desk-strategy-developer": "qwen3-trading",
+    "desk-script-checker": "qwen3",
+    "desk-creation-tester": "qwen3-trading",
+    "desk-lesson-writer": "qwen3",
     "desk-risk": "gemma2",
     "desk-analyst": "gemma",
     "desk-developer": "qwen3-trading",
@@ -168,7 +171,7 @@ def _system(agent: str) -> str:
     else:
         script = "No lead strategy is on headquarters yet.\n"
     guidance = ""
-    if agent in {"2 min researcher", "5 min researcher", "15 min researcher"}:
+    if agent in {"Chart researcher", "Strategy developer", "Card keeper", "Lesson writer"}:
         guidance = research_guidelines() + "\n"
     return (
         f"You are the {agent}. {role} "
@@ -193,7 +196,7 @@ def _chat_system(agent: str) -> str:
     found = next((item for item in ROSTER if item["name"] == agent), None)
     role = found["role"] if found else "A desk on this futures fund."
     guidance = ""
-    if agent in {"2 min researcher", "5 min researcher", "15 min researcher"}:
+    if agent in {"Chart researcher", "Strategy developer", "Card keeper", "Lesson writer"}:
         guidance = research_guidelines() + " "
     return (
         f"You are the {agent}. {role} {guidance}"

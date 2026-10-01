@@ -97,9 +97,9 @@ class StopTests(unittest.TestCase):
     def test_stop_keeps_the_researchers_from_starting_another_attempt(self):
         board = Board()
         board.set_research("running")
-        board.set_activity("2 min researcher", "Studying a script")
+        board.set_activity("Chart researcher", "Studying a script")
         board.mark_stopped()
-        board.set_activity("2 min researcher", "Studying the next script")
+        board.set_activity("Chart researcher", "Studying the next script")
         self.assertEqual(board.snapshot()["activity"]["task"], "Stopping the researchers.")
         calls = {"n": 0}
 

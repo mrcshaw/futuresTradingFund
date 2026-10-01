@@ -13,9 +13,12 @@ NAMES = {
     "Quantitative Trader",
     "Portfolio Manager",
     "Floor Trader",
-    "2 min researcher",
-    "5 min researcher",
-    "15 min researcher",
+    "Chart researcher",
+    "Card keeper",
+    "Strategy developer",
+    "Script checker",
+    "Creation tester",
+    "Lesson writer",
     "Risk Manager",
     "Trading Analyst",
     "2min chart developer",
@@ -69,9 +72,9 @@ class DeskTests(unittest.TestCase):
         self.assertNotIn("no Pine form yet", macd)
 
     def test_the_floor_includes_the_indicator_researcher(self):
-        self.assertIn("5 min researcher", {agent["name"] for agent in ROSTER})
-        self.assertIn("15 min researcher", {agent["name"] for agent in ROSTER})
-        self.assertIn("15 min chart developer", {agent["name"] for agent in ROSTER})
+        self.assertIn("Chart researcher", {agent["name"] for agent in ROSTER})
+        self.assertIn("Strategy developer", {agent["name"] for agent in ROSTER})
+        self.assertIn("Creation tester", {agent["name"] for agent in ROSTER})
 
     def test_a_rising_market_is_accepted_before_one_hundred_changes(self):
         import tempfile

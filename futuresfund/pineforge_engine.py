@@ -24,7 +24,7 @@ _OWNER_FOR_SLOT = (
     "2min chart developer",
     "5 min chart developer",
     "15 min chart developer",
-    "",
+    "Creation tester",
 )
 _ENGINE_LOCKS = [threading.Lock() for _ in range(_ENGINE_SLOTS)]
 _ENGINE_GATE = threading.Condition()
@@ -143,8 +143,8 @@ def warm_engines() -> None:
         _ensure_warm(index)
 
 
-def _acquire_engine(script: str, timeframe: str, instrument: str) -> int:
-    index = slot_for(timeframe)
+def _acquire_engine(script: str, timeframe: str, instrument: str, slot: int | None = None) -> int:
+    index = slot if slot is not None else slot_for(timeframe)
     with _ENGINE_GATE:
         while not _ENGINE_LOCKS[index].acquire(blocking=False):
             _ENGINE_GATE.wait(timeout=0.4)
@@ -171,7 +171,7 @@ def _release_engine(index: int) -> None:
         _ENGINE_GATE.notify()
 
 
-def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, instrument: str = "ES", label: str = "") -> dict:
+def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, instrument: str = "ES", label: str = "", slot: int | None = None) -> dict:
     """Backtest one Pine script. A stop kills the container before the next chart."""
     from futuresfund.pine_compat import prepare_for_pineforge
 
@@ -198,9 +198,9 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
         "can hold one contract at the highest price in this file."
     )
     note = f"{note} {market_note}".strip()
-    slot = _acquire_engine(label or instrument, timeframe, instrument)
+    slot = _acquire_engine(label or instrument, timeframe, instrument, slot)
     try:
-        result = _run_once(text, bars, timeframe, inputs, cancel, syminfo, instrument)
+        result = _run_once(text, bars, timeframe, inputs, cancel, syminfo, instrument, slot)
     finally:
         _release_engine(slot)
     result["engine_slot"] = slot + 1
@@ -234,7 +234,7 @@ def _market_note(instrument: str) -> tuple[dict, str]:
     return info, sentence
 
 
-def _run_once(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, syminfo: dict | None = None, instrument: str = "ES") -> dict:
+def _run_once(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, syminfo: dict | None = None, instrument: str = "ES", slot: int | None = None) -> dict:
     if cancel is not None and cancel.is_set():
         return _stopped()
     chart = _TIMEFRAMES.get(timeframe, timeframe)
@@ -244,7 +244,7 @@ def _run_once(source: str, bars: list[dict], timeframe: str, inputs: dict | None
         for key, value in (inputs or {}).items()
         if _input_text(_contract_point(key, value, point)) is not None
     }
-    index = slot_for(timeframe)
+    index = slot if slot is not None else slot_for(timeframe)
     try:
         name = _ensure_warm(index)
     except FileNotFoundError as exc:

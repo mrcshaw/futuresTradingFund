@@ -31,11 +31,11 @@ does not reach up to start research or send mail.
     ``.py`` files. Four warm PineForge containers in ``pineforge_engine.py``
     stay running. The next test sends new inputs into the container that
     is already running, and each bar file is written once. Engine 1 is
-    the 2-minute chart and belongs to the 2min chart developer and the
-    2 min researcher. Engine 2 is the 5-minute chart and belongs to the
-    5 min chart developer and the 5 min researcher. Engine 3 is the
-    15-minute chart only and belongs to the 15 min chart developer and
-    the 15 min researcher. Engine 4 stays warm. A script is filed only
+    the 2-minute chart and belongs to the 2min chart developer. Engine 2 is the 5-minute chart and belongs
+    to the 5 min chart developer. Engine 3 is the 15-minute chart only
+    and belongs to the 15 min chart developer. One chart researcher reads
+    all three studies. Engine 4 runs a newly written script once, at its
+    original settings, before those studies start. A script is filed only
     after each of those three charts has finished on every research
     instrument. ``library.py`` files a profitable result under ES or
     Gold. ``discuss.py`` holds the 8:00am and 5:00pm meetings.
