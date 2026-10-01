@@ -7,28 +7,51 @@ from pathlib import Path
 from futuresfund.config import ROOT
 from futuresfund.csv_bars import parse_tradingview_csv
 
-# The token is the comma-space prefix in the TradingView file name, so 15 does not match 5 or 2.
-_FRAMES = (("15m", ", 15_"), ("5m", ", 5_"), ("2m", ", 2_"))
+# The token is the comma-space prefix in the TradingView file name, so 15 does not match 5, 2, or 1.
+_FRAMES = (("15m", ", 15_"), ("5m", ", 5_"), ("2m", ", 2_"), ("1m", ", 1_"))
 
 
-def chart_paths() -> dict[str, Path]:
+def chart_roots() -> list[str]:
+    """Instruments that have a chart folder. A strategy is tested on each of these once."""
+    folder = ROOT / "chartData"
+    found = []
+    if folder.is_dir():
+        for child in sorted(folder.iterdir(), key=lambda path: path.name.lower()):
+            if child.is_dir() and any(child.glob("*.csv")):
+                found.append(child.name.upper())
+    return found or ["ES"]
+
+
+def chart_paths(root: str = "ES") -> dict[str, Path]:
+    """Chart files for one root. ES is chartData/es, Nasdaq is chartData/nq, and gold mini is chartData/qo."""
     grouped: dict[str, list[Path]] = {}
-    seen: set[Path] = set()
-    for pattern in ("CME_MINI_ES1*.csv", "CME_MINI_DL_ES1*.csv"):
-        for path in ROOT.glob(pattern):
-            if path in seen:
-                continue
-            seen.add(path)
-            for frame, token in _FRAMES:
-                if token in path.name:
-                    grouped.setdefault(frame, []).append(path)
-                    break
+    for path in _chart_files(root):
+        for frame, token in _FRAMES:
+            if token in path.name:
+                grouped.setdefault(frame, []).append(path)
+                break
     chosen: dict[str, Path] = {}
     for frame, paths in grouped.items():
         with_volume = [path for path in paths if _header_has_volume(path)]
         pool = with_volume or paths
         chosen[frame] = max(pool, key=lambda path: path.stat().st_mtime)
     return chosen
+
+
+def _chart_files(root: str) -> list[Path]:
+    folder = ROOT / "chartData" / root.lower()
+    found = [path for path in folder.glob("*.csv")] if folder.is_dir() else []
+    if found or root != "ES":
+        return found
+    seen: set[Path] = set()
+    leftover = []
+    for pattern in ("CME_MINI_ES1*.csv", "CME_MINI_DL_ES1*.csv"):
+        for path in ROOT.glob(pattern):
+            if path in seen:
+                continue
+            seen.add(path)
+            leftover.append(path)
+    return leftover
 
 
 def _header_has_volume(path: Path) -> bool:
@@ -84,11 +107,13 @@ def _volume_stamp() -> tuple:
     return tuple(marks)
 
 
-def load_chart(timeframe: str) -> list[dict]:
-    path = chart_paths().get(timeframe)
+def load_chart(timeframe: str, root: str = "ES") -> list[dict]:
+    path = chart_paths(root).get(timeframe)
     if path is None:
         return []
     bars = parse_tradingview_csv(path.read_text(encoding="utf-8-sig", errors="replace"))
+    if root != "ES":
+        return bars
     return _with_recorded_volume(bars)
 
 

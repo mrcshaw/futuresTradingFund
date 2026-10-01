@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 from futuresfund.alerts import parse_alert
@@ -248,7 +249,7 @@ class DeskFlowTests(unittest.TestCase):
             self.assertEqual(placed["action"], "place")
             floor = [message["text"] for message in board.messages if message["author"] == "Floor Trader"]
             self.assertTrue(any("Overnight Drift Capture [Optimized]" in text and "paper" in text for text in floor))
-            self.assertTrue(any("command=PLACE" in text and "account=paper" in text for text in floor))
+            self.assertTrue(any("command=place" in text and "account=paper" in text for text in floor))
 
     def test_the_floor_shows_the_webhook_and_the_analyst_follows_the_trade(self):
         from futuresfund import book as bookmod
@@ -275,7 +276,7 @@ class DeskFlowTests(unittest.TestCase):
             ))
             self.assertEqual(placed["action"], "place")
             floor = [message["text"] for message in board.messages if message["author"] == "Floor Trader"]
-            self.assertTrue(any("command=PLACE" in text and "key=***" in text for text in floor))
+            self.assertTrue(any("command=place" in text and "key=***" in text for text in floor))
             handle_interval(board, parse_alert(
                 '{"id":"desk-bar","account":"PA-APEX-1","instrument":"ES1!","timeframe":"1",'
                 '"time":"2026-09-28T00:19:00Z","open":7788.5,"high":7790,"low":7788,"close":7789.25,'
@@ -346,6 +347,72 @@ class DeskFlowTests(unittest.TestCase):
                 for message in board.messages
             ))
 
+    def test_closing_a_short_books_one_trade_and_leaves_the_book_flat(self):
+        from futuresfund.book import apply_target, paper_status
+
+        book = {
+            "positions": {
+                "A|ES1!": {
+                    "account": "A",
+                    "instrument": "ES1!",
+                    "contracts": -1,
+                    "average_price": 7749.25,
+                    "last_price": 7749.25,
+                }
+            },
+            "paper": {"realized": 0.0, "peak": 50000},
+            "strategy": {"account_size": 50000},
+        }
+        apply_target(book, {"account": "A", "instrument": "ES1!", "yahoo": "ES=F"}, 0, 7731.0)
+        self.assertEqual(book["positions"], {})
+        self.assertEqual(book["paper"]["realized"], 912.5)
+        self.assertEqual(len(book["trades"]), 1)
+        self.assertEqual(book["trades"][0]["pnl"], 912.5)
+        self.assertEqual(book["trades"][0]["side"], "short")
+        status = paper_status(book)
+        self.assertEqual(status["active_pnl"], 0)
+        self.assertEqual(status["pnl"], 912.5)
+        self.assertEqual(status["equity"], 50912.5)
+        book["positions"]["A|ES1!"] = {
+            "account": "A",
+            "instrument": "ES1!",
+            "contracts": -1,
+            "average_price": 7749.25,
+            "last_price": 7749.25,
+        }
+        apply_target(book, {"account": "A", "instrument": "ES1!", "yahoo": "ES=F"}, 1, 7731.0)
+        self.assertEqual(book["positions"], {})
+
+    def test_each_account_shows_its_own_live_equity(self):
+        os.environ["PROP_ACCOUNTS"] = "ONE,TWO"
+        from futuresfund.book import display_accounts
+
+        book = {
+            "positions": {
+                "ONE|ES1!": {
+                    "account": "ONE",
+                    "instrument": "ES1!",
+                    "contracts": 1,
+                    "average_price": 100,
+                    "last_price": 102,
+                }
+            },
+            "account_books": {
+                "ONE": {"size": 50000, "realized": 0, "peak": 50000},
+                "TWO": {"size": 25000, "realized": 0, "peak": 25000},
+            },
+            "account_rules": {"account": "ONE", "size": 50000},
+            "strategy": {"account_size": 50000},
+            "paper": {"realized": 0, "peak": 50000},
+        }
+        rows = {row["account"]: row for row in display_accounts(book)}
+        self.assertEqual(set(rows), {"ONE", "TWO"})
+        self.assertEqual(rows["ONE"]["pnl"], 100.0)
+        self.assertEqual(rows["ONE"]["equity"], 50100.0)
+        self.assertEqual(rows["TWO"]["pnl"], 0.0)
+        self.assertEqual(rows["TWO"]["equity"], 25000.0)
+        self.assertEqual(rows["TWO"]["drawdown"], 0.0)
+
     def test_an_alert_trade_is_the_order_the_floor_sends(self):
         from futuresfund.trade_manager import plan_from_alert
 
@@ -355,6 +422,14 @@ class DeskFlowTests(unittest.TestCase):
         self.assertTrue(buy["from_alert"])
         hold = plan_from_alert({"hinted_action": "BUY", "qty": 1}, 1, 1)
         self.assertEqual(hold["action"], "hold")
+        cover = plan_from_alert({"hinted_action": "BUY", "qty": 1}, -1, 1)
+        self.assertEqual(cover["action"], "close")
+        self.assertEqual(cover["target"], 0)
+        self.assertEqual(cover["side"], "BUY")
+        self.assertEqual(cover["qty"], 1)
+        flat = plan_from_alert({"hinted_action": "SELL", "qty": 1}, 1, 1)
+        self.assertEqual(flat["action"], "close")
+        self.assertEqual(flat["target"], 0)
         self.assertIsNone(plan_from_alert({"qty": 1}, 0, 1))
 
 
@@ -467,25 +542,163 @@ class AnalystAndLibraryTests(unittest.TestCase):
             library._CACHE = original_cache
 
 
+class MarginTests(unittest.TestCase):
+    def test_nq_margin_fits_one_contract_in_the_script_account(self):
+        from futuresfund.pineforge_engine import _with_point_value, margin_percent
+
+        source = 'strategy("EMA/SMA Buffer", initial_capital=25000)\npv = input.float(50.0, "Point Value ($)")\n'
+        bars = [{"h": 31090.5, "c": 30554.0}]
+        percent = margin_percent("NQ", bars, source)
+        margin = 31090.5 * 20 * percent / 100
+        self.assertLess(margin, 25000)
+        self.assertIn("input.float(20,", _with_point_value(source, 20))
+
+    def test_es_margin_still_fits_one_contract(self):
+        from futuresfund.pineforge_engine import margin_percent
+
+        source = "strategy(\"ES\", initial_capital=25000)"
+        percent = margin_percent("ES", [{"h": 7748.0, "c": 7740.0}], source)
+        self.assertLess(7748.0 * 50 * percent / 100, 25000)
+
+
 class ChartTests(unittest.TestCase):
+    def test_an_es_price_labeled_as_gold_stays_on_the_es_chart(self):
+        from futuresfund.chart_feed import place_root
+
+        anchors = {"ES": 7726.5, "QO": 4174.5}
+        self.assertEqual(place_root("QO", 7746.0, anchors), "ES")
+        self.assertEqual(place_root("QO", 4174.25, anchors), "QO")
+        self.assertEqual(place_root("ES", 7730.0, anchors), "ES")
+
     def test_the_last_candle_matches_the_exported_market_file(self):
         import csv
         from pathlib import Path
 
         from futuresfund.chart_view import chart_payload
 
-        path = Path(__file__).resolve().parents[1] / "CME_MINI_ES1!, 5_52959.csv"
+        path = Path(__file__).resolve().parents[1] / "chartData" / "es" / "CME_MINI_ES1!, 1_fa513.csv"
         with path.open(encoding="utf-8-sig", newline="") as handle:
             last = list(csv.DictReader(handle))[-1]
-        candle = chart_payload("ES1!", "5m", 5)["candles"][-1]
+        from zoneinfo import ZoneInfo
+
+        stamp = int(float(last["time"]))
+        if stamp > 10_000_000_000:
+            stamp //= 1000
+        et = datetime.fromtimestamp(stamp, timezone.utc).astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %H:%M")
+        minute_payload = chart_payload("ES1!", "1m", 400)
+        minute = minute_payload["candles"]
+        candle = next(item for item in reversed(minute) if item["et"] == et)
         self.assertEqual(candle["o"], float(last["open"]))
         self.assertEqual(candle["h"], float(last["high"]))
         self.assertEqual(candle["l"], float(last["low"]))
         self.assertEqual(candle["c"], float(last["close"]))
         self.assertEqual(candle["v"], float(last["Volume"]))
+        five = chart_payload("ES1!", "5m", 400)
+        bucket = next(item for item in reversed(five["candles"]) if item["et"] <= et)
+        self.assertEqual(bucket["c"], float(last["close"]))
+        self.assertGreaterEqual(bucket["h"], float(last["high"]))
+        self.assertLess(five["count"], minute_payload["count"])
         self.assertIn("ET", candle["et"] + " ET")
         empty = chart_payload("GC1!", "5m", 20)
         self.assertEqual(empty["candles"], [])
+        gold_path = Path(__file__).resolve().parents[1] / "chartData" / "qo" / "COMEX_MINI_QO1!, 1_ffc58.csv"
+        with gold_path.open(encoding="utf-8-sig", newline="") as handle:
+            gold_last = list(csv.DictReader(handle))[-1]
+        gold_stamp = int(float(gold_last["time"]))
+        if gold_stamp > 10_000_000_000:
+            gold_stamp //= 1000
+        gold_et = datetime.fromtimestamp(gold_stamp, timezone.utc).astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %H:%M")
+        gold = chart_payload("QO1!", "1m", 400)
+        gold_candle = next(item for item in reversed(gold["candles"]) if item["et"] == gold_et)
+        self.assertEqual(gold_candle["c"], float(gold_last["close"]))
+        self.assertGreater(gold["count"], 100)
+        indicators = chart_payload("ES1!", "5m", 30)["indicators"]
+        self.assertIn("volume", indicators)
+        self.assertIn("macd", indicators)
+        self.assertIn("delta", indicators)
+
+    def test_one_minute_bars_update_the_open_candle(self):
+        from futuresfund.chart_feed import fold_bars, record_live_bar
+        from futuresfund.chart_view import chart_payload
+        from futuresfund.pineforge_engine import _epoch_ms
+        import futuresfund.chart_feed as feed
+
+        base = 1_700_000_000_000
+        base -= base % (6 * 60 * 1000)
+        bars = [
+            {"t": "2026-09-28T18:00:00+00:00", "epoch": base, "o": 100, "h": 101, "l": 99, "c": 100.5, "v": 10},
+            {"t": "2026-09-28T18:01:00+00:00", "epoch": base + 60_000, "o": 100.5, "h": 103, "l": 100, "c": 102, "v": 4, "macd": -1.5},
+        ]
+        folded = fold_bars(bars, "6m")
+        self.assertEqual(len(folded), 1)
+        self.assertEqual(folded[0]["o"], 100)
+        self.assertEqual(folded[0]["h"], 103)
+        self.assertEqual(folded[0]["c"], 102)
+        self.assertEqual(folded[0]["v"], 14)
+        self.assertEqual(folded[0]["macd"], -1.5)
+
+        original = feed.LIVE_BARS_PATH
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                feed.LIVE_BARS_PATH = Path(tmp) / "live.json"
+                before = chart_payload("ES1!", "5m", 5)["candles"][-1]
+                opened = _epoch_ms(before["t"])
+                stamp = datetime.fromtimestamp((opened + 60_000) / 1000, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+                live = {"instrument": "ES1!", "timeframe": "1m", "price": before["c"] - 2}
+                record_live_bar(live, {
+                    "t": stamp,
+                    "o": before["c"],
+                    "h": before["h"] + 1,
+                    "l": before["l"] - 1,
+                    "c": before["c"] - 1,
+                    "v": 25,
+                })
+                again = record_live_bar(live, {
+                    "t": stamp,
+                    "o": before["c"],
+                    "h": before["h"] + 2,
+                    "l": before["l"] - 1,
+                    "c": before["c"] - 2,
+                    "v": 30,
+                })
+                self.assertEqual(len(feed._load()), 1)
+                self.assertEqual(again["c"], before["c"] - 2)
+                updated = chart_payload("ES1!", "5m", 5)["candles"][-1]
+                self.assertEqual(updated["o"], before["o"])
+                self.assertEqual(updated["c"], before["c"] - 2)
+                self.assertEqual(updated["h"], before["h"] + 2)
+                self.assertEqual(updated["v"], before["v"] + 30)
+                six = chart_payload("ES1!", "6m", 8)
+                self.assertGreaterEqual(len(six["candles"]), 2)
+                self.assertIn("volume", six["indicators"])
+        finally:
+            feed.LIVE_BARS_PATH = original
+
+
+class InstrumentCoverageTests(unittest.TestCase):
+    def test_a_strategy_is_not_tested_twice_and_waits_for_every_instrument(self):
+        from futuresfund.charts import chart_roots
+        from futuresfund.learn import pending_instruments, ready_to_file, research_instruments, tested_instruments
+
+        self.assertEqual(chart_roots(), ["ES", "QO"])
+        self.assertEqual(research_instruments(), ["ES", "QO", "NQ"])
+        old = {"trials": [{"net_profit": 1}], "best": {"net_profit": 1}}
+        self.assertEqual(tested_instruments(old), {"ES"})
+        self.assertEqual(pending_instruments(old, ["ES", "QO"]), ["QO"])
+        self.assertFalse(ready_to_file(old, ["ES", "QO"]))
+        covered = {
+            "instruments": {
+                "ES": {"attempts": 2, "best": {"net_profit": 1}},
+                "QO": {"attempts": 2, "best": {"net_profit": 4}},
+            }
+        }
+        self.assertEqual(pending_instruments(covered, ["ES", "QO"]), [])
+        self.assertTrue(ready_to_file(covered, ["ES", "QO"]))
+        blocked = {"instruments": {"ES": {"blocked": True, "attempts": 1, "best": {}}}}
+        self.assertEqual(pending_instruments(blocked, ["ES", "QO"]), ["ES", "QO"])
+        failed = {"instruments": {"ES": {"error": "compile", "attempts": 1, "best": {"fatal": True, "error": "compile"}}}}
+        self.assertEqual(tested_instruments(failed), set())
+        self.assertEqual(pending_instruments(failed, ["ES", "QO", "NQ"]), ["ES", "QO", "NQ"])
 
 
 class FirmRecordTests(unittest.TestCase):
@@ -510,6 +723,9 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual((es_symbol, es_label), ("ES1!", "ES"))
         gold_symbol, gold_label = contract_of("Gold opening range", "gc_orb.pine")
         self.assertEqual((gold_symbol, gold_label), ("GC1!", "Gold"))
+        self.assertEqual(contract_of("Night breakout", "night.pine", "QO1!"), ("GC1!", "Gold"))
+        labels = [item["label"] for item in search_library("all")["contracts"]]
+        self.assertEqual(labels.count("Gold"), 1)
         es = search_library("ES1!")
         gold = search_library("GC1!")
         titles = {row["title"] for row in es["strategies"]}
@@ -519,7 +735,8 @@ class LibraryTests(unittest.TestCase):
         self.assertEqual(drift["timeframe"], "2m")
         self.assertEqual(drift["net_profit"], 7569.5)
         self.assertGreater(drift["trades"], 0)
-        self.assertEqual(gold["strategies"], [])
+        self.assertTrue(gold["strategies"])
+        self.assertTrue(all(row["contract_label"] == "Gold" and row["net_profit"] > 0 for row in gold["strategies"]))
         script = library_script(drift["id"])
         self.assertTrue(script["pine"].startswith("//@version=5"))
 

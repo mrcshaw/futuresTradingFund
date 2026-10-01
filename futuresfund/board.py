@@ -51,18 +51,7 @@ class Board:
         if not text:
             return {}
         with self._lock:
-            self._seq += 1
-            message = {
-                "id": self._seq,
-                "time": _now(),
-                "author": author,
-                "kind": kind,
-                "text": text,
-                "channel": channel or author,
-            }
-            self.messages.append(message)
-            if len(self.messages) > 400:
-                self.messages = self.messages[-400:]
+            message = self._append_locked(author, text, kind, channel or author)
             brief = _brief(text)
             if author in self.agent_status and brief:
                 self._remember(author, brief)
@@ -97,7 +86,7 @@ class Board:
                     self.agent_status[agent] = "working"
 
     def log(self, agent: str, message: str) -> None:
-        """Record one line on that agent's own log. The sidebar shows the latest line."""
+        """Record one line on that agent's own log and on that agent's channel."""
         text = (message or "").strip()
         if not agent or not text:
             return
@@ -106,6 +95,33 @@ class Board:
             if agent in self.agent_status and not self.cancel.is_set():
                 self.agent_status[agent] = "working"
             self.activity = {"agent": agent, "task": text}
+            self._append_locked(agent, text, "log", agent)
+
+    def _append_locked(self, author: str, text: str, kind: str, channel: str) -> dict:
+        self._seq += 1
+        message = {
+            "id": self._seq,
+            "time": _now(),
+            "author": author,
+            "kind": kind,
+            "text": text,
+            "channel": channel or author,
+        }
+        self.messages.append(message)
+        self._trim_messages()
+        return message
+
+    def _trim_messages(self) -> None:
+        """Keep each channel's recent lines. One busy desk must not erase the others."""
+        kept = []
+        counts: dict[str, int] = {}
+        for message in reversed(self.messages):
+            channel = str(message.get("channel") or "")
+            counts[channel] = counts.get(channel, 0) + 1
+            if counts[channel] <= 60:
+                kept.append(message)
+        kept.reverse()
+        self.messages = kept
 
     def _remember(self, agent: str, text: str) -> None:
         lines = self.agent_logs.setdefault(agent, [])

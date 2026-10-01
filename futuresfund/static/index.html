@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=23" />
+  <link rel="stylesheet" href="/static/styles.css?v=33" />
 </head>
 <body>
   <div class="app">
@@ -33,11 +33,9 @@
           <div class="run-pill" id="run-pill">Idle</div>
         </div>
       </header>
-      <section class="now" id="now">
-        <div>
-          <p class="now-kicker">On the floor</p>
-          <p class="now-text" id="now-text">Nobody is working. Send a contract when you are ready.</p>
-        </div>
+      <section class="desk-bar" id="hq-paper">
+        <div class="paper-metrics" id="account-metrics"></div>
+        <p class="now-text" id="now-text">Press Start to run the Pine scripts.</p>
         <div class="run-controls">
           <button type="button" id="start" class="power start" aria-label="Start processing">
             <svg class="power-icon" viewBox="0 0 64 64" aria-hidden="true">
@@ -46,19 +44,7 @@
             </svg>
             <span>START</span>
           </button>
-          <button type="button" id="stop" class="power stop" hidden aria-label="Stop processing">STOP</button>
-        </div>
-      </section>
-      <section class="paper" id="hq-paper" hidden>
-        <div>
-          <p class="kicker">Paper</p>
-          <h2 id="paper-pnl">$0.00</h2>
-          <p>Active P&amp;L</p>
-        </div>
-        <div>
-          <p class="kicker">Drawdown</p>
-          <h2 id="paper-dd">$0.00</h2>
-          <p id="paper-equity">Paper account</p>
+          <button type="button" id="stop" class="power stop" aria-label="Stop processing" disabled>STOP</button>
         </div>
       </section>
       <section class="meeting-live" id="meeting-live" hidden>
@@ -105,11 +91,20 @@
           <div>
             <p class="kicker">Trading engine</p>
             <h2>Last research results</h2>
-            <p class="role" id="engine-note">PineForge runs each Pine script. The engine chart is 5 minutes, and every attempt also runs the 2-minute and 15-minute charts.</p>
+            <p class="role" id="engine-note">Four PineForge containers stay warm. The 2min chart developer runs engine 1, the 5 min chart developer runs engine 2, and the 15 min chart developer runs engine 3 only. Engine 4 stays warm.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
+        <div class="chart-browser" id="engine-tabs">
+          <button type="button" class="chart-tab active" data-engine="1">Engine 1 · 2-minute</button>
+          <button type="button" class="chart-tab" data-engine="2">Engine 2 · 5-minute</button>
+          <button type="button" class="chart-tab" data-engine="3">Engine 3 · 15-minute</button>
+          <button type="button" class="chart-tab" data-engine="4">Engine 4 · warm</button>
+        </div>
+        <p class="hint" id="engine-live"></p>
         <p class="hint" id="engine-status"></p>
+        <h3>Research guide</h3>
+        <pre class="report-body" id="research-guide">Loading the research guide.</pre>
         <h3>Accepted for the next meeting</h3>
         <div id="engine-accepted"></div>
         <h2>Playbook</h2>
@@ -136,17 +131,33 @@
           <div>
             <p class="kicker">Chart</p>
             <h2>Market candles</h2>
-            <p class="role">Each tab is one contract. Buy and sell alerts are marked on the candle they belong to. The stop stays in the strategy.</p>
+            <p class="role">Ingestion adds each TradingView price to the chart. A 5-minute or 6-minute candle updates on every incoming bar, including the one that is still open. Volume, MACD, and volume delta can be turned on or off when the data has them.</p>
           </div>
         </div>
         <div class="chart-browser">
           <div id="chart-tabs"></div>
+          <label class="chart-frame">Timeframe
+            <select id="chart-timeframe">
+              <option>1m</option>
+              <option>2m</option>
+              <option>3m</option>
+              <option selected>5m</option>
+              <option>6m</option>
+              <option>10m</option>
+              <option>15m</option>
+              <option>30m</option>
+              <option>1h</option>
+            </select>
+          </label>
+          <button type="button" id="chart-zoom-in" class="ghost chart-zoom">Zoom in</button>
+          <button type="button" id="chart-zoom-out" class="ghost chart-zoom">Zoom out</button>
           <button type="button" id="chart-add" class="ghost">Open chart</button>
         </div>
         <form id="chart-open" class="library-tools" hidden>
           <label>Contract
             <select name="contract">
               <option>ES1!</option>
+              <option>QO1!</option>
               <option>NQ1!</option>
               <option>GC1!</option>
               <option>CL1!</option>
@@ -155,15 +166,27 @@
           </label>
           <label>Timeframe
             <select name="timeframe">
+              <option>1m</option>
               <option>2m</option>
+              <option>3m</option>
               <option selected>5m</option>
+              <option>6m</option>
+              <option>10m</option>
               <option>15m</option>
+              <option>30m</option>
+              <option>1h</option>
             </select>
           </label>
           <button type="submit">Open</button>
         </form>
+        <div class="chart-indicators" id="chart-indicators">
+          <label><input type="checkbox" data-indicator="volume" checked /> Volume</label>
+          <label><input type="checkbox" data-indicator="macd" checked /> MACD</label>
+          <label><input type="checkbox" data-indicator="delta" checked /> Volume delta</label>
+        </div>
         <p class="hint" id="chart-readout"></p>
-        <canvas id="chart-canvas" width="1100" height="520"></canvas>
+        <canvas id="chart-canvas" width="1100" height="680"></canvas>
+        <input id="chart-scroll" type="range" min="0" max="0" value="0" aria-label="Chart history" />
       </section>
       <section class="book" id="library" hidden>
         <div class="book-head">
@@ -226,6 +249,8 @@
         <pre class="report-body" id="alert-sample"></pre>
         <h3>Interval log</h3>
         <table id="intervals"><thead><tr><th>When</th><th>Price</th><th>Action</th><th>Held</th><th>Target</th><th>Result</th></tr></thead><tbody></tbody></table>
+        <h3>Closed trades</h3>
+        <table id="trades"><thead><tr><th>When</th><th>Account</th><th>Contract</th><th>Side</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&amp;L</th></tr></thead><tbody></tbody></table>
         <h3>Positions</h3>
         <table id="positions"><thead><tr><th>Account</th><th>Contract</th><th>Qty</th><th>Avg</th><th>Last</th><th>P&amp;L</th></tr></thead><tbody></tbody></table>
         <h3>Orders</h3>
@@ -234,32 +259,9 @@
       <form class="chat-dock" id="chat">
         <div class="chat-log" id="chat-log"></div>
         <div class="chat-row">
-          <input name="message" maxlength="2000" placeholder="Ask the portfolio manager about the firm" required />
+          <select id="chat-agent" name="agent" aria-label="Desk"></select>
+          <input name="message" maxlength="2000" placeholder="Write to this desk. They can hand a report to another desk." required />
           <button type="submit" id="chat-send">Send</button>
-        </div>
-      </form>
-      <form class="composer" id="composer">
-        <div class="fields">
-          <label>Contract <input name="contract" value="MES" required maxlength="40" /></label>
-          <label>Timeframe
-            <select name="timeframe">
-              <option>1m</option>
-              <option selected>5m</option>
-              <option>15m</option>
-              <option>30m</option>
-              <option>1h</option>
-              <option>4h</option>
-              <option>1D</option>
-            </select>
-          </label>
-          <label>Prop account <input name="account" required maxlength="64" placeholder="Assigned prop account" /></label>
-          <label>Account size <input name="account_size" type="number" min="1" step="1" value="50000" required /></label>
-          <label>Profit target <input name="profit_target" type="number" min="1" step="1" value="3000" required /></label>
-          <label>TradingView bars <input name="file" type="file" accept=".csv,text/csv" required /></label>
-        </div>
-        <div class="actions">
-          <button type="submit" id="send">Develop strategy and backtest</button>
-          <p class="hint" id="hint">Export the chart from TradingView as a CSV. Point the strategy alert at this desk, not at CrossTrade, and leave the secret key out of the message. The message names the strategy. The floor trader sends that order to the account in the message.</p>
         </div>
       </form>
     </main>
@@ -281,6 +283,6 @@
       <textarea id="script-body" readonly></textarea>
     </div>
   </div>
-  <script type="module" src="/static/app.js?v=41"></script>
+  <script type="module" src="/static/app.js?v=63"></script>
 </body>
 </html>

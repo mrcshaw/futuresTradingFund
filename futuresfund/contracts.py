@@ -7,7 +7,7 @@ import re
 # Longer roots first so MES matches before ES, and MNQ before NQ.
 ROOTS = (
     "MNQ", "MES", "MYM", "M2K", "MCL", "MGC", "MBT", "SIL",
-    "NQ", "ES", "YM", "RTY", "CL", "NG", "QG", "GC", "SI", "HG",
+    "NQ", "ES", "YM", "RTY", "CL", "NG", "QG", "QO", "GC", "SI", "HG",
     "ZB", "ZN", "ZF", "ZC", "ZS", "ZW",
     "6E", "6J", "6B", "6A", "6C",
     "BTC", "ETH",
@@ -16,14 +16,14 @@ ROOTS = (
 # Minimum price increment. One tick of slippage on ES is 0.25 points, which is $12.50.
 TICK_SIZE = {
     "ES": 0.25, "MES": 0.25, "NQ": 0.25, "MNQ": 0.25, "YM": 1, "MYM": 1,
-    "RTY": 0.1, "M2K": 0.1, "CL": 0.01, "MCL": 0.01, "GC": 0.1, "MGC": 0.1,
+    "RTY": 0.1, "M2K": 0.1, "CL": 0.01, "MCL": 0.01, "GC": 0.1, "MGC": 0.1, "QO": 0.25,
 }
 
 # Dollar value of one point, for the book display only.
 POINT_VALUE = {
     "ES": 50, "MES": 5, "NQ": 20, "MNQ": 2, "YM": 5, "MYM": 0.5,
     "RTY": 50, "M2K": 5, "CL": 1000, "MCL": 10, "NG": 10000, "QG": 2500,
-    "GC": 100, "MGC": 10, "SI": 5000, "SIL": 1000, "HG": 25000,
+    "GC": 100, "MGC": 10, "QO": 50, "SI": 5000, "SIL": 1000, "HG": 25000,
     "ZB": 1000, "ZN": 1000, "ZF": 1000,
     "ZC": 50, "ZS": 50, "ZW": 50,
     "6E": 125000, "6J": 12500000, "6B": 62500, "6A": 100000, "6C": 100000,

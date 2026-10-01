@@ -13,11 +13,14 @@ NAMES = {
     "Quantitative Trader",
     "Portfolio Manager",
     "Floor Trader",
-    "Quantitative Researcher",
-    "Indicator Researcher",
+    "2 min researcher",
+    "5 min researcher",
+    "15 min researcher",
     "Risk Manager",
     "Trading Analyst",
-    "Quantitative Developer",
+    "2min chart developer",
+    "5 min chart developer",
+    "15 min chart developer",
     "Systems Administrator",
     "Compliance & Operations",
     "Ingestion",
@@ -29,7 +32,7 @@ class DeskTests(unittest.TestCase):
         from futuresfund.charts import chart_paths
 
         found = chart_paths()
-        self.assertEqual(set(found), {"2m", "5m", "15m"})
+        self.assertTrue({"2m", "5m", "15m"} <= set(found))
         self.assertIn(", 15_", found["15m"].name)
         self.assertIn(", 5_", found["5m"].name)
         self.assertIn(", 2_", found["2m"].name)
@@ -66,7 +69,9 @@ class DeskTests(unittest.TestCase):
         self.assertNotIn("no Pine form yet", macd)
 
     def test_the_floor_includes_the_indicator_researcher(self):
-        self.assertIn("Indicator Researcher", {agent["name"] for agent in ROSTER})
+        self.assertIn("5 min researcher", {agent["name"] for agent in ROSTER})
+        self.assertIn("15 min researcher", {agent["name"] for agent in ROSTER})
+        self.assertIn("15 min chart developer", {agent["name"] for agent in ROSTER})
 
     def test_a_rising_market_is_accepted_before_one_hundred_changes(self):
         import tempfile

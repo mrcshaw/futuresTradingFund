@@ -38,19 +38,27 @@ ROSTER = [
     },
     {
         "id": "researcher",
-        "name": "Quantitative Researcher",
+        "name": "2 min researcher",
         "team": "Research",
-        "role": "Reads academic papers and factor notes, then asks the developer to test the part the engine can run.",
+        "role": "Chooses the one change for the 2-minute chart and reads the result from the 2min chart developer.",
         "report": "market_report",
         "model": "desk-researcher",
     },
     {
         "id": "indicator",
-        "name": "Indicator Researcher",
+        "name": "5 min researcher",
         "team": "Research",
-        "role": "Pulls public chart indicators and asks the developer to change their settings until the backtest works or the idea is scrapped.",
+        "role": "Chooses the one change for the 5-minute chart and reads the result from the 5 min chart developer.",
         "report": "indicator_report",
         "model": "desk-indicator",
+    },
+    {
+        "id": "researcher_15",
+        "name": "15 min researcher",
+        "team": "Research",
+        "role": "Chooses the one change for the 15-minute chart and reads the result from the 15 min chart developer.",
+        "report": "chart_15_report",
+        "model": "desk-researcher-15",
     },
     {
         "id": "risk",
@@ -70,11 +78,27 @@ ROSTER = [
     },
     {
         "id": "developer",
-        "name": "Quantitative Developer",
+        "name": "2min chart developer",
         "team": "Technology & Operations",
-        "role": "Owns the fill engine: entries at the close, stops inside the bar, commission, and slippage.",
+        "role": "Runs the 2-minute chart on engine 1. That PineForge container stays warm.",
         "report": "engine_report",
         "model": "desk-developer",
+    },
+    {
+        "id": "developer_2",
+        "name": "5 min chart developer",
+        "team": "Technology & Operations",
+        "role": "Runs the 5-minute chart on engine 2. That PineForge container stays warm.",
+        "report": "engine_report_2",
+        "model": "desk-developer-2",
+    },
+    {
+        "id": "developer_15",
+        "name": "15 min chart developer",
+        "team": "Technology & Operations",
+        "role": "Runs the 15-minute chart on engine 3 only. That PineForge container stays warm.",
+        "report": "engine_report_15",
+        "model": "desk-developer-15",
     },
     {
         "id": "systems",
@@ -94,16 +118,34 @@ ROSTER = [
     },
 ]
 
+CHART_DESKS = (
+    {"timeframe": "2m", "label": "2-minute", "developer": "2min chart developer", "researcher": "2 min researcher", "engine": 1},
+    {"timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer", "researcher": "5 min researcher", "engine": 2},
+    {"timeframe": "15m", "label": "15-minute", "developer": "15 min chart developer", "researcher": "15 min researcher", "engine": 3},
+)
+
+
+def chart_desk(timeframe: str) -> dict:
+    """The researcher and developer who own this chart."""
+    found = next((item for item in CHART_DESKS if item["timeframe"] == timeframe), None)
+    if found is None:
+        return CHART_DESKS[0]
+    return found
+
+
 TASKS = {
     "Quantitative Trader": "Proposing a rule the engine can backtest",
     "Portfolio Manager": "Choosing which proven rule to arm",
     "Ingestion": "Adding the TradingView alert to the chart",
     "Floor Trader": "Placing and managing the armed order",
-    "Quantitative Researcher": "Reading papers and factor notes",
-    "Indicator Researcher": "Adjusting a public indicator on the bar file",
+    "2 min researcher": "Choosing the next change on the 2-minute chart",
+    "5 min researcher": "Choosing the next change on the 5-minute chart",
+    "15 min researcher": "Choosing the next change on the 15-minute chart",
     "Risk Manager": "Checking drawdown against the account",
     "Trading Analyst": "Confirming the fill and watching the drawdown",
-    "Quantitative Developer": "Checking the fill engine",
+    "2min chart developer": "Running the 2-minute chart on engine 1",
+    "5 min chart developer": "Running the 5-minute chart on engine 2",
+    "15 min chart developer": "Running the 15-minute chart on engine 3",
     "Systems Administrator": "Reading prop-firm mail",
     "Compliance & Operations": "Enforcing the prop-account rules",
 }

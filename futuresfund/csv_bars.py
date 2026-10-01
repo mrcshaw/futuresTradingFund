@@ -115,9 +115,15 @@ def _stamp(date_value, clock_value) -> str | None:
             parsed = datetime.strptime(text.replace("Z", "+0000") if fmt.endswith("%z") else text, fmt)
         except ValueError:
             continue
-        return parsed.strftime("%Y-%m-%dT%H:%M:%S")
+        return _keep_zone(parsed)
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError:
         return None
+    return _keep_zone(parsed)
+
+
+def _keep_zone(parsed: datetime) -> str:
+    if parsed.tzinfo is not None:
+        return parsed.isoformat(timespec="seconds")
     return parsed.strftime("%Y-%m-%dT%H:%M:%S")

@@ -23,7 +23,8 @@ _FIELDS = {
     "take_profit", "stop_loss", "flatten_first", "atm_strategy", "destination",
     "timeframe", "interval", "time", "bar_time", "open", "high", "low",
     "volume", "vol", "id", "poc", "poc_volume", "delta", "delta_pct",
-    "strategy", "strategy_name",
+    "strategy", "strategy_name", "macd", "macd_signal", "macd_histogram",
+    "histogram", "signal",
 }
 
 # A candle-close order with this id is chart data. Ingestion records it and does not send it.
@@ -124,6 +125,9 @@ def normalize(fields: dict) -> dict:
         "poc_volume": _optional_float(lowered.get("poc_volume")),
         "delta": _optional_float(lowered.get("delta")),
         "delta_pct": _optional_float(lowered.get("delta_pct")),
+        "macd": _optional_float(lowered.get("macd")),
+        "macd_signal": _optional_float(lowered.get("macd_signal") if lowered.get("macd_signal") not in (None, "") else lowered.get("signal")),
+        "macd_histogram": _optional_float(lowered.get("macd_histogram") if lowered.get("macd_histogram") not in (None, "") else lowered.get("histogram")),
         "id": _feed_id(lowered.get("id")),
         "strategy": _strategy_name(lowered.get("strategy") if lowered.get("strategy") not in (None, "") else lowered.get("strategy_name")),
     }

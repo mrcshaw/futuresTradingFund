@@ -19,7 +19,7 @@ _running = False
 
 SOURCES = (
     {
-        "desk": "Indicator Researcher",
+        "desk": "5 min researcher",
         "title": "Public chart indicators",
         "url": "https://www.tradingview.com/scripts/indicators/",
         "note": (
@@ -29,7 +29,7 @@ SOURCES = (
         ),
     },
     {
-        "desk": "Quantitative Researcher",
+        "desk": "2 min researcher",
         "title": "Goldman Sachs quantitative strategy notes",
         "url": "https://github.com/s0ap/gs-quantitative-strategies-research-notes",
         "note": (
@@ -38,7 +38,7 @@ SOURCES = (
         ),
     },
     {
-        "desk": "Quantitative Researcher",
+        "desk": "2 min researcher",
         "title": "Quantformer",
         "url": "https://arxiv.org/abs/2404.00424",
         "note": (
@@ -89,13 +89,13 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
     report.setdefault("playbook", [])
     rules = describe(account_size)
     _note(report, board, "Risk Manager", rules)
-    _note(report, board, "Indicator Researcher", SOURCES[0]["note"] + " " + SOURCES[0]["url"])
-    _note(report, board, "Quantitative Researcher", SOURCES[1]["note"] + " " + SOURCES[1]["url"])
-    _note(report, board, "Quantitative Researcher", SOURCES[2]["note"] + " " + SOURCES[2]["url"])
+    _note(report, board, "5 min researcher", SOURCES[0]["note"] + " " + SOURCES[0]["url"])
+    _note(report, board, "2 min researcher", SOURCES[1]["note"] + " " + SOURCES[1]["url"])
+    _note(report, board, "2 min researcher", SOURCES[2]["note"] + " " + SOURCES[2]["url"])
     if frames and len(frames) > 1:
         counts = ", ".join(f"{key} {len(frames[key])} bars" for key in ("2m", "5m", "15m") if key in frames)
         _note(
-            report, board, "Quantitative Developer",
+            report, board, "2min chart developer",
             f"Each setting is backtested on {counts}. The timeframe that clears the Apex trail with the best profit is the one kept. The others are the comparison.",
         )
     accepted: list[dict] = []
@@ -163,14 +163,14 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
             if decision == "passed":
                 weakest = min(accepted, key=lambda item: float(item["backtest"]["net_profit"]))
                 _note(
-                    report, board, "Quantitative Researcher",
+                    report, board, "2 min researcher",
                     f"Compared {proven['title']} with the meeting list ({others}). "
                     f"Profit {proven['backtest']['net_profit']}, drawdown {proven['backtest']['max_drawdown']}. "
                     f"It clears the trail, and it does not beat {weakest['title']}, so it stays off the list.",
                 )
                 continue
             _note(
-                report, board, "Quantitative Researcher",
+                report, board, "2 min researcher",
                 f"Compared {proven['title']} with the rules already kept. "
                 f"Profit {proven['backtest']['net_profit']}, drawdown {proven['backtest']['max_drawdown']}. "
                 f"{_frame_text(proven)} "
@@ -189,10 +189,10 @@ def search(bars: list[dict], *, instrument: str, account_size: float, profit_tar
             break
         batch += 1
         _note(
-            report, board, "Indicator Researcher",
+            report, board, "5 min researcher",
             f"{len(accepted)} of {MEETING_SLATE} rules clear the Apex trail. "
             "Posting another batch of settings for the developer to implement and backtest.",
-            channels=("R&D", "Quantitative Developer"),
+            channels=("R&D", "2min chart developer"),
         )
     accepted.sort(key=lambda row: float(row["backtest"]["net_profit"]), reverse=True)
     report["accepted"] = [_public(row) for row in accepted[:MEETING_SLATE]]
@@ -229,7 +229,7 @@ def start_search(board: Board) -> bool:
             bars = load_bars()
             if len(bars) < 80:
                 report = load_report()
-                _note(report, board, "Quantitative Developer", "The bar file is too short to test. Load the 15-minute ES file first.")
+                _note(report, board, "2min chart developer", "The bar file is too short to test. Load the 15-minute ES file first.")
                 report["status"] = "error"
                 save_report(report)
                 return
@@ -252,9 +252,9 @@ def start_search(board: Board) -> bool:
             )
         finally:
             if board is not None:
-                board.set_status("Indicator Researcher", "idle")
-                board.set_status("Quantitative Researcher", "idle")
-                board.set_status("Quantitative Developer", "idle")
+                board.set_status("5 min researcher", "idle")
+                board.set_status("2 min researcher", "idle")
+                board.set_status("2min chart developer", "idle")
             with _lock:
                 _running = False
     threading.Thread(target=_run, daemon=True, name="futures-lab").start()
@@ -339,13 +339,13 @@ def _families(batch: int = 0) -> list[tuple[str, list[dict]]]:
 
 def _assign(report: dict, board: Board | None, name: str, batch: int) -> None:
     if board is not None:
-        board.set_status("Indicator Researcher", "working")
-        board.set_status("Quantitative Developer", "working")
+        board.set_status("5 min researcher", "working")
+        board.set_status("2min chart developer", "working")
     _note(
-        report, board, "Indicator Researcher",
+        report, board, "5 min researcher",
         f"Batch {batch + 1}: test {name} with a stop inside the trailing allowance. "
         "Developer, implement it and backtest the settings on the engine.",
-        channels=("R&D", "Quantitative Developer"),
+        channels=("R&D", "2min chart developer"),
     )
 
 
@@ -439,7 +439,7 @@ def record_trial(row: dict, note: str) -> None:
     report["trials"] = report["trials"][-80:]
     report["attempts"] = int(report.get("attempts") or 0) + 1
     report["status"] = "done"
-    report.setdefault("messages", []).append({"time": _now(), "author": "Quantitative Developer", "text": note})
+    report.setdefault("messages", []).append({"time": _now(), "author": "2min chart developer", "text": note})
     report["messages"] = report["messages"][-200:]
     save_report(report)
 

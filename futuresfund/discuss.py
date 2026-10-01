@@ -119,20 +119,28 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
         transcript = [f"Bar file: {facts}" + (f" Alerts added {added} bars since the last meeting." if added else "")]
         market = _speak(
             board,
-            "Quantitative Researcher",
+            "2 min researcher",
             "You are the quantitative researcher for ES futures. Think through these bars and say what a systematic rule should use. "
             "Entry and exit must be different conditions. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
         )
-        transcript.append(f"Quantitative Researcher: {market}")
-        board.post("Quantitative Researcher", market, kind="speech", channel="R&D")
+        transcript.append(f"2 min researcher: {market}")
+        board.post("2 min researcher", market, kind="speech", channel="R&D")
         indicator = _speak(
             board,
-            "Indicator Researcher",
+            "5 min researcher",
             "You are the indicator researcher for ES futures. Think about one public indicator and the settings the trader should test. "
             "Name the entry and a different exit. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
         )
-        transcript.append(f"Indicator Researcher: {indicator}")
-        board.post("Indicator Researcher", indicator, kind="speech", channel="R&D")
+        transcript.append(f"5 min researcher: {indicator}")
+        board.post("5 min researcher", indicator, kind="speech", channel="R&D")
+        fifteen = _speak(
+            board,
+            "15 min researcher",
+            "You are the 15 min researcher for ES futures. Think about the 15-minute chart and the one setting the developer should test. "
+            "Name the entry and a different exit. Use only these facts. Do not invent a profit or a drawdown.\n" + facts,
+        )
+        transcript.append(f"15 min researcher: {fifteen}")
+        board.post("15 min researcher", fifteen, kind="speech", channel="R&D")
         proposals: list[dict] = []
         tested: set[str] = set()
         round_number = 0
@@ -148,7 +156,7 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
                 "Quantitative Trader",
                 "Developer, implement this rule and run it on the engine.",
                 kind="speech",
-                channel="Quantitative Developer",
+                channel="2min chart developer",
             )
             name, params = _read_proposal(board, proposal_text)
             if name and _sid(name, params) in tested:
@@ -163,11 +171,13 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
             row, note = _developer_backtest(board, bars, contract, account_size, profit_target, name, params, round_number)
             transcript.append(note)
             analyst = _speak(board, "Trading Analyst", _analyst_prompt(transcript))
-            researcher_note = _speak(board, "Quantitative Researcher", _review_prompt(transcript))
-            indicator_note = _speak(board, "Indicator Researcher", _indicator_prompt(transcript))
+            researcher_note = _speak(board, "2 min researcher", _review_prompt(transcript))
+            indicator_note = _speak(board, "5 min researcher", _indicator_prompt(transcript))
+            fifteen_note = _speak(board, "15 min researcher", _indicator_prompt(transcript))
             transcript.append(f"Trading Analyst: {analyst}")
-            transcript.append(f"Quantitative Researcher: {researcher_note}")
-            transcript.append(f"Indicator Researcher: {indicator_note}")
+            transcript.append(f"2 min researcher: {researcher_note}")
+            transcript.append(f"5 min researcher: {indicator_note}")
+            transcript.append(f"15 min researcher: {fifteen_note}")
             risk = _speak(board, "Risk Manager", _risk_prompt(transcript, row))
             transcript.append(f"Risk Manager: {risk}")
             if _risk_approves(risk, row):
@@ -185,7 +195,7 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
             return
         _stand_in(board, proposals, contract, timeframe, account, account_size, profit_target, current)
         board.post(
-            "Quantitative Researcher",
+            "2 min researcher",
             "Three rules passed risk. They wait on the book until the next meeting. "
             "That is 8:00am Monday through Friday or 5:00pm Sunday through Friday. Saturday has no meeting.",
             kind="report",
@@ -223,12 +233,12 @@ def _stand_in(board: Board, approved: list[dict], contract: str, timeframe: str,
     store_strategy(book)
     if pick is not None:
         board.post(
-            "Quantitative Researcher",
+            "2 min researcher",
             f"No strategy was active. Until the 8:00am meeting, {pick['title']} is active. "
             f"It is the most profitable rule that passed risk, profit {pick['backtest']['net_profit']}, "
             f"drawdown {pick['backtest']['max_drawdown']}.",
             kind="report",
-            channel="Quantitative Researcher",
+            channel="2 min researcher",
         )
 
 
@@ -245,30 +255,29 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
     current = get_strategy() or {}
     eligible = [item for item in current.get("strategies") or [] if item.get("proven") and item.get("accepted")]
     board.begin_run(str(current.get("contract") or "ES1!"), when, ["portfolio"])
-    board.post("Portfolio Manager", f"The {when} meeting is open.", kind="speech", channel="headquarters")
-    if len(eligible) < 3:
-        board.post(
-            "Portfolio Manager",
-            f"The {when} meeting has {len(eligible)} of 3 rules that passed risk. The vote waits until three are ready.",
-            kind="report",
-            channel="Portfolio Manager",
-        )
-        _mail_report(board)
-        board.finish_run("done")
-        return
+    board.post(
+        "Portfolio Manager",
+        f"The {when} meeting is open. Each desk hands the next desk a written report. A live trade is not debated here.",
+        kind="speech",
+        channel="headquarters",
+    )
+    facts = [
+        f"{item['title']}: profit {item['backtest']['net_profit']}, drawdown {item['backtest']['max_drawdown']}, trades {item['backtest']['trades']}"
+        for item in eligible
+    ] or ["No rule has passed risk yet."]
     try:
-        transcript = [
-            f"{item['title']}: profit {item['backtest']['net_profit']}, drawdown {item['backtest']['max_drawdown']}, trades {item['backtest']['trades']}"
-            for item in eligible
-        ]
-        _speak(
-            board,
-            "Portfolio Manager",
-            f"You are leading the {when} meeting. Summarize the three rules that passed risk. Do not invent numbers.\n"
-            + "\n".join(transcript),
-        )
-        tally = _vote(board, eligible, transcript)
-        verdict = _speak(board, "Portfolio Manager", _manager_prompt(transcript, eligible, tally, rules))
+        transcript = _pass_reports(board, when, facts, rules)
+        if len(eligible) < 3:
+            board.post(
+                "Portfolio Manager",
+                f"The {when} meeting has {len(eligible)} of 3 rules that passed risk. The vote waits until three are ready. The written reports are filed.",
+                kind="report",
+                channel="Portfolio Manager",
+            )
+            _mail_report(board)
+            board.finish_run("done")
+            return
+        verdict = _speak(board, "Portfolio Manager", _manager_prompt(transcript, eligible, {}, rules))
         book = dict(current)
         book["strategies"] = list(current.get("strategies") or [])
         _apply_verdict(book, verdict)
@@ -289,16 +298,153 @@ def hold_meeting(board: Board, when: str = "8:00am") -> None:
         remember_meeting(chosen)
         board.post(
             "Portfolio Manager",
-            f"The {when} vote closed. Headquarters shows {chosen['title'] if chosen else 'the current stand-in'}.",
+            f"The {when} reports are filed. Headquarters shows {chosen['title'] if chosen else 'the current stand-in'}.",
             kind="report",
             channel="headquarters",
         )
-        _floor_analysis(board, chosen or choose_standin(eligible, False))
         _mail_report(board)
         board.finish_run("done")
     except Exception as exc:
         board.finish_run("error", str(exc))
         board.post("Portfolio Manager", f"The {when} meeting stopped: {exc}.", kind="error", channel="Portfolio Manager")
+
+
+def hand_report(board: Board, author: str, recipient: str, text: str) -> str:
+    """One desk hands the next desk a written report. This is not a debate."""
+    body = (text or "").strip()
+    if not body:
+        return ""
+    note = f"Written report for {recipient}.\n{body}"
+    board.post(author, note, kind="report", channel=recipient or author)
+    owner = next((agent for agent in ROSTER if agent["name"] == author), None)
+    if owner:
+        board.set_report(owner["report"], body)
+    return body
+
+
+def _pass_reports(board: Board, when: str, facts: list[str], rules: str) -> list[str]:
+    """Each agent writes one report and hands it to the next. No one debates a live trade."""
+    carried: list[str] = []
+    book_facts = _book_facts()
+    if rules:
+        handed = hand_report(
+            board,
+            "Compliance & Operations",
+            "Risk Manager",
+            "Prop-account rules for this meeting. Do not change the numbers.\n" + rules,
+        )
+        carried.append(f"Compliance & Operations: {handed}")
+    steps = (
+        (
+            "2 min researcher",
+            "5 min researcher",
+            "You are the quantitative researcher in the {when} meeting. Write a research report for the indicator researcher. "
+            "Use headings Tested, Numbers, and Hand off. Use only the figures below. "
+            "Do not invent a profit, a drawdown, or a trade count. Do not debate a live trade. "
+            "The floor sends an alert as written and does not wait for this meeting.\n{facts}",
+        ),
+        (
+            "5 min researcher",
+            "15 min researcher",
+            "You are the 5 min researcher. You were handed the research report below. "
+            "Write the 5-minute chart report for the 15 min researcher. Use headings Settings, What to retest, and Hand off. "
+            "Use only the numbers already written. Do not invent numbers. Do not debate a live trade.\n{heard}",
+        ),
+        (
+            "15 min researcher",
+            "Trading Analyst",
+            "You are the 15 min researcher. You were handed the chart reports below. "
+            "Write the 15-minute chart report for the trading analyst. Use headings Settings, What to retest, and Hand off. "
+            "Use only the numbers already written. Do not invent numbers. Do not debate a live trade.\n{heard}",
+        ),
+        (
+            "Trading Analyst",
+            "Risk Manager",
+            "You are the trading analyst. Write the book report for the risk manager. "
+            "State whether a trade is open and the P&L of the last closed trade when the book facts include one. "
+            "Use headings Book, Last trade, and Hand off. Do not invent a fill. Do not debate a live trade.\n{heard}\n{book}",
+        ),
+        (
+            "Risk Manager",
+            "Quantitative Trader",
+            "You are the risk manager. Write a risk report for the quantitative trader. "
+            "Use headings Trail, Contract cap, and Hand off. A rule passes only when profit is positive and drawdown is inside the trail. "
+            "Use only the numbers above. Do not invent numbers. Do not debate a live trade.\n{heard}",
+        ),
+        (
+            "Quantitative Trader",
+            "Floor Trader",
+            "You are the quantitative trader. Write which tested rule should stay on headquarters, or say none are ready. "
+            "Hand that report to the floor trader. Do not place an order. Do not debate a live trade.\n{heard}",
+        ),
+        (
+            "Floor Trader",
+            "Portfolio Manager",
+            "You are the floor trader. Write an execution report for the portfolio manager. "
+            "Say what is open, or that the book is flat, and the last closed trade from the book facts. "
+            "The next alert is sent as written. Do not debate whether that trade should have been taken.\n{heard}\n{book}",
+        ),
+    )
+    heard = "\n".join(facts)
+    for author, recipient, template in steps:
+        if board.cancel.is_set():
+            break
+        prompt = _fill(template, when=when, facts="\n".join(facts), heard=heard, book=book_facts)
+        text = _write_and_hand(board, author, recipient, prompt)
+        carried.append(f"{author}: {text}")
+        heard = "\n".join(carried[-4:])
+    return facts + carried
+
+
+def _fill(template: str, **kwargs) -> str:
+    text = template
+    for key, value in kwargs.items():
+        safe = str(value).replace("{", "(").replace("}", ")")
+        text = text.replace("{" + key + "}", safe)
+    return text
+
+
+def _write_and_hand(board: Board, author: str, recipient: str, prompt: str) -> str:
+    if board.cancel.is_set():
+        return ""
+    board.set_status(author, "working")
+    board.set_activity(author, f"Writing a report for {recipient}")
+    try:
+        text = _model(prompt, author)
+    finally:
+        board.set_status(author, "done")
+    if not text:
+        text = f"No report was written for {recipient}."
+    return hand_report(board, author, recipient, text)
+
+
+def _book_facts() -> str:
+    from futuresfund.book import load, paper_status
+
+    book = load()
+    paper = paper_status(book)
+    lines = [
+        f"Paper P&L {paper.get('pnl')}. Realized {paper.get('realized')}. "
+        f"Open P&L {paper.get('active_pnl')}. Equity {paper.get('equity')}. Drawdown {paper.get('drawdown')}.",
+    ]
+    positions = book.get("positions") or {}
+    if positions:
+        for row in positions.values():
+            lines.append(
+                f"Open {row.get('account')} {row.get('instrument')} {row.get('contracts')} from {row.get('average_price')}."
+            )
+    else:
+        lines.append("No trade is open.")
+    trades = book.get("trades") or []
+    if trades:
+        last = trades[-1]
+        lines.append(
+            f"Closed trades on the book: {len(trades)}. Last trade {last.get('side')} {last.get('qty')} "
+            f"{last.get('instrument')} from {last.get('entry')} to {last.get('exit')}, P&L {last.get('pnl')}."
+        )
+    else:
+        lines.append("No closed trade is on the book.")
+    return "\n".join(lines)
 
 
 def _mail_report(board: Board) -> None:
@@ -309,12 +455,12 @@ def _mail_report(board: Board) -> None:
 
 def _developer_backtest(board: Board, bars, contract, account_size, profit_target, name, params, round_number: int) -> tuple[dict | None, str]:
     """The developer implements the rule and runs it. The researchers do not post the engine result."""
-    board.set_status("Quantitative Developer", "working")
-    board.set_activity("Quantitative Developer", "Implementing the rule and running it on the engine")
+    board.set_status("2min chart developer", "working")
+    board.set_activity("2min chart developer", "Implementing the rule and running it on the engine")
     try:
         row = evaluate_rule(bars, contract, account_size, profit_target, name, params) if name else None
     finally:
-        board.set_status("Quantitative Developer", "done")
+        board.set_status("2min chart developer", "done")
     if row is None:
         note = f"Round {round_number}: the developer could not implement {name or 'the proposal'} on these bars."
     else:
@@ -325,8 +471,8 @@ def _developer_backtest(board: Board, bars, contract, account_size, profit_targe
             f"drawdown {backtest['max_drawdown']}, trades {backtest['trades']}. "
             f"{'Clears the trailing drawdown.' if row['proven'] else f'Drawdown is above the ${limit:,.0f} trailing limit.'}"
         )
-    board.post("Quantitative Developer", note, kind="report", channel="Quantitative Developer")
-    board.post("Quantitative Developer", note, kind="report", channel="R&D")
+    board.post("2min chart developer", note, kind="report", channel="2min chart developer")
+    board.post("2min chart developer", note, kind="report", channel="R&D")
     if row is not None:
         from futuresfund.lab import record_trial
 
@@ -415,20 +561,29 @@ def _analyst_prompt(transcript: list[str]) -> str:
 
 
 def _indicator_prompt(transcript: list[str]) -> str:
+    from futuresfund.learn import research_guidelines
+
     heard = "\n".join(transcript[-6:])
     return (
-        "You are the indicator researcher. Think about whether these settings are worth another test. "
-        "Say what you would change on the next proposal. Use only the numbers above. Do not invent numbers.\n"
-        f"{heard}"
+        "You are the indicator researcher. The research guide is guidance, not a requirement. "
+        "Choose one variable for the next run and say how the last change moved profit and drawdown. "
+        "Consistency comes before a larger profit. "
+        "Use only the numbers above. Do not invent numbers.\n"
+        f"{research_guidelines()}\n{heard}"
     )
 
 
 def _review_prompt(transcript: list[str]) -> str:
+    from futuresfund.learn import research_guidelines
+
     heard = "\n".join(transcript[-6:])
     return (
-        "You are the quantitative researcher. Read the engine result and say whether this rule should be proposed at the meeting. "
+        "You are the quantitative researcher. The research guide is guidance, not a requirement. "
+        "Read the engine result and the impact of the one variable that changed. "
+        "Consistency comes before a larger profit. "
+        "Say whether this rule should be proposed, and whether that same variable should continue or reverse. "
         "Use only the profit, drawdown, and trade count above. Do not invent numbers.\n"
-        f"{heard}"
+        f"{research_guidelines()}\n{heard}"
     )
 
 
@@ -474,8 +629,9 @@ def _manager_prompt(transcript: list[str], strategies: list[dict], tally: dict[s
     ]
     heard = "\n".join(transcript[-12:])
     return (
-        "You are the portfolio manager. Weigh the vote and the profit against the drawdown. "
+        "You are the portfolio manager. Read the written reports the desks handed you. "
         "Recommend the one rule that best fits the prop account. Recommend none if the list is empty. "
+        "Do not debate a live trade and do not place an order. "
         "A recommendation is not live. The user turns it on. The rules you do not pick stay saved for the next meeting. "
         'End with JSON: {"arm":"the id"} or {"arm":"none"}.\n'
         + "\n".join(lines)

@@ -62,13 +62,44 @@ class PineCompatTests(unittest.TestCase):
         self.assertIn(f"{stamp},1,2,0.5,1.5,0", csv_text)
 
 
+class WarmEngineTests(unittest.TestCase):
+    def test_a_bar_file_is_written_once_and_each_chart_has_its_own_engine(self):
+        import tempfile
+        from pathlib import Path
+
+        from futuresfund.pineforge_engine import slot_for, store_bars
+
+        bars = [{"t": "2026-09-01T09:30:00", "o": 1, "h": 2, "l": 0.5, "c": 1.5, "v": 3}]
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            first = store_bars(folder, "NQ1!", "15m", bars)
+            written = first.stat().st_mtime_ns
+            second = store_bars(folder, "NQ1!", "15m", bars)
+            self.assertEqual(first, second)
+            self.assertEqual(second.stat().st_mtime_ns, written)
+            changed = store_bars(folder, "NQ1!", "15m", bars + [{"t": "2026-09-01T09:45:00", "o": 2, "h": 3, "l": 1, "c": 2.5, "v": 4}])
+            self.assertEqual(changed, first)
+            self.assertGreater(changed.stat().st_mtime_ns, written)
+        self.assertEqual(slot_for("2m"), 0)
+        self.assertEqual(slot_for("5m"), 1)
+        self.assertEqual(slot_for("15m"), 2)
+
+    def test_one_finished_chart_does_not_count_as_the_whole_instrument(self):
+        from futuresfund.learn import pending_for_chart, tested_instruments
+
+        partial = {"instruments": {"ES": {"charts": {"2m": {"attempts": 1, "best": {"net_profit": 1}, "trials": [{}]}}}}}
+        self.assertEqual(tested_instruments(partial), set())
+        self.assertEqual(pending_for_chart(partial, "2m", ["ES"]), [])
+        self.assertEqual(pending_for_chart(partial, "15m", ["ES"]), ["ES"])
+
+
 class StopTests(unittest.TestCase):
     def test_stop_keeps_the_researchers_from_starting_another_attempt(self):
         board = Board()
         board.set_research("running")
-        board.set_activity("Quantitative Researcher", "Studying a script")
+        board.set_activity("2 min researcher", "Studying a script")
         board.mark_stopped()
-        board.set_activity("Quantitative Researcher", "Studying the next script")
+        board.set_activity("2 min researcher", "Studying the next script")
         self.assertEqual(board.snapshot()["activity"]["task"], "Stopping the researchers.")
         calls = {"n": 0}
 

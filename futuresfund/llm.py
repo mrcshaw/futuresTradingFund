@@ -24,9 +24,12 @@ _BASES = {
     "desk-floor": "qwen3",
     "desk-researcher": "deepseek-r1:32b",
     "desk-indicator": "qwen3",
+    "desk-researcher-15": "qwen3",
     "desk-risk": "gemma2",
     "desk-analyst": "gemma",
     "desk-developer": "qwen3-trading",
+    "desk-developer-2": "qwen3-trading",
+    "desk-developer-15": "qwen3-trading",
     "desk-systems": "gemma2",
     "desk-compliance": "gemma",
 }
@@ -82,6 +85,33 @@ def complete(prompt: str, agent: str | None = None) -> str:
     return client_for(name).ask(prompt)
 
 
+_CHAT_MODELS = {
+    "desk-portfolio": "qwen3",
+    "desk-researcher": "qwen3",
+}
+_chat_history: dict[str, list[dict]] = {}
+
+
+def answer_chat(agent: str, prompt: str) -> str:
+    """Answer a person at the desk. The large meeting models are not used here."""
+    name = agent or "Portfolio Manager"
+    model = _CHAT_MODELS.get(model_name(name), model_name(name))
+    prior = _chat_history.get(name, [])[-4:]
+    messages = [
+        {"role": "system", "content": _clip(_chat_system(name), 2500)},
+        *prior,
+        {"role": "user", "content": _clip(prompt, 3500)},
+    ]
+    reply = _strip_handoff(_post(model, messages, num_ctx=4096, timeout=90))
+    if reply.startswith("The meeting model could not answer"):
+        return reply
+    history = _chat_history.setdefault(name, [])
+    history.append({"role": "user", "content": _clip(prompt, 800)})
+    history.append({"role": "assistant", "content": _clip(reply, 800)})
+    del history[:-6]
+    return reply
+
+
 class AgentModel:
     """One desk, one model, one history. Nothing here is written onto another desk."""
 
@@ -104,8 +134,8 @@ class AgentModel:
 
     def _messages(self, prompt: str) -> list[dict]:
         with self._lock:
-            prior = list(self.history[-6:])
-        return [{"role": "system", "content": _system(self.agent)}, *prior, {"role": "user", "content": prompt}]
+            prior = [{"role": item["role"], "content": _clip(item.get("content") or "")} for item in self.history[-4:]]
+        return [{"role": "system", "content": _clip(_system(self.agent), 6000)}, *prior, {"role": "user", "content": _clip(prompt, 6000)}]
 
 
 def _library_catalog() -> str:
@@ -118,7 +148,7 @@ def _system(agent: str) -> str:
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
-    from futuresfund.learn import notes_digest
+    from futuresfund.learn import notes_digest, research_guidelines
     from futuresfund.prop_rules import describe
     from futuresfund.roster import ROSTER
     from futuresfund.session import meeting_note
@@ -133,36 +163,84 @@ def _system(agent: str) -> str:
         script = (
             f"The lead strategy on headquarters is {lead['title']}: "
             f"{lead['trades']} trades, profit {lead['net_profit']}, drawdown {lead['max_drawdown']}. "
-            f"{lead['formula']}\nPine script:\n{lead['pine']}\n"
+            f"{lead.get('formula') or ''}\n"
         )
     else:
         script = "No lead strategy is on headquarters yet.\n"
+    guidance = ""
+    if agent in {"2 min researcher", "5 min researcher", "15 min researcher"}:
+        guidance = research_guidelines() + "\n"
     return (
         f"You are the {agent}. {role} "
+        "You can talk about this desk: the charts, research, the strategy library, meetings, orders, and the open trade. "
         "You speak only for this desk. Another desk has its own model and its own log. "
         f"Desk clock: {clock}. {meeting_note()} Do not hold a meeting outside those times. "
         "Strategy notes already learned, use these before any other source:\n"
         f"{notes_digest()}\n"
         f"{_library_catalog()}\n"
         f"{describe(size)} "
+        f"{guidance}"
         "Reason from these limits and from the numbers in the prompt. "
         "Do not invent a profit, a drawdown, or a trade count. "
         f"The engine's backtest is the fact.\n{script}"
     )
 
 
-def _post(model: str, messages: list[dict]) -> str:
-    body = json.dumps({
+def _chat_system(agent: str) -> str:
+    from futuresfund.learn import research_guidelines
+    from futuresfund.roster import ROSTER
+
+    found = next((item for item in ROSTER if item["name"] == agent), None)
+    role = found["role"] if found else "A desk on this futures fund."
+    guidance = ""
+    if agent in {"2 min researcher", "5 min researcher", "15 min researcher"}:
+        guidance = research_guidelines() + " "
+    return (
+        f"You are the {agent}. {role} {guidance}"
+        "A person is talking with you about this application. "
+        "Explain the desk, the charts, research, the strategy library, meetings, and the account from the firm record. "
+        "If a number is not in the message, say you do not have that number. "
+        "Do not invent a profit, a drawdown, a trade count, or an open position. "
+        "Do not place an order. Do not write a To: line. Answer in a few sentences."
+    )
+
+
+def _strip_handoff(text: str) -> str:
+    kept = []
+    for line in (text or "").splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("to:"):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
+def _clip(text: str, limit: int = 1500) -> str:
+    body = (text or "").strip()
+    if len(body) <= limit:
+        return body
+    return body[: limit - 1].rstrip() + "…"
+
+
+def _post(model: str, messages: list[dict], *, think: bool = False, num_ctx: int = 4096, timeout: int = 120) -> str:
+    payload_body = {
         "model": model,
         "messages": messages,
         "stream": False,
-        "think": True,
-        "options": {"temperature": 0.6, "num_ctx": 8192},
-    }).encode()
+        "options": {"temperature": 0.4, "num_ctx": num_ctx},
+    }
+    if think:
+        payload_body["think"] = True
+    body = json.dumps(payload_body).encode()
     request = urllib.request.Request(_URL, data=body, headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=3600) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")[:300]
+        if exc.code == 400 and len(messages) > 2:
+            return _post(model, [messages[0], messages[-1]], think=False, num_ctx=num_ctx, timeout=timeout)
+        return f"The meeting model could not answer: HTTP {exc.code}. {detail}"
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         return f"The meeting model could not answer: {exc}"
     message = payload.get("message") or {}

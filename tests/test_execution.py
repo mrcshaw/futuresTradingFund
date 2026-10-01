@@ -51,7 +51,7 @@ class AlertTests(unittest.TestCase):
     def test_a_smuggled_command_is_not_forwarded(self):
         signal = parse_alert("account=PA-APEX-1;command=FLATTEN;instrument=MES 12-26;qty=1;")
         preview = send(signal, "Sell")["preview"]
-        self.assertIn("command=PLACE;", preview)
+        self.assertIn("command=place;", preview)
         self.assertNotIn("FLATTEN", preview)
 
     def test_account_with_a_semicolon_is_refused(self):
@@ -72,7 +72,7 @@ class OrderTests(unittest.TestCase):
         self.assertFalse(result["sent"])
         self.assertTrue(result["dry_run"])
         self.assertIn("account=PA-APEX-1;", result["preview"])
-        self.assertIn("action=BUY;", result["preview"])
+        self.assertIn("action=buy;", result["preview"])
         self.assertIn("instrument=MES 12-26;", result["preview"])
         self.assertIn("qty=1;", result["preview"])
         self.assertIn("key=***;", result["preview"])
@@ -87,16 +87,21 @@ class OrderTests(unittest.TestCase):
         self.assertFalse(result["sent"])
         self.assertNotIn("preview", result)
 
-    def test_other_prop_account_is_refused(self):
+    def test_a_different_account_does_not_block_the_order(self):
         os.environ["PROP_ACCOUNTS"] = "PA-OTHER"
-        with self.assertRaises(ValueError):
-            build_payload(self.signal, "BUY")
+        payload = build_payload(self.signal, "BUY")
+        self.assertIn("account=PA-APEX-1;", payload)
+        self.assertIn("command=place;", payload)
+        self.assertIn("action=buy;", payload)
+        self.assertNotIn("flatten_first", payload)
 
-    def test_a_flip_from_short_flattens_first(self):
+    def test_a_buy_while_short_does_not_open_a_new_long(self):
         signal = parse_alert('{"account":"PA-APEX-1","instrument":"MES1!","qty":1,"position":-1}')
         payload = build_payload(signal, "BUY")
-        self.assertIn("flatten_first=true;", payload)
-        self.assertIn("action=BUY;", payload)
+        self.assertNotIn("flatten_first", payload)
+        self.assertIn("action=buy;", payload)
+        self.assertIn("order_type=market;", payload)
+        self.assertIn("tif=day;", payload)
 
     def test_tradingview_crosstrade_alert_is_rebuilt_without_its_key(self):
         os.environ["CROSSTRADE_KEY"] = "server-side-key"
@@ -121,8 +126,8 @@ out_of_sync=flatten;
         self.assertNotIn("key", signal)
         self.assertTrue(signal["sync_strategy"])
         preview = send(signal, "Sell")["preview"]
-        self.assertIn("command=PLACE;", preview)
-        self.assertIn("action=SELL;", preview)
+        self.assertIn("command=place;", preview)
+        self.assertIn("action=sell;", preview)
         self.assertIn("sync_strategy=true;", preview)
         self.assertIn("market_position=short;", preview)
         self.assertIn("prev_market_position=flat;", preview)
@@ -169,7 +174,8 @@ class StrategyTests(unittest.TestCase):
         ok, _detail = accept_alert(strategy, signal)
         self.assertTrue(ok)
         other = parse_alert("account=PA-OTHER;instrument=MES 12-26;qty=1;timeframe=15m;price=5800;")
-        self.assertFalse(accept_alert(strategy, other)[0])
+        from futuresfund.strategy import series_match
+        self.assertTrue(series_match(strategy, other)[0])
         paused = {**strategy, "stance": "paused"}
         self.assertFalse(accept_alert(paused, signal)[0])
 
@@ -304,7 +310,7 @@ class EngineTrialTests(unittest.TestCase):
             report = lab.load_report()
             self.assertEqual(report["trials"][0]["title"], "Bollinger 20 x2")
             self.assertEqual(report["attempts"], 1)
-            self.assertEqual(report["messages"][0]["author"], "Quantitative Developer")
+            self.assertEqual(report["messages"][0]["author"], "2min chart developer")
 
 
 class RiskGateTests(unittest.TestCase):

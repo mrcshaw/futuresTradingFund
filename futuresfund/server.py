@@ -67,6 +67,9 @@ def lab_report():
     report["studying"] = board.research in {"running", "stopping"}
     report["slate"] = research_slate()
     report["trials"] = report.get("trials", [])[-40:]
+    from futuresfund.pineforge_engine import engine_status
+
+    report["engines"] = engine_status()
     return report
 
 
@@ -149,6 +152,13 @@ def chart(contract: str = "ES1!", timeframe: str = "5m", limit: int = 160):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@app.get("/api/research-guide")
+def research_guide():
+    from futuresfund.learn import research_guidelines
+
+    return {"text": research_guidelines()}
+
+
 @app.get("/api/library")
 def library(contract: str = "ES1!", q: str = ""):
     from futuresfund.library import search_library
@@ -157,10 +167,10 @@ def library(contract: str = "ES1!", q: str = ""):
 
 
 @app.get("/api/library/{strategy_id}")
-def library_one(strategy_id: str):
+def library_one(strategy_id: str, contract: str = ""):
     from futuresfund.library import library_script
 
-    row = library_script(strategy_id)
+    row = library_script(strategy_id, contract or None)
     if row is None or not row.get("pine"):
         raise HTTPException(status_code=404, detail="That strategy script is not in the library.")
     return row
@@ -367,6 +377,7 @@ def review_now():
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
+    agent: str = "Portfolio Manager"
 
 
 _chat_busy = False
@@ -376,19 +387,21 @@ _chat_busy = False
 def chat(body: ChatRequest):
     global _chat_busy
     if _chat_busy:
-        raise HTTPException(status_code=409, detail="The portfolio manager is still answering.")
+        raise HTTPException(status_code=409, detail="That desk is still answering.")
     text = body.message.strip()
-    board.post("You", text, kind="chat", channel="Portfolio Manager")
+    name = _agent_name(body.agent) or "Portfolio Manager"
+    board.post("You", text, kind="chat", channel=name)
     _chat_busy = True
 
     def _reply():
         global _chat_busy
-        board.log("Portfolio Manager", "Reading the firm book")
+        board.log(name, "Reading the firm book")
         try:
-            answer = _ask(text)
-            board.post("Portfolio Manager", answer, kind="chat", channel="Portfolio Manager")
+            answer = _ask_agent(name, text)
+            board.post(name, answer, kind="chat", channel=name)
+            _relay(name, answer)
         except Exception as exc:
-            board.post("Portfolio Manager", f"I could not answer just now: {exc}", kind="error", channel="Portfolio Manager")
+            board.post(name, f"I could not answer just now: {exc}", kind="error", channel=name)
         finally:
             _chat_busy = False
 
@@ -435,26 +448,64 @@ def _strategy_facts(view: dict) -> str:
     return " ".join(lines)
 
 
-def _ask(message: str) -> str:
+def _agent_name(raw: str) -> str | None:
+    from futuresfund.roster import ROSTER
+
+    text = (raw or "").strip().lower()
+    if not text:
+        return None
+    for agent in ROSTER:
+        if agent["name"].lower() == text:
+            return agent["name"]
+    return None
+
+
+def _ask_agent(name: str, message: str) -> str:
     from futuresfund.book import firm_record, open_trade_brief
-    from futuresfund.llm import complete
+    from futuresfund.llm import answer_chat
+    from futuresfund.roster import ROSTER
 
     view = book_snapshot()
     asked = message.lower()
     trade_detail = ""
     if any(word in asked for word in ("stop", "take profit", "take-profit", "open trade", "current trade")):
         trade_detail = open_trade_brief(view)
+    names = ", ".join(agent["name"] for agent in ROSTER)
     prompt = (
-        "You are the portfolio manager of this futures firm. "
-        "Answer questions about the desk, the strategy library, the book, the meetings, and any open trade. "
-        "Use only the firm record. If a number is not in the record, say you do not have that number. "
+        f"You are {name} on this futures desk. "
+        "Answer from the firm record. If a number is not in the record, say you do not have that number. "
         "Do not invent a profit, a drawdown, a trade count, or an open position. "
-        "Do not place an order from this chat. Speak in plain sentences.\n\n"
+        "Do not place an order. Do not debate whether a trade should have been taken. "
+        "Do not write a To: line. "
+        f"The desks are: {names}.\n\n"
         f"Firm record:\n{firm_record(view)}\n\n"
         + (f"Open trade detail:\n{trade_detail}\n\n" if trade_detail else "")
-        + f"User: {message}"
+        + f"Message: {message}"
     )
-    return complete(prompt, agent="Portfolio Manager") or "I have nothing to add."
+    return answer_chat(name, prompt) or "I have nothing to add."
+
+
+def _relay(speaker: str, text: str) -> None:
+    """One written handoff. The next desk answers once and does not hand it on again."""
+    target = None
+    note: list[str] = []
+    for line in (text or "").splitlines():
+        stripped = line.strip()
+        if target is None and stripped.lower().startswith("to:"):
+            target = _agent_name(stripped.split(":", 1)[1])
+            continue
+        if target and stripped:
+            note.append(stripped)
+    if not target or target == speaker or not note:
+        return
+    from futuresfund.discuss import hand_report
+
+    handed = " ".join(note)[:500]
+    hand_report(board, speaker, target, handed)
+    reply = _ask_agent(target, f"{speaker} handed you this written report: {handed}")
+    board.post(target, reply, kind="chat", channel=speaker)
+    if target != speaker:
+        board.post(target, reply, kind="chat", channel=target)
 
 
 @app.on_event("startup")
@@ -486,10 +537,10 @@ def _startup():
             )
         bars_on_disk = stored or count
         board.post(
-            "Quantitative Developer",
+            "2min chart developer",
             "ES orders fill at the bar close. A stop can fill inside a later bar. Commission is $5.50 a side and slippage is one tick.",
             kind="report",
-            channel="Quantitative Developer",
+            channel="2min chart developer",
         )
         board.post(
             "Systems Administrator",
@@ -506,7 +557,7 @@ def _startup():
         )
         board.post(
             "System",
-            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. They share one backtest engine.",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. Four PineForge containers stay warm: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart.",
             kind="system",
             channel="headquarters",
         )

@@ -524,13 +524,10 @@ def series_match(strategy: dict | None, signal: dict) -> tuple[bool, str]:
         if found is None:
             return False, detail
         return True, f"The alert is {found.get('title')} for {signal.get('account')}."
-    fallback = str(strategy.get("account") or "").strip()
-    if not fallback:
-        return False, "No account is assigned, so this alert was not sent."
-    named = str(signal.get("account") or "").strip()
-    if named != fallback:
-        return False, f"No running strategy is assigned to {named}. Assigned accounts: {fallback}."
-    return True, "The alert matches an assigned account."
+    named = str(signal.get("account") or strategy.get("account") or "").strip()
+    if not named:
+        return False, "The alert has no account, so the order was not sent."
+    return True, f"The order uses account {named}."
 
 
 def _named_strategy(running: list[dict], name) -> tuple[dict | None, str]:

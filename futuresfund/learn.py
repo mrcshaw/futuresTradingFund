@@ -6,6 +6,7 @@ import importlib.util
 import json
 import shutil
 import sys
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -20,12 +21,14 @@ NOTES = ROOT / "researchNotes"
 ENGINE_ROOT = ROOT.parent.parent / "tradingEngine"
 ENGINE_CHART = "5m"
 RESEARCH_CHARTS = ("5m", "2m", "15m")
-ATTEMPT_LIMIT = 200
+ATTEMPT_LIMIT = 120
 ACCOUNT_SIZE = 50000
 PROFIT_TARGET = 3000.0
 FROZEN = {
     "initial_capital",
     "point_value",
+    "pv",
+    "pointvalue",
     "tick_size",
     "commission_value",
     "slippage",
@@ -36,6 +39,7 @@ FROZEN = {
     "daily_loss_limit",
 }
 _FILTERS: dict = {}
+_notes_lock = threading.Lock()
 
 
 def candidates(base: dict, limit: int = ATTEMPT_LIMIT) -> list[dict]:
@@ -100,6 +104,89 @@ def research_slate(limit: int = 3) -> list[dict]:
     return slate
 
 
+def tested_instruments(notes: dict) -> set[str]:
+    """Instruments this strategy has already been run on. An older note was an ES test."""
+    recorded = notes.get("instruments") if isinstance(notes, dict) else None
+    if isinstance(recorded, dict) and recorded:
+        return {str(name).upper() for name, record in recorded.items() if _instrument_finished(record)}
+    if isinstance(notes, dict) and (notes.get("trials") or isinstance(notes.get("best"), dict) and notes.get("best")):
+        return {"ES"}
+    return set()
+
+
+def pending_for_chart(notes: dict, timeframe: str, instruments: list[str] | None = None) -> list[str]:
+    """Instruments that still need this one chart. A finished chart is not run again."""
+    roots = [str(name).upper() for name in (instruments if instruments is not None else research_instruments())]
+    return [root for root in roots if not _chart_finished(notes or {}, root, timeframe)]
+
+
+def pending_instruments(notes: dict, instruments: list[str] | None = None) -> list[str]:
+    """Instruments that still need a run. One that is already listed is not tested again."""
+    roots = [str(name).upper() for name in (instruments if instruments is not None else research_instruments())]
+    done = tested_instruments(notes or {})
+    return [root for root in roots if root not in done]
+
+
+def ready_to_file(notes: dict, instruments: list[str] | None = None) -> bool:
+    """A script moves to learned only after every chart instrument has a result."""
+    roots = [str(name).upper() for name in (instruments if instruments is not None else research_instruments())]
+    return bool(roots) and not pending_instruments(notes or {}, roots)
+
+
+def research_instruments() -> list[str]:
+    """ES, gold, and Nasdaq. Nasdaq stays in the workflow even before its chart files are added."""
+    from futuresfund.charts import chart_roots
+
+    present = chart_roots()
+    ordered = [name for name in ("ES", "QO", "NQ") if name in present or name == "NQ"]
+    ordered.extend(name for name in present if name not in ordered)
+    return ordered
+
+
+def _instrument_finished(record) -> bool:
+    """An instrument is finished when the 2-minute, 5-minute, and 15-minute charts have each been run."""
+    if not isinstance(record, dict):
+        return False
+    charts = record.get("charts")
+    if isinstance(charts, dict):
+        return all(_attempted(charts.get(name)) for name in RESEARCH_CHARTS)
+    return _attempted(record)
+
+
+def _chart_finished(notes: dict, root: str, timeframe: str) -> bool:
+    recorded = notes.get("instruments") if isinstance(notes, dict) else None
+    if isinstance(recorded, dict) and recorded:
+        record = recorded.get(root)
+        if not isinstance(record, dict):
+            return False
+        charts = record.get("charts")
+        if isinstance(charts, dict):
+            return _attempted(charts.get(timeframe))
+        return _attempted(record)
+    if root == "ES" and isinstance(notes, dict) and (notes.get("trials") or isinstance(notes.get("best"), dict) and notes.get("best")):
+        return _attempted({
+            "trials": notes.get("trials"),
+            "best": notes.get("best"),
+            "error": notes.get("error"),
+            "blocked": notes.get("blocked"),
+        })
+    return False
+
+
+def _attempted(record) -> bool:
+    if not isinstance(record, dict):
+        return False
+    if record.get("blocked") or record.get("error"):
+        return False
+    best = record.get("best")
+    if isinstance(best, dict) and (best.get("error") or best.get("fatal")):
+        return False
+    if record.get("trials") or record.get("attempts"):
+        return True
+    best = record.get("best")
+    return isinstance(best, dict) and bool(best)
+
+
 def queue(learning: Path | None = None, *, skip_volume: bool = False) -> list[Path]:
     """Pine scripts waiting to be studied. A python twin is studied with its pine, not as a second job."""
     folder = learning or LEARNING
@@ -147,40 +234,59 @@ def run_learning(board) -> None:
 
 def _run_learning(board) -> None:
     from futuresfund.session import learning_pause
-    from futuresfund.pineforge_engine import PineForgeUnavailable
+    from futuresfund.pineforge_engine import PineForgeUnavailable, warm_engines
+    from futuresfund.roster import CHART_DESKS
 
     LEARNED.mkdir(parents=True, exist_ok=True)
     NOTES.mkdir(parents=True, exist_ok=True)
-    board.set_activity("Quantitative Developer", "Loading the 2-minute, 5-minute, and 15-minute charts")
+    instruments = ", ".join(research_instruments())
+    try:
+        warm_engines()
+    except PineForgeUnavailable as exc:
+        board.post("2min chart developer", str(exc), kind="error", channel="2min chart developer")
+        board.cancel.set()
+        return
+    for desk in CHART_DESKS:
+        board.set_activity(desk["developer"], f"Engine {desk['engine']} is warm for the {desk['label']} chart")
+        board.post(
+            desk["developer"],
+            f"Engine {desk['engine']} stays running. This desk runs only the {desk['label']} chart. The bar file is written once and reused.",
+            kind="log",
+            channel=desk["developer"],
+        )
     frames = _load_frames()
     from futuresfund.charts import chart_columns, charts_have_volume
 
     volume_ready = charts_have_volume()
     if not volume_ready:
         listed = "; ".join(f"{name} is {', '.join(cols)}" for name, cols in chart_columns().items())
-        board.post(
-            "Quantitative Developer",
-            "The chart files have no volume column. "
-            f"{listed}. The EMA numbers sit next to the price, so they are a moving average, not contract volume. "
-            "A script that reads volume cannot enter on these bars, so those scripts stay in the learning folder. "
-            "The price alert can send volume, the profile, and delta. They stay here until that data is on the bars.",
-            kind="report",
-            channel="Quantitative Developer",
-        )
+        for desk in CHART_DESKS:
+            board.post(
+                desk["developer"],
+                "The chart files have no volume column. "
+                f"{listed}. The EMA numbers sit next to the price, so they are a moving average, not contract volume. "
+                "A script that reads volume cannot enter on these bars, so those scripts stay in the learning folder. "
+                "The price alert can send volume, the profile, and delta. They stay here until that data is on the bars.",
+                kind="report",
+                channel=desk["developer"],
+            )
     from futuresfund.strategy import absorb_research_notes
 
     absorb_research_notes()
     loaded = ", ".join(f"{name} {len(rows)} bars" for name, rows in frames.items())
-    board.post(
-        "Quantitative Researcher",
-        "The learning folder is only the starting point. Each script uses all 200 PineForge attempts, even after a version meets the profit target, so a better one can still be found. "
-        "PineForge, from pineforge-engine, runs the Pine script. The 5-minute chart is the engine chart, and every attempt also runs the 2-minute and 15-minute charts. "
+    intro = (
+        "The learning folder is only the starting point. Each chart uses 120 different results, even after a version meets the profit target, so a better one can still be found. "
+        "Four PineForge containers stay running. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 stays warm. "
+        "The next test sends new inputs into the container that is already running. Each bar file is written once and reused. "
+        f"Each script is tested once on every instrument ({instruments}) and on each of the three charts. It moves to the learned folder only after those charts are done. "
         f"Loaded {loaded}. "
-        "A change that lowers profit is reversed, and a change that raises it is continued. "
-        + _risk_line(),
-        kind="report",
-        channel="Quantitative Researcher",
+        "Every attempt changes one input and records how that change moved the result. The research guide is guidance, not a requirement. Consistency comes before a larger profit. "
+        "A change that is less consistent or less profitable is reversed, and a change that improves that is continued. "
+        "A run that repeats an earlier profit, drawdown, and trade count is not counted, and the search keeps going until 120 different results. "
+        + _risk_line()
     )
+    for desk in CHART_DESKS:
+        board.post(desk["researcher"], intro, kind="report", channel=desk["researcher"])
     import os
     from futuresfund.config import load_env
 
@@ -192,66 +298,111 @@ def _run_learning(board) -> None:
             kind="report",
             channel="Portfolio Manager",
         )
-    held_back: set[Path] = set()
-    while not board.cancel.is_set():
-        if not _wait(board, learning_pause):
-            return
-        jobs = [path for path in queue(skip_volume=not volume_ready) if path not in held_back]
-        if not jobs:
-            waiting = queue() if not volume_ready else []
-            board.post(
-                "Quantitative Researcher",
-                (
-                    f"{len(waiting)} scripts are still in the learning folder, and each one reads volume. "
-                    "They stay there until the price alert has recorded volume on the bars."
-                    if waiting
-                    else "The learning folder is empty. The notes in research notes stay available. The engine will pick up a script if one is added."
-                ),
-                kind="report",
-                channel="headquarters",
-            )
-            if not _sleep(board, learning_pause, 30):
-                return
-            continue
-        path = jobs[0]
-        from futuresfund.crew import get_crew
+    held_back: set[tuple[str, str]] = set()
+    claimed: set[tuple[str, str]] = set()
+    claim_lock = threading.Lock()
 
-        crew = get_crew(board)
-        crew.run("Quantitative Researcher", f"Studying {path.name}", lambda: None)
-        crew.run("Indicator Researcher", f"Reading the indicators in {path.name}", lambda: None)
-        crew.run("Quantitative Developer", f"Loading {path.name} into the shared engine", lambda: None)
-        try:
-            if _study(board, path, frames, learning_pause) == "blocked":
-                held_back.add(path)
-                board.post(
-                    "Quantitative Researcher",
-                    f"{path.name} needs volume on the chart bars. It stays in the learning folder, and the next script is next.",
-                    kind="report",
-                    channel="Quantitative Researcher",
-                )
-        except PineForgeUnavailable as exc:
-            board.post(
-                "Quantitative Developer",
-                str(exc),
-                kind="error",
-                channel="Quantitative Developer",
-            )
-            board.cancel.set()
-            return
-        except Exception as exc:
-            if board.cancel.is_set():
+    def take_job(timeframe: str) -> Path | None:
+        with claim_lock:
+            for path in queue(skip_volume=not volume_ready):
+                key = (str(path), timeframe)
+                if key in held_back or key in claimed:
+                    continue
+                if not pending_for_chart(_read_notes(path), timeframe):
+                    continue
+                claimed.add(key)
+                return path
+            return None
+
+    def release_job(path: Path, timeframe: str) -> None:
+        with claim_lock:
+            claimed.discard((str(path), timeframe))
+
+    def developer_loop(desk: dict) -> None:
+        developer = desk["developer"]
+        researcher = desk["researcher"]
+        timeframe = desk["timeframe"]
+        while not board.cancel.is_set():
+            if not _wait(board, learning_pause):
                 return
+            path = take_job(timeframe)
+            if path is None:
+                board.post(developer, f"Waiting for the next Pine script on the {desk['label']} chart.", kind="log", channel=developer)
+                if not _sleep(board, learning_pause, 20):
+                    return
+                continue
+            board.post(developer, f"Taking {path.name} on the {desk['label']} chart.", kind="log", channel=developer)
             board.post(
-                "Quantitative Developer",
-                f"{path.name} stopped on an engine error: {exc}. The notes record the error and the script is filed so the next one can start.",
-                kind="error",
-                channel="Quantitative Developer",
+                researcher,
+                f"{developer} is studying {path.name} on the {desk['label']} chart.",
+                kind="log",
+                channel=researcher,
             )
-            traceback.print_exc()
-            _save_notes(path, {"title": path.stem}, [], f"The engine stopped: {exc}", "No indicator pass was completed.", {})
-            twin = companion(path) if path.suffix == ".pine" else None
-            if path.is_file():
-                _file_away(path, twin)
+            try:
+                studied = _study(board, path, frames, learning_pause, developer, timeframe, researcher)
+                error = None
+            except PineForgeUnavailable as exc:
+                studied, error = "unavailable", exc
+            except Exception as exc:
+                studied, error = "error", exc
+            finally:
+                release_job(path, timeframe)
+            if studied == "unavailable":
+                board.post(developer, str(error), kind="error", channel=developer)
+                board.cancel.set()
+                return
+            if studied == "error":
+                if board.cancel.is_set():
+                    return
+                traceback.print_exc()
+                board.post(
+                    developer,
+                    f"{path.name} stopped on an engine error: {error}. It was not marked finished.",
+                    kind="error",
+                    channel=developer,
+                )
+                board.post(
+                    researcher,
+                    f"{path.name} stopped on an engine error on the {desk['label']} chart: {error}. It stays in the learning folder.",
+                    kind="report",
+                    channel=researcher,
+                )
+                continue
+            if studied == "failed":
+                with claim_lock:
+                    held_back.add((str(path), timeframe))
+                board.post(
+                    developer,
+                    f"{path.name} did not finish a backtest on the {desk['label']} chart. Taking the next script.",
+                    kind="log",
+                    channel=developer,
+                )
+            elif studied == "blocked":
+                with claim_lock:
+                    held_back.add((str(path), timeframe))
+                board.post(
+                    researcher,
+                    f"{path.name} needs volume on the {desk['label']} chart bars. It stays in the learning folder.",
+                    kind="report",
+                    channel=researcher,
+                )
+                board.post(
+                    developer,
+                    f"{path.name} needs volume on the chart bars. Taking the next script.",
+                    kind="log",
+                    channel=developer,
+                )
+            elif studied == "waiting" and not _sleep(board, learning_pause, 60):
+                return
+
+    workers = [
+        threading.Thread(target=developer_loop, args=(desk,), daemon=True, name=desk["developer"])
+        for desk in CHART_DESKS
+    ]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join()
 
 
 def study_parameters(base: dict, execute, account_size: float = ACCOUNT_SIZE, limit: int = ATTEMPT_LIMIT) -> list[dict]:
@@ -260,7 +411,7 @@ def study_parameters(base: dict, execute, account_size: float = ACCOUNT_SIZE, li
 
 
 def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, extras: bool = True, extra_seen: set | None = None) -> dict | None:
-    """Pick the next settings from the last profit change. A harmful step is reversed."""
+    """Change one input. Continue it when the result got steadier, and reverse it when it did not."""
     if len(trials) >= limit:
         return None
     seen = {_key(row.get("params") or {}) for row in trials}
@@ -272,53 +423,43 @@ def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, e
 
     last = trials[-1]
     previous = trials[-2] if len(trials) > 1 else None
-    best = max(trials, key=lambda row: (_profit(row), -float(row.get("max_drawdown") or 10**12)))
-    anchor = dict(best.get("params") or base)
-
+    current = dict(last.get("params") or base)
+    focus = None
+    direction = 1
+    anchor = current
+    old = None
+    new = None
     if previous is not None:
-        changed = _changed_keys(previous.get("params") or {}, last.get("params") or {})
+        changed = _changed_keys(previous.get("params") or {}, current)
         if len(changed) == 1:
-            name = changed[0]
-            old = previous["params"].get(name)
-            new = last["params"].get(name)
-            delta = _profit(last) - _profit(previous)
-            if delta < 0:
-                flipped = _reverse_step(name, old, new)
-                plan = dict(previous.get("params") or {})
-                if flipped is not None:
-                    plan[name] = flipped
-                    if _key(plan) not in seen:
-                        return plan
-            elif delta > 0:
-                nxt = _continue_step(name, old, new)
-                plan = dict(last.get("params") or {})
-                if nxt is not None:
-                    plan[name] = nxt
-                    if _key(plan) not in seen:
-                        return plan
-
-    for name, value in anchor.items():
-        if name in FROZEN or name in {"added_indicator", "added_length"}:
+            focus = changed[0]
+            old = (previous.get("params") or {}).get(focus)
+            new = current.get(focus)
+            if _rank(last) < _rank(previous):
+                direction = -1
+                anchor = dict(previous.get("params") or base)
+    plan = _step_one(anchor, focus, old, new, direction, seen)
+    if plan:
+        return plan
+    for name in _input_order(current):
+        if name == focus:
             continue
-        for nxt in _probe_steps(name, value):
-            plan = dict(anchor)
-            plan[name] = nxt
-            if _key(plan) not in seen:
-                return plan
-    if extras:
-        for extra in _creative(anchor):
-            plan = dict(anchor)
-            plan.update(extra)
-            if _key(plan) not in seen:
-                return plan
-    return _widen(base, anchor, seen, len(trials), extras=extras)
+        plan = _step_one(current, name, None, None, 1, seen)
+        if plan:
+            return plan
+    widened = _widen(base, current, seen, len(trials), extras=extras)
+    if widened is not None:
+        return widened
+    return _force_new(current, seen)
 
 
-def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True):
+def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "2 min researcher"):
     origin = {key: value for key, value in base.items() if key not in FROZEN and _tunable_value(value)}
     trials = []
     seen = set()
+    seen_results = set()
     blocked = set()
+    repeats = 0
     bounds = _input_bounds(facts)
     while len(trials) < limit:
         if board is not None and board.cancel.is_set():
@@ -335,7 +476,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             from futuresfund.crew import get_crew
 
             raw = get_crew(board).run(
-                "Quantitative Researcher",
+                researcher,
                 f"Choosing settings for attempt {attempt} on {label}",
                 choose,
             )
@@ -347,11 +488,38 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
         mark = _key(plan)
         if mark in seen:
             blocked.add(_key(raw))
-            if len(blocked) > 400:
-                break
+            blocked.add(mark)
             continue
         seen.add(mark)
+        if board is not None and path is not None:
+            change = _change_text(trials[-1]["params"] if trials else None, plan)
+            board.post(
+                researcher,
+                f"Attempt {attempt} on {label}. {change}.",
+                kind="log",
+                channel=researcher,
+            )
+            board.post(
+                developer,
+                f"Attempt {attempt} on {label}. {change}.",
+                kind="log",
+                channel=developer,
+            )
         measured = execute(plan) or {}
+        signature = _result_key(measured)
+        if signature in seen_results and not measured.get("error") and not measured.get("fatal"):
+            repeats += 1
+            blocked.add(mark)
+            if board is not None and path is not None:
+                board.post(
+                    researcher,
+                    f"{label} repeated an earlier result, so this run is not counted. The same variable will be moved further.",
+                    kind="log",
+                    channel=researcher,
+                )
+            continue
+        repeats = 0
+        seen_results.add(signature)
         row = {
             "params": plan,
             "net_profit": measured.get("net_profit"),
@@ -371,6 +539,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
         }
         row["passed"] = _passed(row, account_size)
         row["change"] = _change_text(trials[-1]["params"] if trials else None, plan)
+        row["impact"] = _impact(trials[-1] if trials else None, row)
         if row.get("take_profit") is None:
             row["take_profit"] = measured.get("take_profit", plan.get("tp_dollars"))
         if measured.get("note"):
@@ -379,7 +548,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
         if row.get("stopped"):
             break
         if board is not None and path is not None:
-            _document(board, facts or {}, path, row, len(trials))
+            _document(board, facts or {}, path, row, len(trials), developer, researcher)
         if row.get("blocked") or row.get("fatal"):
             break
     return trials
@@ -456,6 +625,32 @@ def _money(value) -> str:
     return f"{sign}${abs(number):,.2f}"
 
 
+def research_guidelines() -> str:
+    """Guidance for the next change. These are not requirements."""
+    return (
+        "Research guide. These are guidelines, not requirements. "
+        "Use them to choose one educated change. Consistency comes before a larger profit. "
+        "Each run changes one variable. Measure how that one change moved profit, drawdown, and trade count "
+        "on the 2-minute, 5-minute, and 15-minute charts.\n"
+        "What we want\n"
+        "- A smaller worst loss, even when the profit is smaller.\n"
+        "- A result that still holds on later bars that were not used to pick the settings.\n"
+        "- Entry, exit, and the moment the book goes flat, stated before the test.\n"
+        "- More than one condition agreeing before an entry. A single trigger is a weaker rule.\n"
+        "- A forward check. A high backtest win rate can shrink once the same rule runs on new bars.\n"
+        "- Movement in the settings that decide whether a trade is allowed: trend length, confirmation, session, cooldown, and how far price must travel.\n"
+        "- One purposeful change, large enough that the trade list can change. Continue a direction that made the book steadier. Reverse a direction that made it jumpier.\n"
+        "What we do not want\n"
+        "- A change that looks good only on the bars used to choose it.\n"
+        "- A search of nearby values until one pair looks best.\n"
+        "- A higher return from staying in the whole move while the drawdown is worse than holding.\n"
+        "What to change\n"
+        "- Move the settings that decide when a trade is allowed: trend length, confirmation, session, cooldown, and how far price must travel before entry or exit.\n"
+        "- Make one purposeful change, large enough that the trade list can actually change. A nudge that leaves profit, drawdown, and trade count the same is not an attempt.\n"
+        "- If the last change made the book steadier, continue that same variable in that direction. If it made the book jumpier or the profit less repeatable, undo that direction.\n"
+    )
+
+
 def notes_digest(limit: int = 20) -> str:
     path = NOTES / "LESSONS.md"
     if not path.is_file():
@@ -464,9 +659,25 @@ def notes_digest(limit: int = 20) -> str:
     return "\n".join(lines[-limit:])
 
 
-def _study(board, path: Path, frames: dict, pause) -> None:
+def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "2 min researcher") -> None:
     if path.suffix.lower() != ".pine":
         return
+    from futuresfund.roster import chart_desk
+
+    notes = _read_notes(path)
+    pending = pending_for_chart(notes, timeframe)
+    if not pending:
+        if ready_to_file(notes):
+            _file_ready(board, path, notes)
+        return
+    root = pending[0]
+    label = chart_desk(timeframe)["label"]
+    board.post(
+        researcher,
+        f"Testing {path.name} on the {label} {root} chart. It stays in the learning folder until the other charts and instruments are finished.",
+        kind="report",
+        channel=researcher,
+    )
     text = path.read_text(encoding="utf-8", errors="replace")
     facts = pine_facts(text) if text else {"title": path.stem, "inputs": [], "named": {}}
     from futuresfund.pine_compat import prepare_for_pineforge
@@ -474,38 +685,95 @@ def _study(board, path: Path, frames: dict, pause) -> None:
     _, fixes = prepare_for_pineforge(text)
     if fixes:
         board.post(
-            "Quantitative Developer",
+            developer,
             f"{path.name}: {' '.join(fixes)} The script posted on headquarters stays version 5.",
             kind="report",
-            channel="Quantitative Developer",
+            channel=developer,
         )
-    execute = _pineforge_execute(text, frames, facts, board)
-    trials = _search(_pine_params(facts), execute, ACCOUNT_SIZE, ATTEMPT_LIMIT, board, path, pause, facts, extras=False)
+    frames = _load_frames(root)
+    bars = frames.get(timeframe) or []
+    if len(bars) < 80:
+        board.post(
+            developer,
+            f"{root} is in the research workflow. chartData/{root.lower()} has no {label} file yet. "
+            f"{path.name} stays in the learning folder until that chart is there.",
+            kind="report",
+            channel=developer,
+        )
+        return "waiting"
+    execute = _pineforge_execute(text, frames, facts, board, root, developer, timeframe)
+    trials = _search(
+        _with_contract_point(_pine_params(facts), root),
+        execute,
+        ACCOUNT_SIZE,
+        ATTEMPT_LIMIT,
+        board,
+        path,
+        pause,
+        facts,
+        extras=False,
+        developer=developer,
+        researcher=researcher,
+    )
     if board.cancel.is_set() or (trials and trials[-1].get("stopped")):
         return
+    if trials and (trials[-1].get("fatal") or trials[-1].get("error")):
+        board.post(
+            researcher,
+            f"{path.name} was not marked tested on the {label} {root} chart. The engine did not finish a backtest, so that chart will be tried again.",
+            kind="report",
+            channel=researcher,
+        )
+        return "failed"
     if trials and trials[-1].get("blocked"):
         board.post(
-            "Quantitative Developer",
+            developer,
             f"{path.name} was not filed. {trials[-1].get('note')}",
             kind="report",
-            channel="Quantitative Developer",
+            channel=developer,
         )
         return "blocked"
     quant, indicator = adjustment_notes(trials)
     best = max(trials, key=_rank) if trials else {}
-    _save_notes(path, facts, trials, quant, indicator, best)
+    if isinstance(best, dict):
+        best = dict(best)
+        best["contract"] = f"{root}1!"
+        best["timeframe"] = timeframe
+    _save_notes(path, facts, trials, quant, indicator, best, root, timeframe)
     _library_notice(board, facts, path, best)
+    from futuresfund.contracts import POINT_VALUE
+
+    facts = dict(facts)
+    facts["point_value"] = float(POINT_VALUE.get(root, facts.get("point_value") or 50))
     report = ceo_report(facts, {"measured": best, "passed": best.get("passed"), "params": best.get("params")}, quant, indicator, len(trials))
-    _send(board, facts.get("title") or path.stem, report)
-    _file_away(path, None)
+    report = _library_line(facts, path, best, root) + "\n\n" + report
+    _send(board, f"{facts.get('title') or path.stem} on {root} {label}", report)
+    notes = _read_notes(path)
+    if ready_to_file(notes):
+        _file_ready(board, path, notes)
+    else:
+        board.post(
+            researcher,
+            f"{path.name} finished the {label} {root} chart. It stays in the learning folder until the other charts are tested too.",
+            kind="report",
+            channel="headquarters",
+        )
+    board.set_status(researcher, "done")
+    board.set_status(developer, "done")
+
+
+def _file_ready(board, path: Path, notes: dict) -> None:
+    with _notes_lock:
+        if not path.is_file():
+            return
+        names = ", ".join(sorted(tested_instruments(notes)))
+        _file_away(path, None)
     board.post(
-        "Quantitative Researcher",
-        f"Filed {path.name} after {len(trials)} PineForge attempts. Notes remain for the next strategy.",
+        "2 min researcher",
+        f"Filed {path.name} after it was tested on {names}. It is not tested on those instruments again.",
         kind="report",
         channel="headquarters",
     )
-    board.set_status("Quantitative Researcher", "done")
-    board.set_status("Indicator Researcher", "done")
 
 
 def _pine_params(facts: dict) -> dict:
@@ -514,6 +782,22 @@ def _pine_params(facts: dict) -> dict:
         if _tunable_value(item.get("default")):
             params[item["name"]] = item["default"]
     return params
+
+
+def _with_contract_point(params: dict, instrument: str) -> dict:
+    """Dollar inputs use this contract's point value. NQ is $20, not the $50 written for ES."""
+    from futuresfund.contracts import POINT_VALUE, root_of
+
+    try:
+        root = root_of(instrument if "!" in str(instrument) else f"{instrument}1!")
+    except ValueError:
+        root = str(instrument or "ES").upper()
+    point = float(POINT_VALUE.get(root, 50))
+    updated = params if isinstance(params, dict) else {}
+    for key in list(updated):
+        if key in {"pv", "point_value", "pointvalue"}:
+            updated[key] = point
+    return updated
 
 
 def _input_overrides(facts: dict, params: dict) -> dict:
@@ -526,69 +810,67 @@ def _input_overrides(facts: dict, params: dict) -> dict:
     return overrides
 
 
-def _pineforge_execute(text: str, frames: dict, facts: dict, board):
+def _pineforge_execute(text: str, frames: dict, facts: dict, board, instrument: str = "ES", developer: str = "2min chart developer", timeframe: str = "2m"):
     from futuresfund.pineforge_engine import run_script
+    from futuresfund.roster import chart_desk
+
+    label = chart_desk(timeframe)["label"]
 
     def execute(params: dict) -> dict:
-        rows = []
+        params = _with_contract_point(params, instrument)
         overrides = _input_overrides(facts, params)
         cancel = None if board is None else board.cancel
-        for name in RESEARCH_CHARTS:
-            if cancel is not None and cancel.is_set():
-                return {"stopped": True, "runner": "pineforge", "engine": "pineforge", "net_profit": None, "max_drawdown": None, "trades": 0}
-            bars = frames.get(name) or []
-            if len(bars) < 80:
-                rows.append({
-                    "timeframe": name,
-                    "error": f"The {name} chart is not loaded.",
-                    "net_profit": None,
-                    "max_drawdown": None,
-                    "trades": 0,
-                    "passed": False,
-                    "runner": "pineforge",
-                    "engine": "pineforge",
-                })
-                continue
-            if board is not None:
-                from futuresfund.crew import get_crew
+        title = facts.get("title") or "the script"
+        shelf = "GC1!" if instrument in {"QO", "GC", "MGC"} else f"{instrument}1!"
+        if cancel is not None and cancel.is_set():
+            return {"stopped": True, "runner": "pineforge", "engine": "pineforge", "timeframe": timeframe, "net_profit": None, "max_drawdown": None, "trades": 0}
+        if board is not None:
+            from futuresfund.crew import get_crew
 
-                names = {"5m": "5-minute", "2m": "2-minute", "15m": "15-minute"}
-                title = facts.get("title") or "the script"
-                chart = names.get(name, name)
-
-                def run_engine(bars=bars, chart_name=name, chart_label=chart):
-                    return run_script(text, bars, chart_name, overrides, cancel)
-
-                measured = get_crew(board).run(
-                    "Quantitative Developer",
-                    f"Starting the engine on the {chart} chart for {title}",
-                    run_engine,
-                ) or {}
-            else:
-                measured = run_script(text, bars, name, overrides, cancel)
-            measured["timeframe"] = name
-            measured["passed"] = _passed(measured, ACCOUNT_SIZE)
-            measured["take_profit"] = params.get("tp_dollars") or facts.get("target")
-            if measured.get("stopped") or measured.get("fatal"):
-                return measured
-            rows.append(measured)
-        usable = [row for row in rows if row.get("net_profit") is not None]
-        if not usable:
-            return {"error": "The 2-minute, 5-minute, and 15-minute charts could not be loaded.", "fatal": True, "runner": "pineforge", "engine": "pineforge", "net_profit": None, "max_drawdown": None, "trades": 0}
-        best = dict(_best_frame(usable))
-        best["frames"] = [
-            {
-                "timeframe": row.get("timeframe"),
-                "net_profit": row.get("net_profit"),
-                "max_drawdown": row.get("max_drawdown"),
-                "trades": row.get("trades"),
-                "passed": bool(row.get("passed")),
+            get_crew(board).run(
+                developer,
+                f"Running {title} on the {label} {instrument} chart",
+                lambda: None,
+            )
+        bars = frames.get(timeframe) or []
+        if len(bars) < 80:
+            return {
+                "timeframe": timeframe,
+                "error": f"The {label} chart is not loaded.",
+                "fatal": True,
+                "net_profit": None,
+                "max_drawdown": None,
+                "trades": 0,
+                "passed": False,
+                "runner": "pineforge",
+                "engine": "pineforge",
+                "instrument": instrument,
+                "contract": shelf,
             }
-            for row in rows
-        ]
-        best["engine"] = "pineforge"
-        best["runner"] = "pineforge"
-        return best
+        measured = run_script(text, bars, timeframe, overrides, cancel, instrument, title) or {}
+        measured["timeframe"] = timeframe
+        measured["instrument"] = instrument
+        measured["contract"] = shelf
+        measured["passed"] = _passed(measured, ACCOUNT_SIZE)
+        measured["take_profit"] = params.get("tp_dollars") or facts.get("target")
+        measured["frames"] = [{
+            "timeframe": timeframe,
+            "net_profit": measured.get("net_profit"),
+            "max_drawdown": measured.get("max_drawdown"),
+            "trades": measured.get("trades"),
+            "passed": bool(measured.get("passed")),
+        }]
+        if board is not None:
+            detail = measured.get("error") or (
+                f"profit {measured.get('net_profit')}, drawdown {measured.get('max_drawdown')}, trades {measured.get('trades')}"
+            )
+            board.post(
+                developer,
+                f"{title} finished the {label} {instrument} chart. {detail}.",
+                kind="log",
+                channel=developer,
+            )
+        return measured
 
     return execute
 
@@ -605,10 +887,44 @@ def _chart_blurb(frames) -> str:
     return " Charts: " + "; ".join(parts) + "."
 
 
-def _load_frames() -> dict[str, list]:
+def _load_frames(root: str = "ES") -> dict[str, list]:
+    """Chart export plus any later live candles. Research must not stop where the file stopped."""
     from futuresfund.charts import load_chart
+    from futuresfund.chart_feed import live_bars
 
-    return {name: load_chart(name) for name in RESEARCH_CHARTS}
+    incoming = live_bars(root)
+    return {name: _with_latest(load_chart(name, root), incoming, name) for name in RESEARCH_CHARTS}
+
+
+def _with_latest(bars: list, incoming: list, timeframe: str) -> list:
+    if not incoming:
+        return bars
+    from futuresfund.chart_feed import fold_bars
+    from futuresfund.pineforge_engine import _epoch_ms
+
+    have = {_epoch_ms(bar.get("t")) for bar in bars}
+    have.discard(None)
+    minutes = [row for row in incoming if row.get("timeframe") == "1m"]
+    folded = fold_bars(minutes, timeframe) if minutes else []
+    fresh = []
+    for bar in folded:
+        if bar.get("forming"):
+            continue
+        stamp = _epoch_ms(bar.get("t")) or 0
+        if not stamp or stamp in have:
+            continue
+        have.add(stamp)
+        fresh.append({
+            "t": bar.get("t"),
+            "o": bar.get("o"),
+            "h": bar.get("h"),
+            "l": bar.get("l"),
+            "c": bar.get("c"),
+            "v": bar.get("v") or 0,
+        })
+    merged = list(bars) + fresh
+    merged.sort(key=lambda bar: _epoch_ms(bar.get("t")) or 0)
+    return merged
 
 
 def _across_charts(path: Path | None, frames: dict, facts: dict):
@@ -861,8 +1177,7 @@ def _change_text(before: dict | None, after: dict) -> str:
     keys = _changed_keys(before, after)
     if not keys:
         return "Same settings"
-    shown = keys[:3]
-    return ", ".join(f"{key} {before.get(key)} to {after.get(key)}" for key in shown)
+    return ", ".join(f"{key} {before.get(key)} to {after.get(key)}" for key in keys)
 
 
 def _load_class(path: Path):
@@ -913,7 +1228,7 @@ def _frame(bars: list):
     return DataLoader._normalize(frame)
 
 
-def _document(board, facts: dict, path: Path, row: dict, number: int) -> None:
+def _document(board, facts: dict, path: Path, row: dict, number: int, developer: str = "2min chart developer", researcher: str = "2 min researcher") -> None:
     from futuresfund.lab import record_trial
 
     title = f"{facts.get('title') or path.stem} attempt {number}"
@@ -941,26 +1256,86 @@ def _document(board, facts: dict, path: Path, row: dict, number: int) -> None:
 
         crew = get_crew(board)
         crew.run(
-            "Quantitative Researcher",
+            researcher,
             f"Recording attempt {number} of {ATTEMPT_LIMIT} on {path.name}",
             lambda: None,
         )
-        crew.run(
-            "Indicator Researcher",
-            f"Reviewing attempt {number} of {ATTEMPT_LIMIT} on {path.name}: profit {row.get('net_profit')}, trades {row.get('trades')}",
-            lambda: None,
+        board.post(
+            researcher,
+            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {row.get('impact') or row.get('change')}. "
+            f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.",
+            kind="report",
+            channel=researcher,
+        )
+        board.post(
+            "Risk Manager",
+            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {_attempt_note(row)} "
+            f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.",
+            kind="report",
+            channel="Risk Manager",
+        )
+        board.post(
+            "Trading Analyst",
+            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {row.get('impact') or row.get('change')}.",
+            kind="log",
+            channel="Trading Analyst",
         )
     from futuresfund.strategy import remember_research
 
     remember_research(row, path.name, facts.get("title") or path.stem)
     board.post(
-        "Quantitative Developer",
+        developer,
         f"Attempt {number} of {ATTEMPT_LIMIT} on the {label} chart: {path.name}. {change}. "
         f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.{target} "
         f"{_attempt_note(row)}{note}{charts}",
         kind="report",
-        channel="Quantitative Developer",
+        channel=developer,
     )
+    _offer_library(board, facts, path, row)
+
+
+def _offer_library(board, facts: dict, path: Path, row: dict) -> None:
+    """The trading analyst files a profitable instrument result. A repeat of a worse result is skipped."""
+    if str(row.get("engine") or row.get("runner") or "") != "pineforge":
+        return
+    try:
+        profit = float(row.get("net_profit"))
+    except (TypeError, ValueError):
+        return
+    if profit <= 0 or int(row.get("trades") or 0) < 1:
+        return
+    instrument = str(row.get("instrument") or "ES").upper()
+    shelf = "GC1!" if instrument in {"QO", "GC", "MGC"} else f"{instrument}1!"
+    notes = _read_notes(path)
+    instruments = notes.get("instruments") if isinstance(notes.get("instruments"), dict) else {}
+    prior = instruments.get(instrument) if isinstance(instruments.get(instrument), dict) else {}
+    prior_best = prior.get("best") if isinstance(prior.get("best"), dict) else {}
+    try:
+        previous = float(prior_best.get("net_profit") or 0)
+    except (TypeError, ValueError):
+        previous = 0
+    if profit <= previous:
+        return
+    marked = dict(row)
+    marked["contract"] = shelf
+    record = dict(prior)
+    record["best"] = marked
+    record["attempts"] = max(int(record.get("attempts") or 0), 1)
+    instruments[instrument] = record
+    _write_instrument(path, facts, instruments, marked)
+    _library_notice(board, facts, path, marked)
+
+
+def _write_instrument(path: Path, facts: dict, instruments: dict, best: dict) -> None:
+    NOTES.mkdir(parents=True, exist_ok=True)
+    existing = _read_notes(path)
+    payload = dict(existing)
+    payload["file"] = path.name
+    payload["title"] = facts.get("title") or existing.get("title") or path.stem
+    payload["instruments"] = instruments
+    payload["best"] = best
+    slug = path.stem.replace(" ", "_")
+    (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
 
 def _library_notice(board, facts: dict, path: Path, best: dict) -> None:
@@ -989,23 +1364,99 @@ def _library_notice(board, facts: dict, path: Path, best: dict) -> None:
         f"{best.get('timeframe')} profit {profit}, drawdown {best.get('max_drawdown')}, trades {trades}."
     )
     if board is not None:
-        board.post("Quantitative Researcher", note, kind="report", channel="Quantitative Researcher")
+        from futuresfund.roster import chart_desk
+
+        researcher = chart_desk(str((best or {}).get("timeframe") or "2m"))["researcher"]
+        board.post(researcher, note, kind="report", channel=researcher)
         board.post("Trading Analyst", note, kind="report", channel="Trading Analyst")
 
 
-def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: str, best: dict) -> None:
+def _read_notes(path: Path) -> dict:
+    slug = path.stem.replace(" ", "_")
+    file = NOTES / f"{slug}.json"
+    if not file.is_file():
+        return {}
+    try:
+        data = json.loads(file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _record_failure(path: Path, message: str) -> None:
+    notes = _read_notes(path)
+    pending = pending_instruments(notes)
+    root = pending[0] if pending else "ES"
+    _save_notes(
+        path,
+        {"title": path.stem},
+        [],
+        f"The engine stopped: {message}",
+        "No indicator pass was completed.",
+        {"error": message, "net_profit": None, "max_drawdown": None, "trades": 0, "contract": f"{root}1!"},
+        root,
+    )
+
+
+def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: str, best: dict, instrument: str = "ES", timeframe: str = "") -> None:
     NOTES.mkdir(parents=True, exist_ok=True)
     slug = path.stem.replace(" ", "_")
-    payload = {
-        "file": path.name,
-        "title": facts.get("title") or path.stem,
-        "attempts": len(trials),
-        "best": best,
-        "quantitative_researcher": quant,
-        "indicator_researcher": indicator,
-        "trials": trials,
-    }
-    (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    with _notes_lock:
+        existing = _read_notes(path)
+        instruments = existing.get("instruments") if isinstance(existing.get("instruments"), dict) else {}
+        if not instruments and (existing.get("trials") or isinstance(existing.get("best"), dict) and existing.get("best")):
+            instruments["ES"] = {
+                "attempts": existing.get("attempts") or len(existing.get("trials") or []),
+                "best": existing.get("best") or {},
+                "quantitative_researcher": existing.get("quantitative_researcher") or "",
+                "indicator_researcher": existing.get("indicator_researcher") or "",
+                "trials": existing.get("trials") or [],
+            }
+        root = str(instrument or "ES").upper()
+        chart = {
+            "attempts": len(trials),
+            "best": best,
+            "quantitative_researcher": quant,
+            "indicator_researcher": indicator,
+            "trials": trials,
+            "error": (best or {}).get("error") or "",
+            "blocked": bool((best or {}).get("blocked")),
+        }
+        prior = instruments.get(root) if isinstance(instruments.get(root), dict) else {}
+        charts = dict(prior.get("charts") or {}) if isinstance(prior.get("charts"), dict) else {}
+        if timeframe:
+            charts[timeframe] = chart
+            chosen_chart = best if isinstance(best, dict) else {}
+            for item in charts.values():
+                candidate = item.get("best") if isinstance(item, dict) else None
+                if isinstance(candidate, dict) and candidate and _rank(candidate) > _rank(chosen_chart or {}):
+                    chosen_chart = candidate
+            instruments[root] = {
+                "attempts": sum(int(item.get("attempts") or 0) for item in charts.values() if isinstance(item, dict)),
+                "best": chosen_chart,
+                "charts": charts,
+                "quantitative_researcher": quant,
+                "indicator_researcher": indicator,
+                "trials": trials,
+            }
+        else:
+            instruments[root] = chart
+        chosen = best if isinstance(best, dict) else {}
+        for record in instruments.values():
+            candidate = record.get("best") if isinstance(record, dict) else None
+            if isinstance(candidate, dict) and candidate and _rank(candidate) > _rank(chosen or {}):
+                chosen = candidate
+        payload = {
+            "file": path.name,
+            "title": facts.get("title") or existing.get("title") or path.stem,
+            "attempts": sum(int(record.get("attempts") or 0) for record in instruments.values() if isinstance(record, dict)),
+            "best": chosen,
+            "quantitative_researcher": quant,
+            "indicator_researcher": indicator,
+            "trials": trials,
+            "instruments": instruments,
+        }
+        (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
     lesson = (
         f"{payload['title']}: attempts {len(trials)}, "
         f"best profit {best.get('net_profit')}, drawdown {best.get('max_drawdown')}, "
@@ -1013,6 +1464,28 @@ def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: st
     )
     with (NOTES / "LESSONS.md").open("a", encoding="utf-8") as handle:
         handle.write(lesson + "\n")
+
+
+def _library_line(facts: dict, path: Path, best: dict, root: str) -> str:
+    """Tell the portfolio manager which library shelf received this result."""
+    from futuresfund.library import contract_of
+
+    symbol, label = contract_of(facts.get("title") or path.stem, path.name, best.get("contract") or f"{root}1!")
+    try:
+        profit = float(best.get("net_profit"))
+        trades = int(best.get("trades") or 0)
+    except (TypeError, ValueError):
+        profit, trades = None, 0
+    engine = str(best.get("engine") or best.get("runner") or "")
+    if engine == "pineforge" and profit is not None and profit > 0 and trades >= 1:
+        return (
+            f"Filed in the {label} strategy library ({symbol}). "
+            f"{best.get('timeframe')} profit {profit}, drawdown {best.get('max_drawdown')}, trades {trades}."
+        )
+    return (
+        f"Not added to the {label} strategy library ({symbol}). "
+        f"Profit {best.get('net_profit')}, trades {best.get('trades')}."
+    )
 
 
 def _send(board, title: str, report: str) -> None:
@@ -1091,14 +1564,54 @@ def _passed(row: dict, account_size: float) -> bool:
     return float(row["net_profit"]) >= target and int(row.get("trades") or 0) >= 1
 
 
+def _consistency(row: dict) -> tuple[int, float]:
+    """How many charts are profitable, and the profit left after drawdown on those charts."""
+    frames = [frame for frame in row.get("frames") or [] if isinstance(frame, dict)]
+    if not frames:
+        profit = float(row.get("net_profit") or 0)
+        drawdown = float(row.get("max_drawdown") or 0)
+        green = 1 if profit > 0 and profit > drawdown else 0
+        return green, profit - drawdown
+    green = 0
+    score = 0.0
+    for frame in frames:
+        profit = float(frame.get("net_profit") or 0)
+        drawdown = float(frame.get("max_drawdown") or 0)
+        if profit > 0 and profit > drawdown:
+            green += 1
+        score += profit - drawdown
+    return green, score
+
+
 def _rank(row: dict):
+    """Prefer a result that is profitable on more charts, then the one with more profit left after drawdown."""
+    green, score = _consistency(row)
     profit = float(row.get("net_profit") or -10**12)
     drawdown = float(row.get("max_drawdown") or 10**12)
     if row.get("passed"):
-        return (2, profit, -drawdown)
+        return (3, green, score, profit, -drawdown)
     if profit > 0:
-        return (1, profit - drawdown, -drawdown)
-    return (0, profit, -drawdown)
+        return (2, green, score, profit - drawdown, -drawdown)
+    return (1, green, score, profit, -drawdown)
+
+
+def _result_key(measured: dict) -> tuple:
+    frames = tuple(
+        (
+            frame.get("timeframe"),
+            frame.get("net_profit"),
+            frame.get("max_drawdown"),
+            frame.get("trades"),
+        )
+        for frame in measured.get("frames") or []
+        if isinstance(frame, dict)
+    )
+    return (
+        measured.get("net_profit"),
+        measured.get("max_drawdown"),
+        measured.get("trades"),
+        frames,
+    )
 
 
 def _better(row: dict, origin: dict) -> bool:
@@ -1201,6 +1714,72 @@ def _changed_keys(before: dict, after: dict) -> list[str]:
     return sorted(name for name in names if before.get(name) != after.get(name))
 
 
+def _input_order(params: dict) -> list[str]:
+    """Settings that decide whether a trade is allowed come first. One of them is changed at a time."""
+    words = ("session", "cooldown", "length", "len", "stop", "tp", "zone", "shift", "lookback", "confirm", "slope", "ema")
+
+    def rank(name: str) -> tuple:
+        lowered = name.lower()
+        return (0 if any(word in lowered for word in words) else 1, lowered)
+
+    return sorted(
+        (
+            key for key, value in params.items()
+            if key not in FROZEN and key not in {"added_indicator", "added_length"} and _tunable_value(value)
+        ),
+        key=rank,
+    )
+
+
+def _step_one(anchor: dict, name: str | None, old, new, direction: int, seen: set[str]) -> dict | None:
+    """Return a plan that differs in exactly one input."""
+    if not name or name not in anchor:
+        names = _input_order(anchor)
+        name = names[0] if names else None
+    if not name:
+        return None
+    current = anchor.get(name)
+    candidates = []
+    if direction > 0 and old is not None and new is not None:
+        nxt = _continue_step(name, old, new)
+        if nxt is not None:
+            candidates.append(nxt)
+    if direction < 0 and old is not None and new is not None:
+        nxt = _reverse_step(name, old, new)
+        if nxt is not None:
+            candidates.append(nxt)
+    candidates.extend(_probe_steps(name, current))
+    for nxt in candidates:
+        plan = dict(anchor)
+        plan[name] = nxt
+        if plan[name] == current:
+            continue
+        if _key(plan) not in seen and len(_changed_keys(anchor, plan)) == 1:
+            return plan
+    return None
+
+
+def _impact(previous: dict | None, row: dict) -> str:
+    """What the one changed variable did to the result."""
+    if previous is None:
+        return "Starting measurement. The next run changes one variable from here."
+    keys = _changed_keys(previous.get("params") or {}, row.get("params") or {})
+    name = keys[0] if len(keys) == 1 else "That change"
+    profit_move = _profit(row) - _profit(previous)
+    drawdown_move = float(row.get("max_drawdown") or 0) - float(previous.get("max_drawdown") or 0)
+    if _rank(row) > _rank(previous):
+        return (
+            f"{name} made the book steadier. Profit moved {profit_move:.0f}. Drawdown moved {drawdown_move:.0f}. "
+            "The next run continues this variable."
+        )
+    if _rank(row) < _rank(previous):
+        return (
+            f"{name} made the book jumpier. Profit moved {profit_move:.0f}. Drawdown moved {drawdown_move:.0f}. "
+            "The next run undoes this direction."
+        )
+    return f"{name} left the result unchanged."
+
+
 def _probe_steps(name: str, value):
     if isinstance(value, bool):
         return [not value]
@@ -1271,6 +1850,30 @@ def _creative(anchor: dict) -> list[dict]:
 
 _INDICATORS = ("vwma", "ema", "sma", "wma", "rsi")
 _LENGTHS = (5, 8, 10, 13, 14, 20, 21, 34, 50, 55, 89, 100, 144, 200)
+
+
+def _force_new(anchor: dict, seen: set[str]) -> dict | None:
+    """One more unseen value for one input. The search stops only when nothing new is left."""
+    for name in _input_order(anchor):
+        value = anchor.get(name)
+        if isinstance(value, bool):
+            options = [not value]
+        elif isinstance(value, int) and not isinstance(value, bool):
+            options = [_clamp(name, max(1, int(value) + step)) for step in range(1, 121)]
+            options += [_clamp(name, max(1, int(value) - step)) for step in range(1, 61)]
+        elif isinstance(value, float):
+            options = [round(max(0.01, float(value) + step * 0.5), 4) for step in range(1, 121)]
+            options += [round(max(0.01, float(value) * scale), 4) for scale in (0.5, 0.75, 1.5, 2, 3)]
+        else:
+            continue
+        for nxt in options:
+            if nxt == value:
+                continue
+            plan = dict(anchor)
+            plan[name] = nxt
+            if _key(plan) not in seen and len(_changed_keys(anchor, plan)) == 1:
+                return plan
+    return None
 
 
 def _widen(origin: dict, anchor: dict, seen: set[str], attempt: int, extras: bool = True) -> dict | None:

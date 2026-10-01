@@ -19,15 +19,15 @@ def ingest_alert(board: Board, signal: dict) -> dict:
         strategy["running"] = load().get("running") or []
     matched, detail = series_match(strategy, signal)
     board.log("Ingestion", f"Checking {signal.get('instrument')} {signal.get('timeframe') or ''} at {signal.get('price')}")
+    if signal.get("price") is not None and signal.get("id") == "desk-bar":
+        _update_chart(board, signal, _bar(signal))
     if not matched:
         if signal.get("id") == "desk-bar" and signal.get("price") is not None:
-            from futuresfund.book import mark_paper
+            from futuresfund.book import live_mark_note, mark_paper
 
-            stats = mark_paper(load(), signal)
-            note = (
-                f"Paper price {signal['instrument']} {signal['price']}. "
-                f"Active P&L ${stats['active_pnl']:,.2f}. Drawdown ${stats['drawdown']:,.2f}."
-            )
+            book = load()
+            stats = mark_paper(book, signal)
+            note = live_mark_note(book, signal, stats)
             board.log("Ingestion", note)
             board.post("Ingestion", note, kind="report", channel="Ingestion")
             return {
@@ -56,6 +56,8 @@ def ingest_alert(board: Board, signal: dict) -> dict:
     frame = str(strategy.get("timeframe") or "5m")
     alert_frame = str(signal.get("timeframe") or frame)
     bar = _bar(signal)
+    if signal.get("id") != "desk-bar":
+        _update_chart(board, signal, bar)
     closed, forming = absorb_alert(strategy.get("forming"), bar, alert_frame, frame)
     bars = load_bars()
     for candle in closed:
@@ -88,6 +90,19 @@ def ingest_alert(board: Board, signal: dict) -> dict:
     }
 
 
+def _update_chart(board: Board, signal: dict, bar: dict) -> None:
+    """Ingestion is who puts the new candle on the chart."""
+    from futuresfund.chart_feed import record_live_bar
+
+    stored = record_live_bar(signal, bar)
+    note = (
+        f"Updated the {stored['instrument']} chart with the {stored['timeframe']} candle {bar['t']} "
+        f"at {bar['c']}. A longer candle uses this price until that candle closes."
+    )
+    board.log("Ingestion", note)
+    board.post("Ingestion", note, kind="report", channel="Ingestion")
+
+
 def _bar(signal: dict) -> dict:
     price = float(signal["price"])
     stamp = _stamp(signal.get("bar_time"), None) or datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
@@ -102,4 +117,9 @@ def _bar(signal: dict) -> dict:
         "poc_volume": signal.get("poc_volume"),
         "delta": signal.get("delta"),
         "delta_pct": signal.get("delta_pct"),
+        "delta_high": signal.get("delta_high"),
+        "delta_low": signal.get("delta_low"),
+        "macd": signal.get("macd"),
+        "macd_signal": signal.get("macd_signal"),
+        "macd_histogram": signal.get("macd_histogram"),
     }

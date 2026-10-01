@@ -144,6 +144,7 @@ def _record_feed(board: Board, signal: dict) -> dict:
 
 def _execute_located(board, strategy, signal, held, entry, plan, account_size, bars) -> dict:
     """The trade is already in the TradingView alert. The floor trader sends that webhook."""
+    signal = _on_live_account(signal)
     if plan["target"] == 0:
         _remember(strategy, signal, 0, None, None)
     elif plan["action"] == "place" and (int(held or 0) == 0 or (int(held) > 0) != (plan["target"] > 0)):
@@ -187,7 +188,7 @@ def _execute_located(board, strategy, signal, held, entry, plan, account_size, b
     result["reason"] = f"{note} {result.get('reason') or ''}".strip()
     book = load()
     if result.get("sent") or result.get("dry_run"):
-        apply_target(book, signal, plan["target"], signal.get("price") if plan["target"] else None)
+        apply_target(book, signal, plan["target"], signal.get("price"))
     result["managed"] = True
     record_order(book, signal, plan["action"], result)
     record_interval(book, _interval_row(signal, held, plan["action"], result, plan))
@@ -205,6 +206,8 @@ def _execute_located(board, strategy, signal, held, entry, plan, account_size, b
         kind="report",
         channel="Floor Trader",
     )
+    if plan["action"] in {"place", "close"}:
+        _email_trade(board, signal, plan, result, held, book)
     return {"ok": True, "sent": bool(result.get("sent")), "action": plan["action"], "reason": result.get("reason"), "bars": len(bars)}
 
 
@@ -300,7 +303,50 @@ def _remember(strategy: dict, signal: dict, contracts: int, entry: float | None,
     strategy["positions_working"] = booked or None
 
 
+def _email_trade(board: Board, signal: dict, plan: dict, result: dict, held: int, book: dict) -> None:
+    """The portfolio manager emails the trade summary without holding up the alert."""
+
+    def _send() -> None:
+        from futuresfund.mailer import notify_trade
+
+        try:
+            mailed = notify_trade(signal, plan, result, held, book)
+        except Exception as exc:
+            board.post("Portfolio Manager", f"The trade email was not sent: {exc}", kind="error", channel="Portfolio Manager")
+            return
+        if mailed.get("sent"):
+            board.post(
+                "Portfolio Manager",
+                f"Emailed the trade summary to {mailed.get('to')}. {mailed.get('subject')}",
+                kind="report",
+                channel="Portfolio Manager",
+            )
+        else:
+            board.post(
+                "Portfolio Manager",
+                mailed.get("reason") or "The trade email was not sent.",
+                kind="report",
+                channel="Portfolio Manager",
+            )
+
+    threading.Thread(target=_send, daemon=True, name="trade-email").start()
+
+
+def _on_live_account(signal: dict) -> dict:
+    """Use the CrossTrade account. The account written on the alert does not block the order."""
+    from futuresfund.crosstrade import execution_account
+
+    try:
+        account = execution_account(signal)
+    except ValueError:
+        return signal
+    if account == signal.get("account"):
+        return signal
+    return {**signal, "account": account}
+
+
 def _flatten_now(board: Board, strategy: dict, signal: dict, held: int, note: str, speaker: str) -> dict:
+    signal = _on_live_account(signal)
     store_strategy(strategy)
     plan = trade_plan(0, held, int(strategy.get("qty") or 1))
     signal = {**signal, "qty": plan["qty"] or signal["qty"], "flatten_first": False, "yahoo": yahoo_symbol(signal["instrument"])}
@@ -309,7 +355,7 @@ def _flatten_now(board: Board, strategy: dict, signal: dict, held: int, note: st
     result["reason"] = f"{note} {result.get('reason') or ''}".strip()
     book = load()
     if result.get("sent") or result.get("dry_run"):
-        apply_target(book, signal, 0, None)
+        apply_target(book, signal, 0, signal.get("price"))
     result["managed"] = True
     record_order(book, signal, "close", result)
     record_interval(book, _interval_row(signal, held, "close", result, plan))
@@ -322,6 +368,7 @@ def _flatten_now(board: Board, strategy: dict, signal: dict, held: int, note: st
     board.post(speaker, note, kind="report", channel=speaker)
     _show_webhook(board, signal, result)
     board.post("Floor Trader", f"Flatten {signal['account']} {signal['instrument']}: {result.get('reason')}", kind="report", channel="Floor Trader")
+    _email_trade(board, signal, plan, result, held, book)
     return {"ok": True, "sent": bool(result.get("sent")), "action": "close", "reason": result.get("reason")}
 
 
@@ -343,27 +390,43 @@ def _report_trade(board: Board, strategy: dict, signal: dict, bar: dict) -> None
 
     paper = paper_status()
     price = bar.get("c") if bar.get("c") is not None else signal.get("price")
-    point = point_value(signal.get("instrument") or "")
     stored = load().get("strategy")
     source = stored if isinstance(stored, dict) else (strategy or {})
-    lines = [
-        rules_sentence(),
-        f"Equity ${paper['equity']:,.2f}. Active P&L ${paper['active_pnl']:,.2f}. Drawdown ${paper['drawdown']:,.2f}.",
-    ]
+    lines = [rules_sentence()]
+    for row in paper.get("accounts") or []:
+        lines.append(
+            f"{row['account']}: equity ${row['equity']:,.2f}, P&L ${row['pnl']:,.2f}, drawdown ${row['drawdown']:,.2f}."
+        )
+    if not paper.get("accounts"):
+        lines.append(
+            f"Equity ${paper['equity']:,.2f}. P&L ${paper['pnl']:,.2f}. Open P&L ${paper['active_pnl']:,.2f}. Drawdown ${paper['drawdown']:,.2f}."
+        )
     trades = _open_positions(source, signal)
     if not trades:
-        lines.append("No trade is open. The floor trader is waiting for the strategy's buy or sell.")
-    for account, instrument, contracts, entry in trades:
+        closed = (load().get("trades") or [])[-1:] 
+        if closed:
+            last = closed[0]
+            lines.append(
+                f"No trade is open. The last closed trade is {last.get('side')} {last.get('qty')} {last.get('instrument')} "
+                f"from {last.get('entry')} to {last.get('exit')}. P&L ${float(last.get('pnl') or 0):,.2f}."
+            )
+        else:
+            lines.append("No trade is open. The floor trader is waiting for the strategy's buy or sell.")
+    alert_instrument = signal.get("instrument")
+    for account, instrument, contracts, entry, last_price in trades:
+        mark = price if instrument == alert_instrument and price is not None else last_price
         pnl = None
-        if entry is not None and price is not None:
-            pnl = (float(price) - float(entry)) * contracts * point
+        if entry is not None and mark is not None:
+            pnl = (float(mark) - float(entry)) * contracts * point_value(instrument)
         side = "long" if contracts > 0 else "short"
         money = "not available" if pnl is None else f"${pnl:,.2f}"
-        stop = signal.get("stop_loss") or signal.get("stop_price")
+        stop = signal.get("stop_loss") or signal.get("stop_price") if instrument == alert_instrument else None
         stop_line = f" Strategy stop {stop}." if stop else " The stop is in the Pine strategy."
         lines.append(
             f"{account} {instrument} is {side} {abs(contracts)} from {entry}. "
-            f"Last {price}, high {bar.get('h')}, low {bar.get('l')}, volume {bar.get('v')}. "
+            f"Last {mark}, high {bar.get('h') if instrument == alert_instrument else ''}, "
+            f"low {bar.get('l') if instrument == alert_instrument else ''}, "
+            f"volume {bar.get('v') if instrument == alert_instrument else ''}. "
             f"Open P&L {money}.{stop_line}"
         )
     note = " ".join(lines)
@@ -385,6 +448,7 @@ def _open_positions(strategy: dict, signal: dict) -> list[tuple]:
             position.get("instrument") or signal.get("instrument"),
             contracts,
             position.get("average_price"),
+            position.get("last_price"),
         ))
     if found:
         return found
@@ -395,7 +459,7 @@ def _open_positions(strategy: dict, signal: dict) -> list[tuple]:
             continue
         if contracts == 0:
             continue
-        found.append((account, signal.get("instrument"), contracts, slot.get("entry")))
+        found.append((account, signal.get("instrument"), contracts, slot.get("entry"), slot.get("entry")))
     return found
 
 

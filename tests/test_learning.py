@@ -24,12 +24,11 @@ class CandidateTests(unittest.TestCase):
         from futuresfund.learn import study_parameters
 
         def execute(params):
-            profit = 3000 if params["length"] >= 14 else -50
-            return {"net_profit": profit, "max_drawdown": 400, "trades": 5, "win_rate": 40}
+            return {"net_profit": 3000 + params["length"], "max_drawdown": 400, "trades": 5, "win_rate": 40}
 
-        trials = study_parameters({"length": 10}, execute, limit=40)
-        self.assertEqual(len(trials), 40)
-        self.assertTrue(any(row["passed"] for row in trials))
+        trials = study_parameters({"length": 10}, execute, limit=15)
+        self.assertGreater(len(trials), 1)
+        self.assertTrue(all(row["passed"] for row in trials))
 
     def test_the_researcher_note_is_a_table_with_a_winner_and_a_loser(self):
         from futuresfund.learn import adjustment_notes
@@ -44,6 +43,38 @@ class CandidateTests(unittest.TestCase):
         self.assertIn("length 10 to 14", quant)
         self.assertIn("$50.00", quant)
         self.assertIn("-$400.00", quant)
+
+    def test_research_guidelines_say_what_we_want(self):
+        from futuresfund.learn import research_guidelines
+
+        text = research_guidelines()
+        self.assertIn("What we want", text)
+        self.assertIn("What we do not want", text)
+        self.assertIn("These are guidelines, not requirements.", text)
+        self.assertIn("What to change", text)
+        self.assertIn("Each run changes one variable.", text)
+        self.assertNotIn("Keep a change", text)
+        self.assertNotIn("Drop a change", text)
+
+    def test_each_attempt_changes_one_input(self):
+        from futuresfund.learn import next_plan
+
+        origin = {"fast": 10, "slow": 20, "zone": 1.5, "use_session": True}
+        trials = [{"params": dict(origin), "net_profit": 10, "max_drawdown": 5, "trades": 2}]
+        plan = next_plan(origin, trials)
+        changed = [key for key in origin if plan[key] != origin[key]]
+        self.assertEqual(len(changed), 1)
+
+    def test_a_steadier_change_continues_the_same_variable(self):
+        from futuresfund.learn import next_plan
+
+        trials = [
+            {"params": {"length": 10, "zone": 1.5}, "net_profit": 10, "max_drawdown": 20, "trades": 4},
+            {"params": {"length": 14, "zone": 1.5}, "net_profit": 40, "max_drawdown": 18, "trades": 4},
+        ]
+        plan = next_plan({"length": 10, "zone": 1.5}, trials)
+        self.assertEqual(plan["zone"], 1.5)
+        self.assertGreater(plan["length"], 14)
 
     def test_a_decrease_that_loses_money_is_reversed(self):
         from futuresfund.learn import next_plan
@@ -66,15 +97,27 @@ class CandidateTests(unittest.TestCase):
         self.assertFalse(_passed(short, 50000))
         self.assertTrue(_passed(kept, 50000))
 
-    def test_a_script_uses_two_hundred_attempts_unless_the_goal_is_met(self):
+    def test_a_script_uses_two_hundred_attempts_when_each_result_changes(self):
+        from futuresfund.learn import study_parameters
+
+        calls = {"n": 0}
+
+        def execute(params):
+            calls["n"] += 1
+            return {"net_profit": calls["n"], "max_drawdown": 100, "trades": calls["n"]}
+
+        trials = study_parameters({"length": 10}, execute, limit=200)
+        self.assertEqual(len(trials), 200)
+        self.assertTrue(all(not row["passed"] for row in trials))
+
+    def test_the_same_result_is_not_counted_as_an_attempt(self):
         from futuresfund.learn import study_parameters
 
         def execute(params):
             return {"net_profit": -10, "max_drawdown": 100, "trades": 1}
 
         trials = study_parameters({"length": 10}, execute, limit=200)
-        self.assertEqual(len(trials), 200)
-        self.assertTrue(all(not row["passed"] for row in trials))
+        self.assertEqual(len(trials), 1)
 
 
 class ReportShapeTests(unittest.TestCase):
@@ -124,6 +167,42 @@ class ReportShapeTests(unittest.TestCase):
         result = send_report("A report", subject="Futures fund research report: Test")
         self.assertFalse(result["sent"])
         self.assertIn("thefutureoffuturestrading@gmail.com", result["reason"])
+
+    def test_a_trade_email_summarizes_the_close_and_leaves_the_sender_off(self):
+        from futuresfund.mailer import report_recipients, trade_email
+
+        previous_user = os.environ.get("SMTP_USER")
+        previous_to = os.environ.get("REPORT_TO")
+        os.environ["SMTP_USER"] = "rece2005@gmail.com"
+        os.environ["REPORT_TO"] = "rece2005@gmail.com,thefutureoffuturestrading@gmail.com"
+        self.assertEqual(report_recipients(), ["thefutureoffuturestrading@gmail.com"])
+        subject, body = trade_email(
+            {"account": "APEX-441587-44", "instrument": "ES1!", "qty": 1, "price": 7731.0, "strategy": "RSI 3-System Strategy"},
+            {"action": "close", "side": "BUY", "target": 0},
+            {"sent": True, "dry_run": False},
+            -1,
+            {
+                "trades": [{"account": "APEX-441587-44", "instrument": "ES1!", "side": "short", "qty": 1, "entry": 7749.25, "exit": 7731.0, "pnl": 912.5}],
+                "positions": {},
+                "account_books": {"APEX-441587-44": {"size": 50000, "realized": 912.5, "peak": 50912.5}},
+                "strategy": {"account_size": 50000},
+                "paper": {"realized": 912.5, "peak": 50912.5},
+            },
+        )
+        self.assertEqual(subject, "Trade closed: BUY 1 ES1!")
+        self.assertIn("Closed BUY 1 ES1!", body)
+        self.assertIn("ES1!", body)
+        self.assertIn("912.5", body)
+        self.assertIn("flat", body)
+        self.assertNotIn("rece2005@gmail.com", body)
+        if previous_user is None:
+            os.environ.pop("SMTP_USER", None)
+        else:
+            os.environ["SMTP_USER"] = previous_user
+        if previous_to is None:
+            os.environ.pop("REPORT_TO", None)
+        else:
+            os.environ["REPORT_TO"] = previous_to
 
 
 class QueueTests(unittest.TestCase):

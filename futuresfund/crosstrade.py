@@ -20,13 +20,19 @@ def trade_side(rating: str) -> str | None:
     return None
 
 
-def build_payload(signal: dict, side: str) -> str:
-    account = signal["account"]
+def execution_account(signal: dict) -> str:
+    """The account named on the alert. It is sent even when it is not the stored name."""
+    named = str(signal.get("account") or "").strip()
+    if named:
+        return named
     allowed = prop_accounts()
-    if not allowed:
-        raise ValueError("PROP_ACCOUNTS is empty. Add the prop account names before an order can be sent.")
-    if account not in allowed:
-        raise ValueError(f"{account} is not in PROP_ACCOUNTS.")
+    if allowed:
+        return sorted(allowed)[0]
+    raise ValueError("The alert has no account.")
+
+
+def build_payload(signal: dict, side: str) -> str:
+    account = execution_account(signal)
     if int(signal["qty"]) > max_qty():
         raise ValueError(f"qty {signal['qty']} is above FUTURES_MAX_QTY ({max_qty()}).")
     key = crosstrade_key() or ("dry-run" if dry_run() else "")
@@ -34,13 +40,13 @@ def build_payload(signal: dict, side: str) -> str:
         raise ValueError("CROSSTRADE_KEY is not set.")
     lines = [
         f"key={key};",
-        "command=PLACE;",
+        "command=place;",
         f"account={account};",
         f"instrument={signal['instrument']};",
-        f"action={side};",
+        f"action={side.lower()};",
         f"qty={signal['qty']};",
-        f"order_type={signal.get('order_type') or 'MARKET'};",
-        f"tif={signal.get('tif') or 'DAY'};",
+        f"order_type={(signal.get('order_type') or 'market').lower()};",
+        f"tif={(signal.get('tif') or 'day').lower()};",
     ]
     if signal.get("limit_price") is not None:
         lines.append(f"limit_price={signal['limit_price']};")
@@ -52,10 +58,6 @@ def build_payload(signal: dict, side: str) -> str:
         lines.append(f"stop_loss={signal['stop_loss']};")
     if signal.get("atm_strategy"):
         lines.append(f"atm_strategy={signal['atm_strategy']};")
-    if signal.get("destination") == "tradovate":
-        lines.append("destination=tradovate;")
-    if _should_flatten(signal, side):
-        lines.append("flatten_first=true;")
     if signal.get("sync_strategy"):
         lines.append("sync_strategy=true;")
         lines.append(f"market_position={'long' if side == 'BUY' else 'short'};")
@@ -123,30 +125,16 @@ def send_flatten(signal: dict) -> dict:
 
 
 def _flatten_payload(signal: dict) -> str:
-    account = signal["account"]
-    allowed = prop_accounts()
-    if not allowed:
-        raise ValueError("PROP_ACCOUNTS is empty. Add the prop account names before an order can be sent.")
-    if account not in allowed:
-        raise ValueError(f"{account} is not in PROP_ACCOUNTS.")
+    account = execution_account(signal)
     key = crosstrade_key() or ("dry-run" if dry_run() else "")
     if not key:
         raise ValueError("CROSSTRADE_KEY is not set.")
     return "\n".join([
         f"key={key};",
-        "command=FLATTEN;",
+        "command=flatten;",
         f"account={account};",
         f"instrument={signal['instrument']};",
     ])
-
-
-def _should_flatten(signal: dict, side: str) -> bool:
-    if signal.get("flatten_first") is not None:
-        return bool(signal["flatten_first"])
-    held = signal.get("position")
-    if held is None or held == 0:
-        return False
-    return (held > 0 and side == "SELL") or (held < 0 and side == "BUY")
 
 
 def _post(url: str, payload: str) -> tuple[int, str]:

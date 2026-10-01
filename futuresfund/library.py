@@ -12,7 +12,7 @@ _CACHE: dict = {"stamp": None, "rows": []}
 
 # Checked before the ES default. A study that names no contract was run on the ES chart.
 _NAMED = (
-    ("GC1!", "Gold", ("gold", "mgc", "gc")),
+    ("GC1!", "Gold", ("gold", "mgc", "gc", "qo")),
     ("NQ1!", "Nasdaq", ("nq", "mnq", "nasdaq")),
     ("CL1!", "Crude", ("crude", "cl")),
     ("ES1!", "ES", ("es",)),
@@ -24,8 +24,11 @@ def contract_of(title: str, filename: str = "", explicit: str | None = None) -> 
     """Return the contract symbol and the shelf name."""
     if explicit:
         text = str(explicit).strip()
+        folded = text.upper()
+        if folded.startswith("QO") or folded.startswith("MGC") or folded.startswith("GC") or folded == "GOLD":
+            return "GC1!", "Gold"
         for symbol, label, _words in _NAMED:
-            if text.upper().startswith(symbol[:2]) or text.lower() == label.lower():
+            if folded.startswith(symbol[:2]) or text.lower() == label.lower():
                 return symbol, label
         return text, text
     blob = f"{title} {filename}".lower()
@@ -47,13 +50,30 @@ def search_library(contract: str | None = None, query: str = "") -> dict:
     return {"contract": chosen, "contracts": _shelves(), "strategies": rows}
 
 
-def library_script(strategy_id: str) -> dict | None:
-    row = next((item for item in _rows() if item["id"] == strategy_id), None)
+def library_script(strategy_id: str, contract: str | None = None) -> dict | None:
+    matches = [item for item in _rows() if item["id"] == strategy_id]
+    if contract:
+        row = next((item for item in matches if item["contract"] == contract), None)
+    else:
+        row = matches[0] if matches else None
     if row is None:
         return None
+    from futuresfund.contracts import POINT_VALUE, root_of
     from futuresfund.strategy import pine_text
 
-    return {"id": row["id"], "title": row["title"], "pine": pine_text(row.get("file") or "")}
+    pine = pine_text(row.get("file") or "")
+    try:
+        root = root_of(str(row.get("contract") or "ES1!"))
+    except ValueError:
+        root = "ES"
+    point = float(POINT_VALUE.get(root, 50))
+    if point != 50 and pine:
+        from futuresfund.pineforge_engine import _with_point_value
+
+        pine = _with_point_value(pine, point)
+        if pine.startswith("// Engine point value"):
+            pine = pine.split("\n", 1)[1]
+    return {"id": row["id"], "title": row["title"], "pine": pine}
 
 
 def agent_catalog(limit: int = 12) -> str:
@@ -62,7 +82,7 @@ def agent_catalog(limit: int = 12) -> str:
     grouped: dict[str, list[dict]] = {}
     for row in _rows():
         grouped.setdefault(row["contract_label"], []).append(row)
-    for label in ("ES", "Gold"):
+    for label in ("ES", "Gold", "Nasdaq"):
         shelf = grouped.get(label) or []
         if not shelf:
             lines.append(f"{label}: none yet.")
@@ -74,7 +94,7 @@ def agent_catalog(limit: int = 12) -> str:
                 f"drawdown {row['max_drawdown']}, trades {row['trades']}"
             )
     for label, shelf in grouped.items():
-        if label in {"ES", "Gold"}:
+        if label in {"ES", "Gold", "Nasdaq"}:
             continue
         lines.append(f"{label}:")
         for row in shelf[:limit]:
@@ -89,42 +109,71 @@ def _shelves() -> list[dict]:
     counts: dict[str, dict] = {
         "ES1!": {"contract": "ES1!", "label": "ES", "count": 0},
         "GC1!": {"contract": "GC1!", "label": "Gold", "count": 0},
+        "NQ1!": {"contract": "NQ1!", "label": "Nasdaq", "count": 0},
     }
     for row in _rows():
         slot = counts.setdefault(row["contract"], {"contract": row["contract"], "label": row["contract_label"], "count": 0})
         slot["count"] += 1
-    ordered = [counts.pop("ES1!"), counts.pop("GC1!")]
+    ordered = [counts.pop("ES1!"), counts.pop("GC1!"), counts.pop("NQ1!")]
     ordered.extend(counts.values())
     return ordered
 
 
+def _notes_stamp() -> tuple:
+    if not _NOTES.is_dir():
+        return tuple()
+    return tuple(sorted((path.name, path.stat().st_mtime_ns) for path in _NOTES.glob("*.json")))
+
+
 def _rows() -> list[dict]:
-    stamp = _NOTES.stat().st_mtime if _NOTES.is_dir() else 0
+    stamp = _notes_stamp()
     cached = _CACHE.get("rows") or []
     if _CACHE.get("stamp") == stamp and cached:
         return [dict(row) for row in cached]
     ranked: dict[tuple[str, str], dict] = {}
     if _NOTES.is_dir():
         for path in _NOTES.glob("*.json"):
-            row = _row(path)
-            if row is None:
-                continue
-            key = (row["contract"], _fold(row["title"]))
-            current = ranked.get(key)
-            if current is None or float(row["net_profit"]) > float(current["net_profit"]):
-                ranked[key] = row
+            for row in _entries(path):
+                key = (row["contract"], _fold(row["title"]))
+                current = ranked.get(key)
+                if current is None or float(row["net_profit"]) > float(current["net_profit"]):
+                    ranked[key] = row
     rows = sorted(ranked.values(), key=lambda item: float(item["net_profit"]), reverse=True)
     _CACHE["stamp"] = stamp
     _CACHE["rows"] = rows
     return [dict(row) for row in rows]
 
 
-def _row(path: Path) -> dict | None:
+def _entries(path: Path) -> list[dict]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return None
-    best = data.get("best") if isinstance(data.get("best"), dict) else {}
+        return []
+    if not isinstance(data, dict):
+        return []
+    instruments = data.get("instruments")
+    if isinstance(instruments, dict) and instruments:
+        rows = []
+        for name, record in instruments.items():
+            if not isinstance(record, dict):
+                continue
+            best = record.get("best") if isinstance(record.get("best"), dict) else {}
+            marked = dict(best)
+            marked.setdefault("contract", f"{str(name).upper()}1!")
+            row = _measured_row(data, marked, path)
+            if row is not None:
+                rows.append(row)
+        return rows
+    row = _measured_row(data, data.get("best") if isinstance(data.get("best"), dict) else {}, path)
+    return [row] if row is not None else []
+
+
+def _row(path: Path) -> dict | None:
+    found = _entries(path)
+    return found[0] if found else None
+
+
+def _measured_row(data: dict, best: dict, path: Path) -> dict | None:
     runner = str(best.get("runner") or "")
     engine = str(best.get("engine") or runner)
     if runner in _STAND_INS or engine in _STAND_INS:

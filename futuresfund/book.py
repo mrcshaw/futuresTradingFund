@@ -43,10 +43,7 @@ def record_fill(book: dict, signal: dict, side: str, price: float | None) -> dic
     if held is None:
         held = float(current.get("contracts") or 0)
     qty = int(signal["qty"])
-    if _flatten(signal, side, held):
-        contracts = qty if side == "BUY" else -qty
-    else:
-        contracts = held + (qty if side == "BUY" else -qty)
+    contracts = _close_or_add(held, side, qty)
     contracts = int(contracts) if float(contracts).is_integer() else contracts
     mark = price if price is not None else signal.get("price")
     position = {
@@ -75,6 +72,10 @@ def record_interval(book: dict, row: dict) -> dict:
 def apply_target(book: dict, signal: dict, target: int, price: float | None) -> None:
     key = f"{signal['account']}|{signal['instrument']}"
     old = book["positions"].get(key)
+    held = int((old or {}).get("contracts") or 0)
+    # A buy closes a short. A sell closes a long. The order cannot open the other side.
+    if held and target and (held > 0) != (target > 0):
+        target = 0
     _realize(book, old, int(target), price, signal.get("instrument") or "")
     if target == 0:
         book["positions"].pop(key, None)
@@ -137,10 +138,12 @@ def snapshot() -> dict:
         "interval_count": len(book.get("intervals") or []),
         "headquarters_rules": book.get("headquarters_rules"),
         "prop_updates": book.get("prop_updates") or {},
-        "paper": paper_status(book),
+        "paper": paper_status(book, positions),
+        "accounts": display_accounts(book, positions),
         "active_strategies": active_strategies(book),
         "leaders": _leaders(),
         "running": list(book.get("running") or []),
+        "trades": list(reversed((book.get("trades") or [])[-20:])),
         "account_rules": _account_rules(book),
         "next_meeting": "8:00am ET Monday through Friday, and 5:00pm ET Sunday through Friday. Saturday has no meeting.",
     }
@@ -174,6 +177,31 @@ def _marks(positions: list[dict]) -> dict:
         except Exception:
             continue
     return marks
+
+
+def live_mark_note(book: dict, signal: dict, stats: dict) -> str:
+    """What ingestion says after a live price. The open trade is named even when this print is another contract."""
+    parts = [f"Live {signal.get('instrument')} {signal.get('price')}."]
+    named = False
+    for position in (book.get("positions") or {}).values():
+        try:
+            contracts = float(position.get("contracts") or 0)
+        except (TypeError, ValueError):
+            continue
+        if not contracts:
+            continue
+        named = True
+        side = "short" if contracts < 0 else "long"
+        parts.append(
+            f"Open trade: {side} {abs(contracts):g} {position.get('instrument')} "
+            f"from {position.get('average_price')} on {position.get('account')}. "
+            f"Last {position.get('last_price')}."
+        )
+    if not named:
+        parts.append("No trade is open.")
+    pnl = stats.get("pnl", stats.get("active_pnl"))
+    parts.append(f"P&L ${float(pnl or 0):,.2f}. Drawdown ${float(stats.get('drawdown') or 0):,.2f}.")
+    return " ".join(parts)
 
 
 def mark_paper(book: dict, signal: dict) -> dict:
@@ -297,7 +325,8 @@ def save_active_strategies(rows: list[dict]) -> list[dict]:
             continue
         kept.append({
             "id": str(row.get("id") or _now()),
-            "account": str(row.get("account") or "paper"),
+            "account": str(row.get("account") or ""),
+            "instrument": str(row.get("instrument") or ""),
             "title": str(row.get("title") or "Strategy"),
             "text": str(row.get("text") or ""),
             "locked": bool(row.get("locked")),
@@ -427,7 +456,7 @@ def firm_record(view: dict | None = None) -> str:
     lines = [
         "Futures desk record. Chat does not place an order.",
         _rules_line(view),
-        "Headquarters shows paper P&L, three consistent strategies, and the lead script. Click a strategy name to copy its Pine script.",
+        "Headquarters shows live P&L, the open trade, three consistent strategies, and the lead script. Click a strategy name to copy its Pine script.",
         "Strategy library is its own tab. Profitable Pine scripts are filed by contract. ES and gold are separate. Each row is the most profitable timeframe of that engine run. Click a row to copy the script.",
         "Two strategies can run at once, including on the same account. An order alert must name the strategy. The account in that message is where the order goes.",
         "A price alert with id desk-bar records the candle and does not send an order.",
@@ -443,11 +472,18 @@ def firm_record(view: dict | None = None) -> str:
     else:
         lines.append("Dry run is off. An order that matches a running strategy is sent.")
     names = ", ".join(settings.get("accounts") or []) or "none"
-    lines.append(f"Configured account names: {names}. A running strategy can use any account named in its alert, including paper.")
-    lines.append(
-        f"Paper equity {paper.get('equity')}. Active P&L {paper.get('active_pnl')}. "
-        f"Drawdown {paper.get('drawdown')}. Peak {paper.get('peak')}."
-    )
+    lines.append(f"Configured account names: {names}. A running strategy uses the account named in its alert.")
+    for row in view.get("accounts") or paper.get("accounts") or []:
+        lines.append(
+            f"Account {row.get('account')}: equity {row.get('equity')}, P&L {row.get('pnl')}, "
+            f"open P&L {row.get('active_pnl')}, drawdown {row.get('drawdown')}."
+        )
+    if not (view.get("accounts") or paper.get("accounts")):
+        lines.append(
+            f"Equity {paper.get('equity')}. P&L {paper.get('pnl')}. "
+            f"Open P&L {paper.get('active_pnl')}. Realized {paper.get('realized')}. "
+            f"Drawdown {paper.get('drawdown')}. Peak {paper.get('peak')}."
+        )
     positions = view.get("positions") or []
     if positions:
         for row in positions:
@@ -457,12 +493,30 @@ def firm_record(view: dict | None = None) -> str:
             )
     else:
         lines.append("No position is open.")
+    closed = view.get("trades") or []
+    if closed:
+        last = closed[0]
+        lines.append(
+            f"Closed trades: {len(closed)}. Last closed trade: {last.get('side')} {last.get('qty')} "
+            f"{last.get('instrument')} from {last.get('entry')} to {last.get('exit')}, P&L {last.get('pnl')}."
+        )
+    else:
+        lines.append("No closed trade is on the book.")
     running = view.get("running") or []
     if running:
         for row in running:
             lines.append(f"Running strategy: {row.get('title')} on {row.get('account')}, timeframe {row.get('timeframe')}.")
     else:
         lines.append("No strategy is running.")
+    active = view.get("active_strategies") or []
+    if active:
+        for row in active:
+            contract = row.get("instrument") or "no contract named"
+            lines.append(
+                f"Active strategy list: {row.get('title')} for {contract} on account {row.get('account')}."
+            )
+    else:
+        lines.append("The active strategy list is empty.")
     for row in view.get("leaders") or []:
         lines.append(
             f"Headquarters strategy: {row.get('title')}, {row.get('timeframe')}, "
@@ -478,9 +532,8 @@ def firm_record(view: dict | None = None) -> str:
         lines.append(f"Book contract {strategy.get('contract') or 'unset'}, timeframe {strategy.get('timeframe') or 'unset'}.")
     from futuresfund.library import search_library
 
-    for shelf in ("ES1!", "GC1!"):
+    for shelf, label in (("ES1!", "ES"), ("GC1!", "Gold"), ("NQ1!", "Nasdaq")):
         found = search_library(shelf)
-        label = "ES" if shelf == "ES1!" else "Gold"
         rows = found.get("strategies") or []
         lines.append(f"Library {label}: {len(rows)} profitable scripts.")
         for row in rows[:8]:
@@ -524,16 +577,16 @@ def _rules_line(view: dict) -> str:
 
 
 def open_trade_brief(view: dict) -> str:
-    """Stop and take profit for the open paper trade. Missing prices are not invented."""
+    """Stop and take profit for the open live trade. Missing prices are not invented."""
     positions = view.get("positions") or []
     paper = view.get("paper") or {}
     if not positions:
-        return "No trade is open on the paper book."
+        return "No trade is open."
     lines = []
     for row in positions:
         side = "long" if float(row.get("contracts") or 0) > 0 else "short"
         lines.append(
-            f"The open paper trade is {side} {abs(float(row.get('contracts') or 0)):g} "
+            f"The open trade is {side} {abs(float(row.get('contracts') or 0)):g} "
             f"{row.get('instrument')} from {row.get('average_price')}. "
             f"Last price {row.get('last_price')}. Active P&L {row.get('pnl')}."
         )
@@ -572,13 +625,123 @@ def _script_levels(pine: str) -> str:
     return ", ".join(found)
 
 
+def _account_names(book: dict, *, include_configured: bool = False) -> list[str]:
+    names: list[str] = []
+
+    def add(name) -> None:
+        text = str(name or "").strip()
+        if text and text not in names:
+            names.append(text)
+
+    if include_configured:
+        from futuresfund.config import prop_accounts
+
+        for name in sorted(prop_accounts()):
+            add(name)
+    rules = book.get("account_rules") or {}
+    add(rules.get("account"))
+    for row in book.get("running") or []:
+        if isinstance(row, dict):
+            add(row.get("account"))
+    for position in (book.get("positions") or {}).values():
+        add(position.get("account"))
+    for name in book.get("account_books") or {}:
+        add(name)
+    if not names:
+        strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
+        add((strategy or {}).get("account"))
+    return names
+
+
+def _account_size(book: dict, name: str) -> float:
+    rules = book.get("account_rules") or {}
+    if str(rules.get("account") or "") == name and rules.get("size"):
+        return float(rules["size"])
+    stored = (book.get("account_books") or {}).get(name) or {}
+    if stored.get("size"):
+        return float(stored["size"])
+    strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
+    return float((strategy or {}).get("account_size") or 50000)
+
+
+def _account_book(book: dict, name: str) -> dict:
+    size = _account_size(book, name)
+    books = book.setdefault("account_books", {})
+    state = books.setdefault(name, {"size": size, "realized": 0.0, "peak": size})
+    if not state.get("size"):
+        state["size"] = size
+    return state
+
+
+def account_rows(book: dict, positions: list[dict] | None = None) -> list[dict]:
+    """Equity for accounts already on this book. An empty configured account is not added here."""
+    if positions is None:
+        positions = list((book.get("positions") or {}).values())
+    grouped: dict[str, list[dict]] = {}
+    for row in positions:
+        grouped.setdefault(str(row.get("account") or ""), []).append(row)
+    result = []
+    for name in _account_names(book):
+        size = _account_size(book, name)
+        stored = (book.get("account_books") or {}).get(name) or {}
+        realized = float(stored.get("realized") or 0)
+        active = 0.0
+        for row in grouped.get(name, []):
+            pnl = row.get("pnl")
+            if pnl is None:
+                pnl = _pnl(row)
+            if pnl is not None:
+                active += float(pnl)
+        equity = size + realized + active
+        peak = max(float(stored.get("peak") or size), equity)
+        result.append({
+            "account": name,
+            "size": size,
+            "active_pnl": round(active, 2),
+            "realized": round(realized, 2),
+            "pnl": round(realized + active, 2),
+            "drawdown": round(max(0.0, peak - equity), 2),
+            "equity": round(equity, 2),
+            "peak": round(peak, 2),
+        })
+    return result
+
+
+def display_accounts(book: dict, positions: list[dict] | None = None) -> list[dict]:
+    """Every configured account, with its own live P&L, drawdown, and equity."""
+    rows = {row["account"]: row for row in account_rows(book, positions)}
+    for name in _account_names(book, include_configured=True):
+        if name in rows:
+            continue
+        size = _account_size(book, name)
+        stored = (book.get("account_books") or {}).get(name) or {}
+        peak = max(float(stored.get("peak") or size), size)
+        rows[name] = {
+            "account": name,
+            "size": size,
+            "active_pnl": 0.0,
+            "realized": round(float(stored.get("realized") or 0), 2),
+            "pnl": round(float(stored.get("realized") or 0), 2),
+            "drawdown": round(max(0.0, peak - size - float(stored.get("realized") or 0)), 2),
+            "equity": round(size + float(stored.get("realized") or 0), 2),
+            "peak": round(peak, 2),
+        }
+    return [rows[name] for name in _account_names(book, include_configured=True)]
+
+
 def reset_paper() -> dict:
-    """Clear the paper result. Those fills were not from a strategy the floor was following."""
+    """Clear equity back to each account's starting size."""
     book = load()
     strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
-    size = float((strategy or {}).get("account_size") or 50000)
-    book["paper"] = {"realized": 0.0, "peak": size}
+    books = {}
+    for name in _account_names(book, include_configured=True):
+        size = _account_size(book, name)
+        books[name] = {"size": size, "realized": 0.0, "peak": size}
+    book["account_books"] = books
+    first = next(iter(books.values()), {"size": 50000})
+    book["paper"] = {"realized": 0.0, "peak": first["size"]}
     book["positions"] = {}
+    book["trades"] = []
     if isinstance(strategy, dict):
         strategy["working"] = None
         strategy["positions_working"] = None
@@ -587,26 +750,36 @@ def reset_paper() -> dict:
     return paper_status(book)
 
 
-def paper_status(book: dict | None = None) -> dict:
-    """Open P&L and drawdown from the paper account. Nothing is sent to CrossTrade."""
+def paper_status(book: dict | None = None, positions: list[dict] | None = None) -> dict:
+    """P&L and equity for the book. Each account keeps its own figures."""
     book = book if book is not None else load()
-    strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
-    size = float((strategy or {}).get("account_size") or 50000)
-    paper = book.get("paper") if isinstance(book.get("paper"), dict) else {}
-    realized = float(paper.get("realized") or 0)
-    active = 0.0
-    for position in (book.get("positions") or {}).values():
-        pnl = _pnl(position)
-        if pnl is not None:
-            active += pnl
-    equity = size + realized + active
-    peak = max(float(paper.get("peak") or size), equity)
+    rows = account_rows(book, positions)
+    if not rows:
+        strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
+        size = float((strategy or {}).get("account_size") or 50000)
+        return {
+            "mode": "paper",
+            "account": "",
+            "active_pnl": 0.0,
+            "realized": 0.0,
+            "pnl": 0.0,
+            "drawdown": 0.0,
+            "equity": size,
+            "peak": size,
+            "accounts": [],
+        }
+    realized = sum(row["realized"] for row in rows)
+    active = sum(row["active_pnl"] for row in rows)
     return {
         "mode": "paper",
+        "account": rows[0]["account"] if len(rows) == 1 else "",
         "active_pnl": round(active, 2),
-        "drawdown": round(max(0.0, peak - equity), 2),
-        "equity": round(equity, 2),
-        "peak": round(peak, 2),
+        "realized": round(realized, 2),
+        "pnl": round(realized + active, 2),
+        "drawdown": round(sum(row["drawdown"] for row in rows), 2),
+        "equity": round(sum(row["equity"] for row in rows), 2),
+        "peak": round(sum(row["peak"] for row in rows), 2),
+        "accounts": rows,
     }
 
 
@@ -627,19 +800,34 @@ def _realize(book: dict, old: dict | None, target: int, price: float | None, ins
     except (ValueError, KeyError):
         return
     gained = (float(price) - float(old["average_price"])) * closed * value
-    strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
-    size = float((strategy or {}).get("account_size") or 50000)
-    paper = book.setdefault("paper", {"realized": 0.0, "peak": size})
-    paper["realized"] = round(float(paper.get("realized") or 0) + gained, 2)
+    account = str(old.get("account") or "").strip() or "account"
+    state = _account_book(book, account)
+    state["realized"] = round(float(state.get("realized") or 0) + gained, 2)
+    paper = book.setdefault("paper", {"realized": 0.0, "peak": state["size"]})
+    paper["realized"] = round(sum(float(row.get("realized") or 0) for row in book.get("account_books", {}).values()), 2)
+    book.setdefault("trades", []).append({
+        "time": _now(),
+        "account": old.get("account"),
+        "instrument": old.get("instrument") or instrument,
+        "side": "short" if held < 0 else "long",
+        "qty": abs(int(closed)),
+        "entry": old.get("average_price"),
+        "exit": float(price),
+        "pnl": round(gained, 2),
+    })
+    book["trades"] = book["trades"][-40:]
 
 
 def _refresh_paper(book: dict, account: str | None, instrument: str | None) -> None:
-    strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
-    size = float((strategy or {}).get("account_size") or 50000)
-    paper = book.setdefault("paper", {"realized": 0.0, "peak": size})
+    books = book.setdefault("account_books", {})
+    for row in account_rows(book):
+        state = books.setdefault(row["account"], {"size": row["size"], "realized": row["realized"], "peak": row["size"]})
+        state["peak"] = max(float(state.get("peak") or row["size"]), row["equity"])
+        state["realized"] = row["realized"]
     status = paper_status(book)
+    paper = book.setdefault("paper", {"realized": 0.0, "peak": status["peak"]})
     paper["peak"] = status["peak"]
-    paper["realized"] = float(paper.get("realized") or 0)
+    paper["realized"] = status["realized"]
 
 
 def _pnl(row: dict):
@@ -653,6 +841,18 @@ def _pnl(row: dict):
     except (ValueError, KeyError):
         return None
     return round((float(last) - float(avg)) * float(contracts) * value, 2)
+
+
+def _close_or_add(held: float, side: str, qty: int) -> int:
+    """Add to a flat or same-side position. An opposite order stops at flat."""
+    held_n = int(held or 0)
+    size = abs(int(qty))
+    delta = size if side == "BUY" else -size
+    if held_n == 0 or (held_n > 0) == (delta > 0):
+        return held_n + delta
+    if held_n > 0:
+        return max(0, held_n - size)
+    return min(0, held_n + size)
 
 
 def _flatten(signal: dict, side: str, held: float) -> bool:

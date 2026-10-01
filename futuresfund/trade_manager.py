@@ -19,7 +19,18 @@ def plan_from_alert(signal: dict, held: int, qty: int) -> dict | None:
     if size < 1:
         size = 1
     sign = 1 if action == "BUY" else -1
-    plan = trade_plan(sign, int(held or 0), size)
+    held_n = int(held or 0)
+    # A sell and a later buy are one round trip. The opposite alert closes it.
+    if held_n and ((held_n > 0 and sign < 0) or (held_n < 0 and sign > 0)):
+        return {
+            "action": "close",
+            "side": "BUY" if held_n < 0 else "SELL",
+            "qty": abs(held_n),
+            "flatten_first": False,
+            "target": 0,
+            "from_alert": True,
+        }
+    plan = trade_plan(sign, held_n, size)
     plan["from_alert"] = True
     return plan
 
@@ -88,7 +99,7 @@ def deliver(signal: dict, plan: dict, account_size: float) -> dict:
     try:
         if _paper_only(signal.get("account") or ""):
             return _paper_result(signal, plan)
-        if plan["action"] == "close":
+        if plan["action"] == "close" and not plan.get("side"):
             return _close(signal)
         cap = contract_cap(account_size)
         if int(signal["qty"]) > cap:
@@ -144,13 +155,15 @@ def _paper_result(signal: dict, plan: dict) -> dict:
     command = "FLATTEN" if plan.get("action") == "close" else "PLACE"
     lines = [
         "key=***;",
-        f"command={command};",
+        f"command={command.lower()};",
         f"account={signal.get('account')};",
         f"instrument={signal.get('instrument')};",
     ]
     if side:
-        lines.append(f"action={side};")
+        lines.append(f"action={side.lower()};")
     lines.append(f"qty={signal.get('qty')};")
+    lines.append("order_type=market;")
+    lines.append("tif=day;")
     return {
         "sent": False,
         "dry_run": True,

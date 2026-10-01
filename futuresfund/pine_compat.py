@@ -22,10 +22,52 @@ _NAMESPACES = {
 _ARRAY_METHODS = {"size", "clear", "push", "pop", "get", "set", "shift", "unshift"}
 
 
+_PROFILE_RESET = re.compile(
+    r"for a = 0 to 2\s+"
+    r"arr = a == 0 \? vol_total : a == 1 \? vol_up : vol_dn\s+"
+    r"if arr\.size\(\) != rows\s+"
+    r"arr\.clear\(\)\s+"
+    r"for i = 0 to rows - 1\s+"
+    r"arr\.push\(0\.0\)\s+"
+    r"else\s+"
+    r"for i = 0 to rows - 1\s+"
+    r"arr\.set\(i, 0\.0\)"
+)
+_PROFILE_RANGE = re.compile(
+    r"float prof_hi\s*=\s*ta\.highest\(high,\s*lb > 0 \? lb : 1\)\s*"
+    r"float prof_lo\s*=\s*ta\.lowest\(low,\s*lb > 0 \? lb : 1\)"
+)
+_DIRECT_RESET = (
+    "for i = 0 to rows - 1\n"
+    "        array.set(vol_total, i, 0.0)\n"
+    "        array.set(vol_up, i, 0.0)\n"
+    "        array.set(vol_dn, i, 0.0)"
+)
+_DIRECT_RANGE = (
+    "float prof_hi = high\n"
+    "float prof_lo = low\n"
+    "if lb > 1\n"
+    "    for jHi = 0 to lb - 1\n"
+    "        prof_hi := math.max(prof_hi, high[jHi])\n"
+    "        prof_lo := math.min(prof_lo, low[jHi])"
+)
+
+
+def _tradingview_profile(text: str) -> tuple[str, list[str]]:
+    """Keep the volume profile on this bar's window. A bin that is never cleared becomes the whole history."""
+    notes: list[str] = []
+    revised, count = _PROFILE_RESET.subn(_DIRECT_RESET, text, count=1)
+    if count:
+        notes.append("Profile bins are cleared on every bar, the same way TradingView rebuilds them.")
+    revised, count = _PROFILE_RANGE.subn(_DIRECT_RANGE, revised, count=1)
+    if count:
+        notes.append("The profile high and low use the same bars TradingView uses.")
+    return revised, notes
+
+
 def prepare_for_pineforge(source: str) -> tuple[str, list[str]]:
     """Return the copy PineForge compiles, and the notes for that copy."""
-    text = source or ""
-    notes: list[str] = []
+    text, notes = _tradingview_profile(source or "")
     inputs = set(_INPUT.findall(text))
     lengths: dict[str, str] = {}
     for name, base in _MIN_BAR.findall(text):

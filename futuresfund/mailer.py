@@ -174,6 +174,68 @@ def send_report(body: str, subject: str = "Futures desk report") -> dict:
     return {"sent": False, "reason": last_error}
 
 
+def trade_email(signal: dict, plan: dict, result: dict, held: int, book: dict) -> tuple[str, str]:
+    """A short summary the portfolio manager can send after a trade action."""
+    side = str(plan.get("side") or "").upper() or "ORDER"
+    action = plan.get("action") or ""
+    target = plan.get("target")
+    qty = signal.get("qty")
+    instrument = signal.get("instrument") or ""
+    account = signal.get("account") or ""
+    price = signal.get("price")
+    closing = action == "close" or target == 0
+    if closing:
+        verb = "Closed"
+    elif int(held or 0) == 0:
+        verb = "Opened"
+    else:
+        verb = "Changed"
+    subject = f"Trade {verb.lower()}: {side} {qty} {instrument}"
+    lines = [
+        "Portfolio manager trade summary.",
+        f"{verb} {side} {qty} {instrument} on {account} at {price}.",
+        "The order was sent." if result.get("sent") else "The order was not sent.",
+    ]
+    if result.get("dry_run"):
+        lines.append("Dry run is on. CrossTrade did not receive the order.")
+    strategy = signal.get("strategy")
+    if strategy:
+        lines.append(f"Strategy: {strategy}.")
+    if closing:
+        last = None
+        for trade in reversed(book.get("trades") or []):
+            if trade.get("instrument") == instrument and trade.get("account") in {None, "", account}:
+                last = trade
+                break
+        if last:
+            lines.append(
+                f"Round trip: {last.get('side')} {last.get('qty')} from {last.get('entry')} "
+                f"to {last.get('exit')}. P&L {last.get('pnl')}."
+            )
+    position = (book.get("positions") or {}).get(f"{account}|{instrument}")
+    if position and position.get("contracts"):
+        lines.append(f"Position now: {position.get('contracts')} from {position.get('average_price')}.")
+    else:
+        lines.append("Position now: flat.")
+    from futuresfund.book import paper_status
+
+    for row in paper_status(book).get("accounts") or []:
+        if row.get("account") == account:
+            lines.append(
+                f"Equity {row.get('equity')}. P&L {row.get('pnl')}. Drawdown {row.get('drawdown')}."
+            )
+    return subject, "\n".join(lines)
+
+
+def notify_trade(signal: dict, plan: dict, result: dict, held: int, book: dict) -> dict:
+    """Email the trade summary. The sender is never a recipient."""
+    subject, body = trade_email(signal, plan, result, held, book)
+    sent = send_report(body, subject)
+    sent["subject"] = subject
+    sent["body"] = body
+    return sent
+
+
 def deliver_report() -> str:
     """Write the report from the saved book and email it when the desk can."""
     from futuresfund.book import load
