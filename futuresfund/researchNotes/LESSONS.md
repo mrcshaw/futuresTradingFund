@@ -6874,3 +6874,1281 @@ No change made money
 
 A change that lost money
 several settings                                 -$3,603.00     $12,317.50      223      no
+Delta Volume BOS Day Shift: attempts 120, best profit -8505.0, drawdown 23658.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                        -$12,466.65     $23,960.65      159      no
+several settings                                 -$8,480.00     $23,813.00      175      no
+several settings                                 -$8,505.00     $23,658.00      175      no
+several settings                                 -$8,505.00     $23,828.00      175      no
+several settings                                 -$8,525.00     $23,843.00      175      no
+several settings                                 -$8,545.00     $23,853.00      175      no
+
+Most profitable change
+several settings                                 -$8,480.00     $23,813.00      175      no
+
+No change made money
+
+A change that lost money
+several settings                                -$13,103.81     $28,065.81      251      no
+Delta Volume BOS Day Shift: attempts 120, best profit -7195.0, drawdown 9002.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                        -$10,621.42     $11,955.86      120      no
+several settings                                 -$7,195.00      $9,002.00      105      no
+several settings                                 -$7,211.00      $9,018.00      106      no
+several settings                                 -$7,355.00      $9,197.00      105      no
+several settings                                 -$7,716.00      $9,523.00      106      no
+several settings                                 -$7,810.00      $9,367.00      105      no
+
+Most profitable change
+several settings                                 -$7,195.00      $9,002.00      105      no
+
+No change made money
+
+A change that lost money
+several settings                                -$12,316.04     $12,579.04       63      no
+Delta Volume BOS Day Shift: attempts 120, best profit -1896.0, drawdown 10977.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$5,902.00      $8,763.00      147      no
+several settings                                 -$1,896.00     $10,977.00      306      no
+several settings                                 -$6,118.00      $8,963.00      148      no
+several settings                                 -$6,133.00      $8,897.00      148      no
+several settings                                 -$6,143.00      $8,907.00      148      no
+
+Most profitable change
+several settings                                 -$1,896.00     $10,977.00      306      no
+
+No change made money
+
+A change that lost money
+several settings                                -$13,261.12     $13,261.12      206      no
+Delta Volume BOS Night Shift: attempts 1, best profit 313.0, drawdown 421.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $313.00        $421.00        2      no
+
+Most profitable change
+Original                                            $313.00        $421.00        2      no
+
+A change that made money
+Original                                            $313.00        $421.00        2      no
+
+No change lost money
+Delta Volume BOS Night Shift: attempts 120, best profit 2151.0, drawdown 842.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $562.00        $890.00        8      no
+several settings                                  $2,151.00        $842.00        9      no
+several settings                                  $2,136.00        $842.00        9      no
+several settings                                  $2,126.00        $842.00        9      no
+several settings                                  $2,116.00        $842.00        9      no
+several settings                                  $2,106.00        $842.00        9      no
+
+Most profitable change
+several settings                                  $2,151.00        $842.00        9      no
+
+A change that made money
+several settings                                  $2,151.00        $842.00        9      no
+
+No change lost money
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 11866.0, drawdown 1481.5, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$3,273.00      $4,152.50       43      no
+several settings                                 $11,866.00      $1,481.50       44     yes
+several settings                                 $11,641.00      $1,481.50       44     yes
+several settings                                 $11,506.50      $1,481.50       46     yes
+several settings                                 $11,151.00      $2,530.00       59      no
+several settings                                 $11,091.00      $1,481.50       44     yes
+
+Most profitable change
+several settings                                 $11,866.00      $1,481.50       44     yes
+
+A change that made money
+several settings                                 $11,866.00      $1,481.50       44     yes
+
+A change that lost money
+vol_ma_len 20 to 48                              -$5,276.00      $5,989.50       41      no
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 2743.0, drawdown 869.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$3,682.00      $4,379.50       37      no
+several settings                                  $3,041.00      $2,241.00       44      no
+several settings                                  $2,897.00      $2,444.50       73      no
+several settings                                  $2,828.50      $1,439.50       19      no
+several settings                                  $2,743.00        $869.00       12      no
+several settings                                  $2,556.50      $3,586.50       71      no
+
+Most profitable change
+several settings                                  $3,041.00      $2,241.00       44      no
+
+A change that made money
+several settings                                  $3,041.00      $2,241.00       44      no
+
+A change that lost money
+several settings                                 -$8,192.00      $8,192.00       49      no
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 11384.0, drawdown 1859.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $618.00      $1,951.00       37      no
+several settings                                 $11,650.00      $2,338.00       70      no
+several settings                                 $11,384.00      $1,859.00       76     yes
+several settings                                 $10,900.00      $2,651.00       80      no
+several settings                                 $10,629.00      $1,859.00       76     yes
+several settings                                 $10,592.00      $2,651.00       78      no
+
+Most profitable change
+several settings                                 $11,650.00      $2,338.00       70      no
+
+A change that made money
+several settings                                 $11,650.00      $2,338.00       70      no
+
+A change that lost money
+several settings                                 -$2,714.30      $8,458.49       84      no
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 11761.0, drawdown 1834.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$3,118.77      $6,350.40       34      no
+several settings                                 $11,761.00      $1,834.00       39     yes
+several settings                                 $11,240.00      $1,834.00       40     yes
+several settings                                 $10,677.00      $1,834.00       38     yes
+several settings                                 $10,624.00      $1,834.00       41     yes
+several settings                                 $10,456.00      $1,850.00       39     yes
+
+Most profitable change
+several settings                                 $11,761.00      $1,834.00       39     yes
+
+A change that made money
+several settings                                 $11,761.00      $1,834.00       39     yes
+
+A change that lost money
+several settings                                 -$7,015.91      $8,083.91       27      no
+POC Confluence: attempts 200, best profit 18763.0, drawdown 8482.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         $10,149.50     $12,507.00      558      no
+several settings                                 $18,763.00      $8,482.50      567      no
+several settings                                 $18,688.00      $8,482.50      567      no
+ema_slope_len 10 to 1                            $17,849.00      $8,482.50      566      no
+several settings                                 $17,675.50      $8,482.50      567      no
+several settings                                 $17,463.00      $8,482.50      567      no
+
+Most profitable change
+several settings                                 $18,763.00      $8,482.50      567      no
+
+A change that made money
+several settings                                 $18,763.00      $8,482.50      567      no
+
+A change that lost money
+several settings                                 -$6,744.00      $9,399.50       79      no
+POC Confluence: attempts 200, best profit 2727.5, drawdown 8128.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$5,835.63      $5,835.63       34      no
+several settings                                  $2,912.00      $8,365.50      358      no
+several settings                                  $2,727.50      $8,128.00      360      no
+several settings                                  $2,707.00      $8,128.00      363      no
+several settings                                  $2,562.00      $8,365.50      358      no
+several settings                                  $2,466.50      $8,128.00      361      no
+
+Most profitable change
+several settings                                  $2,912.00      $8,365.50      358      no
+
+A change that made money
+several settings                                  $2,912.00      $8,365.50      358      no
+
+A change that lost money
+several settings                                 -$6,221.10      $7,956.10      337      no
+POC Confluence: attempts 200, best profit -1558.5, drawdown 10100.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$8,870.77     $11,888.77      278      no
+several settings                                 -$1,558.50     $10,100.00      511      no
+several settings                                 -$2,244.03     $10,655.68      493      no
+ema_len 100 to 267                               -$5,554.66      $9,664.00      508      no
+ema_len 100 to 260                               -$5,882.16     $10,013.75      493      no
+ema_len 100 to 259                               -$6,721.40     $10,013.75      475      no
+
+Most profitable change
+several settings                                 -$1,558.50     $10,100.00      511      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$9,318.81     $12,133.31      199      no
+POC Confluence: attempts 200, best profit -7789.184327308847, drawdown 8413.184327308847, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$7,641.50      $8,789.00      139      no
+several settings                                 -$7,470.07      $9,642.07      432      no
+several settings                                 -$7,541.50      $9,621.50      164      no
+several settings                                 -$7,554.87      $9,481.87      262      no
+several settings                                 -$7,618.50      $9,425.50      147      no
+
+Most profitable change
+several settings                                 -$7,470.07      $9,642.07      432      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$8,511.00     $11,584.50      153      no
+POC Confluence: attempts 200, best profit 14811.0, drawdown 6939.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         $10,967.00      $7,781.00      523      no
+ema_len 100 to 82                                $14,811.00      $6,939.00      564      no
+ema_len 100 to 90                                $13,982.00      $7,781.00      523      no
+ema_len 100 to 80                                $13,806.00      $7,494.00      564      no
+several settings                                 $13,014.00      $8,501.00      566      no
+ema_len 100 to 92                                $12,977.00      $7,781.00      523      no
+
+Most profitable change
+ema_len 100 to 82                                $14,811.00      $6,939.00      564      no
+
+A change that made money
+ema_len 100 to 82                                $14,811.00      $6,939.00      564      no
+
+A change that lost money
+ema_len 100 to 84                                -$7,726.36      $9,641.36       48      no
+POC Confluence: attempts 200, best profit 19192.0, drawdown 7570.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         $16,643.00      $8,828.00      557      no
+several settings                                 $19,192.00      $7,570.00      553      no
+several settings                                 $18,819.00      $7,233.00      566      no
+several settings                                 $18,819.00      $8,091.00      566      no
+ema_len 100 to 96                                $18,628.00      $8,828.00      557      no
+several settings                                 $18,491.00      $8,675.00      549      no
+
+Most profitable change
+several settings                                 $19,192.00      $7,570.00      553      no
+
+A change that made money
+several settings                                 $19,192.00      $7,570.00      553      no
+
+A change that lost money
+several settings                                 -$6,734.65      $8,275.65      178      no
+POC S/R + EMA: attempts 200, best profit 1006.0, drawdown 15398.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$6,901.48     $13,392.98       95      no
+several settings                                  $1,006.00     $15,398.00      254      no
+several settings                                    $785.00     $16,676.50      265      no
+several settings                                    $743.00     $16,603.00      262      no
+several settings                                    $431.00     $16,234.00      254      no
+several settings                                 -$1,670.15     $16,172.14      256      no
+
+Most profitable change
+several settings                                  $1,006.00     $15,398.00      254      no
+
+A change that made money
+several settings                                  $1,006.00     $15,398.00      254      no
+
+A change that lost money
+several settings                                 -$7,231.19      $7,654.19       53      no
+POC S/R + EMA: attempts 200, best profit 6125.5, drawdown 5975.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,355.50      $7,541.00      138      no
+several settings                                  $6,125.50      $5,975.00      117      no
+several settings                                  $5,949.00      $5,975.00      116      no
+several settings                                  $5,461.50      $6,300.00      116      no
+several settings                                  $5,363.00      $5,900.00      117      no
+several settings                                  $3,778.50      $6,990.50      119      no
+
+Most profitable change
+several settings                                  $6,125.50      $5,975.00      117      no
+
+A change that made money
+several settings                                  $6,125.50      $5,975.00      117      no
+
+A change that lost money
+several settings                                 -$7,095.05      $7,095.05       13      no
+POC S/R + EMA: attempts 200, best profit 15577.0, drawdown 6075.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$8,221.33     $16,454.83      175      no
+several settings                                 $15,577.00      $6,075.00      143      no
+several settings                                 $15,199.00      $6,075.00      141      no
+several settings                                 $14,353.50      $6,075.00      144      no
+several settings                                 $14,213.00      $7,862.00      142      no
+several settings                                 $14,186.50      $9,037.50      141      no
+
+Most profitable change
+several settings                                 $15,577.00      $6,075.00      143      no
+
+A change that made money
+several settings                                 $15,577.00      $6,075.00      143      no
+
+A change that lost money
+several settings                                 -$8,235.05      $8,753.55       87      no
+POC S/R + EMA: attempts 200, best profit 17163.5, drawdown 11874.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$9,441.74     $15,014.24       46      no
+several settings                                 $17,163.50     $11,874.50      259      no
+several settings                                 $17,133.31     $12,230.50      256      no
+several settings                                 $15,866.84     $15,526.19      217      no
+several settings                                 $14,895.81     $12,230.50      256      no
+several settings                                 $14,266.84     $15,526.19      217      no
+
+Most profitable change
+several settings                                 $17,163.50     $11,874.50      259      no
+
+A change that made money
+several settings                                 $17,163.50     $11,874.50      259      no
+
+A change that lost money
+several settings                                 -$9,591.34     $11,267.84       44      no
+POC S/R + EMA: attempts 200, best profit 29728.0, drawdown 6242.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         $18,649.00      $6,900.00      216      no
+ema_len 50 to 100                                $29,728.00      $6,242.00      192      no
+ema_len 50 to 99                                 $28,802.00      $7,063.00      193      no
+ema_len 50 to 97                                 $27,777.00      $7,063.00      193      no
+ema_len 50 to 93                                 $26,742.00      $7,063.00      198      no
+ema_len 50 to 92                                 $26,707.00      $7,098.00      198      no
+
+Most profitable change
+ema_len 50 to 100                                $29,728.00      $6,242.00      192      no
+
+A change that made money
+ema_len 50 to 100                                $29,728.00      $6,242.00      192      no
+
+A change that lost money
+several settings                                 -$7,265.66      $7,265.66       21      no
+POC S/R + EMA: attempts 200, best profit 13737.0, drawdown 17792.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $7,740.00     $19,309.00      320      no
+several settings                                 $13,737.00     $17,792.00      313      no
+several settings                                 $12,916.00     $17,792.00      314      no
+several settings                                 $11,167.00     $18,613.00      313      no
+several settings                                 $10,361.00     $17,792.00      314      no
+
+Most profitable change
+several settings                                 $13,737.00     $17,792.00      313      no
+
+A change that made money
+several settings                                 $13,737.00     $17,792.00      313      no
+
+A change that lost money
+ema_len 50 to 370                                -$8,130.23     $16,065.23      131      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 2866.5, drawdown 872.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $254.50        $336.00        3      no
+several settings                                  $2,866.50        $872.50       36      no
+several settings                                  $2,860.00      $1,450.50       40      no
+several settings                                  $2,819.50      $1,149.00       38      no
+several settings                                  $2,766.00      $1,249.50       44      no
+several settings                                  $2,577.50      $1,051.00       35      no
+
+Most profitable change
+several settings                                  $2,866.50        $872.50       36      no
+
+A change that made money
+several settings                                  $2,866.50        $872.50       36      no
+
+A change that lost money
+several settings                                 -$4,297.50      $4,769.00       60      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 5234.0, drawdown 1630.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$254.00      $1,363.00       14      no
+several settings                                  $5,234.00      $1,630.00       56     yes
+several settings                                  $4,621.50      $1,630.00       56     yes
+several settings                                  $4,332.50      $1,630.00       55     yes
+several settings                                  $4,310.50      $1,630.00       57     yes
+several settings                                  $3,689.00      $1,420.00       51     yes
+
+Most profitable change
+several settings                                  $5,234.00      $1,630.00       56     yes
+
+A change that made money
+several settings                                  $5,234.00      $1,630.00       56     yes
+
+A change that lost money
+several settings                                 -$2,021.00      $4,568.50       61      no
+Delta Volume BOS Night Shift: attempts 200, best profit 1374.0, drawdown 421.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $684.00         $48.00        6      no
+several settings                                  $1,688.00        $842.00        7      no
+several settings                                  $1,673.00        $842.00        7      no
+several settings                                  $1,561.00      $1,263.00        9      no
+several settings                                  $1,551.00      $1,263.00        9      no
+several settings                                  $1,541.00      $1,263.00        9      no
+
+Most profitable change
+several settings                                  $1,688.00        $842.00        7      no
+
+A change that made money
+several settings                                  $1,688.00        $842.00        7      no
+
+No change lost money
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 6477.0, drawdown 1491.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+several settings                                  $6,477.00      $1,491.00       93     yes
+several settings                                  $6,139.00      $1,491.00       96     yes
+several settings                                  $5,761.00      $2,459.00       99      no
+several settings                                  $4,136.00      $1,491.00       89     yes
+several settings                                  $3,945.00        $642.00       50     yes
+
+Most profitable change
+several settings                                  $6,477.00      $1,491.00       93     yes
+
+A change that made money
+several settings                                  $6,477.00      $1,491.00       93     yes
+
+A change that lost money
+several settings                                 -$2,713.00      $2,965.00       33      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 2381.0, drawdown 323.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$489.50        $955.00        7      no
+several settings                                  $2,381.00        $323.50        4      no
+several settings                                  $1,980.00      $1,363.00       45      no
+several settings                                  $1,844.00      $1,717.50       46      no
+several settings                                  $1,759.00      $1,328.50       31      no
+several settings                                  $1,369.00        $853.50       21      no
+
+Most profitable change
+several settings                                  $2,381.00        $323.50        4      no
+
+A change that made money
+several settings                                  $2,381.00        $323.50        4      no
+
+A change that lost money
+several settings                                 -$7,515.48      $7,515.48       49      no
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 6537.5, drawdown 1932.5, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$3,669.50      $5,164.50       37      no
+several settings                                  $6,537.50      $1,932.50       75     yes
+several settings                                  $6,025.00      $2,468.50       75      no
+several settings                                  $5,965.50      $2,468.50       77      no
+several settings                                  $5,767.00      $2,368.00       78      no
+several settings                                  $5,282.50      $1,753.00       80     yes
+
+Most profitable change
+several settings                                  $6,537.50      $1,932.50       75     yes
+
+A change that made money
+several settings                                  $6,537.50      $1,932.50       75     yes
+
+A change that lost money
+several settings                                 -$7,742.00      $7,742.00       47      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 578.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $594.50        $825.50       13      no
+several settings                                  $1,358.00        $995.50       22      no
+several settings                                  $1,069.00        $995.50       21      no
+several settings                                  $1,056.50        $995.50       21      no
+several settings                                  $1,022.00        $995.50       23      no
+several settings                                    $975.00        $995.50       25      no
+
+Most profitable change
+several settings                                  $1,358.00        $995.50       22      no
+
+A change that made money
+several settings                                  $1,358.00        $995.50       22      no
+
+A change that lost money
+several settings                                 -$6,233.31      $6,923.81       51      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 1065.0, drawdown 375.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+several settings                                  $1,078.00      $1,811.00       52      no
+several settings                                  $1,065.00        $375.00       10      no
+several settings                                    $808.00        $632.00        7      no
+several settings                                    $803.00        $632.00        7      no
+several settings                                    $789.00      $1,838.00       51      no
+
+Most profitable change
+several settings                                  $1,078.00      $1,811.00       52      no
+
+A change that made money
+several settings                                  $1,078.00      $1,811.00       52      no
+
+A change that lost money
+several settings                                 -$9,390.00      $9,390.00       11      no
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 5726.0, drawdown 1898.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,171.00      $3,670.00       31      no
+several settings                                  $5,726.00      $1,898.00       34     yes
+several settings                                  $5,710.00      $1,898.00       35     yes
+several settings                                  $5,179.00      $1,882.00       31     yes
+several settings                                  $4,083.00      $3,211.00       47      no
+several settings                                  $4,060.00      $3,014.00       55      no
+
+Most profitable change
+several settings                                  $5,726.00      $1,898.00       34     yes
+
+A change that made money
+several settings                                  $5,726.00      $1,898.00       34     yes
+
+A change that lost money
+several settings                                 -$6,716.68      $6,716.68       33      no
+POC Confluence: attempts 200, best profit -5647.374416100109, drawdown 6920.374416100109, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$5,849.31     $11,951.31      218      no
+ema_len 100 to 13                                -$5,641.79     $11,596.29      219      no
+several settings                                 -$5,647.37      $6,920.37      184      no
+ema_len 100 to 1353                              -$5,647.89      $6,920.89      148      no
+ema_len 100 to 1384                              -$5,648.58      $6,921.58      134      no
+several settings                                 -$5,653.62      $7,087.62      153      no
+
+Most profitable change
+ema_len 100 to 13                                -$5,641.79     $11,596.29      219      no
+
+No change made money
+
+A change that lost money
+ema_len 100 to 74                                -$6,090.67     $13,386.17      181      no
+POC Confluence: attempts 200, best profit -8130.807454388683, drawdown 8130.807454388683, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$8,537.09      $8,740.09       76      no
+several settings                                 -$7,970.70     $11,222.70      191      no
+several settings                                 -$8,117.39      $9,025.89      104      no
+several settings                                 -$8,117.56      $8,750.06       78      no
+several settings                                 -$8,118.40      $8,321.40       59      no
+several settings                                 -$8,123.23      $8,419.73       68      no
+
+Most profitable change
+several settings                                 -$7,970.70     $11,222.70      191      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$8,588.85      $8,791.85       89      no
+POC Confluence: attempts 200, best profit -6495.646687243283, drawdown 7147.646687243283, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$6,308.73     $11,816.73      414      no
+several settings                                 -$5,684.85     $10,234.85      547      no
+several settings                                 -$6,465.18      $7,864.18      103      no
+several settings                                 -$6,488.40      $7,887.40      114      no
+several settings                                 -$6,488.90      $7,887.90      114      no
+
+Most profitable change
+several settings                                 -$5,684.85     $10,234.85      547      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$6,911.24      $8,377.24      114      no
+Untitled strategy: attempts 200, best profit 1755.5, drawdown 2057.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,983.00      $2,390.00       28      no
+several settings                                  $1,755.50      $2,057.00       37      no
+several settings                                  $1,581.00      $2,935.00       29      no
+several settings                                  $1,511.50      $2,058.50       41      no
+several settings                                  $1,463.00      $2,374.00       42      no
+several settings                                  $1,458.50      $1,883.50       39      no
+
+Most profitable change
+several settings                                  $1,755.50      $2,057.00       37      no
+
+A change that made money
+several settings                                  $1,755.50      $2,057.00       37      no
+
+A change that lost money
+vol_ma_len 20 to 5                               -$2,705.00      $3,338.50       30      no
+POC S/R + EMA: attempts 200, best profit -5660.261178649105, drawdown 5736.761178649105, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$6,288.12      $8,559.62       80      no
+several settings                                 -$4,218.42     $12,788.78      189      no
+several settings                                 -$5,494.50     $12,892.00      137      no
+several settings                                 -$5,567.52     $12,062.02      137      no
+several settings                                 -$5,650.62      $7,409.62       84      no
+several settings                                 -$5,651.24      $6,459.74       85      no
+
+Most profitable change
+several settings                                 -$4,218.42     $12,788.78      189      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$6,450.65      $6,491.15       38      no
+POC S/R + EMA: attempts 200, best profit 5192.0, drawdown 10795.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$7,969.97     $13,549.47      159      no
+several settings                                  $5,192.00     $10,795.00      153      no
+several settings                                  $4,077.00     $12,728.00      168      no
+several settings                                  $3,988.00      $9,678.00      167      no
+several settings                                  $3,975.50      $9,690.50      167      no
+several settings                                  $3,483.00     $12,336.00      222      no
+
+Most profitable change
+several settings                                  $5,192.00     $10,795.00      153      no
+
+A change that made money
+several settings                                  $5,192.00     $10,795.00      153      no
+
+A change that lost money
+several settings                                 -$8,961.50     $11,708.50       59      no
+Untitled strategy: attempts 200, best profit 1902.0, drawdown 795.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,904.50      $2,363.00       22      no
+several settings                                  $1,902.00        $795.50       18      no
+several settings                                  $1,878.50        $819.00       19      no
+several settings                                  $1,512.50      $1,205.00       25      no
+several settings                                  $1,492.50      $1,114.50       20      no
+several settings                                  $1,425.50        $795.50       17      no
+
+Most profitable change
+several settings                                  $1,902.00        $795.50       18      no
+
+A change that made money
+several settings                                  $1,902.00        $795.50       18      no
+
+A change that lost money
+several settings                                 -$3,153.00      $3,544.50       23      no
+POC S/R + EMA: attempts 200, best profit -6299.753712977181, drawdown 6393.753712977181, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$6,497.18      $8,124.18       19      no
+several settings                                 -$6,258.15      $7,869.15       58      no
+several settings                                 -$6,273.91      $7,554.91       94      no
+several settings                                 -$6,299.75      $6,393.75       35      no
+several settings                                 -$6,413.49      $6,634.49       26      no
+several settings                                 -$6,441.93      $6,662.93       22      no
+
+Most profitable change
+several settings                                 -$6,258.15      $7,869.15       58      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$7,246.63      $7,417.63       16      no
+Untitled strategy: attempts 200, best profit 3696.0, drawdown 1080.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$3,612.00      $4,564.00       27      no
+several settings                                  $6,161.00      $3,822.00       34      no
+several settings                                  $3,712.00      $1,387.00       33     yes
+several settings                                  $3,696.00      $1,080.00       34     yes
+several settings                                  $3,325.00      $1,113.00       35     yes
+several settings                                  $2,857.00      $1,387.00       33      no
+
+Most profitable change
+several settings                                  $6,161.00      $3,822.00       34      no
+
+A change that made money
+several settings                                  $6,161.00      $3,822.00       34      no
+
+A change that lost money
+vol_ma_len 20 to 42                              -$4,483.00      $4,951.00       28      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 1881.0, drawdown 728.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$532.00        $931.50       12      no
+several settings                                  $2,110.50        $970.50       32      no
+several settings                                  $1,975.50      $1,328.50       42      no
+several settings                                  $1,974.50      $2,018.00       58      no
+several settings                                  $1,881.00        $970.50       29      no
+several settings                                  $1,881.00        $728.50       29      no
+
+Most profitable change
+several settings                                  $2,110.50        $970.50       32      no
+
+A change that made money
+several settings                                  $2,110.50        $970.50       32      no
+
+A change that lost money
+several settings                                 -$3,340.50      $3,340.50       48      no
+Untitled strategy: attempts 200, best profit 4106.5, drawdown 795.5, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $659.50      $1,205.00       23      no
+several settings                                  $4,106.50        $795.50       21     yes
+several settings                                  $3,244.00      $1,091.00       21     yes
+several settings                                  $3,137.50      $1,445.50       25     yes
+several settings                                  $2,961.00        $795.50       24      no
+several settings                                  $2,870.50        $795.50       22      no
+
+Most profitable change
+several settings                                  $4,106.50        $795.50       21     yes
+
+A change that made money
+several settings                                  $4,106.50        $795.50       21     yes
+
+A change that lost money
+several settings                                 -$1,567.50      $2,520.50       30      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 3496.0, drawdown 323.5, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,004.00      $1,858.50       14      no
+several settings                                  $3,496.00        $323.50       14     yes
+several settings                                  $3,219.50        $323.50       13     yes
+several settings                                  $2,918.00        $323.50       12      no
+several settings                                  $2,836.50        $647.00       16      no
+several settings                                  $2,641.50        $323.50       11      no
+
+Most profitable change
+several settings                                  $3,496.00        $323.50       14     yes
+
+A change that made money
+several settings                                  $3,496.00        $323.50       14     yes
+
+A change that lost money
+several settings                                 -$2,668.50      $3,246.50       46      no
+Day Shift Delta Volume Breakout + VAH/VAL Zones: attempts 200, best profit 3940.0, drawdown 1669.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+several settings                                  $3,940.00      $1,669.00       75     yes
+several settings                                  $3,619.00      $1,866.00       76     yes
+several settings                                  $3,024.00      $1,953.00       76     yes
+several settings                                  $2,746.00      $1,637.00       54      no
+several settings                                  $2,735.00      $1,953.00       75      no
+
+Most profitable change
+several settings                                  $3,940.00      $1,669.00       75     yes
+
+A change that made money
+several settings                                  $3,940.00      $1,669.00       75     yes
+
+A change that lost money
+several settings                                 -$3,379.00      $3,943.00       39      no
+Untitled strategy: attempts 200, best profit 3590.5, drawdown 433.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $3,204.50        $480.00       28     yes
+several settings                                  $3,590.50        $433.00       27     yes
+several settings                                  $3,090.50        $433.00       27     yes
+several settings                                  $2,751.50        $480.00       26      no
+several settings                                  $2,728.00        $772.00       27      no
+
+Most profitable change
+several settings                                  $3,590.50        $433.00       27     yes
+
+A change that made money
+several settings                                  $3,590.50        $433.00       27     yes
+
+A change that lost money
+several settings                                 -$2,286.50      $3,259.50       34      no
+Untitled strategy: attempts 200, best profit 2030.0, drawdown 1129.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            -$99.00      $2,403.00       29      no
+several settings                                  $2,405.00      $1,871.00       30      no
+several settings                                  $2,050.00      $2,242.00       30      no
+several settings                                  $2,030.00      $1,129.00       20      no
+several settings                                  $2,014.00      $1,129.00       21      no
+several settings                                  $1,982.00      $2,016.00       28      no
+
+Most profitable change
+several settings                                  $2,405.00      $1,871.00       30      no
+
+A change that made money
+several settings                                  $2,405.00      $1,871.00       30      no
+
+A change that lost money
+several settings                                 -$2,741.00      $4,500.00       31      no
+Untitled strategy: attempts 200, best profit 1232.0, drawdown 286.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $316.00      $1,302.00       44      no
+several settings                                  $1,742.50        $858.00       45      no
+several settings                                  $1,727.00        $813.00       43      no
+vol_ma_len 20 to 6                                $1,599.00        $813.00       41      no
+vol_ma_len 20 to 5                                $1,464.50      $1,212.00       43      no
+several settings                                  $1,378.50      $1,208.50       44      no
+
+Most profitable change
+several settings                                  $1,742.50        $858.00       45      no
+
+A change that made money
+several settings                                  $1,742.50        $858.00       45      no
+
+A change that lost money
+several settings                                 -$4,991.00      $5,693.50       81      no
+Untitled strategy: attempts 200, best profit 3590.0, drawdown 1274.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $894.50      $2,012.00       38      no
+several settings                                  $3,590.00      $1,274.00       35     yes
+several settings                                  $3,290.00      $1,274.00       35     yes
+several settings                                  $3,054.00      $1,652.50       36     yes
+several settings                                  $2,501.00      $1,463.00       34      no
+several settings                                  $2,452.50      $1,728.50       35      no
+
+Most profitable change
+several settings                                  $3,590.00      $1,274.00       35     yes
+
+A change that made money
+several settings                                  $3,590.00      $1,274.00       35     yes
+
+A change that lost money
+several settings                                 -$4,256.50      $6,373.00       54      no
+Untitled strategy: attempts 200, best profit 1623.0, drawdown 1228.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$596.50      $2,199.00       19      no
+several settings                                  $1,623.00      $1,228.50       32      no
+several settings                                  $1,237.00      $1,571.00       33      no
+several settings                                  $1,093.00        $833.00       12      no
+several settings                                  $1,036.00      $1,410.00       24      no
+several settings                                    $938.00      $1,504.00       42      no
+
+Most profitable change
+several settings                                  $1,623.00      $1,228.50       32      no
+
+A change that made money
+several settings                                  $1,623.00      $1,228.50       32      no
+
+A change that lost money
+several settings                                 -$2,945.00      $4,394.50       45      no
+Untitled strategy: attempts 200, best profit 6293.0, drawdown 1399.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$378.00      $2,554.00       48      no
+several settings                                  $6,293.00      $1,399.00       62     yes
+several settings                                  $6,167.00      $1,863.00       53     yes
+several settings                                  $6,092.00      $1,577.00       53     yes
+several settings                                  $6,045.50      $1,746.00       72     yes
+several settings                                  $6,027.50      $1,399.00       60     yes
+
+Most profitable change
+several settings                                  $6,293.00      $1,399.00       62     yes
+
+A change that made money
+several settings                                  $6,293.00      $1,399.00       62     yes
+
+A change that lost money
+several settings                                   -$895.00      $3,886.00       70      no
+Untitled strategy: attempts 200, best profit 479.0, drawdown 2037.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$2,827.00      $2,967.50       32      no
+several settings                                    $517.00      $2,981.00       53      no
+several settings                                    $479.00      $2,037.00       36      no
+several settings                                    $418.00      $2,074.50       62      no
+several settings                                    $416.50      $2,099.50       36      no
+several settings                                    $330.50      $2,199.50       62      no
+
+Most profitable change
+several settings                                    $517.00      $2,981.00       53      no
+
+A change that made money
+several settings                                    $517.00      $2,981.00       53      no
+
+A change that lost money
+use_session True to False                        -$4,564.50      $4,676.50       57      no
+Untitled strategy: attempts 200, best profit 1487.0, drawdown 1774.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,318.00      $2,991.00       48      no
+several settings                                  $1,994.00      $3,039.00       76      no
+several settings                                  $1,524.00      $3,039.00       76      no
+several settings                                  $1,487.00      $1,774.00       73      no
+several settings                                  $1,486.00      $2,045.00       74      no
+several settings                                  $1,321.00      $2,045.00       74      no
+
+Most profitable change
+several settings                                  $1,994.00      $3,039.00       76      no
+
+A change that made money
+several settings                                  $1,994.00      $3,039.00       76      no
+
+A change that lost money
+several settings                                 -$3,363.00      $3,972.00       53      no
+Untitled strategy: attempts 200, best profit 6499.0, drawdown 931.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $508.00      $1,669.00       22      no
+several settings                                  $6,499.00        $931.00       36     yes
+several settings                                  $5,941.00        $931.00       34     yes
+several settings                                  $5,672.00        $929.00       33     yes
+several settings                                  $5,670.00        $931.00       35     yes
+several settings                                  $5,528.00      $1,084.00       37     yes
+
+Most profitable change
+several settings                                  $6,499.00        $931.00       36     yes
+
+A change that made money
+several settings                                  $6,499.00        $931.00       36     yes
+
+A change that lost money
+several settings                                 -$6,505.00      $6,505.00       35      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 7287.0, drawdown 1688.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $8,317.50      $2,020.50       45      no
+vol_ma_len 20 to 28                              $10,464.50      $2,020.50       43      no
+vol_ma_len 20 to 35                              $10,446.00      $2,020.50       39      no
+vol_ma_len 20 to 39                              $10,196.00      $2,020.50       39      no
+vol_ma_len 20 to 30                               $9,828.50      $2,020.50       44      no
+several settings                                  $9,688.00      $3,766.50       67      no
+
+Most profitable change
+vol_ma_len 20 to 28                              $10,464.50      $2,020.50       43      no
+
+A change that made money
+vol_ma_len 20 to 28                              $10,464.50      $2,020.50       43      no
+
+A change that lost money
+several settings                                 -$9,054.84      $9,054.84       46      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 13815.0, drawdown 1391.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $7,629.00      $2,027.00       36      no
+several settings                                 $13,815.00      $1,391.00       35     yes
+several settings                                 $13,296.50      $5,019.50       56      no
+several settings                                 $13,058.50      $1,938.00       39     yes
+several settings                                 $12,996.50      $5,019.50       56      no
+several settings                                 $12,763.50      $1,391.00       34     yes
+
+Most profitable change
+several settings                                 $13,815.00      $1,391.00       35     yes
+
+A change that made money
+several settings                                 $13,815.00      $1,391.00       35     yes
+
+No change lost money
+Untitled strategy: attempts 200, best profit -3755.5, drawdown 4344.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$4,030.50      $4,500.50       38      no
+several settings                                 -$3,755.50      $4,344.00       38      no
+several settings                                 -$4,105.50      $4,575.50       38      no
+several settings                                 -$4,130.50      $4,533.50       38      no
+several settings                                 -$4,346.00      $4,749.00       36      no
+
+Most profitable change
+several settings                                 -$3,755.50      $4,344.00       38      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$7,576.13      $7,576.13       54      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 4777.0, drawdown 1863.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $2,914.00      $3,726.00       31      no
+several settings                                 $12,670.00      $3,105.00       40      no
+several settings                                 $11,586.00      $3,105.00       39      no
+several settings                                 $10,965.00      $3,105.00       40      no
+several settings                                 $10,502.00      $3,105.00       38      no
+several settings                                 $10,344.00      $3,105.00       41      no
+
+Most profitable change
+several settings                                 $12,670.00      $3,105.00       40      no
+
+A change that made money
+several settings                                 $12,670.00      $3,105.00       40      no
+
+A change that lost money
+several settings                                 -$6,753.64      $9,226.64       65      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 15988.0, drawdown 1622.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                            $835.00      $6,911.50       41      no
+several settings                                 $15,988.00      $1,622.00       42     yes
+several settings                                 $15,909.50      $1,741.00       48     yes
+several settings                                 $15,810.00      $1,622.00       40     yes
+several settings                                 $15,559.50      $1,659.50       48     yes
+several settings                                 $15,273.50      $1,741.00       49     yes
+
+Most profitable change
+several settings                                 $15,988.00      $1,622.00       42     yes
+
+A change that made money
+several settings                                 $15,988.00      $1,622.00       42     yes
+
+A change that lost money
+several settings                                 -$7,788.12     $10,384.62       47      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 12288.0, drawdown 1738.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $3,234.00      $3,105.00       46      no
+several settings                                 $27,748.00      $2,484.00       72      no
+several settings                                 $27,127.00      $2,484.00       73      no
+several settings                                 $26,807.00      $2,642.00       73      no
+several settings                                 $26,344.00      $2,484.00       71      no
+several settings                                 $26,043.00      $2,484.00       72      no
+
+Most profitable change
+several settings                                 $27,748.00      $2,484.00       72      no
+
+A change that made money
+several settings                                 $27,748.00      $2,484.00       72      no
+
+A change that lost money
+vol_ma_len 20 to 8                               -$6,071.31      $7,098.31       34      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 3193.0, drawdown 6987.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$6,711.00      $7,212.50       26      no
+several settings                                  $3,193.00      $6,987.00       87      no
+several settings                                  $2,909.98      $8,501.50       96      no
+several settings                                  $2,557.00      $6,987.00       88      no
+several settings                                  $1,833.48      $9,578.00       95      no
+several settings                                  $1,480.50      $6,987.00       87      no
+
+Most profitable change
+several settings                                  $3,193.00      $6,987.00       87      no
+
+A change that made money
+several settings                                  $3,193.00      $6,987.00       87      no
+
+A change that lost money
+several settings                                 -$6,977.66      $6,977.66       12      no
+Untitled strategy: attempts 200, best profit 17.0, drawdown 1064.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,612.00      $2,161.00       17      no
+several settings                                     $17.00      $1,064.00       13      no
+several settings                                    -$48.00      $1,113.00        8      no
+several settings                                    -$80.00        $742.00       10      no
+several settings                                   -$128.00      $1,580.00       13      no
+several settings                                   -$208.00      $1,484.00       28      no
+
+Most profitable change
+several settings                                     $17.00      $1,064.00       13      no
+
+A change that made money
+several settings                                     $17.00      $1,064.00       13      no
+
+A change that lost money
+several settings                                 -$5,144.00      $5,144.00       34      no
+Delta Volume Breakout Night Shift [Optimized]: attempts 1, best profit 0.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+
+Most profitable change
+Original                                              $0.00          $0.00        0      no
+
+No change made money
+
+No change lost money
+Delta Volume Breakout Night Shift [Optimized]: attempts 200, best profit 2973.5, drawdown 573.5, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,549.50      $1,740.00       17      no
+ema_len 50 to 30                                  $2,973.50        $573.50       24      no
+ema_len 50 to 31                                  $2,861.00        $573.50       24      no
+ema_len 50 to 8                                   $2,843.50        $811.00       29      no
+ema_len 50 to 36                                  $2,750.00        $933.00       25      no
+ema_len 50 to 26                                  $2,700.00        $695.50       25      no
+
+Most profitable change
+ema_len 50 to 30                                  $2,973.50        $573.50       24      no
+
+A change that made money
+ema_len 50 to 30                                  $2,973.50        $573.50       24      no
+
+A change that lost money
+ema_len 50 to 4                                  -$3,947.50      $4,973.50       35      no
+Delta Volume Breakout Night Shift [Optimized]: attempts 1, best profit 0.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+
+Most profitable change
+Original                                              $0.00          $0.00        0      no
+
+No change made money
+
+No change lost money
+Untitled strategy: attempts 200, best profit 0.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$2,171.00      $2,986.00       36      no
+vol_ma_len 20 to 47                              -$1,055.00      $2,002.00       30      no
+vol_ma_len 20 to 6                               -$1,220.50      $1,817.00       28      no
+vol_ma_len 20 to 48                              -$1,456.50      $2,295.00       29      no
+several settings                                 -$1,496.50      $3,388.00       69      no
+several settings                                 -$1,554.00      $2,661.50       39      no
+
+Most profitable change
+vol_ma_len 20 to 47                              -$1,055.00      $2,002.00       30      no
+
+No change made money
+
+A change that lost money
+several settings                                 -$5,561.39      $6,384.39       68      no
+Untitled strategy: attempts 200, best profit 4419.0, drawdown 1457.0, trail cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                          $2,599.00      $1,459.00       41      no
+vol_ma_len 20 to 5                                $4,419.00      $1,457.00       46     yes
+several settings                                  $4,383.50      $1,868.50       64     yes
+several settings                                  $4,374.00      $1,868.50       66     yes
+several settings                                  $4,197.50      $1,868.50       65     yes
+several settings                                  $4,088.00      $1,661.50       67     yes
+
+Most profitable change
+vol_ma_len 20 to 5                                $4,419.00      $1,457.00       46     yes
+
+A change that made money
+vol_ma_len 20 to 5                                $4,419.00      $1,457.00       46     yes
+
+A change that lost money
+several settings                                   -$466.00      $2,138.50       56      no
+Delta Volume Breakout Night Shift [Optimized]: attempts 1, best profit 0.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+
+Most profitable change
+Original                                              $0.00          $0.00        0      no
+
+No change made money
+
+No change lost money
+Untitled strategy: attempts 200, best profit 389.0, drawdown 895.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                             -$8.00      $1,359.00       18      no
+several settings                                    $594.00      $1,355.00       21      no
+several settings                                    $575.00      $1,330.00       20      no
+several settings                                    $509.00      $1,355.00       21      no
+several settings                                    $389.00        $895.00       11      no
+several settings                                    $323.00      $1,540.00       22      no
+
+Most profitable change
+several settings                                    $594.00      $1,355.00       21      no
+
+A change that made money
+several settings                                    $594.00      $1,355.00       21      no
+
+A change that lost money
+several settings                                 -$6,170.51      $6,324.51       52      no
+Delta Volume Breakout Night Shift [Optimized]: attempts 5, best profit 0.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                           -$236.00        $236.00        1      no
+ema_len 50 to 13                                   -$286.00        $286.00        1      no
+max_trades_session 1 to 2                          -$472.00        $472.00        2      no
+several settings                                   -$522.00        $522.00        2      no
+ema_len 50 to 5                                       $0.00          $0.00        0      no
+
+Most profitable change
+Original                                           -$236.00        $236.00        1      no
+
+No change made money
+
+A change that lost money
+several settings                                   -$522.00        $522.00        2      no
+Night Shift Delta Volume Breakout: attempts 200, best profit 3385.5, drawdown 2532.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                         -$1,146.00      $5,579.50       36      no
+several settings                                  $3,385.50      $2,532.00       32      no
+several settings                                  $2,806.00      $2,167.50       29      no
+several settings                                  $2,575.50      $3,962.00       42      no
+several settings                                  $2,331.00      $2,599.00       29      no
+vol_ma_len 20 to 5                                $1,890.00      $3,815.00       35      no
+
+Most profitable change
+several settings                                  $3,385.50      $2,532.00       32      no
+
+A change that made money
+several settings                                  $3,385.50      $2,532.00       32      no
+
+A change that lost money
+several settings                                 -$7,888.00      $8,378.00       34      no
+Delta Volume Breakout Night Shift [Optimized]: attempts 4, best profit 334.0, drawdown 0.0, trail not cleared. Attempt results. Each row builds on the prior result, not a fresh copy of the original script.
+
+Change                                               Profit       Drawdown   Trades   Trail
+-------------------------------------------- -------------- -------------- -------- -------
+Original                                              $0.00          $0.00        0      no
+ema_len 50 to 24                                    $334.00          $0.00        1      no
+several settings                                    $113.00        $221.00        2      no
+ema_len 50 to 25                                   -$221.00        $221.00        1      no
+
+Most profitable change
+ema_len 50 to 24                                    $334.00          $0.00        1      no
+
+A change that made money
+ema_len 50 to 24                                    $334.00          $0.00        1      no
+
+A change that lost money
+ema_len 50 to 25                                   -$221.00        $221.00        1      no

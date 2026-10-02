@@ -67,7 +67,7 @@ def lead_script() -> dict | None:
             chosen["pine"] = _legal_defaults(chosen["pine"])
             return chosen
     research = book.get("headquarters_research")
-    if isinstance(research, dict) and research.get("engine") == "pineforge" and research.get("pine"):
+    if isinstance(research, dict) and research.get("engine") == "backtrader" and research.get("pine"):
         research = dict(research)
         research["pine"] = _legal_defaults(research["pine"])
         return research
@@ -103,7 +103,7 @@ def remember_research(row: dict, filename: str, title: str) -> None:
     strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
     if strategy.get("last_meeting"):
         return
-    if str(row.get("engine") or row.get("runner") or "") != "pineforge":
+    if str(row.get("engine") or row.get("runner") or "") != "backtrader":
         return
     note = str(row.get("note") or "")
     if row.get("blocked") or int(row.get("trades") or 0) < 1:
@@ -144,7 +144,7 @@ def absorb_research_notes() -> None:
         row = data.get("best") or {}
         if not row or _stand_in(row):
             continue
-        if str(row.get("engine") or row.get("runner") or "") != "pineforge":
+        if str(row.get("engine") or row.get("runner") or "") != "backtrader":
             continue
         candidate = _candidate(row, str(data.get("file") or path.stem), str(data.get("title") or path.stem))
         if not candidate or not candidate.get("pine"):
@@ -221,7 +221,7 @@ def _leader_row(path: Path) -> dict | None:
     engine = str(best.get("engine") or runner)
     if runner in _STAND_INS or engine in _STAND_INS:
         return None
-    if engine != "pineforge" and runner != "pineforge":
+    if engine != "backtrader" and runner != "backtrader":
         return None
     if _stand_in(best) or best.get("net_profit") is None:
         return None
@@ -325,7 +325,7 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
     take_profit = row.get("take_profit")
     target = f" Take profit ${float(take_profit):,.0f}." if isinstance(take_profit, (int, float)) and float(take_profit) > 0 else ""
     formula = (
-        f"PineForge ran this Pine script on the {names.get(timeframe, timeframe)} chart. "
+        f"Backtrader ran this Pine script on the {names.get(timeframe, timeframe)} chart. "
         f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.{target}"
     )
     return {
@@ -340,7 +340,7 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
         "take_profit": take_profit,
         "passed": bool(row.get("passed")),
         "source": "research",
-        "engine": "pineforge",
+        "engine": "backtrader",
     }
 
 

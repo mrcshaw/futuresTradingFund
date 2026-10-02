@@ -2,9 +2,8 @@
 
 The card keeper reads measured test changes. The strategy developer writes
 one new Pine script from those cards. The script checker rejects a script
-that has no entry or exit. The creation tester runs it once on engine 4.
-The chart researcher then leaves it for the three chart developers. The
-lesson writer puts the finished changes back on the cards.
+that has no entry or exit. The creation tester runs the new script on engine 4 for up to 200 attempts
+and stops when it is profitable. The script is saved in createdStrategies.
 """
 
 from __future__ import annotations
@@ -13,8 +12,9 @@ import json
 import re
 from pathlib import Path
 
-from futuresfund.learn import LEARNING, NOTES, RESEARCH_CHARTS
-from futuresfund.roster import CHART_RESEARCHER
+from futuresfund.learn import LEARNING, NOTES
+
+CREATED = LEARNING.parent / "createdStrategies"
 
 CARD_KEEPER = "Card keeper"
 STRATEGY_DEVELOPER = "Strategy developer"
@@ -101,7 +101,7 @@ def baseline_ready(rows: list[dict]) -> bool:
 def script_name(title: str, folder: Path | None = None) -> str:
     """A new file name that does not replace a script already in the folder."""
     slug = re.sub(r"[^a-z0-9]+", "_", (title or "strategy").lower()).strip("_")[:40] or "strategy"
-    folder = folder or LEARNING
+    folder = folder or CREATED
     name = f"{_CREATED}{slug}.pine"
     stem = f"{_CREATED}{slug}"
     number = 2
@@ -132,44 +132,78 @@ def prompt_for(cards: list[dict]) -> str:
     return "\n".join(lines).strip()
 
 
+SEEN_PATH = NOTES / "creation_sources.json"
+
+
+def finished_chart_studies(learning: Path | None = None, notes: Path | None = None) -> list[str]:
+    """Scripts whose 2-minute, 5-minute, and 15-minute studies are finished on one instrument."""
+    from futuresfund.learn import RESEARCH_CHARTS, _chart_finished, research_instruments
+
+    folder = learning or LEARNING
+    store = notes or NOTES
+    found = []
+    if not folder.is_dir():
+        return found
+    for path in sorted(folder.glob("*.pine")):
+        if not path.is_file() or path.name.startswith(_CREATED):
+            continue
+        record = _note_for(store, path)
+        for root in research_instruments():
+            if all(_chart_finished(record, root, timeframe) for timeframe in RESEARCH_CHARTS):
+                found.append(path.name)
+                break
+    return found
+
+
 def run_creation(board, pause) -> None:
-    """Keep writing one script at a time while research is running."""
-    from futuresfund.learn import _load_frames, _sleep, _wait
+    """Write one script after the three chart developers finish, then test it on engine 4."""
+    from futuresfund.learn import (
+        ACCOUNT_SIZE,
+        ATTEMPT_LIMIT,
+        _load_frames,
+        _pine_params,
+        _engine_execute,
+        _search,
+        _sleep,
+        _wait,
+        _with_contract_point,
+        pine_facts,
+    )
 
     while not board.cancel.is_set():
         if not _wait(board, pause):
             return
         cards = build_cards()
         write_cards(cards)
+        source_name = _next_source()
+        if source_name is None:
+            board.post(
+                STRATEGY_DEVELOPER,
+                "Waiting until the 2-minute, 5-minute, and 15-minute developers finish a backtest.",
+                kind="log",
+                channel=STRATEGY_DEVELOPER,
+            )
+            if not _sleep(board, pause, 30):
+                return
+            continue
         ready = measured_cards(cards)
         board.post(
             CARD_KEEPER,
-            f"{len(cards)} scripts are in the learning folder. {len(ready)} have a measured change.",
-            kind="log",
+            f"The 2-minute, 5-minute, and 15-minute studies of {source_name} are finished. {len(ready)} cards have a measured change.",
+            kind="report",
             channel=CARD_KEEPER,
         )
         if not ready:
-            board.post(
-                CARD_KEEPER,
-                "No measured change is on a card yet. The strategy developer waits until a chart study records one.",
-                kind="report",
-                channel=CARD_KEEPER,
-            )
-            if not _sleep(board, pause, 60):
+            _remember_source(source_name)
+            if not _sleep(board, pause, 30):
                 return
             continue
-        waiting = _created_waiting()
-        if waiting:
-            board.post(
-                CHART_RESEARCHER,
-                f"{waiting.name} is still in the learning folder. The chart developers are testing it on the 2-minute, 5-minute, and 15-minute charts.",
-                kind="log",
-                channel=CHART_RESEARCHER,
-            )
-            if not _sleep(board, pause, 60):
-                return
-            continue
-        reply = _ask(board, STRATEGY_DEVELOPER, "Writing one Pine script from the cards", prompt_for(ready))
+        reply = _ask(
+            board,
+            STRATEGY_DEVELOPER,
+            f"Writing one Pine script after {source_name}",
+            prompt_for(ready),
+        )
         source = extract_pine(reply)
         problems = pine_problems(source)
         if problems:
@@ -184,57 +218,103 @@ def run_creation(board, pause) -> None:
             continue
         board.post(
             SCRIPT_CHECKER,
-            "The script has a version line, an entry, and an exit. Engine 4 can run it once.",
+            "The script has a version line, an entry, and an exit. Engine 4 will run up to 200 attempts.",
             kind="log",
             channel=SCRIPT_CHECKER,
         )
-        rows = _baseline(board, source, _load_frames("ES"))
-        if board.cancel.is_set():
-            return
-        if not baseline_ready(rows):
-            board.post(
-                CREATION_TESTER,
-                "Engine 4 did not return a trade list. The script stays out of the learning folder.",
-                kind="report",
-                channel=CREATION_TESTER,
-            )
-            if not _sleep(board, pause, 60):
-                return
-            continue
         title = _title_from(source)
-        name = script_name(title)
-        LEARNING.mkdir(parents=True, exist_ok=True)
-        (LEARNING / name).write_text(source if source.endswith("\n") else source + "\n", encoding="utf-8")
-        summary = _baseline_summary(rows)
+        name = _store_created(title, source)
+        _remember_source(source_name)
+        created = CREATED / name
+        facts = pine_facts(source) if source else {"title": title, "inputs": [], "named": {}}
+        frames = _load_frames("ES")
         board.post(
             CREATION_TESTER,
-            f"Engine 4 finished {name} at the original settings. {summary}",
+            f"Engine 4 is backtesting {name} on the 5-minute ES chart until it is profitable, up to {ATTEMPT_LIMIT} attempts.",
             kind="report",
             channel=CREATION_TESTER,
         )
-        board.post(
-            CHART_RESEARCHER,
-            f"{name} is in the learning folder. The 2-minute, 5-minute, and 15-minute developers will each run 120 different results.",
-            kind="report",
-            channel=CHART_RESEARCHER,
+        execute = _engine_execute(
+            source, frames, facts, board, "ES", CREATION_TESTER, "5m", CREATION_ENGINE,
         )
-        refreshed = build_cards()
-        write_cards(refreshed)
+        trials = _search(
+            _with_contract_point(_pine_params(facts), "ES"),
+            execute,
+            ACCOUNT_SIZE,
+            ATTEMPT_LIMIT,
+            board,
+            created,
+            pause,
+            facts,
+            extras=False,
+            developer=CREATION_TESTER,
+            researcher=STRATEGY_DEVELOPER,
+            until_profitable=True,
+        )
+        if board.cancel.is_set():
+            return
+        best = max(trials, key=lambda row: float(row.get("net_profit") or -10**12)) if trials else {}
+        if any(_row_is_profitable(row) for row in trials):
+            board.post(
+                CREATION_TESTER,
+                f"{name} is profitable on engine 4. Profit {best.get('net_profit')}, drawdown {best.get('max_drawdown')}, trades {best.get('trades')}. It stays in createdStrategies.",
+                kind="report",
+                channel=CREATION_TESTER,
+            )
+        else:
+            board.post(
+                CREATION_TESTER,
+                f"{name} used {len(trials)} of {ATTEMPT_LIMIT} attempts and was not profitable. Profit {best.get('net_profit')}, trades {best.get('trades')}. It stays in createdStrategies.",
+                kind="report",
+                channel=CREATION_TESTER,
+            )
         board.post(
             LESSON_WRITER,
-            f"The cards now include {len(measured_cards(refreshed))} scripts with a measured change.",
+            f"Engine 4 finished {name}. The next script waits for the next completed 2-minute, 5-minute, and 15-minute backtest.",
             kind="log",
             channel=LESSON_WRITER,
         )
-        if not _sleep(board, pause, 60):
-            return
 
 
-def _created_waiting() -> Path | None:
-    if not LEARNING.is_dir():
-        return None
-    found = sorted(path for path in LEARNING.glob(f"{_CREATED}*.pine") if path.is_file())
-    return found[0] if found else None
+def _row_is_profitable(row: dict) -> bool:
+    from futuresfund.learn import _row_profitable
+
+    return _row_profitable(row)
+
+
+def _next_source() -> str | None:
+    seen = _seen_sources()
+    for name in finished_chart_studies():
+        if name not in seen:
+            return name
+    return None
+
+
+def _seen_sources() -> set[str]:
+    if not SEEN_PATH.is_file():
+        return set()
+    try:
+        data = json.loads(SEEN_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return set()
+    found = data.get("seen") if isinstance(data, dict) else None
+    return {str(item) for item in found} if isinstance(found, list) else set()
+
+
+def _remember_source(name: str) -> None:
+    seen = _seen_sources()
+    seen.add(name)
+    NOTES.mkdir(parents=True, exist_ok=True)
+    SEEN_PATH.write_text(json.dumps({"seen": sorted(seen)}, indent=2), encoding="utf-8")
+
+
+def _store_created(title: str, source: str) -> str:
+    """Save a new script beside the learning folder. The chart studies do not pick it up."""
+    CREATED.mkdir(parents=True, exist_ok=True)
+    name = script_name(title, CREATED)
+    text = source if source.endswith("\n") else source + "\n"
+    (CREATED / name).write_text(text, encoding="utf-8")
+    return name
 
 
 def _note_for(store: Path, path: Path) -> dict:
@@ -295,40 +375,6 @@ def _ask(board, agent: str, activity: str, prompt: str) -> str:
 
     reply = get_crew(board).run(agent, activity, work)
     return reply or ""
-
-
-def _baseline(board, source: str, frames: dict) -> list[dict]:
-    from futuresfund.pineforge_engine import run_script
-
-    rows = []
-    cancel = None if board is None else board.cancel
-    for name in RESEARCH_CHARTS:
-        if cancel is not None and cancel.is_set():
-            break
-        bars = frames.get(name) or []
-        if len(bars) < 80:
-            rows.append({"timeframe": name, "error": f"The {name} chart is not loaded.", "fatal": True, "trades": 0})
-            continue
-        board.post(
-            CREATION_TESTER,
-            f"Running the new script once on the {name} chart.",
-            kind="log",
-            channel=CREATION_TESTER,
-        )
-        measured = run_script(source, bars, name, None, cancel, "ES", "new script", CREATION_ENGINE) or {}
-        measured["timeframe"] = name
-        rows.append(measured)
-    return rows
-
-
-def _baseline_summary(rows: list[dict]) -> str:
-    parts = []
-    for row in rows:
-        parts.append(
-            f"{row.get('timeframe')} profit {row.get('net_profit')}, "
-            f"drawdown {row.get('max_drawdown')}, trades {row.get('trades')}"
-        )
-    return "; ".join(parts)
 
 
 def _title_from(source: str) -> str:

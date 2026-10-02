@@ -67,7 +67,7 @@ def lab_report():
     report["studying"] = board.research in {"running", "stopping"}
     report["slate"] = research_slate()
     report["trials"] = report.get("trials", [])[-40:]
-    from futuresfund.pineforge_engine import engine_status
+    from futuresfund.backtrader_engine import engine_status
 
     report["engines"] = engine_status()
     return report
@@ -557,7 +557,7 @@ def _startup():
         )
         board.post(
             "System",
-            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. Four PineForge containers stay warm: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart.",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. Backtrader runs the backtests: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart.",
             kind="system",
             channel="headquarters",
         )

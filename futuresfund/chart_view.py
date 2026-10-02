@@ -74,8 +74,7 @@ def match_candle(signal: dict) -> str:
 
 
 def _candles(root: str, frame: str) -> list[dict]:
-    from futuresfund.chart_feed import fold_bars, live_bars
-    from futuresfund.pineforge_engine import _epoch_ms
+    from futuresfund.chart_feed import _epoch_ms, fold_bars, live_bars
 
     history = _history(root, frame)
     raw = [bar for bar in live_bars(root) if bar.get("epoch")]

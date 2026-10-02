@@ -119,7 +119,7 @@ def load_chart(timeframe: str, root: str = "ES") -> list[dict]:
 
 def _with_recorded_volume(bars: list[dict]) -> list[dict]:
     """Copy volume, profile, and delta from alerts onto the exported bars with the same time."""
-    from futuresfund.pineforge_engine import _epoch_ms
+    from futuresfund.chart_feed import _epoch_ms
     from futuresfund.research import load_bars
 
     recorded = {}

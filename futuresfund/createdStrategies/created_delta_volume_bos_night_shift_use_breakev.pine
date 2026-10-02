@@ -1,0 +1,32 @@
+//@version=5
+strategy("Delta Volume BOS Night Shift (use_breakeven=False)", overlay=true, default_qty_type=strategy.cash, default_qty_value=10000, initial_capital=50000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// Parameters
+use_breakeven = input.bool(false, title="Use Breakeven")  // Set to False for steadier performance
+session_hours = input.session("21:00-05:00", title="Trading Session")  // Night session for BOS
+trendLength = input.int(12, title="Trend Length")
+confirmationPeriod = input.int(8, title="Confirmation Period")
+takeProfitPercent = input.float(2.5, title="Take Profit (%)")
+
+// Session check
+if not session_hours
+    strategy.close("Long")
+
+// Delta volume calculation
+deltaVolume = volume - volume[1]
+trendSMA = ta.sma(deltaVolume, trendLength)
+confirmationSMA = ta.sma(deltaVolume, confirmationPeriod)
+
+// Entry condition: Delta volume crosses above both trend and confirmation SMAs
+entryCondition = deltaVolume > trendSMA and deltaVolume > confirmationSMA
+
+// Exit condition: Fixed take profit based on price percentage
+takeProfitLevel = close * (1 + takeProfitPercent / 100)
+exitCondition = close > takeProfitLevel
+
+// Strategy logic
+if (entryCondition)
+    strategy.entry("Long", strategy.long)
+    
+if (exitCondition)
+    strategy.close("Long")

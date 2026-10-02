@@ -8,10 +8,26 @@ from zoneinfo import ZoneInfo
 
 from futuresfund.config import LIVE_BARS_PATH
 from futuresfund.contracts import root_of
-from futuresfund.pineforge_engine import _epoch_ms
 from futuresfund.timeframe import bar_minutes, parse_timeframe
 
 _EASTERN = ZoneInfo("America/New_York")
+
+
+def _epoch_ms(value) -> int | None:
+    """Chart times are US Eastern when they have no timezone."""
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.lstrip("-").isdigit():
+        number = int(text)
+        return number if abs(number) > 10_000_000_000 else number * 1000
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=_EASTERN)
+    return int(parsed.timestamp() * 1000)
 
 
 def record_live_bar(signal: dict, bar: dict) -> dict:

@@ -136,8 +136,36 @@ function renderChannels() {
 
 function messagesForChannel() {
   const messages = state.snapshot.messages || [];
-  if (state.channel === "headquarters") return messages.filter((message) => message.kind !== "log");
+  if (state.channel === "headquarters") return messages;
   return messages.filter((message) => message.author === state.channel || message.channel === state.channel);
+}
+
+function latestAgentLine(name) {
+  const logs = state.snapshot.agent_logs?.[name];
+  if (logs && logs.length) return logs[logs.length - 1];
+  const task = state.snapshot.agent_tasks?.[name];
+  return task || "Waiting.";
+}
+
+function renderLiveAgents() {
+  const panel = document.querySelector("#live-agents");
+  const list = document.querySelector("#live-agent-list");
+  if (!panel || !list) return;
+  const show = state.channel === "headquarters";
+  panel.hidden = !show;
+  if (!show) return;
+  const agents = state.roster || [];
+  list.replaceChildren(...agents.map((agent) => {
+    const row = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = `dot ${statusOf(agent.name)}`;
+    const name = document.createElement("strong");
+    name.textContent = agent.name;
+    const line = document.createElement("span");
+    line.textContent = latestAgentLine(agent.name);
+    row.append(dot, name, line);
+    return row;
+  }));
 }
 
 function renderFeed() {
@@ -242,6 +270,7 @@ function renderFeed() {
     nowText.textContent = "Press Start to run the Pine scripts.";
   }
 
+  renderLiveAgents();
   const messages = messagesForChannel();
   feedEl.innerHTML = messages.slice(-80).map((message) => `
     <article class="msg ${message.kind || ""}">
@@ -1090,8 +1119,8 @@ function renderLab() {
     live.textContent = picked && picked.busy
       ? `Engine ${picked.id} is running ${picked.script || "a script"} on the ${chartLabel[picked.timeframe] || picked.timeframe} ${picked.instrument} chart.`
       : picked && picked.timeframe
-        ? `Engine ${picked.id} is warm. ${picked.developer || "The chart developer"} runs only the ${chartLabel[picked.timeframe] || picked.timeframe} chart.`
-        : `Engine ${state.engineId} is warm. ${picked && picked.developer ? picked.developer : "The creation tester"} runs a new script once on the 2-minute, 5-minute, and 15-minute charts.`;
+        ? `Engine ${picked.id} is ready. ${picked.developer || "The chart developer"} runs only the ${chartLabel[picked.timeframe] || picked.timeframe} chart.`
+        : `Engine ${state.engineId} is ready. ${picked && picked.developer ? picked.developer : "The creation tester"} tests a new script until it is profitable.`;
   }
   const status = document.querySelector("#engine-status");
   if (status) {

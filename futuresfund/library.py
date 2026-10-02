@@ -1,4 +1,4 @@
-"""Profitable PineForge studies, grouped by the contract that made the money."""
+"""Profitable Backtrader studies, grouped by the contract that made the money."""
 
 from __future__ import annotations
 
@@ -18,6 +18,16 @@ _NAMED = (
     ("ES1!", "ES", ("es",)),
 )
 _DEFAULT = ("ES1!", "ES")
+
+
+def _with_point_value(source: str, point: float) -> str:
+    """Dollar stops use this contract's point value. Nasdaq is 20, not the 50 written for ES."""
+    return re.sub(
+        r"((?:pv|point_value|pointvalue)\s*=\s*input\.float\(\s*)[-0-9.]+",
+        lambda match: f"{match.group(1)}{point:g}",
+        source or "",
+        flags=re.IGNORECASE,
+    )
 
 
 def contract_of(title: str, filename: str = "", explicit: str | None = None) -> tuple[str, str]:
@@ -68,11 +78,7 @@ def library_script(strategy_id: str, contract: str | None = None) -> dict | None
         root = "ES"
     point = float(POINT_VALUE.get(root, 50))
     if point != 50 and pine:
-        from futuresfund.pineforge_engine import _with_point_value
-
         pine = _with_point_value(pine, point)
-        if pine.startswith("// Engine point value"):
-            pine = pine.split("\n", 1)[1]
     return {"id": row["id"], "title": row["title"], "pine": pine}
 
 
@@ -178,7 +184,7 @@ def _measured_row(data: dict, best: dict, path: Path) -> dict | None:
     engine = str(best.get("engine") or runner)
     if runner in _STAND_INS or engine in _STAND_INS:
         return None
-    if engine != "pineforge" and runner != "pineforge":
+    if engine != "backtrader" and runner != "backtrader":
         return None
     note = str(best.get("note") or "")
     if "price rule" in note or "not substituted" in note or "cannot enter" in note:

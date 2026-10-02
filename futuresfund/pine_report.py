@@ -97,7 +97,7 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
         "This report is the best version the researchers kept, not the script as it was first given.",
         "The script is only the starting point. Settings after that follow what made or lost money.",
         "Prepared by the Portfolio Manager from the researcher for this chart.",
-        f"Engine attempts used: {attempts} of 120.",
+        f"Engine attempts used: {attempts} of 200.",
         "Engine 1 runs the 2-minute chart, engine 2 runs the 5-minute chart, and engine 3 runs the 15-minute chart.",
         f"This version was tested on the {_chart_name(measured.get('timeframe'))} chart.",
         _chart_lines(measured.get("frames")),

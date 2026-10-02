@@ -1,0 +1,23 @@
+//@version=5
+strategy("Delta Volume Breakout (vwma_len=48)", overlay=true, default_qty_type=strategy.cash, default_qty_value=10000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// Parameters
+vwma_len = 48
+volumeMultiplier = 2
+emaLength = 100
+
+// Volume breakout condition
+volBreakout = volume > volumeMultiplier * ta.vwma(volume, vwma_len)
+
+// Entry logic
+if volBreakout
+    strategy.entry("Long", strategy.long)
+
+// Exit logic
+if close > strategy.position_avg_price
+    strategy.close("Long")
+
+// Strategy settings
+strategy.option = strategy.option.none
+strategy.entry("Long", strategy.long, when=volBreakout)
+strategy.exit("Take Profit", "Long", profit=1000, loss=0, comment="Fixed Take Profit")

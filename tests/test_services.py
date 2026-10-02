@@ -514,8 +514,8 @@ class AnalystAndLibraryTests(unittest.TestCase):
                     "file": "sample_drift.pine",
                     "title": "Sample Drift Study",
                     "best": {
-                        "engine": "pineforge",
-                        "runner": "pineforge",
+                        "engine": "backtrader",
+                        "runner": "backtrader",
                         "net_profit": 4200,
                         "max_drawdown": 800,
                         "trades": 9,
@@ -540,25 +540,6 @@ class AnalystAndLibraryTests(unittest.TestCase):
         finally:
             library._NOTES = original_notes
             library._CACHE = original_cache
-
-
-class MarginTests(unittest.TestCase):
-    def test_nq_margin_fits_one_contract_in_the_script_account(self):
-        from futuresfund.pineforge_engine import _with_point_value, margin_percent
-
-        source = 'strategy("EMA/SMA Buffer", initial_capital=25000)\npv = input.float(50.0, "Point Value ($)")\n'
-        bars = [{"h": 31090.5, "c": 30554.0}]
-        percent = margin_percent("NQ", bars, source)
-        margin = 31090.5 * 20 * percent / 100
-        self.assertLess(margin, 25000)
-        self.assertIn("input.float(20,", _with_point_value(source, 20))
-
-    def test_es_margin_still_fits_one_contract(self):
-        from futuresfund.pineforge_engine import margin_percent
-
-        source = "strategy(\"ES\", initial_capital=25000)"
-        percent = margin_percent("ES", [{"h": 7748.0, "c": 7740.0}], source)
-        self.assertLess(7748.0 * 50 * percent / 100, 25000)
 
 
 class ChartTests(unittest.TestCase):
@@ -620,7 +601,7 @@ class ChartTests(unittest.TestCase):
     def test_one_minute_bars_update_the_open_candle(self):
         from futuresfund.chart_feed import fold_bars, record_live_bar
         from futuresfund.chart_view import chart_payload
-        from futuresfund.pineforge_engine import _epoch_ms
+        from futuresfund.chart_feed import _epoch_ms
         import futuresfund.chart_feed as feed
 
         base = 1_700_000_000_000

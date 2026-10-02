@@ -9,6 +9,7 @@ from futuresfund.strategy_team import (
     baseline_ready,
     build_cards,
     extract_pine,
+    finished_chart_studies,
     measured_cards,
     pine_problems,
     script_name,
@@ -71,3 +72,36 @@ class StrategyTeamTests(unittest.TestCase):
             folder = Path(tmp)
             (folder / "created_night.pine").write_text("//@version=5\n", encoding="utf-8")
             self.assertEqual(script_name("Night", folder), "created_night_2.pine")
+
+    def test_a_script_is_ready_only_after_all_three_charts_finish(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            learning = root / "learning"
+            notes = root / "notes"
+            learning.mkdir()
+            notes.mkdir()
+            (learning / "day.pine").write_text("//@version=5\n", encoding="utf-8")
+            (learning / "night.pine").write_text("//@version=5\n", encoding="utf-8")
+            done = {"attempts": 1, "best": {"net_profit": 1}, "trials": [{}]}
+            (notes / "day.json").write_text(json.dumps({
+                "instruments": {"ES": {"charts": {"2m": done, "5m": done, "15m": done}}},
+            }), encoding="utf-8")
+            (notes / "night.json").write_text(json.dumps({
+                "instruments": {"ES": {"charts": {"2m": done, "5m": done}}},
+            }), encoding="utf-8")
+            self.assertEqual(finished_chart_studies(learning, notes), ["day.pine"])
+
+    def test_the_creation_search_stops_when_the_result_is_profitable(self):
+        from futuresfund.learn import _search
+
+        calls = {"n": 0}
+
+        def execute(params):
+            calls["n"] += 1
+            profit = 25 if calls["n"] >= 3 else -10
+            return {"net_profit": profit, "max_drawdown": 4, "trades": 2, "runner": "backtrader", "engine": "backtrader"}
+
+        trials = _search({"length": 10}, execute, 50000, 20, None, None, None, until_profitable=True)
+        self.assertGreaterEqual(calls["n"], 3)
+        self.assertLess(len(trials), 20)
+        self.assertGreater(trials[-1]["net_profit"], 0)

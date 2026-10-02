@@ -28,14 +28,13 @@ does not reach up to start research or send mail.
 
 3. Research
     ``learn.py`` reads Pine files only. It does not create strategy
-    ``.py`` files. Four warm PineForge containers in ``pineforge_engine.py``
-    stay running. The next test sends new inputs into the container that
-    is already running, and each bar file is written once. Engine 1 is
-    the 2-minute chart and belongs to the 2min chart developer. Engine 2 is the 5-minute chart and belongs
-    to the 5 min chart developer. Engine 3 is the 15-minute chart only
-    and belongs to the 15 min chart developer. One chart researcher reads
-    all three studies. Engine 4 runs a newly written script once, at its
-    original settings, before those studies start. A script is filed only
+    ``.py`` files. ``backtrader_engine.py`` runs the backtests. Engine 1 is
+    the 2-minute chart and belongs to the 2min chart developer. Engine 2
+    is the 5-minute chart and belongs to the 5 min chart developer.
+    Engine 3 is the 15-minute chart only and belongs to the 15 min chart
+    developer. One chart researcher reads all three studies. Engine 4
+    tests a newly written script until it is profitable, up to 200
+    attempts. A script is filed only
     after each of those three charts has finished on every research
     instrument. ``library.py`` files a profitable result under ES or
     Gold. ``discuss.py`` holds the 8:00am and 5:00pm meetings.
@@ -148,8 +147,8 @@ University, 2025.
 https://dash.harvard.edu/handle/1/42719540
 
 - The test is data the model did not see. A script that only wins on
-  the bars used to write it is overfit. PineForge on a later stretch of
-  bars is the test. Perplexity and exam benchmarks are not.
+  the bars used to write it is overfit. The Backtrader engine on a
+  later stretch of bars is the test. Perplexity and exam benchmarks are not.
 - Supervised examples are a prompt and the Pine that should follow.
   The desired answer includes the reasoning before the script.
 - Retrieval is the first teaching method. Pull a few strategy cards

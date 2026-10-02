@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=33" />
+  <link rel="stylesheet" href="/static/styles.css?v=34" />
 </head>
 <body>
   <div class="app">
@@ -46,6 +46,10 @@
           </button>
           <button type="button" id="stop" class="power stop" aria-label="Stop processing" disabled>STOP</button>
         </div>
+      </section>
+      <section id="live-agents" class="live-agents" hidden>
+        <h2>Live</h2>
+        <ul id="live-agent-list"></ul>
       </section>
       <section class="meeting-live" id="meeting-live" hidden>
         <p class="kicker">Meeting</p>
@@ -91,7 +95,7 @@
           <div>
             <p class="kicker">Trading engine</p>
             <h2>Last research results</h2>
-            <p class="role" id="engine-note">Four PineForge containers stay warm. The chart developers run engines 1, 2, and 3. The creation tester runs a new script once on engine 4. One chart researcher reads all three studies.</p>
+            <p class="role" id="engine-note">Backtrader runs the backtests. The chart developers run 200 attempts on engines 1, 2, and 3. After those three finish, the strategy developer writes one script and engine 4 tests it until it is profitable.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
@@ -283,6 +287,6 @@
       <textarea id="script-body" readonly></textarea>
     </div>
   </div>
-  <script type="module" src="/static/app.js?v=64"></script>
+  <script type="module" src="/static/app.js?v=66"></script>
 </body>
 </html>

@@ -21,7 +21,7 @@ NOTES = ROOT / "researchNotes"
 ENGINE_ROOT = ROOT.parent.parent / "tradingEngine"
 ENGINE_CHART = "5m"
 RESEARCH_CHARTS = ("5m", "2m", "15m")
-ATTEMPT_LIMIT = 120
+ATTEMPT_LIMIT = 200
 ACCOUNT_SIZE = 50000
 PROFIT_TARGET = 3000.0
 FROZEN = {
@@ -234,18 +234,13 @@ def run_learning(board) -> None:
 
 def _run_learning(board) -> None:
     from futuresfund.session import learning_pause
-    from futuresfund.pineforge_engine import PineForgeUnavailable, warm_engines
+    from futuresfund.backtrader_engine import warm_engines
     from futuresfund.roster import CHART_DESKS
 
     LEARNED.mkdir(parents=True, exist_ok=True)
     NOTES.mkdir(parents=True, exist_ok=True)
     instruments = ", ".join(research_instruments())
-    try:
-        warm_engines()
-    except PineForgeUnavailable as exc:
-        board.post("2min chart developer", str(exc), kind="error", channel="2min chart developer")
-        board.cancel.set()
-        return
+    warm_engines()
     for desk in CHART_DESKS:
         board.set_activity(desk["developer"], f"Engine {desk['engine']} is warm for the {desk['label']} chart")
         board.post(
@@ -275,14 +270,13 @@ def _run_learning(board) -> None:
     absorb_research_notes()
     loaded = ", ".join(f"{name} {len(rows)} bars" for name, rows in frames.items())
     intro = (
-        "The learning folder is only the starting point. Each chart uses 120 different results, even after a version meets the profit target, so a better one can still be found. "
-        "Four PineForge containers stay running. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 runs a new script once before those studies. "
-        "The next test sends new inputs into the container that is already running. Each bar file is written once and reused. "
+        "The learning folder is only the starting point. Each chart uses 200 different results, even after a version meets the profit target, so a better one can still be found. "
+        "Backtrader runs the backtests. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. After those three finish, engine 4 tests a new script until it is profitable. "
         f"Each script is tested once on every instrument ({instruments}) and on each of the three charts. It moves to the learned folder only after those charts are done. "
         f"Loaded {loaded}. "
         "Every attempt changes one input and records how that change moved the result. The research guide is guidance, not a requirement. Consistency comes before a larger profit. "
         "A change that is less consistent or less profitable is reversed, and a change that improves that is continued. "
-        "A run that repeats an earlier profit, drawdown, and trade count is not counted, and the search keeps going until 120 different results. "
+        "A run that repeats an earlier profit, drawdown, and trade count is not counted, and the search keeps going until 200 different results. "
         + _risk_line()
     )
     board.post(CHART_DESKS[0]["researcher"], intro, kind="report", channel=CHART_DESKS[0]["researcher"])
@@ -340,16 +334,10 @@ def _run_learning(board) -> None:
             try:
                 studied = _study(board, path, frames, learning_pause, developer, timeframe, researcher)
                 error = None
-            except PineForgeUnavailable as exc:
-                studied, error = "unavailable", exc
             except Exception as exc:
                 studied, error = "error", exc
             finally:
                 release_job(path, timeframe)
-            if studied == "unavailable":
-                board.post(developer, str(error), kind="error", channel=developer)
-                board.cancel.set()
-                return
             if studied == "error":
                 if board.cancel.is_set():
                     return
@@ -455,7 +443,7 @@ def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, e
     return _force_new(current, seen)
 
 
-def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher"):
+def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher", until_profitable: bool = False):
     origin = {key: value for key, value in base.items() if key not in FROZEN and _tunable_value(value)}
     trials = []
     seen = set()
@@ -549,11 +537,34 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
         trials.append(row)
         if row.get("stopped"):
             break
+        if until_profitable and _row_profitable(row):
+            if board is not None and path is not None:
+                board.post(
+                    developer,
+                    f"{path.name} is profitable on this engine. Profit {row.get('net_profit')}, trades {row.get('trades')}. The search stops.",
+                    kind="report",
+                    channel=developer,
+                )
+            if board is not None and path is not None:
+                _document(board, facts or {}, path, row, len(trials), developer, researcher)
+            break
         if board is not None and path is not None:
             _document(board, facts or {}, path, row, len(trials), developer, researcher)
         if row.get("blocked") or row.get("fatal"):
             break
     return trials
+
+
+def _row_profitable(row: dict) -> bool:
+    """A result with a profit above zero and at least one trade."""
+    if row.get("error") or row.get("fatal") or row.get("blocked"):
+        return False
+    try:
+        profit = float(row.get("net_profit"))
+        trades = int(row.get("trades") or 0)
+    except (TypeError, ValueError):
+        return False
+    return profit > 0 and trades >= 1
 
 
 def adjustment_notes(trials: list[dict]) -> tuple[str, str]:
@@ -682,16 +693,6 @@ def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart 
     )
     text = path.read_text(encoding="utf-8", errors="replace")
     facts = pine_facts(text) if text else {"title": path.stem, "inputs": [], "named": {}}
-    from futuresfund.pine_compat import prepare_for_pineforge
-
-    _, fixes = prepare_for_pineforge(text)
-    if fixes:
-        board.post(
-            developer,
-            f"{path.name}: {' '.join(fixes)} The script posted on headquarters stays version 5.",
-            kind="report",
-            channel=developer,
-        )
     frames = _load_frames(root)
     bars = frames.get(timeframe) or []
     if len(bars) < 80:
@@ -703,7 +704,7 @@ def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart 
             channel=developer,
         )
         return "waiting"
-    execute = _pineforge_execute(text, frames, facts, board, root, developer, timeframe)
+    execute = _engine_execute(text, frames, facts, board, root, developer, timeframe)
     trials = _search(
         _with_contract_point(_pine_params(facts), root),
         execute,
@@ -812,8 +813,8 @@ def _input_overrides(facts: dict, params: dict) -> dict:
     return overrides
 
 
-def _pineforge_execute(text: str, frames: dict, facts: dict, board, instrument: str = "ES", developer: str = "2min chart developer", timeframe: str = "2m"):
-    from futuresfund.pineforge_engine import run_script
+def _engine_execute(text: str, frames: dict, facts: dict, board, instrument: str = "ES", developer: str = "2min chart developer", timeframe: str = "2m", slot: int | None = None):
+    from futuresfund.backtrader_engine import run_script
     from futuresfund.roster import chart_desk
 
     label = chart_desk(timeframe)["label"]
@@ -825,7 +826,7 @@ def _pineforge_execute(text: str, frames: dict, facts: dict, board, instrument: 
         title = facts.get("title") or "the script"
         shelf = "GC1!" if instrument in {"QO", "GC", "MGC"} else f"{instrument}1!"
         if cancel is not None and cancel.is_set():
-            return {"stopped": True, "runner": "pineforge", "engine": "pineforge", "timeframe": timeframe, "net_profit": None, "max_drawdown": None, "trades": 0}
+            return {"stopped": True, "runner": "backtrader", "engine": "backtrader", "timeframe": timeframe, "net_profit": None, "max_drawdown": None, "trades": 0}
         if board is not None:
             from futuresfund.crew import get_crew
 
@@ -844,12 +845,12 @@ def _pineforge_execute(text: str, frames: dict, facts: dict, board, instrument: 
                 "max_drawdown": None,
                 "trades": 0,
                 "passed": False,
-                "runner": "pineforge",
-                "engine": "pineforge",
+                "runner": "backtrader",
+                "engine": "backtrader",
                 "instrument": instrument,
                 "contract": shelf,
             }
-        measured = run_script(text, bars, timeframe, overrides, cancel, instrument, title) or {}
+        measured = run_script(text, bars, timeframe, overrides, cancel, instrument, title, slot) or {}
         measured["timeframe"] = timeframe
         measured["instrument"] = instrument
         measured["contract"] = shelf
@@ -901,8 +902,7 @@ def _load_frames(root: str = "ES") -> dict[str, list]:
 def _with_latest(bars: list, incoming: list, timeframe: str) -> list:
     if not incoming:
         return bars
-    from futuresfund.chart_feed import fold_bars
-    from futuresfund.pineforge_engine import _epoch_ms
+    from futuresfund.chart_feed import _epoch_ms, fold_bars
 
     have = {_epoch_ms(bar.get("t")) for bar in bars}
     have.discard(None)
@@ -1298,7 +1298,7 @@ def _document(board, facts: dict, path: Path, row: dict, number: int, developer:
 
 def _offer_library(board, facts: dict, path: Path, row: dict) -> None:
     """The trading analyst files a profitable instrument result. A repeat of a worse result is skipped."""
-    if str(row.get("engine") or row.get("runner") or "") != "pineforge":
+    if str(row.get("engine") or row.get("runner") or "") != "backtrader":
         return
     try:
         profit = float(row.get("net_profit"))
@@ -1348,7 +1348,7 @@ def _library_notice(board, facts: dict, path: Path, best: dict) -> None:
     except (TypeError, ValueError):
         profit = None
     trades = int(best.get("trades") or 0)
-    if profit is None or profit <= 0 or trades < 1 or str(best.get("engine") or best.get("runner") or "") != "pineforge":
+    if profit is None or profit <= 0 or trades < 1 or str(best.get("engine") or best.get("runner") or "") != "backtrader":
         if board is not None:
             board.post(
                 "Trading Analyst",
@@ -1479,7 +1479,7 @@ def _library_line(facts: dict, path: Path, best: dict, root: str) -> str:
     except (TypeError, ValueError):
         profit, trades = None, 0
     engine = str(best.get("engine") or best.get("runner") or "")
-    if engine == "pineforge" and profit is not None and profit > 0 and trades >= 1:
+    if engine == "backtrader" and profit is not None and profit > 0 and trades >= 1:
         return (
             f"Filed in the {label} strategy library ({symbol}). "
             f"{best.get('timeframe')} profit {profit}, drawdown {best.get('max_drawdown')}, trades {trades}."

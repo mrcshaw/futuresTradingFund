@@ -339,6 +339,20 @@ button.chart-tab-close {
   font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
+.live-agents {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 18px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.live-agents[hidden] { display: none; }
+.live-agents h2 { margin: 0; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.live-agents ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.live-agents li { display: grid; grid-template-columns: 12px minmax(140px, 220px) 1fr; gap: 10px; align-items: baseline; }
+.live-agents .dot { width: 8px; height: 8px; margin-top: 6px; }
+.live-agents strong { font-size: 13px; }
+.live-agents li span:last-child { color: var(--muted, #9fb0c3); font-size: 13px; }
 .desk-bar .now-text {
   flex: 1;
   min-width: 0;
