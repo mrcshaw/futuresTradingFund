@@ -12,6 +12,8 @@ import csv
 import json
 import re
 import threading
+import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -241,6 +243,8 @@ def run_poc(bars: list[Bar], params: Params | None = None) -> list[dict]:
         }
 
     for i, bar in enumerate(bars):
+        if i and i % 250 == 0:
+            time.sleep(0)
         if pos != 0 and i > entry_i:
             hit = _protect(bar, pos, stop, limit, slip)
             if hit is not None:
@@ -550,6 +554,7 @@ _OWNER_FOR_SLOT = (
 )
 _ENGINE_LOCKS = [threading.Lock() for _ in range(_ENGINE_SLOTS)]
 _ENGINE_GATE = threading.Condition()
+_ENGINE_LOGS = [deque(maxlen=40) for _ in range(_ENGINE_SLOTS)]
 _ENGINE_STATUS = [
     {
         "id": index + 1,
@@ -585,8 +590,10 @@ _INPUT_NAMES = {
 
 
 def warm_engines() -> None:
-    """The four chart engines are in this process. Nothing else has to be started."""
-    return
+    """Start the four engine processes if the desk has not started them yet."""
+    from futuresfund.engine_workers import start_engines
+
+    start_engines()
 
 
 def slot_for(timeframe: str) -> int:
@@ -598,30 +605,82 @@ def slot_for(timeframe: str) -> int:
 
 
 def engine_status() -> list[dict]:
-    """What each chart engine is running."""
+    """What each chart engine is running, with its recent log lines."""
     with _ENGINE_GATE:
-        return [dict(row) for row in _ENGINE_STATUS]
+        rows = []
+        for row, logs in zip(_ENGINE_STATUS, _ENGINE_LOGS):
+            item = dict(row)
+            item["system"] = "Backtrader"
+            item["logs"] = list(logs)
+            rows.append(item)
+        return rows
+
+
+def _engine_log(index: int, text: str) -> None:
+    stamp = datetime.now(ET).strftime("%H:%M:%S")
+    with _ENGINE_GATE:
+        _ENGINE_LOGS[index].append(f"{stamp}  {text}")
+
+
+def _settings_line(inputs: dict | None) -> str:
+    if not inputs:
+        return "original settings"
+    parts = [f"{key} {value}" for key, value in list(inputs.items())[:3]]
+    extra = len(inputs) - len(parts)
+    text = ", ".join(parts)
+    if extra > 0:
+        text += f", +{extra} more"
+    return text
+
+
+def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, index: int) -> dict:
+    """Run one backtest. Engine processes call this. It does not touch the desk."""
+    title = _strategy_title(source)
+    series = _bars_from(bars)
+    name = label or title or "script"
+    logs: list[str] = []
+    if title == "POC Confluence":
+        trades = run_poc(series, _params_from(inputs))
+    else:
+        from futuresfund.script_backtest import Unsupported, run_source
+
+        try:
+            trades = run_source(source, series, inputs)
+        except Unsupported as exc:
+            logs.append(f"STOP   Backtrader  {name}  this script has no entry rule on the engine")
+            return {
+                "engine": ENGINE,
+                "runner": ENGINE,
+                "error": f"{exc} is not on the Backtrader engine.",
+                "fatal": True,
+                "net_profit": None,
+                "max_drawdown": None,
+                "trades": 0,
+                "timeframe": timeframe,
+                "instrument": instrument,
+                "logs": logs,
+            }
+    measured = _metrics(trades)
+    logs.append(
+        f"DONE   Backtrader  {name}  profit {measured.get('net_profit')}  drawdown {measured.get('max_drawdown')}  trades {measured.get('trades')}"
+    )
+    measured["timeframe"] = timeframe
+    measured["instrument"] = instrument
+    measured["engine_slot"] = index + 1
+    measured["logs"] = logs
+    return measured
 
 
 def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, instrument: str = "ES", label: str = "", slot: int | None = None) -> dict:
-    """Backtest one script. Only POC Confluence is on this engine."""
+    """Backtest one script. A running desk sends it to that engine's process."""
     if cancel is not None and cancel.is_set():
         return _stopped(timeframe)
     title = _strategy_title(source)
-    if title != "POC Confluence":
-        return {
-            "engine": ENGINE,
-            "runner": ENGINE,
-            "error": f"{label or title or 'This script'} is not on the Backtrader engine.",
-            "fatal": True,
-            "net_profit": None,
-            "max_drawdown": None,
-            "trades": 0,
-            "timeframe": timeframe,
-            "instrument": instrument,
-        }
+    index = slot if slot is not None else slot_for(timeframe)
+    name = label or title or "script"
     series = _bars_from(bars)
-    if not any(bar.v > 0 for bar in series):
+    if "volume" in (source or "").lower() and not any(bar.v > 0 for bar in series):
+        _engine_log(index, f"BLOCK  Backtrader  {name}  {timeframe} {instrument}  no volume column")
         return {
             "engine": ENGINE,
             "runner": ENGINE,
@@ -633,19 +692,27 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
             "timeframe": timeframe,
             "instrument": instrument,
         }
-    index = slot if slot is not None else slot_for(timeframe)
-    _acquire_engine(label or title, timeframe, instrument, index)
+    start_line = f"START  Backtrader  {name}  {timeframe} {instrument}  {len(series):,} bars  {_settings_line(inputs)}"
+    from futuresfund.engine_workers import active_desk
+
+    desk = active_desk()
+    if desk is not None:
+        if cancel is not None and cancel.is_set():
+            _engine_log(index, f"STOP   Backtrader  {name}  cancelled")
+            return _stopped(timeframe)
+        return desk.run(index, source, bars, timeframe, inputs, instrument, name, cancel, start_line)
+    _acquire_engine(name, timeframe, instrument, index)
+    _engine_log(index, start_line)
     try:
         if cancel is not None and cancel.is_set():
+            _engine_log(index, f"STOP   Backtrader  {name}  cancelled")
             return _stopped(timeframe)
-        trades = run_poc(series, _params_from(inputs))
+        measured = execute_script(source, bars, timeframe, inputs, instrument, name, index)
+        for line in measured.pop("logs", []):
+            _engine_log(index, line)
+        return measured
     finally:
         _release_engine(index)
-    measured = _metrics(trades)
-    measured["timeframe"] = timeframe
-    measured["instrument"] = instrument
-    measured["engine_slot"] = index + 1
-    return measured
 
 
 def _strategy_title(source: str) -> str:

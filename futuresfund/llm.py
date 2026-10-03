@@ -1,4 +1,4 @@
-"""One model per desk. Histories and logs stay on that desk. The backtest engine stays shared."""
+"""One model per desk. Histories and logs stay on that desk. Each engine has its own process."""
 
 from __future__ import annotations
 

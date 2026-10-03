@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import threading
+import time
 from pathlib import Path
 
 _STAND_INS = {"donchian", "ema_cross", "rsi_revert", "vwap_side", "bollinger", "macd", "poc_pullback", "supertrend"}
 _NOTES = Path(__file__).resolve().parent / "researchNotes"
-_CACHE: dict = {"stamp": None, "rows": []}
+_CACHE: dict = {"stamp": None, "rows": [], "index_mtime": None}
+_INDEX_LOCK = threading.Lock()
 
 # Checked before the ES default. A study that names no contract was run on the ES chart.
 _NAMED = (
@@ -60,26 +64,77 @@ def search_library(contract: str | None = None, query: str = "") -> dict:
     return {"contract": chosen, "contracts": _shelves(), "strategies": rows}
 
 
-def library_script(strategy_id: str, contract: str | None = None) -> dict | None:
-    matches = [item for item in _rows() if item["id"] == strategy_id]
-    if contract:
-        row = next((item for item in matches if item["contract"] == contract), None)
-    else:
-        row = matches[0] if matches else None
-    if row is None:
-        return None
-    from futuresfund.contracts import POINT_VALUE, root_of
-    from futuresfund.strategy import pine_text
+def record_profitable(entry: dict) -> bool:
+    """Keep the most profitable row, and the steadiest different row, for this script."""
+    with _INDEX_LOCK:
+        rows = _load_index_rows()
+        script = str(entry.get("script") or entry.get("title") or "")
+        contract = entry.get("contract")
+        kept = [
+            row for row in rows
+            if not (row.get("contract") == contract and str(row.get("script") or row.get("title") or "") == script)
+        ]
+        group = [
+            row for row in rows
+            if row.get("contract") == contract and str(row.get("script") or row.get("title") or "") == script
+        ]
+        folded = _library_rows([dict(row) for row in group] + [dict(entry)])
+        _CACHE["rows"] = kept + folded
+        _write_index(_CACHE["rows"])
+        return any(row.get("id") == entry.get("id") and str(row.get("kind") or "").startswith("Most profitable") for row in folded)
 
-    pine = pine_text(row.get("file") or "")
+
+def library_script(strategy_id: str, contract: str | None = None) -> dict | None:
+    """Open the Pine file for a library row without reading the research notes."""
+    row = _cached_row(strategy_id, contract)
+    filename = str((row or {}).get("file") or _pine_name(strategy_id))
+    from futuresfund.contracts import POINT_VALUE, root_of
+    from futuresfund.strategy import _apply_inputs, pine_text
+
+    pine = pine_text(filename)
+    params = (row or {}).get("params") if isinstance((row or {}).get("params"), dict) else {}
+    if pine and params:
+        try:
+            pine = _apply_inputs(pine, params)
+        except (TypeError, ValueError, re.error):
+            pass
+    if not pine:
+        return None
     try:
-        root = root_of(str(row.get("contract") or "ES1!"))
+        root = root_of(str((row or {}).get("contract") or contract or "ES1!"))
     except ValueError:
         root = "ES"
     point = float(POINT_VALUE.get(root, 50))
-    if point != 50 and pine:
+    if point != 50:
         pine = _with_point_value(pine, point)
-    return {"id": row["id"], "title": row["title"], "pine": pine}
+    title = str((row or {}).get("title") or _strategy_title(pine) or filename)
+    return {"id": strategy_id, "title": title, "pine": pine}
+
+
+def _cached_row(strategy_id: str, contract: str | None) -> dict | None:
+    with _INDEX_LOCK:
+        index = _index_path()
+        if index.is_file() and (_CACHE.get("index_mtime") != index.stat().st_mtime_ns or _CACHE.get("index_path") != str(index)):
+            _CACHE["rows"] = _load_index_rows()
+            _CACHE["index_mtime"] = index.stat().st_mtime_ns
+            _CACHE["index_path"] = str(index)
+        matches = [item for item in (_CACHE.get("rows") or []) if item.get("id") == strategy_id]
+    if contract:
+        return next((item for item in matches if item.get("contract") == contract), None)
+    return matches[0] if matches else None
+
+
+def _pine_name(strategy_id: str) -> str:
+    if "-" in strategy_id:
+        head, tail = strategy_id.rsplit("-", 1)
+        if len(tail) == 12 and all(char in "0123456789abcdef" for char in tail):
+            return f"{head}.pine"
+    return strategy_id if str(strategy_id).endswith(".pine") else f"{strategy_id}.pine"
+
+
+def _strategy_title(source: str) -> str:
+    match = re.search(r'strategy\s*\(\s*"([^"]+)"', source or "")
+    return match.group(1).strip() if match else ""
 
 
 def agent_catalog(limit: int = 12) -> str:
@@ -125,6 +180,10 @@ def _shelves() -> list[dict]:
     return ordered
 
 
+def _index_path() -> Path:
+    return _NOTES / "library_index.json"
+
+
 def _notes_stamp() -> tuple:
     if not _NOTES.is_dir():
         return tuple()
@@ -132,22 +191,86 @@ def _notes_stamp() -> tuple:
 
 
 def _rows() -> list[dict]:
-    stamp = _notes_stamp()
-    cached = _CACHE.get("rows") or []
-    if _CACHE.get("stamp") == stamp and cached:
-        return [dict(row) for row in cached]
-    ranked: dict[tuple[str, str], dict] = {}
+    """Library rows. The saved index is small. A missing index is built from the notes once."""
+    with _INDEX_LOCK:
+        index = _index_path()
+        if index.is_file():
+            mtime = index.stat().st_mtime_ns
+            if _CACHE.get("index_mtime") == mtime and _CACHE.get("rows") and _CACHE.get("index_path") == str(index):
+                return [dict(row) for row in _CACHE["rows"]]
+            rows = _load_index_rows()
+            _CACHE["rows"] = rows
+            _CACHE["index_mtime"] = mtime
+            _CACHE["index_path"] = str(index)
+            return [dict(row) for row in rows]
+        rows = _scan_notes()
+        _CACHE["rows"] = rows
+        _write_index(rows)
+        return [dict(row) for row in rows]
+
+
+def _load_index_rows() -> list[dict]:
+    try:
+        data = json.loads(_index_path().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = data.get("rows") if isinstance(data, dict) else None
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _write_index(rows: list[dict]) -> None:
+    _NOTES.mkdir(parents=True, exist_ok=True)
+    path = _index_path()
+    path.write_text(json.dumps({"rows": rows}, indent=2, default=str), encoding="utf-8")
+    _CACHE["index_mtime"] = path.stat().st_mtime_ns
+    _CACHE["index_path"] = str(path)
+    _CACHE["rows"] = rows
+
+
+def _scan_notes() -> list[dict]:
+    collected: dict[str, dict] = {}
+    seen = 0
     if _NOTES.is_dir():
         for path in _NOTES.glob("*.json"):
+            if path.name in {"library_index.json", "strategy_cards.json", "creation_sources.json"}:
+                continue
             for row in _entries(path):
-                key = (row["contract"], _fold(row["title"]))
-                current = ranked.get(key)
-                if current is None or float(row["net_profit"]) > float(current["net_profit"]):
-                    ranked[key] = row
-    rows = sorted(ranked.values(), key=lambda item: float(item["net_profit"]), reverse=True)
-    _CACHE["stamp"] = stamp
-    _CACHE["rows"] = rows
-    return [dict(row) for row in rows]
+                collected[row["id"]] = row
+                seen += 1
+                if seen % 400 == 0:
+                    time.sleep(0)
+    return _library_rows(list(collected.values()))
+
+
+def _library_rows(rows: list[dict]) -> list[dict]:
+    """One row for the highest profit, and another when a different result keeps more after the drawdown."""
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for row in rows:
+        script = str(row.get("script") or row.get("title") or "")
+        groups.setdefault((row["contract"], script), []).append(row)
+    shown = []
+    for items in groups.values():
+        richest = max(items, key=lambda item: float(item["net_profit"]))
+        steadiest = max(
+            items,
+            key=lambda item: (
+                float(item["net_profit"]) - float(item.get("max_drawdown") or 0),
+                -float(item.get("max_drawdown") or 0),
+            ),
+        )
+        keeps_more = float(steadiest["net_profit"]) > float(steadiest.get("max_drawdown") or 0)
+        profit_row = dict(richest)
+        if steadiest["id"] == richest["id"] and keeps_more:
+            profit_row["kind"] = "Most profitable and most consistent"
+        else:
+            profit_row["kind"] = "Most profitable"
+        shown.append(profit_row)
+        if steadiest["id"] == richest["id"] or not keeps_more:
+            continue
+        steady_row = dict(steadiest)
+        steady_row["kind"] = "Most consistent"
+        shown.append(steady_row)
+    return sorted(shown, key=lambda item: -float(item["net_profit"]))
 
 
 def _entries(path: Path) -> list[dict]:
@@ -157,21 +280,57 @@ def _entries(path: Path) -> list[dict]:
         return []
     if not isinstance(data, dict):
         return []
+    found: dict[str, dict] = {}
+
+    def consider(record, contract: str | None) -> None:
+        if not isinstance(record, dict):
+            return
+        marked = dict(record)
+        if contract and not marked.get("contract"):
+            marked["contract"] = contract
+        row = _measured_row(data, marked, path)
+        if row is None:
+            return
+        row["script"] = row["title"]
+        params = record.get("params") if isinstance(record.get("params"), dict) else {}
+        row["params"] = params
+        change = str(record.get("change") or "").strip()
+        if change and change not in {"Original", "Starting settings"} and not change.startswith("Starting measurement"):
+            row["title"] = f"{row['title']} — {change}"
+        fingerprint = json.dumps(
+            [row["contract"], row["timeframe"], params, row["net_profit"], row["trades"]],
+            sort_keys=True,
+            default=str,
+        )
+        row["id"] = f"{path.stem}-{hashlib.sha1(fingerprint.encode()).hexdigest()[:12]}"
+        found[row["id"]] = row
+
+    def trials_of(record, contract: str | None) -> None:
+        if not isinstance(record, dict):
+            return
+        consider(record.get("best"), contract)
+        for name in ("trials", "profitable"):
+            rows = record.get(name)
+            if isinstance(rows, list):
+                for item in rows:
+                    consider(item, contract)
+        charts = record.get("charts")
+        if isinstance(charts, dict):
+            for chart in charts.values():
+                trials_of(chart, contract)
+
     instruments = data.get("instruments")
-    if isinstance(instruments, dict) and instruments:
-        rows = []
+    if isinstance(instruments, dict):
         for name, record in instruments.items():
-            if not isinstance(record, dict):
-                continue
-            best = record.get("best") if isinstance(record.get("best"), dict) else {}
-            marked = dict(best)
-            marked.setdefault("contract", f"{str(name).upper()}1!")
-            row = _measured_row(data, marked, path)
-            if row is not None:
-                rows.append(row)
-        return rows
-    row = _measured_row(data, data.get("best") if isinstance(data.get("best"), dict) else {}, path)
-    return [row] if row is not None else []
+            hint = f"{str(name).upper()}1!"
+            if isinstance(record, dict) and isinstance(record.get("best"), dict) and record["best"].get("contract"):
+                hint = str(record["best"]["contract"])
+            trials_of(record, hint)
+    consider(data.get("best"), data.get("contract"))
+    if isinstance(data.get("trials"), list):
+        for item in data["trials"]:
+            consider(item, data.get("contract"))
+    return list(found.values())
 
 
 def _row(path: Path) -> dict | None:

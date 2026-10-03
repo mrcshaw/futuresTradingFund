@@ -1,4 +1,9 @@
-"""One thread and one model per agent. They share a single backtest engine."""
+"""One thread per agent. The systems administrator also serves desk requests.
+
+An agent waits on the engine process for the chart they are running. Opening
+the library is a desk request, so it runs on the systems administrator and
+does not wait on a backtest.
+"""
 
 from __future__ import annotations
 
@@ -7,35 +12,75 @@ import threading
 
 from futuresfund.roster import ROSTER
 
+SYSTEMS = "Systems Administrator"
 _crew = None
 _crew_lock = threading.Lock()
 
 
 class Crew:
-    """Each agent runs jobs on their own thread. The engine lock is separate."""
+    """Each agent has a thread. Desk requests have the systems administrator's other thread."""
 
     def __init__(self, board) -> None:
         self.board = board
-        self.engine = threading.Lock()
         self._queues: dict[str, queue.Queue] = {}
         for agent in ROSTER:
             name = agent["name"]
             jobs: queue.Queue = queue.Queue()
             self._queues[name] = jobs
-            thread = threading.Thread(
+            threading.Thread(
                 target=self._loop,
                 args=(name, jobs),
                 daemon=True,
                 name=f"agent-{agent['id']}",
-            )
-            thread.start()
+            ).start()
+        self._app: queue.Queue = queue.Queue()
+        threading.Thread(
+            target=self._loop,
+            args=(SYSTEMS, self._app),
+            daemon=True,
+            name="systems-administrator",
+        ).start()
 
-    def run(self, agent: str, message: str, work):
-        """Run work on that agent's thread and wait for it. The log line is theirs alone."""
-        if agent not in self._queues:
+    def run(self, agent: str, message: str, work, *, during_stop: bool = False):
+        """Run work on that agent's thread and wait for it."""
+        return self._submit(self._queues.get(agent), agent, message, work, during_stop=during_stop, announce=True)
+
+    def submit(self, agent: str, message: str, work, *, during_stop: bool = False) -> None:
+        """Queue work on that agent's thread. The caller does not wait."""
+        jobs = self._queues.get(agent)
+        if jobs is None:
             self.board.log(agent, message)
+            try:
+                work()
+            except Exception as exc:
+                self.board.log(agent, f"Stopped: {exc}")
+            return
+        if self.board.cancel.is_set() and not during_stop:
+            return
+
+        def job() -> None:
+            from futuresfund.llm import use_agent
+
+            with use_agent(agent):
+                if message:
+                    self.board.log(agent, message)
+                try:
+                    work()
+                except Exception as exc:
+                    self.board.log(agent, f"Stopped: {exc}")
+
+        jobs.put(job)
+
+    def application(self, message: str, work, *, announce: bool = False):
+        """A request made of the desk. This thread never runs a backtest."""
+        return self._submit(self._app, SYSTEMS, message, work, during_stop=True, announce=announce)
+
+    def _submit(self, jobs: queue.Queue | None, agent: str, message: str, work, *, during_stop: bool, announce: bool):
+        if jobs is None:
+            if announce and message:
+                self.board.log(agent, message)
             return work()
-        if self.board.cancel.is_set():
+        if self.board.cancel.is_set() and not during_stop:
             return None
         done = threading.Event()
         box: dict = {}
@@ -44,16 +89,18 @@ class Crew:
             from futuresfund.llm import use_agent
 
             with use_agent(agent):
-                self.board.log(agent, message)
+                if announce and message:
+                    self.board.log(agent, message)
                 try:
                     box["result"] = work()
                 except Exception as exc:
                     box["error"] = exc
-                    self.board.log(agent, f"Stopped: {exc}")
+                    if not getattr(exc, "status_code", None):
+                        self.board.log(agent, f"Stopped: {exc}")
                 finally:
                     done.set()
 
-        self._queues[agent].put(job)
+        jobs.put(job)
         done.wait()
         if box.get("error"):
             raise box["error"]

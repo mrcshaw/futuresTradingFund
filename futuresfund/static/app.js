@@ -107,7 +107,7 @@ function renderChannels() {
     { name: "Strategy library", id: "library", role: "Profitable studies, separated by contract." },
     { name: "Chart", id: "chart", role: "Candles for each futures contract." },
     { name: "R&D", id: "rnd", role: "Research ideas, then the developer runs them." },
-    { name: "Engine", id: "engine", role: "The last backtest results for the whole desk." },
+    { name: "Under the hood", id: "engine", role: "Four Backtrader engines, one for each developer." },
     { name: "Book", id: "book", role: "Prop positions and the orders the floor trader sent." },
   ] }];
   for (const agent of state.roster) {
@@ -168,11 +168,65 @@ function renderLiveAgents() {
   }));
 }
 
+function renderUnderTheHood() {
+  const grid = document.querySelector("#hood-grid");
+  if (!grid || state.channel !== "engine") return;
+  const charts = { "2m": "2-minute", "5m": "5-minute", "15m": "15-minute" };
+  const fallback = [
+    { id: 1, developer: "2min chart developer", timeframe: "2m", system: "Backtrader", busy: false, logs: [] },
+    { id: 2, developer: "5 min chart developer", timeframe: "5m", system: "Backtrader", busy: false, logs: [] },
+    { id: 3, developer: "15 min chart developer", timeframe: "15m", system: "Backtrader", busy: false, logs: [] },
+    { id: 4, developer: "Creation tester", timeframe: "", system: "Backtrader", busy: false, logs: [] },
+  ];
+  const engines = (state.lab && state.lab.engines && state.lab.engines.length) ? state.lab.engines : fallback;
+  const seen = new Set();
+  engines.slice(0, 4).forEach((engine) => {
+    seen.add(String(engine.id));
+    let card = grid.querySelector(`[data-engine="${engine.id}"]`);
+    if (!card) {
+      card = document.createElement("article");
+      card.className = "hood-card";
+      card.dataset.engine = String(engine.id);
+      const header = document.createElement("header");
+      const title = document.createElement("h3");
+      const stateLabel = document.createElement("span");
+      header.append(title, stateLabel);
+      const who = document.createElement("p");
+      who.className = "hood-who";
+      const log = document.createElement("textarea");
+      log.className = "hood-log";
+      log.readOnly = true;
+      log.spellcheck = false;
+      log.setAttribute("aria-label", `Engine ${engine.id} log`);
+      card.append(header, who, log);
+      grid.append(card);
+    }
+    card.querySelector("h3").textContent = `Engine ${engine.id}`;
+    const stateLabel = card.querySelector("header span");
+    stateLabel.className = engine.busy ? "hood-state busy" : "hood-state";
+    stateLabel.textContent = engine.busy ? "Running" : "Idle";
+    const chart = charts[engine.timeframe] || (engine.id === 4 ? "new script" : "chart");
+    const script = engine.busy && engine.script ? ` · ${engine.script}` : "";
+    card.querySelector(".hood-who").textContent = `${engine.system || "Backtrader"} · ${engine.developer || "Developer"} · ${chart}${script}`;
+    const log = card.querySelector("textarea");
+    const lines = engine.logs || [];
+    const next = lines.length ? lines.join("\n") : "Waiting for a script.";
+    if (log.value !== next) {
+      const atEnd = log.scrollTop + log.clientHeight >= log.scrollHeight - 12;
+      log.value = next;
+      if (atEnd) log.scrollTop = log.scrollHeight;
+    }
+  });
+  grid.querySelectorAll("[data-engine]").forEach((card) => {
+    if (!seen.has(card.dataset.engine)) card.remove();
+  });
+}
+
 function renderFeed() {
   const pages = {
     headquarters: { name: "headquarters", team: "Floor", role: "Every desk, in one feed." },
     book: { name: "book", team: "Core Trading", role: "Prop positions and the orders the floor trader sent." },
-    engine: { name: "engine", team: "Technology & Operations", role: "The last backtest results for the whole desk." },
+    engine: { name: "under the hood", team: "Technology & Operations", role: "Four Backtrader engines, one for each developer." },
     rnd: { name: "rnd", team: "Research", role: "Research ideas, then the developer runs them." },
     active: { name: "active", team: "Floor", role: "The strategy the floor trader is following." },
     library: { name: "strategy library", team: "Research", role: "Profitable studies, separated by contract." },
@@ -217,7 +271,7 @@ function renderFeed() {
   if (state.channel === "chart") ensureChart();
   if (state.channel === "library") ensureLibrary().then(() => renderLibrary());
   renderActive();
-  titleEl.textContent = state.channel === "library" ? "# strategy library" : `# ${state.channel.toLowerCase()}`;
+  titleEl.textContent = `# ${(current && current.name) || state.channel.toLowerCase()}`;
   teamEl.textContent = current?.team || "Floor";
   roleEl.textContent = current?.role || "Every desk, in one feed.";
 
@@ -271,6 +325,7 @@ function renderFeed() {
   }
 
   renderLiveAgents();
+  renderUnderTheHood();
   const messages = messagesForChannel();
   feedEl.innerHTML = messages.slice(-80).map((message) => `
     <article class="msg ${message.kind || ""}">
@@ -434,6 +489,7 @@ function paintKey() {
     tasks: state.snapshot.agent_tasks,
     logs: state.snapshot.agent_logs,
     lab: `${state.lab.status}:${state.lab.attempts}:${(state.lab.trials || []).length}:${state.lab.running}`,
+    engines: (state.lab.engines || []).map((engine) => `${engine.id}:${engine.busy}:${(engine.logs || []).at?.(-1) || ""}`).join("|"),
     orders: (state.book.orders || []).length,
     positions: (state.book.positions || []).length,
     lead: `${state.book.lead?.title || ""}:${state.book.lead?.net_profit ?? ""}:${state.book.lead?.timeframe || ""}`,
@@ -446,6 +502,7 @@ function paintKey() {
 }
 
 async function refresh() {
+  const libraryTask = state.channel === "library" ? ensureLibrary() : null;
   const [roster, snapshot, book, lab] = await Promise.all([
     fetch("/api/roster").then((response) => response.json()),
     fetch("/api/state").then((response) => response.json()),
@@ -456,8 +513,9 @@ async function refresh() {
   state.snapshot = snapshot;
   state.book = book;
   state.lab = lab;
-  const key = paintKey();
   if (state.channel === "chart") ensureChart();
+  if (libraryTask) await libraryTask;
+  const key = paintKey();
   if (key === state.paint) return;
   state.paint = key;
   renderChannels();
@@ -925,19 +983,22 @@ async function openStrategy(id, source, contract) {
   const body = document.querySelector("#script-body");
   const note = document.querySelector("#script-note");
   modal.hidden = false;
+  modal.dataset.loading = "1";
   title.textContent = "Strategy";
   body.value = "";
-  note.textContent = "";
+  note.textContent = "Loading the script.";
   const path = source === "library" ? "/api/library/" : "/api/leaders/";
   const query = source === "library" && contract ? `?contract=${encodeURIComponent(contract)}` : "";
   const response = await fetch(`${path}${encodeURIComponent(id)}${query}`);
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
+  delete modal.dataset.loading;
+  if (!response.ok || !payload.pine) {
     note.textContent = payload.detail || "That script could not be opened.";
     return;
   }
   title.textContent = payload.title || "Strategy";
-  body.value = payload.pine || "";
+  body.value = payload.pine;
+  note.textContent = "";
 }
 
 function closeStrategy() {
@@ -954,6 +1015,10 @@ document.addEventListener("keydown", (event) => {
 document.querySelector("#script-copy").addEventListener("click", async () => {
   const text = document.querySelector("#script-body").value;
   const note = document.querySelector("#script-note");
+  if (document.querySelector("#script-modal").dataset.loading) {
+    note.textContent = "The script is still loading.";
+    return;
+  }
   if (!text) {
     note.textContent = "There is no script to copy.";
     return;
@@ -1006,7 +1071,7 @@ function renderLibrary() {
     rows = rows.filter((row) => row.title.toLowerCase().includes(query) || String(row.timeframe || "").toLowerCase().includes(query));
   }
   const { key, dir } = state.librarySort;
-  const textKeys = new Set(["title", "timeframe", "contract_label"]);
+  const textKeys = new Set(["title", "timeframe", "contract_label", "kind"]);
   rows.sort((left, right) => {
     const a = left[key];
     const b = right[key];
@@ -1017,6 +1082,7 @@ function renderLibrary() {
   });
   body.innerHTML = rows.map((row) => `<tr data-library="${escapeHtml(row.id)}" data-contract="${escapeHtml(row.contract)}">
     <td>${escapeHtml(row.title)}</td>
+    <td>${escapeHtml(row.kind || "Most profitable")}</td>
     <td>${escapeHtml(row.contract_label)}</td>
     <td>${escapeHtml(row.timeframe || "")}</td>
     <td>${money(row.net_profit)}</td>
@@ -1107,21 +1173,8 @@ async function loadResearchGuide() {
 
 function renderLab() {
   loadResearchGuide();
+  renderUnderTheHood();
   const lab = state.lab || {};
-  const engines = lab.engines || [];
-  document.querySelectorAll("#engine-tabs .chart-tab").forEach((button) => {
-    button.classList.toggle("active", button.dataset.engine === state.engineId);
-  });
-  const picked = engines.find((item) => String(item.id) === state.engineId) || engines[0];
-  const live = document.querySelector("#engine-live");
-  if (live) {
-    const chartLabel = { "2m": "2-minute", "5m": "5-minute", "15m": "15-minute" };
-    live.textContent = picked && picked.busy
-      ? `Engine ${picked.id} is running ${picked.script || "a script"} on the ${chartLabel[picked.timeframe] || picked.timeframe} ${picked.instrument} chart.`
-      : picked && picked.timeframe
-        ? `Engine ${picked.id} is ready. ${picked.developer || "The chart developer"} runs only the ${chartLabel[picked.timeframe] || picked.timeframe} chart.`
-        : `Engine ${state.engineId} is ready. ${picked && picked.developer ? picked.developer : "The creation tester"} tests a new script until it is profitable.`;
-  }
   const status = document.querySelector("#engine-status");
   if (status) {
     const count = (lab.trials || []).length;
@@ -1375,12 +1428,6 @@ document.querySelector("#chart-indicators").addEventListener("change", (event) =
   if (state.chartData) drawCandles(state.chartData);
 });
 
-document.querySelector("#engine-tabs").addEventListener("click", (event) => {
-  const tab = event.target.closest("[data-engine]");
-  if (!tab) return;
-  state.engineId = tab.dataset.engine;
-  renderLab();
-});
 document.querySelector("#lab-run").addEventListener("click", runLab);
 document.querySelector("#rnd-run").addEventListener("click", runLab);
 

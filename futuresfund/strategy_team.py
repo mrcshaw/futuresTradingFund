@@ -228,6 +228,13 @@ def run_creation(board, pause) -> None:
         created = CREATED / name
         facts = pine_facts(source) if source else {"title": title, "inputs": [], "named": {}}
         frames = _load_frames("ES")
+        from futuresfund.backtrader_engine import _bars_from
+        from futuresfund.entry_rules import ensure_entry_rule
+
+        if not ensure_entry_rule(board, CREATION_TESTER, source, _bars_from(frames.get("5m") or [])):
+            if not _sleep(board, pause, 60):
+                return
+            continue
         board.post(
             CREATION_TESTER,
             f"Engine 4 is backtesting {name} on the 5-minute ES chart until it is profitable, up to {ATTEMPT_LIMIT} attempts.",

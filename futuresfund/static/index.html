@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=34" />
+  <link rel="stylesheet" href="/static/styles.css?v=38" />
 </head>
 <body>
   <div class="app">
@@ -90,22 +90,16 @@
         <pre class="report-body" id="hq-rules-body">The 5:00pm meeting has not recorded the prop-account rules yet.</pre>
       </section>
       <section class="feed" id="feed"></section>
-      <section class="book" id="engine" hidden>
+      <section class="book under-hood-page" id="engine" hidden>
         <div class="book-head">
           <div>
-            <p class="kicker">Trading engine</p>
-            <h2>Last research results</h2>
-            <p class="role" id="engine-note">Backtrader runs the backtests. The chart developers run 200 attempts on engines 1, 2, and 3. After those three finish, the strategy developer writes one script and engine 4 tests it until it is profitable.</p>
+            <p class="kicker">Under the hood</p>
+            <h2>Four engines</h2>
+            <p class="role" id="engine-note">Each developer has one Backtrader engine in its own process. The log is the live output of that engine.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
-        <div class="chart-browser" id="engine-tabs">
-          <button type="button" class="chart-tab active" data-engine="1">Engine 1 · 2-minute</button>
-          <button type="button" class="chart-tab" data-engine="2">Engine 2 · 5-minute</button>
-          <button type="button" class="chart-tab" data-engine="3">Engine 3 · 15-minute</button>
-          <button type="button" class="chart-tab" data-engine="4">Engine 4 · new script</button>
-        </div>
-        <p class="hint" id="engine-live"></p>
+        <div id="hood-grid" class="hood-grid"></div>
         <p class="hint" id="engine-status"></p>
         <h3>Research guide</h3>
         <pre class="report-body" id="research-guide">Loading the research guide.</pre>
@@ -197,7 +191,7 @@
           <div>
             <p class="kicker">Strategy library</p>
             <h2>Profitable engine runs</h2>
-            <p class="role">ES and gold are separate. Each row is the most profitable timeframe from that engine run. Click a strategy to copy the script.</p>
+            <p class="role">Each script shows its most profitable result. A second row appears when a different result keeps more profit after the drawdown. ES and gold stay on separate shelves.</p>
           </div>
         </div>
         <div class="library-tools">
@@ -212,6 +206,7 @@
           <thead>
             <tr>
               <th data-sort="title">Strategy</th>
+              <th data-sort="kind">Kind</th>
               <th data-sort="contract_label">Contract</th>
               <th data-sort="timeframe">Timeframe</th>
               <th data-sort="net_profit">Profit</th>
@@ -287,6 +282,6 @@
       <textarea id="script-body" readonly></textarea>
     </div>
   </div>
-  <script type="module" src="/static/app.js?v=66"></script>
+  <script type="module" src="/static/app.js?v=74"></script>
 </body>
 </html>

@@ -271,7 +271,8 @@ def _run_learning(board) -> None:
     loaded = ", ".join(f"{name} {len(rows)} bars" for name, rows in frames.items())
     intro = (
         "The learning folder is only the starting point. Each chart uses 200 different results, even after a version meets the profit target, so a better one can still be found. "
-        "Backtrader runs the backtests. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. After those three finish, engine 4 tests a new script until it is profitable. "
+        "Backtrader runs each chart in its own process. Engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 tests a new script until it is profitable. "
+        "When a script's entry is not already on the engine, the chart developer adds that rule before the attempts. "
         f"Each script is tested once on every instrument ({instruments}) and on each of the three charts. It moves to the learned folder only after those charts are done. "
         f"Loaded {loaded}. "
         "Every attempt changes one input and records how that change moved the result. The research guide is guidance, not a requirement. Consistency comes before a larger profit. "
@@ -526,6 +527,8 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             "stopped": bool(measured.get("stopped")),
             "fatal": bool(measured.get("fatal")),
             "engine": measured.get("engine") or "",
+            "instrument": measured.get("instrument") or "",
+            "contract": measured.get("contract") or "",
         }
         row["passed"] = _passed(row, account_size)
         row["change"] = _change_text(trials[-1]["params"] if trials else None, plan)
@@ -704,6 +707,11 @@ def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart 
             channel=developer,
         )
         return "waiting"
+    from futuresfund.backtrader_engine import _bars_from
+    from futuresfund.entry_rules import ensure_entry_rule
+
+    if not ensure_entry_rule(board, developer, text, _bars_from(bars)):
+        return "failed"
     execute = _engine_execute(text, frames, facts, board, root, developer, timeframe)
     trials = _search(
         _with_contract_point(_pine_params(facts), root),
@@ -827,14 +835,6 @@ def _engine_execute(text: str, frames: dict, facts: dict, board, instrument: str
         shelf = "GC1!" if instrument in {"QO", "GC", "MGC"} else f"{instrument}1!"
         if cancel is not None and cancel.is_set():
             return {"stopped": True, "runner": "backtrader", "engine": "backtrader", "timeframe": timeframe, "net_profit": None, "max_drawdown": None, "trades": 0}
-        if board is not None:
-            from futuresfund.crew import get_crew
-
-            get_crew(board).run(
-                developer,
-                f"Running {title} on the {label} {instrument} chart",
-                lambda: None,
-            )
         bars = frames.get(timeframe) or []
         if len(bars) < 80:
             return {
@@ -850,7 +850,32 @@ def _engine_execute(text: str, frames: dict, facts: dict, board, instrument: str
                 "instrument": instrument,
                 "contract": shelf,
             }
-        measured = run_script(text, bars, timeframe, overrides, cancel, instrument, title, slot) or {}
+
+        def measure():
+            return run_script(text, bars, timeframe, overrides, cancel, instrument, title, slot) or {}
+
+        if board is None:
+            measured = measure()
+        else:
+            from futuresfund.crew import get_crew
+
+            measured = get_crew(board).run(
+                developer,
+                f"Running {title} on the {label} {instrument} chart",
+                measure,
+            )
+            if not measured:
+                if cancel is not None and cancel.is_set():
+                    return {
+                        "stopped": True,
+                        "runner": "backtrader",
+                        "engine": "backtrader",
+                        "timeframe": timeframe,
+                        "net_profit": None,
+                        "max_drawdown": None,
+                        "trades": 0,
+                    }
+                measured = {}
         measured["timeframe"] = timeframe
         measured["instrument"] = instrument
         measured["contract"] = shelf
@@ -1308,24 +1333,34 @@ def _offer_library(board, facts: dict, path: Path, row: dict) -> None:
         return
     instrument = str(row.get("instrument") or "ES").upper()
     shelf = "GC1!" if instrument in {"QO", "GC", "MGC"} else f"{instrument}1!"
-    notes = _read_notes(path)
-    instruments = notes.get("instruments") if isinstance(notes.get("instruments"), dict) else {}
-    prior = instruments.get(instrument) if isinstance(instruments.get(instrument), dict) else {}
-    prior_best = prior.get("best") if isinstance(prior.get("best"), dict) else {}
-    try:
-        previous = float(prior_best.get("net_profit") or 0)
-    except (TypeError, ValueError):
-        previous = 0
-    if profit <= previous:
-        return
-    marked = dict(row)
-    marked["contract"] = shelf
-    record = dict(prior)
-    record["best"] = marked
-    record["attempts"] = max(int(record.get("attempts") or 0), 1)
-    instruments[instrument] = record
-    _write_instrument(path, facts, instruments, marked)
-    _library_notice(board, facts, path, marked)
+    from futuresfund.library import contract_of, record_profitable
+
+    title = facts.get("title") or path.stem
+    symbol, _label = contract_of(str(title), path.name, shelf)
+    change = str(row.get("change") or "").strip()
+    shown = str(title)
+    if change and change not in {"Original", "Starting settings"} and not change.startswith("Starting measurement"):
+        shown = f"{title} — {change}"
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    fingerprint = json.dumps([symbol, row.get("timeframe"), params, profit, int(row.get("trades") or 0)], sort_keys=True, default=str)
+    entry = {
+        "id": f"{path.stem}-{__import__('hashlib').sha1(fingerprint.encode()).hexdigest()[:12]}",
+        "title": shown,
+        "script": str(title),
+        "file": path.name,
+        "contract": symbol,
+        "contract_label": _label,
+        "timeframe": row.get("timeframe") or "",
+        "net_profit": profit,
+        "max_drawdown": row.get("max_drawdown"),
+        "trades": int(row.get("trades") or 0),
+        "win_rate": row.get("win_rate"),
+        "params": params,
+        "engine": "backtrader",
+        "runner": "backtrader",
+    }
+    if record_profitable(entry) and board is not None:
+        _library_notice(board, facts, path, entry)
 
 
 def _write_instrument(path: Path, facts: dict, instruments: dict, best: dict) -> None:
@@ -1437,6 +1472,7 @@ def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: st
                 "attempts": sum(int(item.get("attempts") or 0) for item in charts.values() if isinstance(item, dict)),
                 "best": chosen_chart,
                 "charts": charts,
+                "profitable": list(prior.get("profitable") or []),
                 "quantitative_researcher": quant,
                 "indicator_researcher": indicator,
                 "trials": trials,

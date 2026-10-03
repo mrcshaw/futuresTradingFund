@@ -161,19 +161,24 @@ def research_guide():
 
 @app.get("/api/library")
 def library(contract: str = "ES1!", q: str = ""):
+    from futuresfund.crew import get_crew
     from futuresfund.library import search_library
 
-    return search_library(contract, q)
+    return get_crew(board).application("Opening the strategy library", lambda: search_library(contract, q))
 
 
 @app.get("/api/library/{strategy_id}")
 def library_one(strategy_id: str, contract: str = ""):
+    from futuresfund.crew import get_crew
     from futuresfund.library import library_script
 
-    row = library_script(strategy_id, contract or None)
-    if row is None or not row.get("pine"):
-        raise HTTPException(status_code=404, detail="That strategy script is not in the library.")
-    return row
+    def open_script():
+        row = library_script(strategy_id, contract or None)
+        if row is None or not row.get("pine"):
+            raise HTTPException(status_code=404, detail="That strategy script is not in the library.")
+        return row
+
+    return get_crew(board).application("Opening a library script", open_script, announce=True)
 
 
 @app.get("/api/leaders/{strategy_id}")
@@ -241,9 +246,14 @@ async def research(
 
 @app.post("/api/runs/stop")
 def stop_run():
-    board.post("System", "Stop requested. The strategy was not changed and no order was sent.", kind="system", channel="headquarters")
-    board.mark_stopped()
-    return {"ok": True}
+    from futuresfund.crew import get_crew
+
+    def work():
+        board.post("System", "Stop requested. The strategy was not changed and no order was sent.", kind="system", channel="headquarters")
+        board.mark_stopped()
+        return {"ok": True}
+
+    return get_crew(board).application("Stopping the researchers", work)
 
 
 _learning_thread: threading.Thread | None = None
@@ -251,19 +261,24 @@ _learning_thread: threading.Thread | None = None
 
 @app.post("/api/runs/start")
 def start_run():
-    global _learning_thread
-    if _learning_thread and _learning_thread.is_alive():
-        return {"ok": True, "started": False}
-    board.cancel.clear()
-    board.post("System", "Start requested. The researchers will run the Pine scripts.", kind="system", channel="headquarters")
+    from futuresfund.crew import get_crew
 
-    def _go():
-        from futuresfund.learn import run_learning
-        run_learning(board)
+    def work():
+        global _learning_thread
+        if _learning_thread and _learning_thread.is_alive():
+            return {"ok": True, "started": False}
+        board.cancel.clear()
+        board.post("System", "Start requested. The researchers will run the Pine scripts.", kind="system", channel="headquarters")
 
-    _learning_thread = threading.Thread(target=_go, daemon=True, name="futures-learning")
-    _learning_thread.start()
-    return {"ok": True, "started": True}
+        def _go():
+            from futuresfund.learn import run_learning
+            run_learning(board)
+
+        _learning_thread = threading.Thread(target=_go, daemon=True, name="futures-learning")
+        _learning_thread.start()
+        return {"ok": True, "started": True}
+
+    return get_crew(board).application("Starting the researchers", work)
 
 
 @app.post("/hooks/tradingview/{token}")
@@ -380,22 +395,21 @@ class ChatRequest(BaseModel):
     agent: str = "Portfolio Manager"
 
 
-_chat_busy = False
+_chat_lock = threading.Lock()
+_chat_busy: set[str] = set()
 
 
 @app.post("/api/chat")
 def chat(body: ChatRequest):
-    global _chat_busy
-    if _chat_busy:
-        raise HTTPException(status_code=409, detail="That desk is still answering.")
     text = body.message.strip()
     name = _agent_name(body.agent) or "Portfolio Manager"
+    with _chat_lock:
+        if name in _chat_busy:
+            raise HTTPException(status_code=409, detail=f"{name} is still answering.")
+        _chat_busy.add(name)
     board.post("You", text, kind="chat", channel=name)
-    _chat_busy = True
 
-    def _reply():
-        global _chat_busy
-        board.log(name, "Reading the firm book")
+    def work():
         try:
             answer = _ask_agent(name, text)
             board.post(name, answer, kind="chat", channel=name)
@@ -403,9 +417,12 @@ def chat(body: ChatRequest):
         except Exception as exc:
             board.post(name, f"I could not answer just now: {exc}", kind="error", channel=name)
         finally:
-            _chat_busy = False
+            with _chat_lock:
+                _chat_busy.discard(name)
 
-    threading.Thread(target=_reply, daemon=True, name="futures-chat").start()
+    from futuresfund.crew import get_crew
+
+    get_crew(board).submit(name, "Reading the firm book", work, during_stop=True)
     return {"ok": True}
 
 
@@ -502,7 +519,16 @@ def _relay(speaker: str, text: str) -> None:
 
     handed = " ".join(note)[:500]
     hand_report(board, speaker, target, handed)
-    reply = _ask_agent(target, f"{speaker} handed you this written report: {handed}")
+    from futuresfund.crew import get_crew
+
+    reply = get_crew(board).run(
+        target,
+        f"Reading a note from {speaker}",
+        lambda: _ask_agent(target, f"{speaker} handed you this written report: {handed}"),
+        during_stop=True,
+    )
+    if not reply:
+        return
     board.post(target, reply, kind="chat", channel=speaker)
     if target != speaker:
         board.post(target, reply, kind="chat", channel=target)
@@ -510,6 +536,11 @@ def _relay(speaker: str, text: str) -> None:
 
 @app.on_event("startup")
 def _startup():
+    from futuresfund.crew import get_crew
+    from futuresfund.engine_workers import start_engines
+
+    start_engines()
+    get_crew(board)
     threading.Thread(target=scheduler, args=(board,), daemon=True, name="futures-scheduler").start()
     from futuresfund.ninjatrader import start_listener
 
@@ -557,7 +588,7 @@ def _startup():
         )
         board.post(
             "System",
-            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own model and their own thread. Backtrader runs the backtests: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart.",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own thread. Each Backtrader engine has its own process: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, engine 3 is the 15-minute chart, and engine 4 tests a new script. The systems administrator serves the library and the other desk requests.",
             kind="system",
             channel="headquarters",
         )

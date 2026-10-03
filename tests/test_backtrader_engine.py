@@ -13,6 +13,41 @@ class BacktraderEngineTests(unittest.TestCase):
         self.assertEqual(result["expected"], 105)
         self.assertGreaterEqual(result["matched"], 92)
 
+    def test_a_script_keeps_going_after_the_first_result(self):
+        from pathlib import Path
+
+        from futuresfund.backtrader_engine import run_script
+
+        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies" / "outside_bar_reversal.pine").read_text(encoding="utf-8")
+        bars = []
+        price = 100.0
+        for index in range(80):
+            price += 1 if index % 5 else -2
+            bars.append({"t": 1_700_000_000 + index * 900, "o": price - 1, "h": price + 2, "l": price - 3, "c": price, "v": 20})
+        calls = {"n": 0}
+
+        def execute(params):
+            calls["n"] += 1
+            return run_script(source, bars, "15m", {"Stop ($)": 200 + calls["n"] * 25}, None)
+
+        trials = _search({"stop_dollars": 200.0}, execute, 50000, 4, None, None, None)
+        self.assertGreater(calls["n"], 1)
+        self.assertFalse(trials[-1].get("fatal"))
+
+    def test_bos_breakout_evening_takes_trades_on_the_es_chart(self):
+        from pathlib import Path
+
+        from futuresfund.backtrader_engine import run_script
+        from futuresfund.charts import load_chart
+
+        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies" / "bos_breakout_evening.pine").read_text(encoding="utf-8")
+        bars = load_chart("2m", "ES")
+        self.assertGreater(len(bars), 500)
+        result = run_script(source, bars, "2m", {}, None, "ES", "BOS Breakout Evening ES 2min")
+        self.assertFalse(result.get("fatal"))
+        self.assertGreater(result.get("trades") or 0, 0)
+        self.assertIsNotNone(result.get("net_profit"))
+
     def test_each_chart_has_its_own_engine(self):
         self.assertEqual(slot_for("2m"), 0)
         self.assertEqual(slot_for("5m"), 1)
@@ -54,3 +89,21 @@ class BacktraderEngineTests(unittest.TestCase):
         self.assertEqual(tested_instruments(partial), set())
         self.assertEqual(pending_for_chart(partial, "2m", ["ES"]), [])
         self.assertEqual(pending_for_chart(partial, "15m", ["ES"]), ["ES"])
+
+    def test_the_scripts_now_running_take_trades(self):
+        from pathlib import Path
+
+        from futuresfund.backtrader_engine import _bars_from
+        from futuresfund.charts import load_chart
+        from futuresfund.script_backtest import run_source
+
+        folder = Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies"
+        checks = (
+            ("ema_bb_mean_reversion.pine", "2m", "ES"),
+            ("delta_volume_breakout_night_shift.pine", "5m", "QO"),
+        )
+        for name, timeframe, root in checks:
+            source = (folder / name).read_text(encoding="utf-8")
+            trades = run_source(source, _bars_from(load_chart(timeframe, root)), None)
+            closed = [trade for trade in trades if trade.get("exit_time")]
+            self.assertGreater(len(closed), 0, name)
