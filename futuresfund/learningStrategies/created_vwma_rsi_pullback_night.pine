@@ -1,0 +1,60 @@
+//@version=5
+// Built from: Night Session Outside Bar Reversal (tight stops cut drawdown), POC RSI Reversal (RSI trigger with trend filter), indicators: ta.ema, ta.rsi, ta.mom, math.sum
+strategy("VWMA RSI Pullback Night", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+
+// ===== RISK =====
+pv = input.float(2, "Point Value ($)")
+stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=1500)
+tp_dollars = input.int(750, "Take Profit ($)", minval=250, maxval=2000)
+use_trail = input.bool(false, "Enable Trailing Stop")
+trail_step_amt = input.int(500, "Trail: Tighten every ($)")
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)")
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+
+// ===== SESSION =====
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+t = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+start_t = sess_start_hr * 60 + sess_start_mn
+end_t = sess_end_hr * 60 + sess_end_mn
+in_session = use_session ? (start_t < end_t ? t >= start_t and t < end_t : t >= start_t or t < end_t) : true
+
+// ===== INDICATORS =====
+vwma_len = input.int(20, "VWMA Length", minval=5, maxval=100)
+ema_len = input.int(50, "EMA Length", minval=10, maxval=200)
+rsi_len = input.int(14, "RSI Length", minval=5, maxval=30)
+rsi_long_lv = input.int(40, "RSI Long Level", minval=20, maxval=50)
+rsi_short_lv = input.int(60, "RSI Short Level", minval=50, maxval=80)
+mom_len = input.int(5, "Momentum Length", minval=2, maxval=20)
+cooldown_bars = input.int(4, "Cooldown Bars", minval=2, maxval=50)
+vwma = math.sum(close * volume, vwma_len) / math.sum(volume, vwma_len)
+ema_val = ta.ema(close, ema_len)
+rsi_val = ta.rsi(close, rsi_len)
+mom_val = ta.mom(close, mom_len)
+
+// ===== ENTRY =====
+long_sig = close > vwma and close > ema_val and ta.crossover(rsi_val, rsi_long_lv) and mom_val > 0
+short_sig = close < vwma and close < ema_val and ta.crossunder(rsi_val, rsi_short_lv) and mom_val < 0
+var int last_entry_bar = 0
+can_trade = bar_index - last_entry_bar >= cooldown_bars
+
+if in_session and can_trade and long_sig and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    last_entry_bar := bar_index
+    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit)
+if in_session and can_trade and short_sig and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    last_entry_bar := bar_index
+    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit)
+
+// ===== RISK CHECK =====
+if strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session")

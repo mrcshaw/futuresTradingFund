@@ -15,7 +15,9 @@ NAMES = {
     "Floor Trader",
     "Chart researcher",
     "Card keeper",
-    "Strategy developer",
+    "2min strategy developer",
+    "5 min strategy developer",
+    "15 min strategy developer",
     "Script checker",
     "Creation tester",
     "Lesson writer",
@@ -31,6 +33,13 @@ NAMES = {
 
 
 class DeskTests(unittest.TestCase):
+    def test_every_agent_has_a_responsibility_list(self):
+        for agent in ROSTER:
+            duties = agent.get("responsibilities")
+            self.assertIsInstance(duties, list, agent["name"])
+            self.assertGreaterEqual(len(duties), 2, agent["name"])
+            self.assertTrue(all(isinstance(line, str) and line.strip() for line in duties), agent["name"])
+
     def test_the_chart_folder_has_two_five_and_fifteen_minute_files(self):
         from futuresfund.charts import chart_paths
 
@@ -73,7 +82,10 @@ class DeskTests(unittest.TestCase):
 
     def test_the_floor_includes_the_indicator_researcher(self):
         self.assertIn("Chart researcher", {agent["name"] for agent in ROSTER})
-        self.assertIn("Strategy developer", {agent["name"] for agent in ROSTER})
+        names = {agent["name"] for agent in ROSTER}
+        self.assertIn("2min strategy developer", names)
+        self.assertIn("5 min strategy developer", names)
+        self.assertIn("15 min strategy developer", names)
         self.assertIn("Creation tester", {agent["name"] for agent in ROSTER})
 
     def test_a_rising_market_is_accepted_before_one_hundred_changes(self):
@@ -108,10 +120,10 @@ class DeskTests(unittest.TestCase):
         bars = [
             {"t": "0", "o": 100, "h": 100, "l": 100, "c": 100, "v": 1},
             {"t": "1", "o": 200, "h": 200, "l": 200, "c": 200, "v": 1},
-            {"t": "2", "o": 150, "h": 150, "l": 150, "c": 150, "v": 1},
+            {"t": "2", "o": 140, "h": 140, "l": 140, "c": 140, "v": 1},
         ]
         result = _simulate(bars, [1, 1, 1], 1, 50, 50000)
-        self.assertGreater(result["max_drawdown"], 2000)
+        self.assertGreater(result["max_drawdown"], 2500)
         self.assertFalse(result["proven"])
 
     def test_stored_rules_over_the_limit_are_rejected(self):
@@ -127,7 +139,7 @@ class DeskTests(unittest.TestCase):
         bars = [{"t": str(i), "o": 100 - i * 20, "h": 100, "l": 100 - i * 20, "c": 100 - i * 20, "v": 1} for i in range(10)]
         result = _simulate(bars, [1] * len(bars), 1, 50, 50000, stop=500)
         self.assertFalse(result["breached"])
-        self.assertLessEqual(result["max_drawdown"], 2000)
+        self.assertLessEqual(result["max_drawdown"], 2500)
 
     def test_five_contracts_are_over_the_fifty_k_cap(self):
         from futuresfund.research import _simulate

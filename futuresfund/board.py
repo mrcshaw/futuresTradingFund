@@ -31,7 +31,20 @@ class Board:
         self.run: dict | None = None
         self.activity: dict[str, str | None] = {"agent": None, "task": None}
         self.research = "idle"
+        self.hold_new = False
         self.cancel = threading.Event()
+        self._restart = False
+        # Set by the server to errors.journal_post, so every error posted here is written in the error journal.
+        self.on_error = None
+
+    def watch_view(self) -> dict:
+        """Research, hold, and agent status without copying the message log."""
+        with self._lock:
+            return {
+                "research": self.research,
+                "hold_new": self.hold_new,
+                "agent_status": dict(self.agent_status),
+            }
 
     def snapshot(self) -> dict:
         with self._lock:
@@ -44,6 +57,7 @@ class Board:
                 "run": dict(self.run) if self.run else None,
                 "activity": dict(self.activity),
                 "research": self.research,
+                "hold_new": self.hold_new,
             }
 
     def post(self, author: str, text: str, kind: str = "speech", channel: str | None = None) -> dict:
@@ -55,7 +69,12 @@ class Board:
             brief = _brief(text)
             if author in self.agent_status and brief:
                 self._remember(author, brief)
-            return message
+        if kind == "error" and self.on_error is not None:
+            try:
+                self.on_error(author, text, channel or author)
+            except Exception:
+                pass
+        return message
 
     def set_research(self, state: str) -> None:
         with self._lock:
@@ -84,6 +103,22 @@ class Board:
                 self._remember(agent, task)
                 if agent in self.agent_status:
                     self.agent_status[agent] = "working"
+
+    def set_task(self, agent: str, text: str, *, working: bool | None = None) -> None:
+        """Update one agent's own line. A resting line does not take the floor headline."""
+        text = (text or "").strip()
+        if not agent or not text:
+            return
+        with self._lock:
+            if self.cancel.is_set():
+                return
+            self._remember(agent, text)
+            if working is True and agent in self.agent_status:
+                self.agent_status[agent] = "working"
+            elif working is False and agent in self.agent_status:
+                self.agent_status[agent] = "idle"
+                if self.activity.get("agent") == agent:
+                    self.activity = {"agent": None, "task": None}
 
     def log(self, agent: str, message: str) -> None:
         """Record one line on that agent's own log and on that agent's channel."""
@@ -160,8 +195,34 @@ class Board:
                 "started_at": _now(),
             }
 
+    def set_hold_new(self, held: bool) -> None:
+        """The strategy team stops writing a new script. The chart engines keep backtesting."""
+        with self._lock:
+            self.hold_new = bool(held)
+            if self.hold_new:
+                self.activity = {"agent": "2min strategy developer", "task": "Not writing a new strategy."}
+
+    def holding_new_scripts(self) -> bool:
+        with self._lock:
+            return self.hold_new
+
+    def request_research(self) -> None:
+        """Start was pressed. A run that is still shutting down keeps going."""
+        with self._lock:
+            self._restart = True
+            self.cancel.clear()
+            self.research = "running"
+            self.activity = {"agent": "System", "task": "Starting the researchers."}
+
+    def take_restart(self) -> bool:
+        with self._lock:
+            pending = self._restart
+            self._restart = False
+            return pending
+
     def mark_stopped(self) -> None:
         with self._lock:
+            self._restart = False
             if self.run and self.run.get("status") == "running":
                 self.run["status"] = "stopped"
             for name, status in self.agent_status.items():

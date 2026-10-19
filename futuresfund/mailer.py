@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import os
 import smtplib
+import threading
 import time
+from datetime import datetime
 from email.message import EmailMessage
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+MAIL_DIR = Path(__file__).resolve().parent / "researchNotes" / "mail"
+MAIL_LOG = MAIL_DIR / "_sent.json"
+_log_lock = threading.Lock()
 
 
 def factual_report(book: dict, trials: list | None = None) -> str:
@@ -97,6 +106,50 @@ def factual_report(book: dict, trials: list | None = None) -> str:
     return "\n".join(lines)
 
 
+def write_result(facts: str, writer=None) -> str:
+    """The portfolio manager writes this result from the desk. A model failure keeps the facts.
+
+    The facts say whether the result is on the strategy library. A reply that files a result the
+    facts left off the shelf is discarded, and the facts are sent instead.
+    """
+    if writer is None:
+        from futuresfund.llm import complete
+
+        writer = lambda prompt: complete(prompt, agent="Portfolio Manager", fresh=True)
+    not_filed = "on the strategy library: no" in (facts or "").lower()
+    text = writer(
+        "You are the portfolio manager. One chart just finished on this desk. "
+        "Write a new email about this result. Read the facts below. They were taken from the application just now. "
+        "Include the strategy, the chart, the profit, the drawdown, the trades, the trades per day, and the profit ratio. "
+        "The profit ratio is the average winning trade divided by the average losing trade. "
+        "The acceptance line in the facts is the only acceptance bar on this desk. It is the strategy library page: the profit, the profit factor, the win rate, and the trade count saved there. "
+        "Judge this run against those four numbers. Quote them. Do not apply any other profit, profit factor, win rate, or trade count. "
+        "Say it is on the strategy library only when the facts say it is. "
+        "When the facts say it is not on the library, say it was not filed and give only the reason written there. "
+        "Do not use a template or numbered sections. "
+        "Do not invent a profit, a drawdown, a trade count, or a filing.\n\n"
+        f"{facts}"
+    )
+    if not text or "could not answer" in text.lower():
+        return facts
+    if not_filed and _claims_a_filing(text):
+        return facts
+    return text.strip()
+
+
+def _claims_a_filing(text: str) -> bool:
+    """A line that says the result was filed, rather than that it was not."""
+    for line in (text or "").splitlines():
+        lowered = line.lower()
+        if "not filed" in lowered or "not on the" in lowered or "was not added" in lowered or "left off" in lowered:
+            continue
+        if "filed in the" in lowered or "stored in the strategy library" in lowered:
+            return True
+        if "strategy library" in lowered and " is in the " in f" {lowered}":
+            return True
+    return False
+
+
 def write_report(facts: str, writer=None) -> str:
     """The portfolio manager writes the report. A model failure keeps the facts."""
     if writer is None:
@@ -130,29 +183,155 @@ def report_recipients() -> list[str]:
     return recipients or [REPORT_ADDRESS]
 
 
-def send_report(body: str, subject: str = "Futures desk report") -> dict:
-    """Send the report. A missing password does not stall the strategy queue."""
+def _now() -> str:
+    return datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M %p ET")
+
+
+def mail_log() -> list[dict]:
+    """Every email attempt the desk has made, oldest first."""
+    try:
+        rows = json.loads(MAIL_LOG.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _record(subject: str, result: dict) -> None:
+    entry = {
+        "time": _now(),
+        "subject": subject,
+        "sent": bool(result.get("sent")),
+        "to": result.get("to") or ", ".join(report_recipients()),
+        "reason": result.get("reason") or "",
+    }
+    with _log_lock:
+        rows = mail_log()
+        rows.append(entry)
+        try:
+            MAIL_DIR.mkdir(parents=True, exist_ok=True)
+            MAIL_LOG.write_text(json.dumps(rows[-200:], indent=1), encoding="utf-8")
+        except OSError:
+            pass
+    if not entry["sent"] and "SMTP_PASSWORD is empty" not in entry["reason"]:
+        # An email the desk tried to send and could not is a workflow error. A desk with no mail set up is not.
+        try:
+            from futuresfund.errors import record
+
+            record("Portfolio Manager", f"Email not sent: {subject}. {entry['reason']}", source="mail")
+        except Exception:
+            pass
+
+
+def _smtp_settings() -> tuple[str, int, str, str, str]:
     host = os.environ.get("SMTP_HOST", "").strip() or "smtp.gmail.com"
-    recipients = report_recipients()
-    if not os.environ.get("SMTP_PASSWORD", "").strip():
-        return {
-            "sent": False,
-            "reason": f"SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to {', '.join(recipients)}.",
-        }
     try:
         port = int(os.environ.get("SMTP_PORT", "587") or "587")
     except ValueError:
         port = 587
     user = os.environ.get("SMTP_USER", "").strip()
-    password = os.environ.get("SMTP_PASSWORD", "")
     sender = os.environ.get("REPORT_FROM", "").strip() or user
+    return host, port, user, os.environ.get("SMTP_PASSWORD", ""), sender
+
+
+def check_mail() -> dict:
+    """Log in to the mail server without sending anything, so a question about email gets a real answer."""
+    host, port, user, password, sender = _smtp_settings()
+    if not password.strip():
+        return {"ok": False, "reason": "SMTP_PASSWORD is empty."}
+    if not sender:
+        return {"ok": False, "reason": "Email needs REPORT_FROM or SMTP_USER."}
+    try:
+        with smtplib.SMTP(host, port, timeout=15) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            if user:
+                smtp.login(user, password)
+        return {"ok": True, "reason": f"{host} accepted the login for {sender} just now."}
+    except (OSError, smtplib.SMTPException) as exc:
+        return {"ok": False, "reason": f"{host} did not accept the login: {exc}"}
+
+
+def mail_status(*, probe: bool = False) -> list[str]:
+    """Plain facts about report email for the desks. No password is shown."""
+    from futuresfund.config import load_env
+
+    load_env()
+    _, _, user, password, sender = _smtp_settings()
+    recipients = ", ".join(report_recipients())
+    lines = []
+    if not password.strip():
+        lines.append(
+            f"Report email is not configured: SMTP_PASSWORD is empty. Reports are addressed to {recipients} and are only saved on the desk."
+        )
+    else:
+        lines.append(f"Report email is configured. Reports go from {sender or user} to {recipients}.")
+    lines.append(
+        "A research report is emailed when a chart developer finishes a script on one chart, after all of that chart's attempts. "
+        "The meeting report is emailed after a strategy meeting or when someone asks the Portfolio Manager to send the report. "
+        f"Every report is also saved in researchNotes/mail ({len(list(MAIL_DIR.glob('*.txt'))) if MAIL_DIR.is_dir() else 0} saved)."
+    )
+    rows = mail_log()
+    if rows:
+        sent = [row for row in rows if row.get("sent")]
+        failed = [row for row in rows if not row.get("sent")]
+        lines.append(f"Email attempts recorded: {len(rows)}, {len(sent)} sent, {len(failed)} not sent.")
+        if sent:
+            last = sent[-1]
+            lines.append(f"Last email sent {last['time']}: {last['subject']} to {last['to']}.")
+        if failed:
+            last = failed[-1]
+            lines.append(f"Last failed attempt {last['time']}: {last['subject']}. {last['reason']}")
+    else:
+        saved = sorted(MAIL_DIR.glob("*.txt"), key=lambda p: p.stat().st_mtime) if MAIL_DIR.is_dir() else []
+        if saved:
+            stamp = datetime.fromtimestamp(saved[-1].stat().st_mtime, ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M %p ET")
+            lines.append(f"No email attempt has been logged yet. The last report saved on the desk was {saved[-1].stem} at {stamp}.")
+        else:
+            lines.append("No email attempt has been logged and no report has been saved yet.")
+    if probe:
+        check = check_mail()
+        lines.append(check["reason"] if check["ok"] else f"Mail check: {check['reason']}")
+    return lines
+
+
+def _with_phone(body: str) -> str:
+    """Every report carries the current phone address. A report that already names it is left as written."""
+    try:
+        from futuresfund.tunnel import view_line
+    except Exception:
+        return body
+    line = view_line()
+    if not line:
+        return body
+    url = line.rsplit(" ", 1)[-1]
+    if url in (body or ""):
+        return body
+    return (body or "").rstrip() + "\n\n" + line
+
+
+def send_report(body: str, subject: str = "Futures desk report") -> dict:
+    """Send the report. A missing password does not stall the strategy queue."""
+    result = _send_report(body, subject)
+    _record(subject, result)
+    return result
+
+
+def _send_report(body: str, subject: str) -> dict:
+    host, port, user, password, sender = _smtp_settings()
+    recipients = report_recipients()
+    if not password.strip():
+        return {
+            "sent": False,
+            "reason": f"SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to {', '.join(recipients)}.",
+        }
     if not sender:
         return {"sent": False, "reason": "Email needs REPORT_FROM or SMTP_USER."}
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = sender
     message["To"] = ", ".join(recipients)
-    message.set_content(body)
+    message.set_content(_with_phone(body))
     last_error = "The report was not emailed."
     for attempt in range(3):
         try:

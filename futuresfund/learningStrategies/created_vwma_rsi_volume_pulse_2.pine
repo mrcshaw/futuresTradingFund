@@ -1,0 +1,51 @@
+//@version=5
+// Built from: Delta Volume BOS Night Shift card (VWMA trend + session timing), POC RSI Reversal (RSI trigger), indicators: ta.vwma, ta.rsi, ta.sma, ta.crossover, ta.crossunder
+strategy("VWMA RSI Volume Pulse", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+pv = input.float(2, "Point Value ($)")
+stop_dollars = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+vwma_len = input.int(25, "VWMA Length", minval=10, maxval=60)
+rsi_len = input.int(14, "RSI Length", minval=7, maxval=30)
+vol_ma_len = input.int(20, "Volume MA Length", minval=10, maxval=50)
+rsi_long = input.int(40, "RSI Long Trigger", minval=20, maxval=50)
+rsi_short = input.int(60, "RSI Short Trigger", minval=50, maxval=80)
+cooldown_bars = input.int(4, "Cooldown Bars", minval=2, maxval=20)
+cur_hr = hour(time, "America/New_York")
+cur_mn = minute(time, "America/New_York")
+cur_time = cur_hr * 100 + cur_mn
+start_time = sess_start_hr * 100 + sess_start_mn
+end_time = sess_end_hr * 100 + sess_end_mn
+in_session = use_session ? (start_time < end_time ? (cur_time >= start_time and cur_time < end_time) : (cur_time >= start_time or cur_time < end_time)) : true
+vwma_val = ta.vwma(close, vwma_len)
+rsi_val = ta.rsi(close, rsi_len)
+vol_ma_val = ta.sma(volume, vol_ma_len)
+trend_long = close > vwma_val
+trend_short = close < vwma_val
+vol_confirm = volume > vol_ma_val
+rsi_long_trig = ta.crossover(rsi_val, rsi_long)
+rsi_short_trig = ta.crossunder(rsi_val, rsi_short)
+var int last_entry_bar = 0
+can_trade = bar_index - last_entry_bar >= cooldown_bars
+long_ok = in_session and trend_long and vol_confirm and rsi_long_trig and can_trade
+short_ok = in_session and trend_short and vol_confirm and rsi_short_trig and can_trade
+if long_ok
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit)
+    last_entry_bar := bar_index
+if short_ok
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit)
+    last_entry_bar := bar_index
+if strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session")

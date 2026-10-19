@@ -12,6 +12,8 @@ BOOK_PATH = _HOME / "futures_fund.json"
 BARS_PATH = _HOME / "futures_bars.json"
 LIVE_BARS_PATH = _HOME / "futures_live_bars.json"
 LAB_PATH = _HOME / "futures_lab.json"
+YAHOO_DIR = _HOME / "yahoo"
+LIVE_ARCHIVE_DIR = _HOME / "live_bars"
 
 
 def _read_env_file(path: Path, *, overwrite: bool) -> None:

@@ -38,6 +38,39 @@ class AgentThreadTests(unittest.TestCase):
         self.assertIn("agent-developer", names)
         self.assertIn("systems-administrator", names)
 
+    def test_an_agent_does_not_wait_on_its_own_thread(self):
+        from futuresfund.board import Board
+        from futuresfund.crew import Crew
+
+        board = Board()
+        crew = Crew(board)
+        box = {}
+
+        def nested():
+            return crew.run("2min chart developer", "Checking the same chart again", lambda: "inner")
+
+        worker = threading.Thread(
+            target=lambda: box.__setitem__("result", crew.run("2min chart developer", "Running a backtest", nested)),
+            daemon=True,
+        )
+        worker.start()
+        worker.join(2)
+        self.assertFalse(worker.is_alive())
+        self.assertEqual(box.get("result"), "inner")
+
+    def test_a_finished_desk_request_does_not_stay_working(self):
+        from futuresfund.board import Board
+        from futuresfund.crew import Crew
+
+        board = Board()
+        crew = Crew(board)
+        board.set_activity("2min chart developer", "Running a chart")
+        opened = crew.application("Handing an active strategy to a trader", lambda: "handed", announce=True)
+        self.assertEqual(opened, "handed")
+        self.assertEqual(board.agent_status["Systems Administrator"], "idle")
+        self.assertIn("open", board.agent_tasks["Systems Administrator"].lower())
+        self.assertNotEqual(board.activity.get("agent"), "Systems Administrator")
+
 
 class EngineProcessTests(unittest.TestCase):
     @classmethod

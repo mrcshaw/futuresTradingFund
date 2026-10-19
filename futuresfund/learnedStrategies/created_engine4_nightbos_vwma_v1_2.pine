@@ -1,0 +1,114 @@
+//@version=5
+// Built from: Night BOS VWMA Momentum, Engine4_NewBreakout_v1, <ta.vwma, ta.atr, ta.crossover>
+strategy("Engine4_NightBOS_VWMA_v1", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000, default_qty_value=1)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_pct          = input.float(0.1, "Stop (% of account)", minval=0.1, maxval=3)
+tp_pct            = input.float(1, "Take Profit (% of account)", minval=0.1, maxval=4)
+stop_cash         = input.float(0, "Stop ($)", minval=0, maxval=1500)
+tp_cash           = input.float(0, "Take Profit ($)", minval=0, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
+trail_step_acct   = input.float(1, "Trail: Tighten every % of account")
+trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
+trail_min_pct     = input.float(2, "Trail: Min Profit (% of account)")
+stop_dollars      = strategy.initial_capital * stop_pct / 100
+tp_dollars        = strategy.initial_capital * tp_pct / 100
+trail_step_amt    = strategy.initial_capital * trail_step_acct / 100
+trail_min_dollars = strategy.initial_capital * trail_min_pct / 100
+if stop_cash > 0
+    stop_dollars := stop_cash
+if tp_cash > 0
+    tp_dollars := tp_cash
+if strategy.position_size != 0 and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Dollar stop")
+pivot_left = input.int(5, "Pivot Left", minval=1, maxval=50)
+pivot_right = input.int(5, "Pivot Right", minval=1, maxval=50)
+
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+// === INPUTS ===
+len_vwma = input.int(28, "VWMA Length", minval=1, maxval=100)
+len_atr = input.int(28, "ATR Length", minval=1, maxval=100)
+atr_mult = input.float(3.0, "ATR Mult", minval=1.0, maxval=10.0)
+cooldown_bars = input.int(20, "Cooldown Bars", minval=1, maxval=100)
+
+// === RISK ===
+
+// === SESSION & COOLDOWN ===
+var int last_bar = -1
+var bool can_trade = true
+if bar_index != last_bar
+    if not can_trade
+        can_trade := bar_index >= last_bar + cooldown_bars
+    last_bar := bar_index
+
+// === INDICATORS ===
+vwma_val = ta.vwma(close, len_vwma)
+atr_val = ta.atr(len_atr)
+bos_high = ta.pivothigh(high, pivot_left, pivot_right)
+bos_low = ta.pivotlow(low, pivot_left, pivot_right)
+
+// BOS Logic: Check for pivot high/low at bar 5
+var float bos_high_price = na
+var float bos_low_price = na
+var int bos_bar = -1
+
+if not na(bos_high)
+    bos_high_price := bos_high
+    bos_bar := bar_index
+    bos_low_price := na
+
+if not na(bos_low)
+    bos_low_price := bos_low
+    bos_bar := bar_index
+    bos_high_price := na
+
+// === LOGIC ===
+// Long: Price > VWMA and BOS Low formed recently (within 10 bars) and price breaks above BOS Low
+// Short: Price < VWMA and BOS High formed recently and price breaks below BOS High
+
+is_bullish_structure = not na(bos_low_price) and bar_index - bos_bar <= 10
+is_bearish_structure = not na(bos_high_price) and bar_index - bos_bar <= 10
+
+// Trigger: Close above BOS Low for long, Close below BOS High for short
+long_condition = is_bullish_structure and close > bos_low_price and ta.crossover(close, bos_low_price)
+short_condition = is_bearish_structure and close < bos_low_price and ta.crossunder(close, bos_low_price) // Fixed typo: bos_low_price -> bos_high_price? No, short breaks below BOS High.
+// Correction: Short breaks below BOS High.
+short_condition = is_bearish_structure and close < bos_high_price and ta.crossunder(close, bos_high_price)
+
+// === EXECUTION ===
+if in_session and can_trade
+    if long_condition
+        strategy.entry("Long", strategy.long)
+        can_trade := false
+    if short_condition
+        strategy.entry("Short", strategy.short)
+        can_trade := false
+
+// === EXIT ===
+// Calculate stop and limit prices
+long_stop = close - stop_dollars / pv
+long_tp = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_tp = close - tp_dollars / pv
+
+// Use strategy.exit with fixed prices
+strategy.exit("ExitLong", "Long", stop=long_stop, limit=long_tp)
+strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_tp)
+
+// === FLATTEN AT 16:45 ===

@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=38" />
+  <link rel="stylesheet" href="/static/styles.css?v=73" />
 </head>
 <body>
   <div class="app">
@@ -25,7 +26,37 @@
           <h1 id="channel-title"># headquarters</h1>
           <p class="role" id="channel-role">Every desk, in one feed.</p>
         </div>
+        <div class="sentiment-gauge" id="sentiment-gauge">
+          <button type="button" class="gauge-read" id="gauge-read" aria-expanded="false" aria-controls="gauge-detail" aria-label="Reading the last session">
+            <span class="thumb down" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 11.2V20h7.4a1.8 1.8 0 0 0 1.8-1.5l.9-5.4a1.5 1.5 0 0 0-1.5-1.8H13l.4-2.6a1.6 1.6 0 0 0-1.6-1.9c-.5 0-.9.3-1.1.7L8 11.2z"/><path d="M8 11.2H5.4A1.4 1.4 0 0 0 4 12.6V19a1.4 1.4 0 0 0 1.4 1.4H8"/></svg>
+            </span>
+            <span class="gauge-dial">
+              <svg class="gauge-arc" viewBox="10 12 180 104" aria-hidden="true">
+                <path class="gauge-arc-bear" d="M 28 100 A 72 72 0 0 1 55.67 43.26"/>
+                <path class="gauge-arc-mid" d="M 64 37.65 A 72 72 0 0 1 107.53 28.39"/>
+                <path class="gauge-arc-bull" d="M 117.42 30.14 A 72 72 0 0 1 172 100"/>
+              </svg>
+              <span class="gauge-needle" id="gauge-needle"></span>
+              <span class="gauge-figure">
+                <span class="gauge-value" id="gauge-value">—</span>
+                <span class="gauge-delta" id="gauge-delta" hidden></span>
+              </span>
+            </span>
+            <span class="thumb up" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 11.2V20h7.4a1.8 1.8 0 0 0 1.8-1.5l.9-5.4a1.5 1.5 0 0 0-1.5-1.8H13l.4-2.6a1.6 1.6 0 0 0-1.6-1.9c-.5 0-.9.3-1.1.7L8 11.2z"/><path d="M8 11.2H5.4A1.4 1.4 0 0 0 4 12.6V19a1.4 1.4 0 0 0 1.4 1.4H8"/></svg>
+            </span>
+          </button>
+          <div class="gauge-detail" id="gauge-detail" hidden></div>
+        </div>
         <div class="top-side">
+          <div class="call-meeting" id="call-meeting">
+            <button type="button" id="call-meeting-button" aria-haspopup="menu" aria-expanded="false" aria-controls="call-meeting-menu">Call Meeting</button>
+            <div class="call-meeting-menu" id="call-meeting-menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-meeting="portfolio">Meeting with the Portfolio Manager</button>
+              <button type="button" role="menuitem" data-meeting="team">Meeting with the entire team</button>
+            </div>
+          </div>
           <div class="desk-clock" id="desk-clock">
             <strong id="clock-time">--:--:-- ET</strong>
             <small id="clock-date">Meeting 8:00am</small>
@@ -34,60 +65,45 @@
         </div>
       </header>
       <section class="desk-bar" id="hq-paper">
-        <div class="paper-metrics" id="account-metrics"></div>
-        <p class="now-text" id="now-text">Press Start to run the Pine scripts.</p>
-        <div class="run-controls">
-          <button type="button" id="start" class="power start" aria-label="Start processing">
-            <svg class="power-icon" viewBox="0 0 64 64" aria-hidden="true">
-              <path d="M32 8v20" />
-              <path d="M20 16a20 20 0 1 0 24 0" />
-            </svg>
-            <span>START</span>
-          </button>
-          <button type="button" id="stop" class="power stop" aria-label="Stop processing" disabled>STOP</button>
+        <div class="desk-bar-top">
+          <div class="paper-metrics" id="account-metrics"></div>
+          <p class="now-text" id="now-text">Press Start to run the Pine scripts.</p>
+          <div class="run-controls">
+            <button type="button" id="hold-new" class="hold-new" aria-pressed="false">Hold new strategies</button>
+            <button type="button" id="start" class="power start" aria-label="Start processing">
+              <svg class="power-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M32 8v20" />
+                <path d="M20 16a20 20 0 1 0 24 0" />
+              </svg>
+              <span>START</span>
+            </button>
+            <button type="button" id="stop" class="power stop" aria-label="Stop processing" disabled>STOP</button>
+          </div>
         </div>
-      </section>
-      <section id="live-agents" class="live-agents" hidden>
-        <h2>Live</h2>
-        <ul id="live-agent-list"></ul>
+        <div class="live-ticker" id="live-agents">
+          <div class="ticker-viewport">
+            <div class="ticker-track" id="live-agent-list"></div>
+          </div>
+        </div>
       </section>
       <section class="meeting-live" id="meeting-live" hidden>
         <p class="kicker">Meeting</p>
         <div id="meeting-lines"></div>
       </section>
-      <section class="floor" id="floor"></section>
-      <section class="lead" id="lead" hidden>
-        <div id="hq-leaders">
-          <p class="kicker">Profitable and consistent</p>
-          <h2>Three strategies</h2>
-          <p class="role">These made more than they gave back, and at least two charts finished green. The stop is inside the script. TradingView sends the buy or sell, and the floor trader builds the CrossTrade webhook.</p>
-          <div class="leader-grid" id="leader-list"></div>
-          <p class="hint" id="leader-status"></p>
-          <p class="hint" id="leader-note"></p>
-        </div>
-        <div class="book-head">
-          <div>
-            <p class="kicker">Headquarters script</p>
-            <h2 id="lead-title">No strategy script yet</h2>
-            <p class="role" id="lead-note">The most profitable consistent version stays here until a meeting chooses another. Paste this script into TradingView.</p>
-          </div>
-        </div>
-        <pre class="report-body pine" id="lead-pine"></pre>
+      <section class="risk-review" id="risk-review" hidden>
+        <h2>Guideline suggestions</h2>
+        <p class="role">The line is the most common problem in the last hour of completed backtests. Apply adds it to the research guide. Deny leaves the guide as it is.</p>
+        <div id="risk-suggestions"></div>
       </section>
-      <section class="hq-rules" id="hq-rules" hidden>
-        <p class="kicker">Account rules</p>
-        <h2>What the floor trader watches</h2>
-        <form id="account-rules" class="rules-form">
-          <label>Account <input name="account" maxlength="64" placeholder="Account name" /></label>
-          <label>Size <input name="size" type="number" min="1" step="1" required /></label>
-          <label>Profit target <input name="profit_target" type="number" min="1" step="1" required /></label>
-          <label>Drawdown <input name="max_drawdown" type="number" min="1" step="1" required /></label>
-          <label class="check"><input name="trailing" type="checkbox" checked /> Trailing</label>
-          <label>Max contracts <input name="max_contracts" type="number" min="1" step="1" required /></label>
-          <button type="submit">Save account rules</button>
-        </form>
-        <p class="hint" id="account-rules-note"></p>
-        <pre class="report-body" id="hq-rules-body">The 5:00pm meeting has not recorded the prop-account rules yet.</pre>
+      <section class="kronos-progress" id="kronos-progress" hidden>
+        <div class="kronos-progress-head">
+          <p class="kicker" id="kronos-phase">Entire run</p>
+          <strong id="kronos-count">0 / 0</strong>
+        </div>
+        <div class="kronos-track" id="kronos-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Kronos training, entire run">
+          <span id="kronos-fill"></span>
+        </div>
+        <p class="role" id="kronos-detail">Waiting for the first step.</p>
       </section>
       <section class="feed" id="feed"></section>
       <section class="book under-hood-page" id="engine" hidden>
@@ -95,32 +111,45 @@
           <div>
             <p class="kicker">Under the hood</p>
             <h2>Four engines</h2>
-            <p class="role" id="engine-note">Each developer has one Backtrader engine in its own process. The log is the live output of that engine.</p>
+            <p class="role" id="engine-note">Each developer has one PineTS engine in its own process. Engine 4 is the creation engine. The scale goal is the acceptance number chosen on the strategy library page. The table is the last 20 results on that engine. Restart stops a hung engine and takes the next learning script. Skip leaves the current script and takes the next one.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
         <div id="hood-grid" class="hood-grid"></div>
         <p class="hint" id="engine-status"></p>
         <h3>Research guide</h3>
-        <pre class="report-body" id="research-guide">Loading the research guide.</pre>
+        <p class="role">Edit the guidelines in the box below. Save, and the researchers use that text on the next decision.</p>
+        <div class="guide-editor">
+          <textarea id="research-guide" spellcheck="false">Loading the research guide.</textarea>
+          <div class="guide-actions">
+            <button type="button" id="research-guide-save">Save guidelines</button>
+            <p class="hint" id="research-guide-note"></p>
+          </div>
+        </div>
         <h3>Accepted for the next meeting</h3>
         <div id="engine-accepted"></div>
         <h2>Playbook</h2>
         <div id="engine-playbook"></div>
         <h3>Scrapped</h3>
         <div id="engine-scrapped"></div>
-        <h3>Recent trials</h3>
-        <table id="engine-trials"><thead><tr><th>Rule</th><th>Profit</th><th>Drawdown</th><th>Trades</th><th>Result</th></tr></thead><tbody></tbody></table>
       </section>
       <section class="book" id="active" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">Active strategy</p>
-            <h2>What the floor trader follows</h2>
-            <p class="role">Two strategies can run, including on the same account. The alert names the strategy and the account the floor trader uses.</p>
+            <h2>What the traders execute</h2>
+            <p class="role">Start hands a card's Pine script to a trader. The first strategy started is the floor trader's and the second is the quantitative trader's. Two can run at once. Both run on the desk chart. The quantitative trader books those fills on paper and does not send an order. A position the script is still in is taken at the latest price. Every open trade is closed before 4:45pm ET. A trade the script already closed before Start is not replayed.</p>
           </div>
-          <button type="button" id="active-add">Add</button>
+          <div class="active-controls">
+            <div class="mode-switch" id="trading-mode" role="group" aria-label="Paper or live trading">
+              <button type="button" data-mode="paper">Paper</button>
+              <button type="button" data-mode="live">Live</button>
+            </div>
+            <button type="button" id="active-add">Add</button>
+            <button type="button" class="ghost" data-kronos-follow>Paper trade Kronos</button>
+          </div>
         </div>
+        <p class="hint" id="trading-mode-note"></p>
         <p class="hint" id="active-note"></p>
         <div id="active-list"></div>
       </section>
@@ -129,7 +158,7 @@
           <div>
             <p class="kicker">Chart</p>
             <h2>Market candles</h2>
-            <p class="role">Ingestion adds each TradingView price to the chart. A 5-minute or 6-minute candle updates on every incoming bar, including the one that is still open. Volume, MACD, and volume delta can be turned on or off when the data has them.</p>
+            <p class="role">Ingestion adds each TradingView price to this chart. Orders stay on this chart. Volume, MACD, and volume delta can be turned on or off when the data has them.</p>
           </div>
         </div>
         <div class="chart-browser">
@@ -182,16 +211,23 @@
           <label><input type="checkbox" data-indicator="macd" checked /> MACD</label>
           <label><input type="checkbox" data-indicator="delta" checked /> Volume delta</label>
         </div>
+        <div class="kronos-score" id="kronos-score">
+          <p id="kronos-accuracy">Kronos direction match waits until 6 candles have printed after a forecast.</p>
+          <button type="button" class="ghost" data-kronos-follow>Paper trade Kronos</button>
+        </div>
+        <p class="hint" id="kronos-follow-note"></p>
         <p class="hint" id="chart-readout"></p>
-        <canvas id="chart-canvas" width="1100" height="680"></canvas>
+        <div class="chart-stage">
+          <canvas id="chart-canvas" width="1100" height="680"></canvas>
+        </div>
         <input id="chart-scroll" type="range" min="0" max="0" value="0" aria-label="Chart history" />
       </section>
       <section class="book" id="library" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">Strategy library</p>
-            <h2>Profitable engine runs</h2>
-            <p class="role">Each script shows its most profitable result. A second row appears when a different result keeps more profit after the drawdown. ES and gold stay on separate shelves.</p>
+            <h2>Most profitable runs</h2>
+            <p class="role">A run is filed when the checked boxes are met, plus a profit ratio above 1.12. Drawdown under 5 percent of the account and the trade count start checked. Check another box to require that number too. One version of each name stays on each contract and timeframe. A one-year research run stays in the list below until the longer test.</p>
           </div>
         </div>
         <div class="library-tools">
@@ -201,7 +237,40 @@
           <label>Search
             <input id="library-search" type="search" placeholder="Strategy name" />
           </label>
+          <button type="button" id="library-add">Add strategy</button>
         </div>
+        <form id="acceptance-rules" class="rules-form">
+          <div class="rule">
+            <label class="rule-name"><input name="use_drawdown" type="checkbox" checked /> Drawdown under (% of account)</label>
+            <input name="drawdown_pct" type="number" min="0.1" max="100" step="any" value="5" required />
+          </div>
+          <div class="rule">
+            <label class="rule-name"><input name="use_trades" type="checkbox" checked /> Trades at least</label>
+            <input name="min_trades" type="number" min="1" step="1" value="100" required />
+          </div>
+          <div class="rule">
+            <label class="rule-name"><input name="use_profit" type="checkbox" /> Profit above ($)</label>
+            <input name="min_profit" type="number" min="0" step="any" value="20000" required />
+          </div>
+          <div class="rule">
+            <label class="rule-name"><input name="use_factor" type="checkbox" /> Profit factor above</label>
+            <input name="profit_factor" type="number" min="0.1" step="any" value="1.1" required />
+          </div>
+          <div class="rule">
+            <label class="rule-name"><input name="use_win_rate" type="checkbox" /> Win rate above (%)</label>
+            <input name="win_rate" type="number" min="0" max="100" step="any" value="53" required />
+          </div>
+          <label>Scale goal
+            <select name="goal">
+              <option value="min_trades">Trades</option>
+              <option value="win_rate">Win rate</option>
+              <option value="profit_factor">Profit factor</option>
+              <option value="min_profit">Profit</option>
+            </select>
+          </label>
+          <button type="submit">Save acceptance</button>
+        </form>
+        <p class="hint" id="acceptance-note"></p>
         <table id="library-table">
           <thead>
             <tr>
@@ -212,22 +281,97 @@
               <th data-sort="net_profit">Profit</th>
               <th data-sort="max_drawdown">Drawdown</th>
               <th data-sort="trades">Trades</th>
+              <th data-sort="trades_per_day">A day</th>
               <th data-sort="win_rate">Win rate</th>
+              <th data-sort="sharpe">Sharpe</th>
+              <th data-sort="profit_ratio">Profit ratio</th>
+              <th data-sort="biggest_loser">Biggest loser</th>
+              <th data-sort="biggest_winner">Highest winner</th>
+              <th data-sort="added_at">Added</th>
+              <th></th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
         <p class="hint" id="library-empty"></p>
+        <div class="book-head untested-head">
+          <div>
+            <h2>Not tested on the full dataset</h2>
+            <p class="hint" id="untested-counts"></p>
+            <p class="role">Research measures the last year. A run that clears the acceptance numbers above stays here until the five-year test. A run with one trade down more than 3 percent of the account does not stay. A run with more than 900 trades is not saved. It is not added to the most profitable runs until that full dataset is profitable. A hand-added script stays here too.</p>
+          </div>
+          <button type="button" id="untested-add">Add strategy</button>
+        </div>
+        <table id="untested-table">
+          <thead>
+            <tr>
+              <th data-sort="title">Strategy</th>
+              <th data-sort="kind">Kind</th>
+              <th data-sort="contract_label">Contract</th>
+              <th data-sort="timeframe">Timeframe</th>
+              <th data-sort="net_profit">Profit</th>
+              <th data-sort="max_drawdown">Drawdown</th>
+              <th data-sort="trades">Trades</th>
+              <th data-sort="trades_per_day">A day</th>
+              <th data-sort="win_rate">Win rate</th>
+              <th data-sort="sharpe">Sharpe</th>
+              <th data-sort="profit_ratio">Profit ratio</th>
+              <th data-sort="biggest_loser">Biggest loser</th>
+              <th data-sort="biggest_winner">Highest winner</th>
+              <th data-sort="added_at">Added</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="hint" id="untested-empty"></p>
+      </section>
+      <section class="book" id="indicators" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Indicator library</p>
+            <h2>What the desks build from</h2>
+            <p class="role">The built-in indicators the engine runs, and every indicator our scripts calculate. When a researcher takes a script or the creation tester runs a new one, an indicator the library does not have is added here. Click a row for its Pine source.</p>
+          </div>
+        </div>
+        <div class="library-tools">
+          <label>Kind
+            <select id="indicators-kind">
+              <option value="all">All</option>
+              <option value="built-in">Built-in</option>
+              <option value="script">From our scripts</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="indicators-search" type="search" placeholder="Indicator or script" />
+          </label>
+        </div>
+        <table id="indicators-table">
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Kind</th>
+              <th>What it measures</th>
+              <th>Used by</th>
+              <th>Engine runs it</th>
+              <th>Added</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="hint" id="indicators-empty"></p>
       </section>
       <section class="book" id="rnd" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">R&amp;D</p>
             <h2>Research board</h2>
-            <p class="role">The strategy being studied, then the next two waiting.</p>
+            <p class="role">The strategy being studied, then the next two waiting. Kronos lists the closed candles it is reading, the six it chose, and Buy, Sell, or Flat.</p>
           </div>
+          <button type="button" id="rnd-report">Criteria Failure Analysis</button>
           <button type="button" id="rnd-run">Start research</button>
         </div>
+        <div id="rnd-gaps"></div>
         <div id="rnd-board"></div>
       </section>
       <section class="book" id="book" hidden>
@@ -259,7 +403,7 @@
         <div class="chat-log" id="chat-log"></div>
         <div class="chat-row">
           <select id="chat-agent" name="agent" aria-label="Desk"></select>
-          <input name="message" maxlength="2000" placeholder="Write to this desk. They can hand a report to another desk." required />
+          <textarea name="message" rows="1" maxlength="60000" placeholder="Ask about the application or give the Portfolio Manager a task. Paste a Pine strategy to file it. Enter sends, Shift+Enter is a new line." required></textarea>
           <button type="submit" id="chat-send">Send</button>
         </div>
       </form>
@@ -269,19 +413,44 @@
       <div id="report-body" class="report-body">Pick a desk to read its report.</div>
     </aside>
   </div>
+  <div class="meeting-room" id="meeting-room" hidden>
+    <div class="meeting-stage">
+      <img src="/static/meeting-table.jpg" alt="" />
+      <div class="meeting-voice">
+        <p class="meeting-speaker" id="meeting-speaker">Portfolio Manager</p>
+        <canvas id="meeting-voice-canvas" width="640" height="120" aria-label="Voice level"></canvas>
+      </div>
+      <button type="button" class="meeting-close" id="meeting-close">Close</button>
+    </div>
+  </div>
   <div class="modal" id="script-modal" hidden>
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="script-title">
       <div class="book-head">
         <h2 id="script-title">Strategy</h2>
         <div class="run-controls">
+          <button type="button" id="script-add">Add</button>
+          <button type="button" id="script-delete" hidden>Delete</button>
+          <button type="button" id="script-save" hidden>Save</button>
           <button type="button" id="script-copy">Copy</button>
           <button type="button" id="script-close" class="ghost">Close</button>
         </div>
       </div>
+      <form id="script-add-form" class="library-tools" hidden>
+        <label>Name <input id="script-add-title" type="text" maxlength="120" required /></label>
+        <label>Contract
+          <select id="script-add-contract">
+            <option value="ES1!">ES</option>
+            <option value="GC1!">Gold</option>
+            <option value="NQ1!">Nasdaq</option>
+          </select>
+        </label>
+        <label>Timeframe <input id="script-add-timeframe" type="text" maxlength="8" placeholder="5m" /></label>
+      </form>
       <p class="hint" id="script-note"></p>
       <textarea id="script-body" readonly></textarea>
     </div>
   </div>
-  <script type="module" src="/static/app.js?v=74"></script>
+  <div id="agent-tip" class="agent-tip" hidden></div>
+  <script type="module" src="/static/app.js?v=148"></script>
 </body>
 </html>

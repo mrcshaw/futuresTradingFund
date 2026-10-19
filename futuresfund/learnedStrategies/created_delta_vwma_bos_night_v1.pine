@@ -1,0 +1,119 @@
+//@version=5
+// Built from: Delta Volume BOS Night Shift, VWMA BOS Night Breakout. Indicators: ta.ema, ta.atr, ta.rsi, ta.crossunder, ta.crossover.
+strategy("Delta VWMA BOS Night v1", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000, calc_on_every_tick=false)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_pct          = input.float(0.1, "Stop (% of account)", minval=0.1, maxval=3)
+tp_pct            = input.float(1, "Take Profit (% of account)", minval=0.1, maxval=4)
+stop_cash         = input.float(0, "Stop ($)", minval=0, maxval=1500)
+tp_cash           = input.float(0, "Take Profit ($)", minval=0, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
+trail_step_acct   = input.float(1, "Trail: Tighten every % of account")
+trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
+trail_min_pct     = input.float(2, "Trail: Min Profit (% of account)")
+stop_dollars      = strategy.initial_capital * stop_pct / 100
+tp_dollars        = strategy.initial_capital * tp_pct / 100
+trail_step_amt    = strategy.initial_capital * trail_step_acct / 100
+trail_min_dollars = strategy.initial_capital * trail_min_pct / 100
+if stop_cash > 0
+    stop_dollars := stop_cash
+if tp_cash > 0
+    tp_dollars := tp_cash
+if strategy.position_size != 0 and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Dollar stop")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+// === INPUTS ===
+len_vwma = input.int(20, "VWMA Length", minval=5, maxval=100)
+len_atr = input.int(14, "ATR Length", minval=5, maxval=50)
+
+// === RISK CALCULATIONS ===
+stop_points = stop_dollars / pv
+tp_points = tp_dollars / pv
+atr_val = ta.atr(len_atr)
+atr_stop = atr_val * 2.0 // Dynamic stop based on volatility, capped by max dollar loss logic in backtest
+
+// === SESSION FILTER ===
+// 18:00 to 16:45 NY time
+
+// === INDICATORS ===
+// VWMA for trend direction
+src = volume * close
+vwma_val = ta.ema(src, len_vwma) / ta.ema(volume, len_vwma)
+
+// RSI for momentum filter
+rsi_val = ta.rsi(close, 14)
+
+// Pivot Structure (BOS)
+left_bars = 5
+right_bars = 5
+pivot_high = ta.pivothigh(high, left_bars, right_bars)
+pivot_low = ta.pivotlow(low, left_bars, right_bars)
+
+// === LOGIC ===
+// Long Conditions:
+// 1. Price > VWMA (Trend Up)
+// 2. RSI > 50 (Momentum)
+// 3. Break of Structure: Price breaks above a recent pivot high
+// Short Conditions:
+// 1. Price < VWMA (Trend Down)
+// 2. RSI < 50 (Momentum)
+// 3. Break of Structure: Price breaks below a recent pivot low
+
+var bool in_trade = false
+
+// Get pivot values from previous bars
+ph_val = ta.valuewhen(not na(pivot_high), high, 1)
+pl_val = ta.valuewhen(not na(pivot_low), low, 1)
+
+// Check for BOS
+long_bos = ta.crossover(close, ph_val)
+short_bos = ta.crossunder(close, pl_val)
+
+// Trend Filters
+long_trend = close > vwma_val and rsi_val > 50
+short_trend = close < vwma_val and rsi_val < 50
+
+// === EXECUTION ===
+if in_session and not in_trade
+    // Long Entry
+    if long_trend and long_bos
+        strategy.entry("Long", strategy.long)
+        in_trade := true
+        
+    // Short Entry
+    else if short_trend and short_bos
+        strategy.entry("Short", strategy.short)
+        in_trade := true
+
+// === EXIT & RISK MANAGEMENT ===
+// Calculate stop and limit prices based on current close
+long_stop_price = close - atr_stop
+long_tp_price = close + tp_points
+short_stop_price = close + atr_stop
+short_tp_price = close - tp_points
+
+if not in_session
+    in_trade := false
+
+// Dynamic Exit for active trades
+if in_trade
+    if strategy.position_size > 0
+        strategy.exit("ExitLong", "Long", stop=long_stop_price, limit=long_tp_price)
+    else if strategy.position_size < 0
+        strategy.exit("ExitShort", "Short", stop=short_stop_price, limit=short_tp_price)

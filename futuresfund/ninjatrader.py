@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timezone
 
 from futuresfund.config import crosstrade_key
 
@@ -201,7 +202,69 @@ def _watch_pairs() -> list[tuple[str, str]]:
     return unique
 
 
-def _request(method: str, path: str, body: dict | None = None) -> dict:
+def market_bars(instrument: str, *, period: int = 1, period_type: str = "minute", from_time: str = "", limit: int = 5000) -> dict:
+    """Closed OHLCV bars from the NinjaTrader data feed. The forming bar is not included."""
+    body = {
+        "instrument": instrument,
+        "periodType": period_type,
+        "period": max(1, int(period)),
+        "limit": max(1, min(int(limit), 5000)),
+    }
+    if from_time:
+        body["from"] = from_time
+    payload = _request("POST", "/market/bars", body, timeout=12.0, limit=2_000_000, mark=False)
+    if payload.get("ok") and isinstance(payload.get("body"), dict):
+        payload["bars"] = bars_from(payload["body"])
+    return payload
+
+
+def bars_from(body: dict) -> list[dict]:
+    """CrossTrade bar rows as epoch seconds and open, high, low, close, volume."""
+    rows = body.get("bars") if isinstance(body, dict) else None
+    if not isinstance(rows, list):
+        return []
+    found = []
+    for row in rows:
+        if not isinstance(row, dict) or row.get("epoch") is None:
+            continue
+        try:
+            stamp = int(float(row["epoch"]))
+            prices = [float(row["open"]), float(row["high"]), float(row["low"]), float(row["close"])]
+        except (TypeError, ValueError, KeyError):
+            continue
+        if stamp > 10_000_000_000:
+            stamp //= 1000
+        found.append({"t": stamp, "o": prices[0], "h": prices[1], "l": prices[2], "c": prices[3], "v": float(row.get("volume") or 0)})
+    found.sort(key=lambda item: item["t"])
+    return found
+
+
+_bars_cache: dict[tuple, tuple[float, list[dict]]] = {}
+
+
+def recent_minutes(instrument: str, after: int) -> tuple[list[dict], str]:
+    """Closed 1-minute bars after one epoch. A repeat within 20 seconds reuses the last answer."""
+    instrument = str(instrument or "").strip()
+    if not instrument:
+        return [], "The NinjaTrader contract is missing."
+    start = datetime_from(max(0, int(after)) + 60)
+    key = (instrument, start)
+    cached = _bars_cache.get(key)
+    if cached is not None and time.monotonic() - cached[0] < 20:
+        return list(cached[1]), ""
+    payload = market_bars(instrument, period=1, from_time=start)
+    if not payload.get("ok"):
+        return [], str(payload.get("reason") or "NinjaTrader did not return bars.")
+    bars = list(payload.get("bars") or [])
+    _bars_cache[key] = (time.monotonic(), bars)
+    return bars, ""
+
+
+def datetime_from(epoch: int) -> str:
+    return datetime.fromtimestamp(max(0, int(epoch)), timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _request(method: str, path: str, body: dict | None = None, timeout: float | None = None, limit: int = 200_000, mark: bool = True) -> dict:
     token = api_token()
     if not token:
         return {"ok": False, "reason": "CROSSTRADE_API_TOKEN is not set."}
@@ -213,14 +276,15 @@ def _request(method: str, path: str, body: dict | None = None) -> dict:
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
-            raw = response.read(200_000).decode("utf-8", errors="replace")
+        with urllib.request.urlopen(request, timeout=_TIMEOUT if timeout is None else timeout) as response:
+            raw = response.read(limit).decode("utf-8", errors="replace")
             status = getattr(response, "status", 200)
     except urllib.error.HTTPError as exc:
         raw = exc.read(20_000).decode("utf-8", errors="replace")
         return {"ok": False, "status": exc.code, "reason": _public_error(raw)}
     except (OSError, urllib.error.URLError, TimeoutError):
-        _mark_down("NinjaTrader did not answer.")
+        if mark:
+            _mark_down("NinjaTrader did not answer.")
         return {"ok": False, "reason": "NinjaTrader did not answer."}
     parsed = _json(raw)
     if status < 200 or status >= 300:
@@ -285,7 +349,11 @@ def _json(raw: str):
 
 
 def _public_error(raw: str) -> str:
-    text = " ".join(str(raw or "").split())
+    parsed = _json(raw)
+    if isinstance(parsed, dict) and parsed.get("error"):
+        text = " ".join(str(parsed["error"]).split())
+    else:
+        text = " ".join(str(raw or "").split())
     lowered = text.lower()
     if "bearer" in lowered or "key=" in lowered or "authorization" in lowered:
         return "NinjaTrader refused the request."

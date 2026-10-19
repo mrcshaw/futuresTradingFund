@@ -493,7 +493,29 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(written, "The fund is running Bollinger 14.")
         kept = write_report(text, writer=lambda prompt: "The meeting model could not answer: down")
         self.assertEqual(kept, text)
-        os.environ.pop("SMTP_HOST", None)
-        os.environ.pop("REPORT_TO", None)
-        result = send_report(text)
-        self.assertFalse(result["sent"])
+        previous_host = os.environ.pop("SMTP_HOST", None)
+        previous_password = os.environ.pop("SMTP_PASSWORD", None)
+        previous_to = os.environ.pop("REPORT_TO", None)
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from futuresfund import mailer
+
+        try:
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.object(mailer, "MAIL_LOG", Path(tmp) / "_sent.json"):
+                result = send_report(text)
+            self.assertFalse(result["sent"])
+        finally:
+            if previous_host is None:
+                os.environ.pop("SMTP_HOST", None)
+            else:
+                os.environ["SMTP_HOST"] = previous_host
+            if previous_password is None:
+                os.environ.pop("SMTP_PASSWORD", None)
+            else:
+                os.environ["SMTP_PASSWORD"] = previous_password
+            if previous_to is None:
+                os.environ.pop("REPORT_TO", None)
+            else:
+                os.environ["REPORT_TO"] = previous_to

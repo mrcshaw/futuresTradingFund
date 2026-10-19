@@ -1,9 +1,9 @@
-"""Run a Pine script's orders on the Backtrader bar loop.
+"""Run a Pine script's orders on the bar loop.
 
 Each closed trade uses the same fill as the checked engine: the bar close,
 one slippage tick against a market order or a stop, and the limit price for
 a target. Changing one input has to be able to change the trade list, so a
-study can record 200 different results.
+study can record 100 different results.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import math
 import re
 import time
 
-from futuresfund.backtrader_engine import Bar, _protect
+from futuresfund.backtrader_engine import Bar
 
 
 class Unsupported(RuntimeError):
@@ -53,100 +53,147 @@ def run_source(source: str, bars: list[Bar], inputs: dict | None) -> list[dict]:
 
 
 def _bos_evening(bars, values, slip, commission, point) -> list[dict]:
-    """Break of structure from the evening script. A pivot is confirmed after `pivot_window` bars."""
+    """BOS Breakout Evening, line for line, on TradingView's broker."""
+    from futuresfund.tv_broker import TICK, Broker
+
     pw = max(int(values.get("pivot_window") or 4), 1)
     bc = max(int(values.get("backcandles") or 25), pw)
     use_ema = bool(values.get("use_ema_filter"))
     ema_len = max(int(values.get("ema_length") or 50), 1)
     ema_window = max(int(values.get("ema_trend_window") or 10), 1)
-    closes = [bar.c for bar in bars]
-    ema = _ema(closes, ema_len)
-    atr = _atr(bars, max(int(values.get("atr_length") or 14), 1))
     stop_dollars = float(values.get("stop_dollars") or 0)
     tp_dollars = float(values.get("tp_dollars") or 0)
     atr_sl = float(values.get("atr_sl_mult") or 2)
     atr_tp = float(values.get("atr_tp_mult") or 4)
-    signals = []
-    widths = []
-    targets = []
+    cooldown = int(values.get("cooldown_bars") or 0)
+    flip = bool(values.get("flip_on_stopout", True))
+    min_flip = float(values.get("min_loss_to_flip") or 0)
+    use_be = bool(values.get("use_breakeven"))
+    stop_pts = stop_dollars / point if stop_dollars > 0 else None
+    tp_pts = tp_dollars / point if tp_dollars > 0 else None
+    be_pts = float(values.get("be_trigger_dollars") or 200) / point
+    closes = [bar.c for bar in bars]
+    ema = _ema(closes, ema_len)
+    atr = _atr(bars, max(int(values.get("atr_length") or 14), 1))
+    is_ph, is_pl = _pivot_flags(bars, pw)
+    broker = Broker(bars, point, commission, slip / TICK)
+    last_trade_bar = -9999
+    entry_price = 0.0
+    be_active = False
+    seen_position = 0
     for i, bar in enumerate(bars):
         _breathe(i)
-        signal = 0
-        if i >= bc:
-            highs = []
-            lows = []
-            for offset in range(bc, pw - 1, -1):
-                pivot = i - offset
-                if pivot < 0:
-                    continue
-                hi = bars[pivot].h
-                lo = bars[pivot].l
-                is_high = True
-                is_low = True
-                for side in range(1, pw + 1):
-                    newer = pivot + side
-                    older = pivot - side
-                    if 0 <= newer < len(bars):
-                        if bars[newer].h > hi:
-                            is_high = False
-                        if bars[newer].l < lo:
-                            is_low = False
-                    if 0 <= older < len(bars):
-                        if bars[older].h > hi:
-                            is_high = False
-                        if bars[older].l < lo:
-                            is_low = False
-                if is_high:
-                    highs.append((offset, hi))
-                if is_low:
-                    lows.append((offset, lo))
-            if highs:
-                ph_off, ph_val = highs[-1]
-                prev = bars[i - 1].c if i else bar.c
-                if bar.c > ph_val and prev <= ph_val and lows:
-                    older = [(off, price) for off, price in lows if off > ph_off]
-                    newer = [price for off, price in lows if off < ph_off]
-                    if older and newer and min(newer) < min(older, key=lambda item: item[0])[1]:
-                        signal = 2
-            if signal == 0 and lows:
-                pl_off, pl_val = lows[-1]
-                prev = bars[i - 1].c if i else bar.c
-                if bar.c < pl_val and prev >= pl_val and highs:
-                    older = [(off, price) for off, price in highs if off > pl_off]
-                    newer = [price for off, price in highs if off < pl_off]
-                    if older and newer and max(newer) > min(older, key=lambda item: item[0])[1]:
-                        signal = 1
-        if use_ema and signal and ema[i] is not None and i >= ema_window:
-            above = True
-            below = True
-            for k in range(ema_window + 1):
-                past = bars[i - k]
-                ema_k = ema[i - k]
-                if ema_k is None:
-                    above = below = False
-                    break
-                body_lo = min(past.o, past.c)
-                body_hi = max(past.o, past.c)
-                if body_lo <= ema_k:
-                    above = False
-                if body_hi >= ema_k:
-                    below = False
-            if signal == 2 and not above:
-                signal = 0
-            elif signal == 1 and not below:
-                signal = 0
-        width = (atr[i] or 0) * atr_sl if stop_dollars <= 0 else stop_dollars / point
-        target = (atr[i] or 0) * atr_tp if tp_dollars <= 0 else tp_dollars / point
-        signals.append((signal == 2, signal == 1, None))
-        widths.append(width)
-        targets.append(target)
-    stop_pts = stop_dollars / point if stop_dollars > 0 else 0
-    tp_pts = tp_dollars / point if tp_dollars > 0 else 0
-    return _simulate(
-        bars, signals, stop_pts, tp_pts, slip, commission, point, values,
-        atr_stops=None if stop_dollars > 0 else widths,
-        tp_enabled=tp_dollars > 0 or tp_pts > 0,
-    )
+        broker.start_bar(i)
+        position = broker.position
+        in_session = _session_ok(bar, values)
+        was_in_session = _session_ok(bars[i - 1], values) if i else not values.get("use_session", True)
+        if was_in_session and not in_session and position != 0:
+            broker.close_all("Session Close")
+        signal = _bos_signal(bars, i, pw, bc, is_ph, is_pl)
+        if use_ema and signal and _ema_trend(bars, ema, i, ema_window) != signal:
+            signal = 0
+        cooled = i - last_trade_bar >= cooldown
+        sl_dist = stop_pts if stop_pts is not None else (atr[i] * atr_sl if atr[i] is not None else None)
+        tp_dist = tp_pts if tp_pts is not None else (atr[i] * atr_tp if atr[i] is not None else None)
+        ready = sl_dist is not None and tp_dist is not None
+        long_sig = signal == 2 and in_session and cooled and position == 0 and ready
+        short_sig = signal == 1 and in_session and cooled and position == 0 and ready
+        last = broker.trades[-1] if broker.trades else None
+        just_closed = position == 0 and seen_position != 0
+        stopped = flip and just_closed and last is not None and last["pnl"] < -min_flip
+        was_long = last is not None and last["size"] > 0
+        flip_long = stopped and not was_long and in_session and ready
+        flip_short = stopped and was_long and in_session and ready
+        side = 1 if long_sig else -1 if short_sig else 1 if flip_long else -1 if flip_short else 0
+        if side:
+            entry_price = bar.c
+            be_active = False
+            last_trade_bar = i
+            name = "Long" if side > 0 else "Short"
+            broker.entry(name, side)
+            broker.exit("XL" if side > 0 else "XS", name, stop=bar.c - sl_dist * side, limit=bar.c + tp_dist * side)
+        if use_be and position != 0 and not be_active:
+            direction = 1 if position > 0 else -1
+            if (bar.c - entry_price) * direction >= be_pts:
+                be_active = True
+                limit = entry_price + (tp_pts if tp_pts is not None else tp_dist) * direction
+                name = "Long" if direction > 0 else "Short"
+                broker.exit("XL" if direction > 0 else "XS", name, stop=entry_price + TICK * direction, limit=limit)
+        if position == 0:
+            be_active = False
+        seen_position = position
+        broker.end_bar(i)
+    return broker.trades
+
+
+def _pivot_flags(bars, pw: int) -> tuple[list[bool], list[bool]]:
+    """A bar is a pivot when no bar within pw on either side is strictly beyond it. A bar before the first is na."""
+    count = len(bars)
+    highs = [True] * count
+    lows = [True] * count
+    for p in range(count):
+        hi = bars[p].h
+        lo = bars[p].l
+        for step in range(1, pw + 1):
+            for q in (p - step, p + step):
+                if 0 <= q < count:
+                    if bars[q].h > hi:
+                        highs[p] = False
+                    if bars[q].l < lo:
+                        lows[p] = False
+    return highs, lows
+
+
+def _bos_signal(bars, i: int, pw: int, bc: int, is_ph: list[bool], is_pl: list[bool]) -> int:
+    """2 for a bullish break of structure on bar i, 1 for bearish, 0 for none."""
+    if i < bc:
+        return 0
+    window = range(i - bc, i - pw + 1)
+    highs = [p for p in window if p >= 0 and is_ph[p]]
+    lows = [p for p in window if p >= 0 and is_pl[p]]
+    close, prev = bars[i].c, bars[i - 1].c
+    if highs and lows:
+        pivot = highs[-1]
+        level = bars[pivot].h
+        if close > level and prev <= level:
+            before = None
+            after = None
+            for p in lows:
+                if p < pivot:
+                    before = bars[p].l
+                elif p > pivot:
+                    after = bars[p].l if after is None else min(after, bars[p].l)
+            if before is not None and after is not None and after < before:
+                return 2
+    if lows and highs:
+        pivot = lows[-1]
+        level = bars[pivot].l
+        if close < level and prev >= level:
+            before = None
+            after = None
+            for p in highs:
+                if p < pivot:
+                    before = bars[p].h
+                elif p > pivot:
+                    after = bars[p].h if after is None else max(after, bars[p].h)
+            if before is not None and after is not None and after > before:
+                return 1
+    return 0
+
+
+def _ema_trend(bars, ema, i: int, window: int) -> int:
+    """2 when every body in the window is above the EMA, 1 when every body is below."""
+    above = below = True
+    for k in range(window + 1):
+        if i - k < 0 or ema[i - k] is None:
+            return 0
+        body_lo = min(bars[i - k].o, bars[i - k].c)
+        body_hi = max(bars[i - k].o, bars[i - k].c)
+        if body_lo <= ema[i - k]:
+            above = False
+        if body_hi >= ema[i - k]:
+            below = False
+    return 2 if above else 1 if below else 0
 
 
 def _volume_trail(bars, values, slip, commission, point) -> list[dict]:
@@ -547,94 +594,68 @@ def _from_signals(bars, source, values, slip, commission, point) -> list[dict]:
 
 
 def _simulate(bars, signals, stop_pts, tp_pts, slip, commission, point, values, session=None, atr_stops=None, tp_enabled=True, tp_widths=None, risk_at_entry=False) -> list[dict]:
+    """Run the signals on TradingView's broker.
+
+    Each order is sent at a bar's close, the way the script runs, and works
+    from the next bar. The stop and target come from the signal bar's close.
+    A trailing stop moves at a bar's close from that bar's high or low.
+    """
+    from futuresfund.tv_broker import TICK, Broker
+
     session = session or _session_ok
     cooldown = int(values.get("cooldown_bars") or values.get("cool_bars") or 0)
-    last_entry = -10**9
     use_trail = bool(values.get("use_trail"))
     trail_pct = float(values.get("trail_pct") or 60)
     trail_step_amt = float(values.get("trail_step_amt") or 500)
     trail_step_pct = float(values.get("trail_step_pct") or 10)
     trail_min = float(values.get("trail_min_dollars") or 300)
-    pos = 0
-    entry = stop = limit = 0.0
-    entry_i = -1
+    broker = Broker(bars, point, commission, slip / TICK)
+    last_entry = -10**9
+    stop = limit = None
     peak = 0.0
-    open_trade = None
-    trades = []
-
-    def close(i, price, kind):
-        nonlocal pos, open_trade, peak
-        if open_trade is None or pos == 0:
-            pos = 0
-            return
-        points = (price - entry) if pos > 0 else (entry - price)
-        open_trade.update({
-            "exit_time": bars[i].when.strftime("%Y-%m-%d %H:%M"),
-            "exit_price": round(price, 2),
-            "exit_signal": kind,
-            "pnl": round(points * point - commission * 2, 2),
-        })
-        trades.append(open_trade)
-        open_trade = None
-        pos = 0
-        peak = 0.0
-
     for i, bar in enumerate(bars):
         _breathe(i)
+        broker.start_bar(i)
+        position = broker.position
         long_sig, short_sig, zone_exit = signals[i]
-        if pos != 0 and i > entry_i:
-            if atr_stops is not None and not risk_at_entry:
-                width = atr_stops[i] or 0
-                stop = entry - width if pos > 0 else entry + width
-            if use_trail and peak * point >= trail_min:
-                steps = math.floor((peak * point) / trail_step_amt) if trail_step_amt else 0
-                keep = min(trail_pct + steps * trail_step_pct, 95.0) / 100.0
-                if pos > 0:
-                    stop = max(stop, entry + peak * keep)
-                else:
-                    stop = min(stop, entry - peak * keep)
-            hit = _protect(bar, pos, stop, limit if tp_enabled else (10**9 if pos > 0 else -10**9), slip)
-            if hit is not None:
-                close(i, hit[1], "XL" if pos > 0 else "XS")
-            elif zone_exit == "long" and pos > 0:
-                close(i, bar.c - slip, "Zone Exit")
-            elif zone_exit == "short" and pos < 0:
-                close(i, bar.c + slip, "Zone Exit")
-            elif pos > 0:
-                peak = max(peak, bar.h - entry)
-            elif pos < 0:
-                peak = max(peak, entry - bar.l)
         in_now = session(bar, values)
         in_prev = session(bars[i - 1], values) if i else False
-        if pos != 0 and i and in_prev and not in_now:
-            close(i, bar.c - slip if pos > 0 else bar.c + slip, "Session Close")
-        if pos == 0 and in_now and i - last_entry >= cooldown and (long_sig or short_sig):
-            last_entry = i
+        if position:
+            side = 1 if position > 0 else -1
+            average = broker.entry_price
+            if in_prev and not in_now:
+                broker.close_all("Session Close")
+            elif zone_exit == ("long" if side > 0 else "short"):
+                broker.close_all("Zone Exit")
+            else:
+                moved = False
+                if atr_stops is not None and not risk_at_entry and atr_stops[i]:
+                    stop = average - atr_stops[i] * side
+                    moved = True
+                if use_trail:
+                    peak = max(peak, bar.h - average if side > 0 else average - bar.l)
+                    if peak * point >= trail_min:
+                        steps = math.floor(peak * point / trail_step_amt) if trail_step_amt else 0
+                        keep = min(trail_pct + steps * trail_step_pct, 95.0) / 100.0
+                        candidate = average + peak * keep * side
+                        if stop is None or (candidate - stop) * side > 0:
+                            stop = candidate
+                            moved = True
+                if moved:
+                    broker.exit("XL" if side > 0 else "XS", broker.entry_id, stop=stop, limit=limit)
+        elif in_now and i - last_entry >= cooldown and (long_sig or short_sig):
             side = 1 if long_sig else -1
-            fill = bar.c + slip if side > 0 else bar.c - slip
-            if atr_stops is not None:
-                width = atr_stops[i] or stop_pts
-                stop = fill - width if side > 0 else fill + width
-            else:
-                stop = bar.c - stop_pts if side > 0 else bar.c + stop_pts
-            target = tp_widths[i] if tp_widths is not None else None
-            if target:
-                limit = bar.c + target if side > 0 else bar.c - target
-            elif tp_pts:
-                limit = bar.c + tp_pts if side > 0 else bar.c - tp_pts
-            else:
-                limit = fill + 10**6 if side > 0 else fill - 10**6
-            pos = side
-            entry = fill
-            entry_i = i
+            width = (atr_stops[i] if atr_stops is not None else stop_pts) or stop_pts
+            target = (tp_widths[i] if tp_widths is not None else None) or tp_pts
+            stop = bar.c - width * side if width else None
+            limit = bar.c + target * side if tp_enabled and target else None
             peak = 0.0
-            open_trade = {
-                "side": "long" if side > 0 else "short",
-                "entry_time": bar.when.strftime("%Y-%m-%d %H:%M"),
-                "entry_price": round(fill, 2),
-                "entry_signal": "Long" if side > 0 else "Short",
-            }
-    return trades
+            last_entry = i
+            name = "Long" if side > 0 else "Short"
+            broker.entry(name, side)
+            broker.exit("XL" if side > 0 else "XS", name, stop=stop, limit=limit)
+        broker.end_bar(i)
+    return broker.trades
 
 
 def _values(source: str, inputs: dict) -> dict:

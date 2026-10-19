@@ -188,10 +188,12 @@ def run_discussion(board: Board, when: str = "Startup") -> None:
 
 
 def choose_standin(approved: list[dict], already_active: bool) -> dict | None:
-    """Until the 8:00am meeting, the most profitable rule that passed risk stands in when none is active."""
+    """Until the 8:00am meeting, the lowest-drawdown profitable rule that passed risk stands in when none is active."""
+    from futuresfund.objective import rank
+
     if already_active or not approved:
         return None
-    return max(approved, key=lambda row: float((row.get("backtest") or {}).get("net_profit") or 0))
+    return max(approved, key=lambda row: rank(row.get("backtest") or {}))
 
 
 def _stand_in(board: Board, approved: list[dict], contract: str, timeframe: str, account: str, account_size: float, profit_target: float, current: dict) -> None:
@@ -215,8 +217,8 @@ def _stand_in(board: Board, approved: list[dict], contract: str, timeframe: str,
         board.post(
             "Chart researcher",
             f"No strategy was active. Until the 8:00am meeting, {pick['title']} is active. "
-            f"It is the most profitable rule that passed risk, profit {pick['backtest']['net_profit']}, "
-            f"drawdown {pick['backtest']['max_drawdown']}.",
+            f"It is the lowest-drawdown profitable rule that passed risk, drawdown {pick['backtest']['max_drawdown']}, "
+            f"profit {pick['backtest']['net_profit']}.",
             kind="report",
             channel="Chart researcher",
         )

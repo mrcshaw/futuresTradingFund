@@ -10,6 +10,24 @@ from pathlib import Path
 
 from futuresfund.alerts import parse_alert
 
+_LIVE = {}
+
+
+def setUpModule():
+    """Alert candles from these tests go to a temporary file, never the desk's own live candles."""
+    from futuresfund import chart_feed
+
+    _LIVE["folder"] = tempfile.TemporaryDirectory()
+    _LIVE["path"] = chart_feed.LIVE_BARS_PATH
+    chart_feed.LIVE_BARS_PATH = Path(_LIVE["folder"].name) / "live.json"
+
+
+def tearDownModule():
+    from futuresfund import chart_feed
+
+    chart_feed.LIVE_BARS_PATH = _LIVE["path"]
+    _LIVE["folder"].cleanup()
+
 
 class ConfirmationTests(unittest.TestCase):
     def test_a_fill_confirms_and_a_reject_does_not(self):
@@ -45,12 +63,12 @@ class ConfirmationTests(unittest.TestCase):
             "marketPosition": "Long",
             "quantity": 1,
             "averagePrice": 5000,
-            "unrealizedProfitLoss": -2000,
+            "unrealizedProfitLoss": -2500,
         })
         held, entry = reconcile_position({"account": "PA-APEX-1", "instrument": "ES1!"}, 0, None)
         self.assertEqual(held, 1)
         self.assertEqual(entry, 5000)
-        reason = liquidation_reason(50000, held, entry, 5000, 50, -2000)
+        reason = liquidation_reason(50000, held, entry, 5000, 50, -2500)
         self.assertIn("liquidate", reason)
         self.assertIsNone(liquidation_reason(50000, 1, 5000, 4998, 50, None))
         ninjatrader.reset_cache()
@@ -306,8 +324,8 @@ class DeskFlowTests(unittest.TestCase):
             })
             board = Board()
             closed = handle_interval(board, parse_alert(
-                "account=PA-APEX-1;instrument=ES1!;qty=1;timeframe=1;price=4960;"
-                "open=5000;high=5000;low=4960;time=2024-01-02T14:03:00Z;"
+                "account=PA-APEX-1;instrument=ES1!;qty=1;timeframe=1;price=4950;"
+                "open=5000;high=5000;low=4950;time=2024-01-02T14:03:00Z;"
             ))
             self.assertEqual(closed["action"], "close")
             self.assertIn("liquidate", closed["reason"])
@@ -516,12 +534,15 @@ class AnalystAndLibraryTests(unittest.TestCase):
                     "best": {
                         "engine": "backtrader",
                         "runner": "backtrader",
-                        "net_profit": 4200,
+                        "net_profit": 25000,
                         "max_drawdown": 800,
-                        "trades": 9,
+                        "trades": 120,
+                        "days": 260,
                         "timeframe": "5m",
-                        "win_rate": 60,
-                        "frames": [{"timeframe": "5m", "net_profit": 4200, "max_drawdown": 800, "trades": 9}],
+                        "win_rate": 65,
+                        "profit_factor": 1.4,
+                        "profit_ratio": 1.2,
+                        "frames": [{"timeframe": "5m", "net_profit": 25000, "max_drawdown": 800, "trades": 120, "days": 260, "profit_ratio": 1.2}],
                     },
                 }
                 (library._NOTES / "sample_drift.json").write_text(__import__("json").dumps(payload), encoding="utf-8")
@@ -543,6 +564,19 @@ class AnalystAndLibraryTests(unittest.TestCase):
 
 
 class ChartTests(unittest.TestCase):
+    def setUp(self):
+        from unittest import mock
+
+        from futuresfund import kronos_track
+
+        self.track = tempfile.TemporaryDirectory()
+        self.track_patch = mock.patch.object(kronos_track, "PATH", Path(self.track.name) / "kronos_direction.json")
+        self.track_patch.start()
+
+    def tearDown(self):
+        self.track_patch.stop()
+        self.track.cleanup()
+
     def test_an_es_price_labeled_as_gold_stays_on_the_es_chart(self):
         from futuresfund.chart_feed import place_root
 
@@ -656,13 +690,30 @@ class ChartTests(unittest.TestCase):
             feed.LIVE_BARS_PATH = original
 
 
+class QoPointTests(unittest.TestCase):
+    def test_qo_is_tested_at_50_dollars_a_point(self):
+        from futuresfund.contracts import POINT_VALUE
+        from futuresfund.learn import _with_contract_point, research_instruments
+        from futuresfund.library import _RESEARCH_ROOT
+
+        self.assertEqual(POINT_VALUE["QO"], 50)
+        self.assertEqual(POINT_VALUE["GC"], 100)
+        self.assertEqual(_RESEARCH_ROOT["GC1!"], "QO")
+        self.assertIn("QO", research_instruments())
+        self.assertNotIn("GC", research_instruments())
+        updated = _with_contract_point({"point_value": 100, "length": 10}, "QO")
+        self.assertEqual(updated["point_value"], 50.0)
+        self.assertEqual(updated["length"], 10)
+
+
 class InstrumentCoverageTests(unittest.TestCase):
     def test_a_strategy_is_not_tested_twice_and_waits_for_every_instrument(self):
         from futuresfund.charts import chart_roots
         from futuresfund.learn import pending_instruments, ready_to_file, research_instruments, tested_instruments
 
-        self.assertEqual(chart_roots(), ["ES", "QO"])
+        self.assertEqual(chart_roots(), ["ES", "GC", "NQ", "QO"])
         self.assertEqual(research_instruments(), ["ES", "QO", "NQ"])
+        self.assertNotIn("GC", research_instruments())
         old = {"trials": [{"net_profit": 1}], "best": {"net_profit": 1}}
         self.assertEqual(tested_instruments(old), {"ES"})
         self.assertEqual(pending_instruments(old, ["ES", "QO"]), ["QO"])
@@ -720,6 +771,90 @@ class LibraryTests(unittest.TestCase):
         self.assertTrue(all(row["contract_label"] == "Gold" and row["net_profit"] > 0 for row in gold["strategies"]))
         script = library_script(drift["id"])
         self.assertTrue(script["pine"].startswith("//@version=5"))
+
+    def test_every_library_strategy_still_has_its_script(self):
+        from futuresfund.library import library_script, search_library
+
+        payload = search_library("all")
+        missing = []
+        for bucket in ("strategies", "untested"):
+            for row in payload.get(bucket) or []:
+                opened = library_script(row.get("id"), row.get("contract"))
+                pine = (opened or {}).get("pine") or ""
+                if "strategy(" not in pine:
+                    missing.append(f"{bucket}: {row.get('file') or row.get('title')}")
+        self.assertEqual(missing, [])
+
+
+class AddedLibraryTests(unittest.TestCase):
+    def test_a_hand_added_strategy_stays_on_the_shelf_until_it_is_deleted(self):
+        from unittest.mock import patch
+
+        from futuresfund import library
+
+        pine = "//@version=5\nstrategy(\"Desk Add\", overlay=true)\n"
+        cache = dict(library._CACHE)
+        with tempfile.TemporaryDirectory() as tmp:
+            notes = Path(tmp) / "notes"
+            added = Path(tmp) / "learned"
+            original_notes = library._NOTES
+            original_added = library._ADDED_DIR
+            library._NOTES = notes
+            library._ADDED_DIR = added
+            try:
+                with self.assertRaises(ValueError):
+                    library.add_strategy("Nope", "ES1!", "plot(close)")
+                row = library.add_strategy("Desk Add", "NQ1!", pine, "5m")
+                self.assertEqual(row["contract"], "NQ1!")
+                self.assertEqual(row["contract_label"], "Nasdaq")
+                self.assertEqual(row["kind"], "Added")
+                self.assertTrue((added / row["file"]).is_file())
+                self.assertIn("strategy(", (added / row["file"]).read_text(encoding="utf-8"))
+                kept = library.shelf_rows([
+                    {"id": "weak", "script": "Weak", "net_profit": 100},
+                    {"id": "rich", "script": "Rich One", "net_profit": 25000, "max_drawdown": 1000, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+                    {"id": "rich-2", "script": "Rich One v2", "net_profit": 21000, "max_drawdown": 500, "profit_ratio": 1.2},
+                    row,
+                ])
+                self.assertEqual({item["id"] for item in kept}, {"rich", row["id"]})
+                neighbor = {
+                    "id": "neighbor",
+                    "title": "Neighbor",
+                    "script": "Neighbor",
+                    "file": "neighbor.pine",
+                    "contract": "ES1!",
+                    "net_profit": 30000,
+                    "max_drawdown": 1000,
+                    "trades": 150,
+                    "days": 260,
+                    "win_rate": 65,
+                    "profit_factor": 1.4,
+                    "kind": "Measured",
+                    "profit_ratio": 1.2,
+                }
+                library._write_index(library.shelf_rows([neighbor, row]))
+                library._write_untested([
+                    {"id": row["id"], "contract": row["contract"], "title": row["title"]},
+                    {"id": "keep-me", "contract": "ES1!", "title": "Keep"},
+                ])
+
+                def fake_pine(filename):
+                    path = added / filename
+                    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+                with patch("futuresfund.strategy.pine_text", fake_pine):
+                    opened = library.library_script(row["id"], row["contract"])
+                self.assertIn("strategy(", opened["pine"])
+                self.assertTrue(library.remove_strategy(row["id"], row["contract"]))
+                self.assertFalse((added / row["file"]).exists())
+                self.assertEqual({item["id"] for item in library._load_index_rows()}, {"neighbor"})
+                self.assertEqual({item["id"] for item in library._load_untested()}, {"keep-me"})
+                self.assertFalse(library.remove_strategy(row["id"]))
+            finally:
+                library._NOTES = original_notes
+                library._ADDED_DIR = original_added
+                library._CACHE.clear()
+                library._CACHE.update(cache)
 
 
 if __name__ == "__main__":

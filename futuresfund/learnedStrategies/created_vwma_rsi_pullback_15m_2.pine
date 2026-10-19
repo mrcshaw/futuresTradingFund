@@ -1,0 +1,51 @@
+//@version=5
+// Built from: Delta Volume BOS Night Shift (vwma_len 27-28, session timing) + POC RSI Reversal (RSI trigger), indicators: math.sum, ta.rsi, ta.crossover, ta.crossunder, ta.lowest, ta.highest
+strategy("VWMA RSI Pullback 15m", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+pv = input.float(2, "Point Value ($)")
+stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=1500)
+tp_dollars = input.int(1000, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail = input.bool(false, "Enable Trailing Stop")
+trail_step_amt = input.int(500, "Trail: Tighten every ($)")
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)")
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+vwma_len = input.int(27, "VWMA Length", minval=10, maxval=100)
+rsi_len = input.int(14, "RSI Length", minval=7, maxval=30)
+rsi_os = input.int(35, "RSI Oversold", minval=20, maxval=45)
+rsi_ob = input.int(65, "RSI Overbought", minval=55, maxval=80)
+pb_bars = input.int(3, "Pullback Lookback", minval=2, maxval=10)
+cooldown = input.int(8, "Cooldown Bars", minval=2, maxval=50)
+ss = sess_start_hr * 60 + sess_start_mn
+se = sess_end_hr * 60 + sess_end_mn
+cm = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+in_session = use_session ? (ss < se ? (cm >= ss and cm < se) : (cm >= ss or cm < se)) : true
+vsum = math.sum(volume, vwma_len)
+vwma = vsum > 0 ? math.sum(close * volume, vwma_len) / vsum : close
+rv = ta.rsi(close, rsi_len)
+trend_up = close > vwma
+trend_dn = close < vwma
+sig_l = trend_up and ta.crossover(rv, rsi_os) and close > ta.lowest(low, pb_bars)
+sig_s = trend_dn and ta.crossunder(rv, rsi_ob) and close < ta.highest(high, pb_bars)
+var int last_bar = 0
+can_enter = bar_index - last_bar >= cooldown
+if in_session and can_enter and sig_l and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    last_bar := bar_index
+if in_session and can_enter and sig_s and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    last_bar := bar_index
+if strategy.position_size > 0
+    strategy.exit("LX", from_entry="Long", stop=long_stop, limit=long_limit)
+if strategy.position_size < 0
+    strategy.exit("SX", from_entry="Short", stop=short_stop, limit=short_limit)
+if strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session")

@@ -60,6 +60,6 @@ class EntryRuleTests(unittest.TestCase):
             save_rule("Secret Oscillator", "import os\ndef signals(bars, values):\n    return [(True, False)]\n", bars)
 
     def test_the_ema_crossover_script_does_not_need_a_new_rule(self):
-        folder = Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies"
+        folder = Path(__file__).resolve().parents[1] / "futuresfund" / "learnedStrategies"
         source = (folder / "ema_5_50_200.pine").read_text(encoding="utf-8")
         self.assertTrue(covered(source))

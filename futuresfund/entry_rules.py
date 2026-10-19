@@ -33,30 +33,37 @@ _FILE_LOCKS: dict[str, threading.Lock] = {}
 _FILE_LOCKS_GUARD = threading.Lock()
 
 
-def ensure_entry_rule(board, developer: str, source: str, bars: list) -> bool:
-    """True when this script can enter. The developer writes the rule when it cannot."""
+def ensure_entry_rule(board, developer: str, source: str, bars: list, *, wait: bool = False) -> bool | None:
+    """True when this script can enter. The developer writes the rule on this agent's own thread.
+
+    None means another agent is already writing this rule. The caller does not wait.
+    """
     title = _title(source)
     if _ready(source):
         return True
     if board is None:
         return False
-    with _lock(title):
+    lock = _lock(title)
+    if wait:
+        lock.acquire()
+    elif not lock.acquire(blocking=False):
+        return None
+    try:
         if _ready(source):
             return True
-        from futuresfund.crew import get_crew
-
-        def work() -> bool:
-            return _write_rule(developer, source, bars)
-
+        if board is not None:
+            board.log(developer, f"Adding the entry rule for {title}")
         try:
-            added = bool(get_crew(board).run(developer, f"Adding the entry rule for {title}", work))
+            added = bool(_write_rule(developer, source, bars))
         except Exception as exc:
             board.post(developer, f"The entry rule for {title} was not added: {exc}", kind="error", channel=developer)
             return False
         if added:
+            from futuresfund.learn import ATTEMPT_LIMIT
+
             board.post(
                 developer,
-                f"The entry rule for {title} is on the engine. The 200 attempts use that rule.",
+                f"The entry rule for {title} is on the engine. The {ATTEMPT_LIMIT} attempts use that rule.",
                 kind="report",
                 channel=developer,
             )
@@ -68,6 +75,8 @@ def ensure_entry_rule(board, developer: str, source: str, bars: list) -> bool:
             channel=developer,
         )
         return False
+    finally:
+        lock.release()
 
 
 def run_saved(title: str, bars: list, values: dict, slip: float, commission: float, point: float):
@@ -104,6 +113,11 @@ def save_rule(title: str, function_source: str, bars: list, values: dict | None 
 
 
 def _ready(source: str) -> bool:
+    """The Pine runtime runs the script itself. A rule is only written for what it cannot run yet."""
+    from futuresfund.pine_runtime import supported
+
+    if supported(source):
+        return True
     title = _title(source)
     if title in _BUILTIN or _path(title).is_file():
         return True
@@ -163,7 +177,7 @@ def _expr_names(expr: str) -> set[str] | None:
 
 
 def _write_rule(developer: str, source: str, bars: list) -> bool:
-    from futuresfund.llm import _post, model_name
+    from futuresfund.llm import CONTEXT_CAP, _post, model_name
     from futuresfund.script_backtest import _values
 
     title = _title(source)
@@ -311,3 +325,97 @@ def _lock(title: str) -> threading.Lock:
             lock = threading.Lock()
             _FILE_LOCKS[title] = lock
         return lock
+
+
+def repair_dead_entry(source: str) -> str:
+    """Make a generated entry able to fire.
+
+    Two patterns the writer keeps producing never enter on any input. The current
+    volume cannot be above ta.highest(volume), because that highest includes the
+    current bar. A cooldown that stores this bar before the entry check, or that
+    compares bar_index with an na stamp, is false on the signal bar too.
+    """
+    text = source or ""
+    text = re.sub(r"ta\.highest\(\s*volume\s*,", "ta.highest(volume[1],", text)
+    names = re.findall(r"^\s*var\s+int\s+(\w+)\s*=\s*na\b", text, flags=re.M)
+    cooldown = _cooldown_name(text)
+    for name in dict.fromkeys(names):
+        text = _drop_stamp_only_blocks(text, name)
+        text = _allow_first_entry(text, name, cooldown)
+        text = _stamp_after_entry(text, name)
+    if source.endswith("\n") and text and not text.endswith("\n"):
+        text += "\n"
+    return text
+
+
+def _cooldown_name(source: str) -> str:
+    match = re.search(r"\b(\w*cooldown\w*)\s*=\s*input\b", source, flags=re.I)
+    return match.group(1) if match else "cooldown_bars"
+
+
+def _drop_stamp_only_blocks(source: str, name: str) -> str:
+    """Remove an if that only stores the current bar and never calls strategy.*."""
+    lines = source.splitlines()
+    kept: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if re.match(r"\s*if\b", line):
+            indent = len(line) - len(line.lstrip(" "))
+            block = [line]
+            nxt = index + 1
+            while nxt < len(lines):
+                row = lines[nxt]
+                if row.strip() and (len(row) - len(row.lstrip(" "))) <= indent:
+                    break
+                block.append(row)
+                nxt += 1
+            body = "\n".join(block)
+            if f"{name} := bar_index" in body and "strategy." not in body:
+                index = nxt
+                continue
+        kept.append(line)
+        index += 1
+    return "\n".join(kept)
+
+
+def _allow_first_entry(source: str, name: str, cooldown: str) -> str:
+    """A stamp that is still na has to allow the first entry, then honor the cooldown."""
+    rows = []
+    for line in source.splitlines():
+        if f"na({name})" in line:
+            rows.append(line)
+            continue
+        updated = re.sub(
+            rf"bar_index\s*-\s*{name}\s*>\s*(\w+)",
+            rf"(na({name}) or bar_index - {name} > \1)",
+            line,
+        )
+        updated = re.sub(
+            rf"bar_index\s*>\s*{name}\s*\+\s*(\w+)",
+            rf"(na({name}) or bar_index > {name} + \1)",
+            updated,
+        )
+        updated = re.sub(
+            rf"bar_index\s*>\s*{name}\b(?!\s*\+)",
+            rf"(na({name}) or bar_index > {name} + {cooldown})",
+            updated,
+        )
+        rows.append(updated)
+    return "\n".join(rows)
+
+
+def _stamp_after_entry(source: str, name: str) -> str:
+    """Store the entry bar after the order, so the same bar can still enter."""
+    lines = source.splitlines()
+    out: list[str] = []
+    for index, line in enumerate(lines):
+        out.append(line)
+        if "strategy.entry(" not in line:
+            continue
+        follow = "\n".join(lines[index + 1:index + 4])
+        if f"{name} := bar_index" in follow:
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        out.append(" " * indent + f"{name} := bar_index")
+    return "\n".join(out)

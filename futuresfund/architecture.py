@@ -28,18 +28,62 @@ does not reach up to start research or send mail.
 
 3. Research
     ``learn.py`` reads Pine files only. It does not create strategy
-    ``.py`` files. ``backtrader_engine.py`` runs the backtests. Engine 1 is
+    ``.py`` files. ``pinets_engine.py`` runs the backtests through PineTS. Engine 1 is
     the 2-minute chart and belongs to the 2min chart developer. Engine 2
     is the 5-minute chart and belongs to the 5 min chart developer.
     Engine 3 is the 15-minute chart only and belongs to the 15 min chart
-    developer. One chart researcher reads all three studies. Engine 4
-    tests a newly written script until it is profitable, up to 200
-    attempts. A script is filed only
-    after each of those three charts has finished on every research
-    instrument. ``library.py`` files a profitable result under ES or
-    Gold. ``discuss.py`` holds the 8:00am and 5:00pm meetings.
+    developer. One chart researcher reads all three studies. A script is
+    filed only after each of those three charts has finished on every
+    research instrument. ``library.py`` files a profitable result under ES
+    or Gold. ``discuss.py`` holds the 8:00am and 5:00pm meetings.
+
+    ``objective.py`` is the research objective every desk ranks by. A
+    script is acceptable only when it hits the profit target set on
+    headquarters without crossing the trailing drawdown set there
+    (``prop_rules.active_limits``: $3,000 and $2,500 on the $50,000
+    account unless headquarters changes them) while averaging 4 to
+    5 trades a week over the tested range; the engine counts
+    the trading days it ran (a day opens at 6pm New York) and reports
+    ``days`` and ``trades_per_day``. One or two trades held for weeks are
+    not a strategy. Among acceptable results the smaller max drawdown
+    wins; drawdowns inside the same band, 5% of the trailing drawdown,
+    count as equal and the larger profit decides. Below the target the
+    larger profit ranks higher, so the search climbs toward it; a
+    profitable result outside the pace band ranks below every paced one.
+    Trade count only breaks a tie. Consistency across charts is
+    reported, not optimized, and a result with no trades is not a
+    result. The chart researcher continues a change that ranks
+    higher and reverses one that ranks lower; the best result of a study,
+    the headquarters leaders and script, the library shelves, the 8:00am
+    stand-in, and the creation team all use the same rank. The library
+    shelf keeps only the runs that meet the objective; a run short of the
+    target, past the drawdown, or outside the pace is not filed.
+
+    ``strategy_team.py`` is the creation team, trained on those studies.
+    ``exemplars.py`` ranks every finished study by that objective. The
+    2-minute, 5-minute, and 15-minute charts each have a strategy developer.
+    When a chart has nothing left in the learning folder, its developer
+    writes one new script from the exemplars, the strategy library, the
+    indicator library, the cards of measured changes, and the recorded
+    outcome of every earlier created script. It does not wait for the
+    other charts. The script checker requires a protective stop, a clean
+    compile, and a dry run on a slice of real bars. A script that passes
+    is filed in the learning folder, and that chart's developer runs the
+    attempts on its own engine. The lesson writer records every script in
+    ``researchNotes/creation_lessons.json``.
+
+    ``errors.py`` is the error journal. Every error a desk posts to the
+    board, every failed run, failed mail, and unhandled request error is
+    written to ``researchNotes/errors.json``. The Systems Administrator
+    compiles the error report from it, by desk, with the recurring
+    errors, and hands it to the Portfolio Manager, who emails it with
+    ``mailer.send_report`` at 5:05pm ET on days with new errors, or when
+    the Portfolio Manager is asked for it in chat.
 
 4. Floor
+    The floor trader reads TradingView alert candles. The quantitative trader
+    reads closed NinjaTrader bars through CrossTrade and books that check on
+    paper, so the two trades can be compared before the alerts are retired.
     ``session.py`` handles an alert after ingestion. ``trade_manager.py``
     turns the alert into place, hold, or close. A sell while flat opens a
     short. A later buy closes that short and leaves the book flat. The
@@ -54,7 +98,7 @@ does not reach up to start research or send mail.
     The headquarters bar shows one card for each account: P&L, drawdown,
     and equity. ``ingestion.py`` writes a live candle on every price
     alert. ``chart_feed.py`` and ``chart_view.py`` fold the 1-minute
-    history in ``chartData/es`` and ``chartData/qo`` into the timeframe
+    history in ``chartData/es`` and ``chartData/gc`` into the timeframe
     on screen. A forming candle updates on each alert.
 
 6. Settings
@@ -71,7 +115,7 @@ Startup
    needs ``futuresTradingFund`` and ``tradingEngine`` on ``PYTHONPATH``.
 2. From ``futuresTradingFund``::
 
-       python -m uvicorn futuresfund.server:app --host 127.0.0.1 --port 8788
+       python -m uvicorn futuresfund.server:app --host 127.0.0.1 --port 8788 --timeout-keep-alive 120
 
 3. Importing ``server`` calls ``config.load_env()``. That loads this
    desk's ``.env`` over any same-named variables already in the
@@ -104,10 +148,12 @@ Strategy developer
 ------------------
 
 The chart desks change one input inside a script that already exists.
-A strategy developer is a later agent. It writes a new Pine script from
-the scripts already in the learning folder. The new file goes into that
-folder and is studied like any other script. It does not arm a live
-trade. The base model stays the local model already on the desk. These
+A strategy developer writes a new Pine script from scratch the whole time
+research is running. Engine 4 develops that script. New strategies in the
+library are part of the next lesson. A profitable one-year run inside a
+$35,000 drawdown is filed in the learning folder so the next script can
+improve on it. It does not arm a live trade. The base model is one loaded Qwen3.8 27B dense model.
+    Each desk has its own client and does not wait on another desk's client. These
 two write-ups say how to teach it. They do not ask for a model trained
 from scratch.
 
@@ -147,7 +193,7 @@ University, 2025.
 https://dash.harvard.edu/handle/1/42719540
 
 - The test is data the model did not see. A script that only wins on
-  the bars used to write it is overfit. The Backtrader engine on a
+  the bars used to write it is overfit. The PineTS engine on a
   later stretch of bars is the test. Perplexity and exam benchmarks are not.
 - Supervised examples are a prompt and the Pine that should follow.
   The desired answer includes the reasoning before the script.

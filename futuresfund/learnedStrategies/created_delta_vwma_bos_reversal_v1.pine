@@ -1,0 +1,103 @@
+//@version=5
+// Built from: delta_volume_bos_night.pine, ta.vwma, ta.rsi
+// Engine 4 creates this script from scratch.
+
+strategy("Delta VWMA BOS Reversal v1", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000, currency=USD)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_pct          = input.float(0.1, "Stop (% of account)", minval=0.1, maxval=3)
+tp_pct            = input.float(1, "Take Profit (% of account)", minval=0.1, maxval=4)
+stop_cash         = input.float(0, "Stop ($)", minval=0, maxval=1500)
+tp_cash           = input.float(0, "Take Profit ($)", minval=0, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
+trail_step_acct   = input.float(1, "Trail: Tighten every % of account")
+trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
+trail_min_pct     = input.float(2, "Trail: Min Profit (% of account)")
+stop_dollars      = strategy.initial_capital * stop_pct / 100
+tp_dollars        = strategy.initial_capital * tp_pct / 100
+trail_step_amt    = strategy.initial_capital * trail_step_acct / 100
+trail_min_dollars = strategy.initial_capital * trail_min_pct / 100
+if stop_cash > 0
+    stop_dollars := stop_cash
+if tp_cash > 0
+    tp_dollars := tp_cash
+if strategy.position_size != 0 and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Dollar stop")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+// Inputs
+len_vwma = input.int(20, "VWMA Length", minval=1, maxval=100)
+len_rsi = input.int(14, "RSI Length", minval=1, maxval=50)
+cooldown = input.int(5, "Cooldown Bars", minval=1, maxval=50)
+
+// Point value (ES default, adjusts for NQ/GC if needed in logic, but fixed here for simplicity)
+
+// Calculations
+vwma = ta.vwma(close, len_vwma)
+rsi = ta.rsi(close, len_rsi)
+
+// Stop and Target Prices
+long_stop = close - (stop_dollars / pv)
+long_tp = close + (tp_dollars / pv)
+short_stop = close + (stop_dollars / pv)
+short_tp = close - (tp_dollars / pv)
+
+// Cooldown Logic
+var int last_entry_bar = na
+var bool in_cooldown = false
+
+if in_cooldown
+    if bar_index - last_entry_bar >= cooldown
+        in_cooldown := false
+        last_entry_bar := na
+
+// Trend Filter: Price above VWMA for longs, below for shorts
+trend_long = close > vwma
+trend_short = close < vwma
+
+// Trigger: RSI Oversold/Overbought + VWMA Slope
+// Use ta.rising/ta.falling to ensure momentum alignment
+rsi_oversold = ta.crossover(ta.sma(rsi, 1), 30) // Simple cross above 30
+rsi_overbought = ta.crossunder(ta.sma(rsi, 1), 70) // Simple cross below 70
+
+// VWMA Slope Check
+vwma_rising = ta.rising(vwma, 3)
+vwma_falling = ta.falling(vwma, 3)
+
+// Entry Conditions
+long_condition = trend_long and rsi_oversold and vwma_rising and not in_cooldown
+short_condition = trend_short and rsi_overbought and vwma_falling and not in_cooldown
+
+// Execution
+if long_condition
+    if in_session
+        strategy.entry("Long", strategy.long)
+    last_entry_bar := bar_index
+    in_cooldown := true
+
+if short_condition
+    if in_session
+        strategy.entry("Short", strategy.short)
+    last_entry_bar := bar_index
+    in_cooldown := true
+
+// Exit Logic: Fixed Stop and Limit
+strategy.exit("Exit Long", "Long", stop=long_stop, limit=long_tp)
+strategy.exit("Exit Short", "Short", stop=short_stop, limit=short_tp)
+
+// Guideline 1: Flatten at 16:45 NY

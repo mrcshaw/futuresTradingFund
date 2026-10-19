@@ -9,27 +9,52 @@ from futuresfund.contracts import root_of
 from futuresfund.timeframe import bar_minutes, parse_timeframe
 
 _EASTERN = ZoneInfo("America/New_York")
-_FILED = {"ES", "QO", "NQ"}
+_FILED = {"ES", "GC", "NQ"}
 
 
-def chart_payload(contract: str, timeframe: str, limit: int = 160) -> dict:
-    """Recent candles and the orders that landed on them."""
+def chart_payload(contract: str, timeframe: str, limit: int = 160, predictor=None) -> dict:
+    """Recent candles and the orders that landed on them.
+
+    A Kronos forecast, when one is ready, is returned beside the printed candles.
+    """
     frame = parse_timeframe(timeframe)
     root = _root(contract)
     candles = _candles(root, frame)
-    shown = candles[-max(20, min(int(limit or 160), 2000)):]
+    count = max(20, min(int(limit or 160), 2000))
+    shown = [dict(candle) for candle in candles[-count:]]
     orders = _orders(root, frame, shown)
     last = shown[-1] if shown else None
+    try:
+        from futuresfund.kronos_replay import prediction_for
+
+        prediction = prediction_for(shown, root, frame, predictor=predictor)
+    except Exception:
+        prediction = {"candles": [], "agreed": 0, "paths": 0, "scored": False, "note": "The pattern table is empty."}
+    try:
+        from futuresfund.kronos_track import observe
+
+        direction_match = observe(root, frame, shown, prediction, contract=contract)
+    except Exception:
+        direction_match = {
+            "ready": False,
+            "correct": 0,
+            "scored": 0,
+            "percent": None,
+            "pending": 0,
+            "text": f"Kronos direction match on {contract} {frame} waits until 6 candles have printed after a forecast.",
+        }
     return {
         "contract": contract,
         "root": root,
         "timeframe": frame,
         "candles": shown,
+        "prediction": prediction,
+        "direction_match": direction_match,
         "orders": orders,
         "last": last,
         "count": len(candles),
         "indicators": _indicators(shown),
-        "note": "" if shown else f"No market file is loaded for {contract}. ES is read from chartData/es and gold from chartData/qo.",
+        "note": "" if shown else f"No market file is loaded for {contract}. ES is read from chartData/es and gold from chartData/gc.",
     }
 
 
@@ -95,17 +120,19 @@ def _candles(root: str, frame: str) -> list[dict]:
         if previous is None:
             merged[epoch] = candle
             continue
-        previous["h"] = max(previous["h"], candle["h"])
-        previous["l"] = min(previous["l"], candle["l"])
-        previous["c"] = candle["c"]
+        updated = dict(previous)
+        updated["h"] = max(updated["h"], candle["h"])
+        updated["l"] = min(updated["l"], candle["l"])
+        updated["c"] = candle["c"]
         if first_raw > epoch:
-            previous["v"] = float(previous.get("v") or 0) + float(candle.get("v") or 0)
+            updated["v"] = float(updated.get("v") or 0) + float(candle.get("v") or 0)
         else:
-            previous["v"] = max(float(previous.get("v") or 0), float(candle.get("v") or 0))
-        previous["forming"] = candle.get("forming")
+            updated["v"] = max(float(updated.get("v") or 0), float(candle.get("v") or 0))
+        updated["forming"] = candle.get("forming")
         for key in ("macd", "macd_signal", "macd_histogram", "delta", "delta_pct", "delta_high", "delta_low", "poc", "poc_volume"):
             if candle.get(key) is not None:
-                previous[key] = candle[key]
+                updated[key] = candle[key]
+        merged[epoch] = updated
     return [merged[key] for key in sorted(k for k in merged if k is not None)]
 
 
@@ -148,7 +175,7 @@ def _history(root: str, frame: str) -> list[dict]:
                         break
         _HISTORY.clear()
         _HISTORY[key] = cached
-    return [dict(candle) for candle in cached]
+    return list(cached)
 
 
 def _candle_from_bar(bar: dict) -> dict:

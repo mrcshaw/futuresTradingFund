@@ -98,7 +98,7 @@ def remember_meeting(item: dict | None) -> None:
 
 
 def remember_research(row: dict, filename: str, title: str) -> None:
-    """Keep headquarters on the most profitable consistent study until a meeting decides."""
+    """Keep headquarters on the best study under the objective until a meeting decides."""
     book = load()
     strategy = book.get("strategy") if isinstance(book.get("strategy"), dict) else {}
     if strategy.get("last_meeting"):
@@ -141,7 +141,9 @@ def absorb_research_notes() -> None:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
-        row = data.get("best") or {}
+        if not isinstance(data, dict):
+            continue
+        row = data.get("best") if isinstance(data.get("best"), dict) else {}
         if not row or _stand_in(row):
             continue
         if str(row.get("engine") or row.get("runner") or "") != "backtrader":
@@ -163,7 +165,8 @@ def absorb_research_notes() -> None:
 
 
 _STAND_INS = {"donchian", "ema_cross", "rsi_revert", "vwap_side", "bollinger", "macd", "poc_pullback", "supertrend"}
-_LEADER_CACHE: dict = {"stamp": None, "rows": []}
+_LEADER_CACHE: dict = {"stamp": None, "rows": None}
+_LEADER_FILE_CACHE: dict[str, tuple[int, dict | None]] = {}
 
 
 def _stand_in(row: dict) -> bool:
@@ -186,14 +189,19 @@ def book_account(strategy: dict | None) -> str:
 
 
 def consistent_leaders(limit: int = 3) -> list[dict]:
-    """The profitable studies that also finished green on at least two charts.
+    """The headquarters leaders: studies that hit the profit target inside the trailing drawdown, both set on
+    headquarters, at 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Two or three trades is not a strategy. The lowest drawdown first, then the profit. Trade count
+    only breaks a tie.
 
-    A stand-in price rule is not included. The account number is not part of the ranking.
+    How many charts finished green is shown, not ranked. A stand-in price rule is not included. The
+    account number is not part of the ranking.
     """
+    from futuresfund.objective import rank
+
     notes = Path(__file__).resolve().parent / "researchNotes"
-    stamp = notes.stat().st_mtime if notes.is_dir() else 0
-    cached = _LEADER_CACHE.get("rows") or []
-    if _LEADER_CACHE.get("stamp") == stamp and cached:
+    stamp = _notes_stamp(notes)
+    cached = _LEADER_CACHE.get("rows")
+    if _LEADER_CACHE.get("stamp") == stamp and cached is not None:
         return [dict(row) for row in cached[:limit]]
     ranked: dict[str, dict] = {}
     if notes.is_dir():
@@ -203,18 +211,50 @@ def consistent_leaders(limit: int = 3) -> list[dict]:
                 continue
             key = str(row["title"]).strip().lower()
             current = ranked.get(key)
-            if current is None or float(row["net_profit"]) > float(current["net_profit"]):
+            if current is None or rank(row) > rank(current):
                 ranked[key] = row
-    rows = sorted(ranked.values(), key=lambda item: (float(item["net_profit"]), -float(item["max_drawdown"]), int(item["trades"])), reverse=True)
+    rows = sorted(ranked.values(), key=rank, reverse=True)
     _LEADER_CACHE["stamp"] = stamp
     _LEADER_CACHE["rows"] = rows
     return [dict(row) for row in rows[:limit]]
 
 
+def _notes_stamp(notes: Path) -> tuple:
+    """Changes when a study is added, removed, or rewritten. A rewrite alone does not move the folder's own time."""
+    if not notes.is_dir():
+        return (0, 0, 0)
+    latest = 0
+    count = 0
+    for path in notes.glob("*.json"):
+        try:
+            latest = max(latest, path.stat().st_mtime_ns)
+        except OSError:
+            continue
+        count += 1
+    return (notes.stat().st_mtime, latest, count)
+
+
 def _leader_row(path: Path) -> dict | None:
+    key = str(path)
+    try:
+        modified = path.stat().st_mtime_ns
+    except OSError:
+        _LEADER_FILE_CACHE.pop(key, None)
+        return None
+    cached = _LEADER_FILE_CACHE.get(key)
+    if cached is not None and cached[0] == modified:
+        return cached[1]
+    row = _read_leader_row(path)
+    _LEADER_FILE_CACHE[key] = (modified, row)
+    return row
+
+
+def _read_leader_row(path: Path) -> dict | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
         return None
     best = data.get("best") if isinstance(data.get("best"), dict) else {}
     runner = str(best.get("runner") or "")
@@ -231,26 +271,14 @@ def _leader_row(path: Path) -> dict | None:
         trades = int(best.get("trades") or 0)
     except (TypeError, ValueError):
         return None
-    frames = [frame for frame in (best.get("frames") or []) if isinstance(frame, dict)]
-    tested = []
-    green = 0
-    for frame in frames:
-        try:
-            frame_trades = int(frame.get("trades") or 0)
-            frame_profit = float(frame.get("net_profit") or 0)
-        except (TypeError, ValueError):
-            continue
-        if frame_trades <= 0:
-            continue
-        tested.append(frame)
-        if frame_profit > 0:
-            green += 1
-    if profit <= 0 or trades < 8 or profit <= drawdown or green < 2:
+    from futuresfund.objective import counts, pace
+
+    if not counts(best):
         return None
+    green, chart_count = _chart_tally(data, best)
     title = str(data.get("title") or "").strip()
     if not title or title.lower().startswith("untitled"):
         title = path.stem.replace("_", " ")
-    chart_count = len(tested) or green
     return {
         "id": path.stem,
         "title": title,
@@ -259,9 +287,41 @@ def _leader_row(path: Path) -> dict | None:
         "net_profit": profit,
         "max_drawdown": drawdown,
         "trades": trades,
+        "trades_per_day": pace(best),
         "green": green,
         "charts": f"{green} of {chart_count} charts finished green",
     }
+
+
+def _chart_tally(data: dict, best: dict) -> tuple[int, int]:
+    """How many finished charts made money. Reported next to a leader, not part of its rank."""
+    rows = []
+    instruments = data.get("instruments") if isinstance(data.get("instruments"), dict) else {}
+    for record in instruments.values():
+        if not isinstance(record, dict):
+            continue
+        charts = record.get("charts") if isinstance(record.get("charts"), dict) else {}
+        for chart in charts.values():
+            if isinstance(chart, dict) and isinstance(chart.get("best"), dict):
+                rows.append(chart["best"])
+        if not charts and isinstance(record.get("best"), dict):
+            rows.append(record["best"])
+    if not rows:
+        rows = [frame for frame in (best.get("frames") or []) if isinstance(frame, dict)] or [best]
+    tested = 0
+    green = 0
+    for row in rows:
+        try:
+            row_trades = int(row.get("trades") or 0)
+            row_profit = float(row.get("net_profit") or 0)
+        except (TypeError, ValueError):
+            continue
+        if row_trades <= 0:
+            continue
+        tested += 1
+        if row_profit > 0:
+            green += 1
+    return green, tested
 
 
 def pine_text(filename: str) -> str:
@@ -277,13 +337,12 @@ def leader_script(strategy_id: str) -> dict | None:
 
 
 def _score(item: dict | None) -> tuple:
+    """The research objective: the profit target inside the headquarters drawdown, the lowest drawdown, then the profit."""
+    from futuresfund.objective import rank
+
     if not item:
-        return (-1, -10**12, -10**12, -1)
-    profit = float(item.get("net_profit") or -10**12)
-    drawdown = float(item.get("max_drawdown") or 10**12)
-    trades = int(item.get("trades") or 0)
-    passed = 1 if item.get("passed") or item.get("proven") else 0
-    return (passed, profit, -drawdown, trades)
+        return (-1, 0, -10**12, 0.0, 0)
+    return rank(item)
 
 
 def _prefer(left: dict | None, right: dict | None) -> dict | None:
@@ -324,9 +383,13 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
     timeframe = row.get("timeframe") or "5m"
     take_profit = row.get("take_profit")
     target = f" Take profit ${float(take_profit):,.0f}." if isinstance(take_profit, (int, float)) and float(take_profit) > 0 else ""
+    from futuresfund.objective import pace
+
+    rate = pace(row)
+    paced = f", {rate:g} a day" if rate is not None else ""
     formula = (
-        f"Backtrader ran this Pine script on the {names.get(timeframe, timeframe)} chart. "
-        f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.{target}"
+        f"PineTS ran this Pine script on the {names.get(timeframe, timeframe)} chart. "
+        f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}{paced}.{target}"
     )
     return {
         "id": filename,
@@ -336,6 +399,9 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
         "net_profit": row.get("net_profit"),
         "max_drawdown": row.get("max_drawdown"),
         "trades": row.get("trades"),
+        "trades_per_day": rate,
+        "days": row.get("days"),
+        "instrument": row.get("instrument") or "",
         "timeframe": timeframe,
         "take_profit": take_profit,
         "passed": bool(row.get("passed")),
@@ -405,11 +471,19 @@ def _read_pine(filename: str) -> str:
     root = Path(__file__).resolve().parent
     name = Path(filename)
     stem = name.stem[:-9] if name.stem.endswith("_strategy") else name.stem
-    for folder in (root / "learningStrategies", root / "learnedStrategies"):
-        for candidate in (name.name, f"{stem}.pine", f"{name.stem}.pine"):
+    candidates = [name.name, f"{stem}.pine", f"{name.stem}.pine", f"{stem}.txt", f"{name.stem}.txt"]
+    if name.name and not name.name.startswith("created_"):
+        candidates.append(f"created_{name.name}")
+        candidates.append(f"created_{stem}.txt")
+    for folder in (root / "learningStrategies", root / "learnedStrategies", root / "createdStrategies"):
+        for candidate in candidates:
             path = folder / candidate
-            if path.suffix == ".pine" and path.is_file():
-                return path.read_text(encoding="utf-8", errors="replace")
+            if not path.is_file() or path.suffix.lower() not in {".pine", ".txt"}:
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")
+            if path.suffix.lower() == ".txt" and "//@version" not in "\n".join(text.splitlines()[:40]):
+                continue
+            return text
     return ""
 
 

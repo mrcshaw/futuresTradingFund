@@ -40,7 +40,7 @@ class BacktraderEngineTests(unittest.TestCase):
         from futuresfund.backtrader_engine import run_script
         from futuresfund.charts import load_chart
 
-        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies" / "bos_breakout_evening.pine").read_text(encoding="utf-8")
+        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "learnedStrategies" / "bos_breakout_evening.pine").read_text(encoding="utf-8")
         bars = load_chart("2m", "ES")
         self.assertGreater(len(bars), 500)
         result = run_script(source, bars, "2m", {}, None, "ES", "BOS Breakout Evening ES 2min")
@@ -60,6 +60,16 @@ class BacktraderEngineTests(unittest.TestCase):
         self.assertIn("input.int(20,", _legal_defaults(source))
         plan = _clamp_plan({"ema_backcandles": 35}, {"ema_backcandles": (2, 20)})
         self.assertEqual(plan["ema_backcandles"], 20)
+
+    def test_a_minimum_factor_is_kept_at_or_below_the_maximum(self):
+        ordered = _clamp_plan({"minMult": 8, "maxMult": 6, "length": 22}, {})
+        self.assertEqual(ordered["minMult"], 6)
+        self.assertEqual(ordered["maxMult"], 6)
+        lowered = _clamp_plan({"minMult": 1, "maxMult": 0}, {})
+        self.assertLessEqual(lowered["minMult"], lowered["maxMult"])
+        session = _clamp_plan({"sess_start_hr": 18, "sess_end_hr": 8}, {})
+        self.assertEqual(session["sess_start_hr"], 18)
+        self.assertEqual(session["sess_end_hr"], 8)
 
     def test_stop_keeps_the_researchers_from_starting_another_attempt(self):
         board = Board()
@@ -97,7 +107,7 @@ class BacktraderEngineTests(unittest.TestCase):
         from futuresfund.charts import load_chart
         from futuresfund.script_backtest import run_source
 
-        folder = Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies"
+        folder = Path(__file__).resolve().parents[1] / "futuresfund" / "learnedStrategies"
         checks = (
             ("ema_bb_mean_reversion.pine", "2m", "ES"),
             ("delta_volume_breakout_night_shift.pine", "5m", "QO"),

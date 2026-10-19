@@ -18,18 +18,28 @@ def chart_roots() -> list[str]:
     if folder.is_dir():
         for child in sorted(folder.iterdir(), key=lambda path: path.name.lower()):
             if child.is_dir() and any(child.glob("*.csv")):
-                found.append(child.name.upper())
+                name = child.name.upper()
+                if name == "GOLD":
+                    name = "GC"
+                if name not in found:
+                    found.append(name)
     return found or ["ES"]
 
 
-def chart_paths(root: str = "ES") -> dict[str, Path]:
-    """Chart files for one root. ES is chartData/es, Nasdaq is chartData/nq, and gold mini is chartData/qo."""
+def chart_exports(root: str = "ES") -> dict[str, list[Path]]:
+    """Every chart export for one root, oldest file first, by timeframe."""
     grouped: dict[str, list[Path]] = {}
     for path in _chart_files(root):
         for frame, token in _FRAMES:
             if token in path.name:
                 grouped.setdefault(frame, []).append(path)
                 break
+    return {frame: sorted(paths, key=lambda path: path.stat().st_mtime) for frame, paths in grouped.items()}
+
+
+def chart_paths(root: str = "ES") -> dict[str, Path]:
+    """Chart files for one root. ES is chartData/es, Nasdaq is chartData/nq, and gold is chartData/gc."""
+    grouped = chart_exports(root)
     chosen: dict[str, Path] = {}
     for frame, paths in grouped.items():
         with_volume = [path for path in paths if _header_has_volume(path)]
@@ -39,7 +49,10 @@ def chart_paths(root: str = "ES") -> dict[str, Path]:
 
 
 def _chart_files(root: str) -> list[Path]:
-    folder = ROOT / "chartData" / root.lower()
+    from futuresfund.contracts import product_root
+
+    folder_name = product_root(root).lower() or "es"
+    folder = ROOT / "chartData" / folder_name
     found = [path for path in folder.glob("*.csv")] if folder.is_dir() else []
     if found or root != "ES":
         return found

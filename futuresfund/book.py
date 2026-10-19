@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import threading
+import time
 from datetime import datetime
 
 from pathlib import Path
@@ -10,16 +13,104 @@ from pathlib import Path
 from futuresfund.config import BOOK_PATH
 from futuresfund.contracts import POINT_VALUE, root_of
 
+# Held around a read, change, and save of the book by ingestion and the traders.
+BOOK_LOCK = threading.RLock()
+# Held only while the file is compared and replaced. Nothing else is taken inside it.
+_FILE_LOCK = threading.Lock()
+_GOOD: dict[str, str] = {}
+_READ_TRIES = 20
+
+
+class _Book(dict):
+    """A book read from the file. It keeps the text it was read from, so a save writes only what its caller changed."""
+
+    __slots__ = ("_read",)
+
+
+def _present(path: Path) -> bool | None:
+    """True when the book file is there, False when it is not, None when the check itself failed."""
+    try:
+        return path.is_file()
+    except OSError:
+        return None
+
+
+def _read(path: Path) -> tuple[str, dict] | None:
+    """The book's text and contents, or None when there is no file.
+
+    A read that meets a file another process holds is tried again. A file that
+    cannot be read as a book is never returned as an empty book, because the
+    next save would write that empty book over every card, trade, and setting.
+    """
+    for _attempt in range(_READ_TRIES):
+        present = _present(path)
+        if present is False:
+            return None
+        if present is None:
+            time.sleep(0.05)
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+            data = json.loads(text)
+        except (OSError, ValueError):
+            time.sleep(0.05)
+            continue
+        if isinstance(data, dict):
+            _GOOD[str(path)] = text
+            return text, data
+        time.sleep(0.05)
+    good = _GOOD.get(str(path))
+    if good is not None:
+        return good, json.loads(good)
+    kept = path.with_name(f"{path.stem}.unreadable-{datetime.now().strftime('%Y%m%d-%H%M%S')}{path.suffix}")
+    try:
+        os.replace(path, kept)
+    except OSError:
+        pass
+    return None
+
+
+def _text(path: Path) -> str | None:
+    for _attempt in range(_READ_TRIES):
+        present = _present(path)
+        if present is False:
+            return None
+        if present is None:
+            time.sleep(0.05)
+            continue
+        try:
+            return path.read_text(encoding="utf-8")
+        except OSError:
+            time.sleep(0.05)
+    return None
+
+
+def _write(path: Path, text: str) -> None:
+    """Write the whole file, then swap it in. A reader sees the old book or the new one, never half of one."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(f"{path.name}.{os.getpid()}-{threading.get_ident()}.tmp")
+    temp.write_text(text, encoding="utf-8")
+    try:
+        for attempt in range(60):
+            try:
+                os.replace(temp, path)
+                return
+            except PermissionError:
+                # Windows refuses the swap while another reader has the file open.
+                time.sleep(0.01 * min(attempt + 1, 5))
+        os.replace(temp, path)
+    finally:
+        if temp.exists():
+            temp.unlink(missing_ok=True)
+
 
 def load() -> dict:
-    if not BOOK_PATH.is_file():
+    found = _read(BOOK_PATH)
+    if found is None:
         return _fresh()
-    try:
-        data = json.loads(BOOK_PATH.read_text(encoding="utf-8") or "{}")
-    except json.JSONDecodeError:
-        return _fresh()
-    if not isinstance(data, dict):
-        return _fresh()
+    text, data = found
+    data = _Book(data)
+    data._read = text
     data.setdefault("positions", {})
     data.setdefault("orders", [])
     data.setdefault("chat", [])
@@ -32,8 +123,32 @@ def load() -> dict:
 
 
 def save(book: dict) -> None:
-    BOOK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    BOOK_PATH.write_text(json.dumps(book, indent=2), encoding="utf-8")
+    """Write the book.
+
+    Ingestion, the traders, the research desks, and the page each load the
+    book, change one part, and save it. When the file changed after this book
+    was loaded, only the top-level parts this caller changed are written; the
+    rest keep what the other writer saved.
+    """
+    path = BOOK_PATH
+    with _FILE_LOCK:
+        out = book
+        loaded = getattr(book, "_read", None)
+        if loaded is not None and _text(path) != loaded:
+            current = _read(path)
+            if current is not None:
+                before = json.loads(loaded)
+                out = dict(current[1])
+                for key in set(before) | set(book):
+                    if key not in book:
+                        out.pop(key, None)
+                    elif key not in before or book[key] != before[key]:
+                        out[key] = book[key]
+        text = json.dumps(out, indent=2)
+        _write(path, text)
+        _GOOD[str(path)] = text
+        if isinstance(book, _Book):
+            book._read = text if out is book else json.dumps(book)
 
 
 def record_fill(book: dict, signal: dict, side: str, price: float | None) -> dict:
@@ -121,12 +236,13 @@ def snapshot() -> dict:
         row = dict(position)
         row["pnl"] = _pnl(row)
         positions.append(row)
-    marks = _marks(positions)
+    marks = _marks([row for row in positions if row.get("last_price") is None])
     for row in positions:
-        live = marks.get(row["yahoo"])
+        live = marks.get(row.get("yahoo"))
         if live is not None:
             row["last_price"] = live
             row["pnl"] = _pnl(row)
+    from futuresfund.live_trading import executing_view, trading_mode
     from futuresfund.strategy import lead_script
 
     return {
@@ -141,10 +257,13 @@ def snapshot() -> dict:
         "paper": paper_status(book, positions),
         "accounts": display_accounts(book, positions),
         "active_strategies": active_strategies(book),
+        "executing": executing_view(book, positions),
+        "trading_mode": trading_mode(book),
         "leaders": _leaders(),
         "running": list(book.get("running") or []),
         "trades": list(reversed((book.get("trades") or [])[-20:])),
         "account_rules": _account_rules(book),
+        "strategy_acceptance": strategy_acceptance(book),
         "next_meeting": "8:00am ET Monday through Friday, and 5:00pm ET Sunday through Friday. Saturday has no meeting.",
     }
 
@@ -205,18 +324,29 @@ def live_mark_note(book: dict, signal: dict, stats: dict) -> str:
 
 
 def mark_paper(book: dict, signal: dict) -> dict:
-    """Move every open trade in this contract to the latest price."""
+    """Move every open trade in this contract to the latest price. ES1! and ES 12-26 are the same contract."""
     price = signal.get("price")
     instrument = signal.get("instrument")
-    if price is not None:
-        for position in (book.get("positions") or {}).values():
-            if instrument and position.get("instrument") != instrument:
-                continue
-            position["last_price"] = price
-            position["updated"] = _now()
-    _refresh_paper(book, signal.get("account"), signal.get("instrument"))
-    save(book)
+    with BOOK_LOCK:
+        fresh = load()
+        if price is not None:
+            for position in (fresh.get("positions") or {}).values():
+                if instrument and not _same_contract(position.get("instrument"), instrument):
+                    continue
+                position["last_price"] = price
+                position["updated"] = _now()
+        _refresh_paper(fresh, signal.get("account"), signal.get("instrument"))
+        save(fresh)
+        book.clear()
+        book.update(fresh)
     return paper_status(book)
+
+
+def _same_contract(left, right) -> bool:
+    try:
+        return root_of(str(left or "")) == root_of(str(right or ""))
+    except ValueError:
+        return left == right
 
 
 def set_running(strategy_id: str, account: str, enabled: bool) -> list[dict]:
@@ -296,44 +426,167 @@ def _leaders() -> list[dict]:
     return consistent_leaders(3)
 
 
+DEFAULT_ACTIVE_FILE = "ema_bb_mean_reversion_nq.pine"
+
+
 def active_strategies(book: dict | None = None) -> list[dict]:
-    """Strategies the floor trader follows. Paper is one of the accounts."""
+    """Strategies the traders follow. A book with no cards starts with EMA BB Mean Reversion NQ on the 2-minute NQ chart, on paper."""
     book = book if book is not None else load()
     rows = book.get("active_strategies")
     if isinstance(rows, list):
         return rows
-    text = ""
-    path = Path(__file__).resolve().parent / "learnedStrategies" / "overnight_drift_capture.pine"
-    if path.is_file():
-        text = path.read_text(encoding="utf-8")
-    book["active_strategies"] = [{
-        "id": "overnight-drift",
-        "account": "paper",
-        "title": "Overnight Drift Capture [Optimized]",
-        "text": text,
-        "locked": False,
-    }]
+    book["active_strategies"] = [default_active_card()]
     save(book)
     return book["active_strategies"]
 
 
+def default_active_card() -> dict:
+    path = Path(__file__).resolve().parent / "learnedStrategies" / DEFAULT_ACTIVE_FILE
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    return {
+        "id": "ema-bb-nq",
+        "account": "paper",
+        "instrument": "NQ1!",
+        "timeframe": "2m",
+        "order_instrument": "",
+        "title": script_title(text) or "EMA BB Mean Reversion NQ",
+        "text": text,
+        "locked": False,
+    }
+
+
+def script_title(text: str) -> str:
+    import re
+
+    match = re.search(r"strategy\s*\(\s*(?:title\s*=\s*)?\"([^\"]+)\"", text or "")
+    return match.group(1).strip() if match else ""
+
+
+def _has_script(text) -> bool:
+    import re
+
+    return bool(re.search(r"\bstrategy\s*\(", str(text or "")))
+
+
+def _card(row: dict, before: dict | None = None) -> dict:
+    """One card as the page sent it. A card with a script is named by the script's title."""
+    text = str(row.get("text") or "")
+    card = {
+        "id": str(row.get("id") or f"strategy-{int(time.time() * 1000)}"),
+        "account": str(row.get("account") or "paper"),
+        "instrument": str(row.get("instrument") or "ES1!"),
+        "timeframe": str(row.get("timeframe") or "5m"),
+        "order_instrument": str(row.get("order_instrument") or "").strip(),
+        "title": script_title(text) or str(row.get("title") or "Strategy"),
+        "text": text,
+        "locked": bool(row.get("locked")),
+    }
+    if before is not None and not text.strip() and _has_script(before.get("text")):
+        # A refresh can save the card before the pasted script is in the box. Keep the script.
+        card["text"] = str(before.get("text") or "")
+        card["title"] = str(before.get("title") or card["title"])
+    return card
+
+
+def _running_ids(book: dict) -> set[str]:
+    return {str(slot.get("id")) for slot in book.get("executing") or [] if isinstance(slot, dict)}
+
+
+def save_active_strategy(row: dict) -> list[dict]:
+    """Store one card. The other cards stay as they are. A card a trader is executing does not change until it is stopped."""
+    if not isinstance(row, dict) or not str(row.get("id") or "").strip():
+        raise ValueError("The card has no id.")
+    with BOOK_LOCK:
+        book = load()
+        cards = [dict(item) for item in active_strategies(book) if isinstance(item, dict)]
+        card_id = str(row["id"])
+        index = next((i for i, item in enumerate(cards) if str(item.get("id")) == card_id), None)
+        if card_id in _running_ids(book):
+            return cards
+        if index is None:
+            cards.append(_card(row))
+        else:
+            cards[index] = {**cards[index], **_card(row, cards[index])}
+        book["active_strategies"] = cards
+        _arm_levels(book)
+        save(book)
+    return cards
+
+
+def add_active_strategy(row: dict | None = None) -> list[dict]:
+    """A new card at the end of the list. The cards already there keep their scripts."""
+    row = dict(row or {})
+    row.setdefault("id", f"strategy-{int(time.time() * 1000)}")
+    with BOOK_LOCK:
+        book = load()
+        cards = [dict(item) for item in active_strategies(book) if isinstance(item, dict)]
+        if any(str(item.get("id")) == str(row["id"]) for item in cards):
+            raise ValueError("A card with that id is already on the list.")
+        cards.append(_card(row))
+        book["active_strategies"] = cards
+        save(book)
+    return cards
+
+
+def remove_active_strategy(card_id: str) -> list[dict]:
+    """Take one card off the list. A card a trader is executing stays until it is stopped."""
+    card_id = str(card_id or "")
+    with BOOK_LOCK:
+        book = load()
+        cards = [dict(item) for item in active_strategies(book) if isinstance(item, dict)]
+        if card_id in _running_ids(book):
+            raise ValueError("Stop the strategy before removing it. A trader is executing it.")
+        kept = [item for item in cards if str(item.get("id")) != card_id]
+        if len(kept) == len(cards):
+            raise ValueError("That card is not on the active list.")
+        book["active_strategies"] = kept
+        save(book)
+    return kept
+
+
 def save_active_strategies(rows: list[dict]) -> list[dict]:
-    book = load()
-    kept = []
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        kept.append({
-            "id": str(row.get("id") or _now()),
-            "account": str(row.get("account") or ""),
-            "instrument": str(row.get("instrument") or ""),
-            "title": str(row.get("title") or "Strategy"),
-            "text": str(row.get("text") or ""),
-            "locked": bool(row.get("locked")),
-        })
-    book["active_strategies"] = kept
-    _arm_levels(book)
-    save(book)
+    """Store the cards. A card a trader is executing keeps its script and settings until it is stopped."""
+    with BOOK_LOCK:
+        book = load()
+        running = {str(slot.get("id")) for slot in book.get("executing") or [] if isinstance(slot, dict)}
+        before = {str(row.get("id")): row for row in book.get("active_strategies") or [] if isinstance(row, dict)}
+        kept = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            card = {
+                "id": str(row.get("id") or _now()),
+                "account": str(row.get("account") or ""),
+                "instrument": str(row.get("instrument") or ""),
+                "timeframe": str(row.get("timeframe") or ""),
+                "order_instrument": str(row.get("order_instrument") or "").strip(),
+                "title": str(row.get("title") or "Strategy"),
+                "text": str(row.get("text") or ""),
+                "locked": bool(row.get("locked")),
+            }
+            if card["id"] in running and card["id"] in before:
+                card = {**before[card["id"]], "locked": True}
+            elif not card["text"].strip() and card["id"] in before and "strategy(" in str(before[card["id"]].get("text") or ""):
+                # A refresh can save the card before the pasted script is in the box. Keep the script.
+                card["text"] = str(before[card["id"]].get("text") or "")
+                if card["title"] == "Strategy":
+                    card["title"] = str(before[card["id"]].get("title") or card["title"])
+            kept.append(card)
+        incoming_ids = {card["id"] for card in kept}
+        if kept and not any("strategy(" in card["text"] for card in kept):
+            restored = [
+                before[old_id]
+                for old_id in before
+                if old_id not in incoming_ids and "strategy(" in str(before[old_id].get("text") or "")
+            ]
+            if restored:
+                kept = restored + kept
+        missing = running - {card["id"] for card in kept}
+        if missing:
+            raise ValueError("Stop the strategy before removing it. A trader is executing it.")
+        book["active_strategies"] = kept
+        _arm_levels(book)
+        save(book)
     return kept
 
 
@@ -392,6 +645,8 @@ def _arm_levels(book: dict) -> None:
         return
     text = rows[0]["text"]
     for position in (book.get("positions") or {}).values():
+        if position.get("strategy_id"):
+            continue
         try:
             contracts = int(position.get("contracts") or 0)
         except (TypeError, ValueError):
@@ -401,6 +656,134 @@ def _arm_levels(book: dict) -> None:
             continue
         position["stop"] = levels["stop"]
         position["take_profit"] = levels["take_profit"]
+
+
+ACCEPTANCE_GOALS = ("win_rate", "profit_factor", "min_profit", "min_trades")
+ACCEPTANCE_FLAGS = ("use_drawdown", "use_trades", "use_profit", "use_factor", "use_win_rate")
+_GOAL_FLAG = {
+    "win_rate": "use_win_rate",
+    "profit_factor": "use_factor",
+    "min_profit": "use_profit",
+    "min_trades": "use_trades",
+}
+ACCEPTANCE_DEFAULTS = {
+    "min_profit": 20_000.0,
+    "profit_factor": 1.1,
+    "win_rate": 53.0,
+    "min_trades": 100,
+    "drawdown_pct": 5.0,
+    "goal": "min_trades",
+    "use_drawdown": True,
+    "use_trades": True,
+    "use_profit": False,
+    "use_factor": False,
+    "use_win_rate": False,
+}
+
+
+def _as_flag(value, default: bool) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def strategy_acceptance(book: dict | None = None) -> dict:
+    """The acceptance boxes on the strategy library page.
+
+    Drawdown under 5 percent of the account and the trade count are on.
+    Profit, the profit factor, and the win rate stay off until their boxes are checked.
+    """
+    book = book if book is not None else load()
+    saved = book.get("strategy_acceptance") if isinstance(book, dict) else None
+    limits = dict(ACCEPTANCE_DEFAULTS)
+    if isinstance(saved, dict):
+        for key, value in saved.items():
+            if key not in limits or value is None:
+                continue
+            if key in ACCEPTANCE_FLAGS:
+                limits[key] = _as_flag(value, bool(ACCEPTANCE_DEFAULTS[key]))
+                continue
+            if key == "goal":
+                if str(value) in ACCEPTANCE_GOALS:
+                    limits[key] = str(value)
+                continue
+            try:
+                number = int(value) if key == "min_trades" else float(value)
+            except (TypeError, ValueError):
+                continue
+            limits[key] = number
+    limits["min_trades"] = int(limits["min_trades"])
+    if float(limits["drawdown_pct"]) <= 0:
+        limits["drawdown_pct"] = 5.0
+    effective = acceptance_goal(limits)
+    if effective:
+        limits["goal"] = effective
+    return limits
+
+
+def acceptance_goal(limits: dict | None = None) -> str:
+    """The scale goal that is actually turned on. A checked-off goal falls back to the trade count."""
+    limits = limits if limits is not None else strategy_acceptance()
+    goal = str(limits.get("goal") or "min_trades")
+    flag = _GOAL_FLAG.get(goal)
+    if flag and limits.get(flag):
+        return goal
+    for candidate, name in (
+        ("min_trades", "use_trades"),
+        ("win_rate", "use_win_rate"),
+        ("profit_factor", "use_factor"),
+        ("min_profit", "use_profit"),
+    ):
+        if limits.get(name):
+            return candidate
+    return ""
+
+
+def save_strategy_acceptance(row: dict) -> dict:
+    """Store the numbers a strategy-team result must clear before it is filed."""
+    try:
+        profit = float(row.get("min_profit"))
+        factor = float(row.get("profit_factor"))
+        rate = float(row.get("win_rate"))
+        trades = int(row.get("min_trades"))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Profit, profit factor, win rate, and trades must be numbers.") from exc
+    if profit < 0 or factor <= 0 or trades < 1 or rate < 0 or rate > 100:
+        raise ValueError("Profit cannot be negative. The profit factor must be above zero. Win rate is from 0 to 100. Trades must be at least 1.")
+    try:
+        drawdown_pct = float(row.get("drawdown_pct", 5))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("The drawdown percent must be a number.") from exc
+    if drawdown_pct <= 0 or drawdown_pct > 100:
+        raise ValueError("The drawdown percent is above 0 and at most 100.")
+    goal = row.get("goal")
+    if goal is None or str(goal).strip() == "":
+        goal = strategy_acceptance().get("goal") or "min_trades"
+    goal = str(goal)
+    if goal not in ACCEPTANCE_GOALS:
+        raise ValueError("The scale goal is the profit, the profit factor, the win rate, or the trade count.")
+    saved = {
+        "min_profit": profit,
+        "profit_factor": factor,
+        "win_rate": rate,
+        "min_trades": trades,
+        "drawdown_pct": drawdown_pct,
+        "goal": goal,
+    }
+    # A page save sends every box. A save that leaves the boxes out uses the defaults:
+    # drawdown and the trade count on, profit, profit factor, and win rate off.
+    sent = any(name in row for name in ACCEPTANCE_FLAGS)
+    for name in ACCEPTANCE_FLAGS:
+        saved[name] = _as_flag(row.get(name), False) if sent else bool(ACCEPTANCE_DEFAULTS[name])
+    if not saved.get(_GOAL_FLAG.get(saved["goal"], "")):
+        saved["goal"] = acceptance_goal(saved)
+    with BOOK_LOCK:
+        book = load()
+        book["strategy_acceptance"] = saved
+        save(book)
+    return saved
 
 
 def save_account_rules(row: dict) -> dict:
@@ -453,14 +836,16 @@ def firm_record(view: dict | None = None) -> str:
     view = view if view is not None else snapshot()
     paper = view.get("paper") or {}
     strategy = view.get("strategy") if isinstance(view.get("strategy"), dict) else {}
+    from futuresfund.objective import acceptance_line
+
     lines = [
         "Futures desk record. Chat does not place an order.",
         _rules_line(view),
-        "Headquarters shows live P&L, the open trade, three consistent strategies, and the lead script. Click a strategy name to copy its Pine script.",
-        "Strategy library is its own tab. Profitable Pine scripts are filed by contract. ES and gold are separate. Each row is the most profitable timeframe of that engine run. Click a row to copy the script.",
-        "Two strategies can run at once, including on the same account. An order alert must name the strategy. The account in that message is where the order goes.",
-        "A price alert with id desk-bar records the candle and does not send an order.",
-        "The stop is defined in the Pine strategy. TradingView sends the buy or sell, including the stop exit. The floor trader turns that alert into the CrossTrade webhook. CrossTrade places the trade.",
+        "Headquarters shows live P&L, the open trade, the three lowest-drawdown profitable strategies, and the lead script. Click a strategy name to copy its Pine script.",
+        "Strategy library is its own tab. " + acceptance_line() + " A run also needs a profit ratio above 1.12. The profit ratio is the average winning trade divided by the average losing trade. The run has 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still files inside that band when the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not filed. Each name keeps its most profitable run on that contract and timeframe, and another chart stays on its own row. ES, Nasdaq, and gold are separate. Click a row to copy the script.",
+        "Two strategies can run at once, including on the same account.",
+        "A price alert with id desk-bar records the candle. TradingView does not send a buy or sell.",
+        "The floor trader and the quantitative trader run an executing strategy on those candles. The entry, the stop, the take profit, and the exit are the ones in the script.",
         "Research starts only when Start is pressed. It does not start on its own.",
         str(view.get("next_meeting") or ""),
     ]
@@ -508,6 +893,9 @@ def firm_record(view: dict | None = None) -> str:
             lines.append(f"Running strategy: {row.get('title')} on {row.get('account')}, timeframe {row.get('timeframe')}.")
     else:
         lines.append("No strategy is running.")
+    from futuresfund.live_trading import record_lines
+
+    lines.extend(record_lines())
     active = view.get("active_strategies") or []
     if active:
         for row in active:

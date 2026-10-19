@@ -33,12 +33,20 @@ POINT_VALUE = {
 _SAFE_INSTRUMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 .!/_\-]{0,40}$")
 
 
+def product_root(name: str) -> str:
+    """The root this desk stores. Gold is GC. GOLD is not a root."""
+    text = (name or "").upper().strip()
+    if text in {"GOLD", "XAU", "XAUUSD"}:
+        return "GC"
+    return text
+
+
 def root_of(instrument: str) -> str:
     text = (instrument or "").upper().strip()
     if ":" in text:
         text = text.split(":")[-1]
     text = text.replace("=F", "").replace("1!", "").strip()
-    token = text.split()[0] if text else ""
+    token = product_root(text.split()[0] if text else "")
     for root in ROOTS:
         if token.startswith(root):
             return root

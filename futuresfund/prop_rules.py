@@ -5,7 +5,7 @@ from __future__ import annotations
 # Size, max intraday trailing drawdown, max contracts. Daily loss, scaling, and inactivity are on for every tier.
 TIERS = (
     {"size": 25000, "max_drawdown": 1000, "max_contracts": 2},
-    {"size": 50000, "max_drawdown": 2000, "max_contracts": 4},
+    {"size": 50000, "max_drawdown": 2500, "max_contracts": 4},
     {"size": 100000, "max_drawdown": 3000, "max_contracts": 6},
     {"size": 150000, "max_drawdown": 4000, "max_contracts": 10},
 )

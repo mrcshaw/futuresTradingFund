@@ -1,4 +1,4 @@
-"""Initial research saves a strategy. Interval alerts trade it. Meetings keep it or adjust it."""
+"""Initial research saves a strategy. The script's stop, target, and exit trade it. Meetings keep it or adjust it."""
 
 from __future__ import annotations
 
@@ -117,12 +117,14 @@ def handle_interval(board: Board, signal: dict) -> dict:
         return {"ok": True, "sent": False, "action": "bar", "reason": HALT, "bars": len(bars)}
 
     store_strategy(strategy)
+    from futuresfund.live_trading import on_candle
+
+    on_candle(board, signal)
     note = (
-        f"The {frame} candle {closed[-1]['t']} is stored. The alert had no buy or sell. "
-        "The stop is in the Pine strategy. The floor trader sends a CrossTrade webhook only when TradingView sends that order."
+        f"The {frame} candle {closed[-1]['t']} is stored. "
+        "The trader checks the script's stop, take profit, and exit."
     )
     record_interval(load(), _interval_row(signal, held, "bar", {"sent": False, "reason": note}))
-    board.post("Floor Trader", note, kind="report", channel="Floor Trader")
     return {"ok": True, "sent": False, "action": "bar", "reason": note, "bars": len(bars)}
 
 
@@ -138,6 +140,9 @@ def _record_feed(board: Board, signal: dict) -> dict:
         "Marked desk-bar, so no order was sent."
     )
     board.post("Ingestion", note, kind="report", channel="Ingestion")
+    from futuresfund.live_trading import on_candle
+
+    on_candle(board, signal)
     _report_trade(board, ingested.get("strategy") or {}, signal, bar)
     return {"ok": True, "sent": False, "action": "bar", "reason": note, "bars": len(ingested["bars"])}
 
@@ -524,7 +529,18 @@ def scheduler(board: Board) -> None:
                     strategy_meeting(board, slot)
                 finally:
                     learning_pause.clear()
+        _daily_error_report(board)
         time.sleep(20)
+
+
+def _daily_error_report(board: Board) -> None:
+    """After 5:05pm ET, once a day: the Systems Administrator's error report goes to the Portfolio Manager to email."""
+    from futuresfund import errors
+
+    try:
+        errors.scheduled(board)
+    except Exception as exc:  # the clock must keep running
+        board.post(errors.SYSTEMS, f"The daily error report could not be compiled: {exc}", kind="error", channel=errors.SYSTEMS)
 
 
 def _now() -> str:

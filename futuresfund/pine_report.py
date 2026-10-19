@@ -28,6 +28,7 @@ def pine_facts(text: str) -> dict:
             "min": _bound(raw, "minval"),
             "max": _bound(raw, "maxval"),
             "label": _quoted(raw) or match.group("name"),
+            "options": _options(raw),
         })
     named = {item["name"]: item["default"] for item in inputs}
     compact = re.sub(r"\s+", "", body)
@@ -89,6 +90,8 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
     trades = measured.get("trades", "not recorded")
     win = measured.get("win_rate", "not recorded")
     cleared = "yes" if best.get("passed") else "no"
+    from futuresfund.learn import ATTEMPT_LIMIT
+
     lines = [
         "FUTURES FUND",
         "Research report for the Chief Executive Officer",
@@ -97,12 +100,12 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
         "This report is the best version the researchers kept, not the script as it was first given.",
         "The script is only the starting point. Settings after that follow what made or lost money.",
         "Prepared by the Portfolio Manager from the researcher for this chart.",
-        f"Engine attempts used: {attempts} of 200.",
+        f"Engine attempts used: {attempts} of {ATTEMPT_LIMIT}.",
         "Engine 1 runs the 2-minute chart, engine 2 runs the 5-minute chart, and engine 3 runs the 15-minute chart.",
         f"This version was tested on the {_chart_name(measured.get('timeframe'))} chart.",
         _chart_lines(measured.get("frames")),
         f"Best version: profit {profit}, drawdown {drawdown}, trades {trades}, win rate {win}.",
-        "The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met.",
+        _account_rule(),
         f"This version clears that rule: {cleared}.",
         _take_profit_line(version, params),
         f"Settings of the best version: {_params(best.get('params') or {})}",
@@ -248,13 +251,21 @@ def _take_profit_line(facts: dict, params: dict) -> str:
     return "Take profit on this version: " + ", ".join(parts) + "."
 
 
+def _account_rule() -> str:
+    from futuresfund.objective import drawdown_limit, profit_target
+
+    return (
+        f"The ${drawdown_limit():,.0f} trailing drawdown must not be crossed before the ${profit_target():,.0f} profit target is met."
+    )
+
+
 def _trail(facts: dict) -> str:
     if not facts.get("trail") and not facts.get("breakeven"):
         return (
             "The trailing stop is off in this version, and breakeven is off. "
             "The backtest of this version says nothing about a strategy trail. "
             "A trail that is not in the code cannot lock profit, cut winners, or replace a profit cap. "
-            "The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met."
+            "The account rule is separate. " + _account_rule()
         )
     trail = "on" if facts.get("trail") else "off"
     even = "on" if facts.get("breakeven") else "off"
@@ -264,7 +275,7 @@ def _trail(facts: dict) -> str:
         f"The file does not state a separate arming price beyond the trail input it contains. "
         f"Updates are {tick}. A trail that is on sits under any fixed target the file also codes, and it can only be judged from that code, not from a version where the trail was switched off. "
         "Design judgment: where a trail is on, it locks profit only after price has moved in favor of the trade, and it can cut a winner before a fixed cap if both are present. "
-        "The account rule is separate. The $2,000 trailing drawdown must not be crossed before the $3,000 profit target is met."
+        "The account rule is separate. " + _account_rule()
     )
 
 
@@ -402,6 +413,14 @@ def _unused(body: str, inputs: list[dict]) -> list[str]:
         if len(re.findall(r"\b" + re.escape(name) + r"\b", body)) <= 1:
             unused.append(name)
     return unused
+
+
+def _options(body: str) -> list:
+    match = re.search(r"options\s*=\s*\[(.*?)\]", body or "", re.DOTALL)
+    if not match:
+        return []
+    found = re.findall(r'"([^"]*)"|\'([^\']*)\'', match.group(1))
+    return [left or right for left, right in found if left or right]
 
 
 def _bound(body: str, key: str):

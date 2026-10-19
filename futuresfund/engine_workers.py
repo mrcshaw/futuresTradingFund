@@ -1,4 +1,4 @@
-"""Each Backtrader engine has its own thread and its own process.
+"""Each PineTS engine has its own thread and its own process.
 
 The thread in this desk waits on that process. The bar loop runs there, so a
 request such as opening a library script does not wait on a backtest.
@@ -47,13 +47,16 @@ def _bars_key(bars: list[dict] | None, timeframe: str, instrument: str) -> tuple
 
 
 def _engine_process(slot: int, inbound: mp.Queue, outbound: mp.Queue, stop: mp.synchronize.Event) -> None:
-    """One engine. This process is the only place its bar loop runs."""
+    """One engine. This process is the only place its bar loop runs. It ends when the desk that started it is gone."""
     cached_key = None
     cached_bars = None
+    desk = mp.parent_process()
     while not stop.is_set():
         try:
             job = inbound.get(timeout=0.5)
         except queue.Empty:
+            if desk is not None and not desk.is_alive():
+                return
             continue
         if not isinstance(job, dict):
             continue
@@ -87,6 +90,7 @@ def _engine_process(slot: int, inbound: mp.Queue, outbound: mp.Queue, stop: mp.s
                 job.get("instrument") or "ES",
                 job.get("label") or "",
                 slot,
+                full=bool(job.get("full")),
             )
             logs = result.pop("logs", [])
             outbound.put({"id": job_id, "ok": True, "result": result, "logs": logs})
@@ -143,7 +147,7 @@ class EngineDesk:
         for jobs in self._local:
             jobs.put(None)
 
-    def run(self, slot: int, source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, cancel, start_line: str) -> dict:
+    def run(self, slot: int, source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, cancel, start_line: str, full: bool = False) -> dict:
         """Queue one backtest on this engine and wait for that process only."""
         return self._dispatch(
             slot,
@@ -156,15 +160,16 @@ class EngineDesk:
             label=label,
             cancel=cancel,
             start_line=start_line,
+            full=bool(full),
         )
 
     def hold(self, slot: int, seconds: float) -> None:
         """Occupy one engine without using the CPU. Tests use this."""
-        self._dispatch(slot, op="hold", seconds=seconds, label="hold", timeframe="", instrument="", start_line="START  Backtrader  hold", source="", bars=None, inputs=None, cancel=None)
+        self._dispatch(slot, op="hold", seconds=seconds, label="hold", timeframe="", instrument="", start_line="START  PineTS  hold", source="", bars=None, inputs=None, cancel=None)
 
     def burn(self, slot: int, seconds: float) -> None:
         """Occupy one engine with CPU work. Tests use this to show the desk stays responsive."""
-        self._dispatch(slot, op="burn", seconds=seconds, label="burn", timeframe="", instrument="", start_line="START  Backtrader  burn", source="", bars=None, inputs=None, cancel=None)
+        self._dispatch(slot, op="burn", seconds=seconds, label="burn", timeframe="", instrument="", start_line="START  PineTS  burn", source="", bars=None, inputs=None, cancel=None)
 
     def _dispatch(self, slot: int, **job) -> dict:
         done = threading.Event()
@@ -199,6 +204,12 @@ class EngineDesk:
         self._proc[slot] = proc
         self._sent[slot] = None
 
+    def restart(self, slot: int) -> None:
+        """Kill the backtest stuck on this engine and leave a fresh process."""
+        if not self.online or slot < 0 or slot >= _SLOTS:
+            return
+        self._spawn(slot)
+
     def _loop(self, slot: int) -> None:
         from futuresfund.backtrader_engine import _acquire_engine, _engine_log, _release_engine, _stopped
 
@@ -215,18 +226,24 @@ class EngineDesk:
             held = False
             try:
                 cancel = job.get("cancel")
+                from futuresfund.backtrader_engine import skipped, skipped_measurement
+
+                if skipped(slot):
+                    _engine_log(slot, f"SKIP   PineTS  {job.get('label') or 'script'}  skipped")
+                    box["result"] = skipped_measurement(job.get("timeframe") or "")
+                    continue
                 if cancel is not None and cancel.is_set():
-                    _engine_log(slot, f"STOP   Backtrader  {job.get('label') or 'script'}  cancelled")
+                    _engine_log(slot, f"STOP   PineTS  {job.get('label') or 'script'}  cancelled")
                     box["result"] = _stopped(job.get("timeframe") or "")
                     continue
                 if self._proc[slot] is None or not self._proc[slot].is_alive():
                     self._spawn(slot)
                 _acquire_engine(job.get("label") or "script", job.get("timeframe") or "", job.get("instrument") or "", slot)
                 held = True
-                _engine_log(slot, job.get("start_line") or "START  Backtrader")
+                _engine_log(slot, job.get("start_line") or "START  PineTS")
                 message = self._exchange(slot, job)
                 if not message.get("ok"):
-                    _engine_log(slot, f"STOP   Backtrader  {job.get('label') or 'script'}  {message.get('error')}")
+                    _engine_log(slot, f"STOP   PineTS  {job.get('label') or 'script'}  {message.get('error')}")
                     box["result"] = {
                         "engine": "backtrader",
                         "runner": "backtrader",
@@ -244,6 +261,9 @@ class EngineDesk:
                     for line in message.get("logs") or []:
                         _engine_log(slot, line)
                     box["result"] = message.get("result") or {}
+                    from futuresfund.backtrader_engine import record_engine_result
+
+                    record_engine_result(slot, {**box["result"], "script": job.get("label") or ""})
             except Exception as exc:
                 box["error"] = exc
                 if not self._closed.is_set():
@@ -266,6 +286,7 @@ class EngineDesk:
             "instrument": job.get("instrument") or "ES",
             "label": job.get("label") or "",
             "seconds": job.get("seconds") or 0,
+            "full": bool(job.get("full")),
         }
         key = None
         if payload["op"] != "hold":
@@ -277,6 +298,15 @@ class EngineDesk:
         outbound = self._out[slot]
         proc = self._proc[slot]
         while not self._closed.is_set():
+            from futuresfund.backtrader_engine import skipped, skipped_measurement
+
+            if skipped(slot):
+                self._spawn(slot)
+                return {
+                    "ok": True,
+                    "result": skipped_measurement(job.get("timeframe") or ""),
+                    "logs": [f"SKIP   PineTS  {job.get('label') or 'script'}  skipped"],
+                }
             if proc is None or not proc.is_alive():
                 self._sent[slot] = None
                 raise RuntimeError(f"Engine {slot + 1} stopped.")

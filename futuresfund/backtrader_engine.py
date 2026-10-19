@@ -1,4 +1,4 @@
-"""Backtrader engine for the POC Confluence strategy.
+"""PineTS engine for the POC Confluence strategy.
 
 TradingView fills a market order at the bar close. A long entry is one tick
 above that close, a short entry is one tick below it. A stop fills one tick
@@ -15,7 +15,7 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -28,7 +28,10 @@ TRADE_CSV = ROOT / "POC_Confluence_CME_MINI_ES1!_2026-10-02_ea063.csv"
 
 TICK = 0.25
 COMMISSION = 5.50
-ENGINE = "backtrader"
+ENGINE = "pinets"
+# TradingView's "Last 30 days", used when a result is compared with a TradingView export.
+# Research backtests use objective.window_start: the last year of futures sessions.
+TESTER_DAYS = 30
 
 
 @dataclass
@@ -469,6 +472,11 @@ def load_tv_trades(path: Path | None = None) -> list[dict]:
                 item["exit_price"] = float(row["Price USD"])
                 item["exit_signal"] = row["Signal"]
                 item["pnl"] = float(row["Net PnL USD"])
+                for field, name in (("favorable", "Favorable excursion USD"), ("adverse", "Adverse excursion USD")):
+                    try:
+                        item[field] = float(row.get(name) or "")
+                    except ValueError:
+                        pass
     return [item for item in grouped.values() if item.get("exit_time") and not item.get("open")]
 
 
@@ -508,11 +516,11 @@ def verify() -> dict:
 
 
 def run_backtrader(bars: list[Bar] | None = None) -> list[dict]:
-    """Run the bars through Backtrader, then apply the TradingView fill rules.
+    """Run the bars through PineTS, then apply the TradingView fill rules.
 
-    Backtrader walks the 15-minute bars and keeps the account. The fill price
+    PineTS walks the 15-minute bars and keeps the account. The fill price
     is the TradingView price: the bar close, plus one tick against a market
-    order or a stop, and the limit price for a target. Backtrader's own stop
+    order or a stop, and the limit price for a target. PineTS's own stop
     fill does not use that rule, so the orders are priced here.
     """
     import backtrader as bt
@@ -554,7 +562,10 @@ _OWNER_FOR_SLOT = (
 )
 _ENGINE_LOCKS = [threading.Lock() for _ in range(_ENGINE_SLOTS)]
 _ENGINE_GATE = threading.Condition()
+_SKIP = [threading.Event() for _ in range(_ENGINE_SLOTS)]
+_RESTART = [threading.Event() for _ in range(_ENGINE_SLOTS)]
 _ENGINE_LOGS = [deque(maxlen=40) for _ in range(_ENGINE_SLOTS)]
+_ENGINE_RESULTS = [deque(maxlen=20) for _ in range(_ENGINE_SLOTS)]
 _ENGINE_STATUS = [
     {
         "id": index + 1,
@@ -563,6 +574,13 @@ _ENGINE_STATUS = [
         "timeframe": _CHART_FOR_SLOT[index],
         "instrument": "",
         "developer": _OWNER_FOR_SLOT[index],
+        "study": "",
+        "studying": False,
+        "successes": 0,
+        "goal": 10,
+        "scale": 0.0,
+        "scale_move": "",
+        "scale_phase": "",
     }
     for index in range(_ENGINE_SLOTS)
 ]
@@ -604,14 +622,216 @@ def slot_for(timeframe: str) -> int:
         return _ENGINE_SLOTS - 1
 
 
+def begin_study(index: int, script: str, goal: int = 10) -> None:
+    """The script now running on this engine. A different script starts its success count over."""
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        if row.get("study") != script:
+            row["successes"] = 0
+            row["scale"] = 0.0
+            row["scale_move"] = ""
+            row["scale_phase"] = ""
+        row["study"] = script
+        row["studying"] = True
+        row["goal"] = int(goal)
+        row["attempt"] = 0
+
+
+def record_attempt(index: int, number: int) -> None:
+    """The attempt this engine just finished on the script it is studying."""
+    if index < 0 or index >= _ENGINE_SLOTS:
+        return
+    with _ENGINE_GATE:
+        _ENGINE_STATUS[index]["attempt"] = int(number)
+
+
+def record_scale(index: int, position: float, move: str, phase: str) -> None:
+    """Where this engine sits between the opposite of the goal and the goal."""
+    if index < 0 or index >= _ENGINE_SLOTS:
+        return
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        row["scale"] = round(max(0.0, min(1.0, float(position))), 4)
+        row["scale_move"] = move
+        row["scale_phase"] = phase
+
+
+def record_success(index: int) -> int:
+    """One more profitable run inside the one-year drawdown cap on the script this engine is studying."""
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        row["successes"] = int(row.get("successes") or 0) + 1
+        row["studying"] = True
+        return row["successes"]
+
+
+def clear_idle_engine(index: int) -> bool:
+    """Clear a working flag when this engine has no script and no backtest holds the lock."""
+    if index < 0 or index >= _ENGINE_SLOTS:
+        return False
+    lock = _ENGINE_LOCKS[index]
+    if not lock.acquire(blocking=False):
+        return False
+    try:
+        row = _ENGINE_STATUS[index]
+        if str(row.get("script") or "").strip() or str(row.get("study") or "").strip():
+            return False
+        row["busy"] = False
+        row["studying"] = False
+        row["study"] = ""
+        row["script"] = ""
+        return True
+    finally:
+        lock.release()
+
+
+def finish_study(index: int) -> None:
+    """The engine is between scripts. The count belongs to the script that is actually running."""
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        row["studying"] = False
+        row["study"] = ""
+        row["attempt"] = 0
+        row["successes"] = 0
+        row["scale"] = 0.0
+        row["scale_move"] = ""
+        row["scale_phase"] = ""
+
+
+def skipped(index: int) -> bool:
+    """True after Skip is pressed for this engine, until the study consumes it."""
+    if index < 0 or index >= _ENGINE_SLOTS:
+        return False
+    return _SKIP[index].is_set()
+
+
+def clear_skip(index: int) -> None:
+    if 0 <= index < _ENGINE_SLOTS:
+        _SKIP[index].clear()
+
+
+def clear_skips() -> None:
+    for event in _SKIP:
+        event.clear()
+
+
+def restarted(index: int) -> bool:
+    """True after Restart is pressed for this engine, until its loop consumes it."""
+    if index < 0 or index >= _ENGINE_SLOTS:
+        return False
+    return _RESTART[index].is_set()
+
+
+def clear_restart(index: int) -> None:
+    if 0 <= index < _ENGINE_SLOTS:
+        _RESTART[index].clear()
+
+
+def clear_restarts() -> None:
+    for event in _RESTART:
+        event.clear()
+
+
+def _cut_engine(index: int) -> None:
+    """Stop the backtest process now. The skip flag tells the desk to take the next script."""
+    from futuresfund.engine_workers import active_desk
+
+    desk = active_desk()
+    if desk is not None:
+        desk.restart(index)
+
+
+def request_skip(engine_id: int) -> dict:
+    """Skip the script on this engine. The chart or the creation team takes the next one.
+
+    The flag is set before this returns. A running backtest is cut on a side thread so the
+    button does not wait for the measurement to finish.
+    """
+    index = int(engine_id) - 1
+    if index < 0 or index >= _ENGINE_SLOTS:
+        raise ValueError(f"Engine {engine_id} is not on this desk.")
+    _SKIP[index].set()
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        busy = bool(row.get("busy"))
+        script = row.get("study") or row.get("script") or "the current script"
+    _engine_log(index, f"SKIP   requested  {script}")
+    if busy:
+        threading.Thread(target=_cut_engine, args=(index,), daemon=True, name=f"skip-{index + 1}").start()
+    return {"ok": True, "engine": int(engine_id), "script": script}
+
+
+def request_restart(engine_id: int) -> dict:
+    """Stop a hung backtest on this engine and let it take the next script."""
+    index = int(engine_id) - 1
+    if index < 0 or index >= _ENGINE_SLOTS:
+        raise ValueError(f"Engine {engine_id} is not on this desk.")
+    with _ENGINE_GATE:
+        row = _ENGINE_STATUS[index]
+        busy = bool(row.get("busy"))
+        script = row.get("study") or row.get("script") or "the current script"
+    _RESTART[index].set()
+    if busy:
+        _SKIP[index].set()
+    from futuresfund.engine_workers import active_desk
+
+    desk = active_desk()
+    if desk is not None:
+        desk.restart(index)
+    _engine_log(index, f"RESTART requested  {script}")
+    return {"ok": True, "engine": int(engine_id), "script": script, "busy": busy}
+
+
+def skipped_measurement(timeframe: str = "") -> dict:
+    """The result a backtest returns when Skip stops it."""
+    return {
+        "skipped": True,
+        "stopped": True,
+        "runner": ENGINE,
+        "engine": ENGINE,
+        "timeframe": timeframe,
+        "net_profit": None,
+        "max_drawdown": None,
+        "trades": 0,
+    }
+
+
+def record_engine_result(index: int, result: dict) -> None:
+    """Keep the last 20 finished runs on this engine."""
+    if index < 0 or index >= _ENGINE_SLOTS or not isinstance(result, dict):
+        return
+    if result.get("net_profit") is None:
+        return
+    stamp = datetime.now(ET).strftime("%H:%M:%S")
+    item = {
+        "script": str(result.get("script") or result.get("label") or ""),
+        "time": str(result.get("time") or stamp),
+        "net_profit": result.get("net_profit"),
+        "max_drawdown": result.get("max_drawdown"),
+        "profit_factor": result.get("profit_factor"),
+        "profit_ratio": result.get("profit_ratio"),
+        "trades": result.get("trades"),
+        "win_rate": result.get("win_rate"),
+    }
+    with _ENGINE_GATE:
+        _ENGINE_RESULTS[index].append(item)
+
+
+def clear_engine_results() -> None:
+    with _ENGINE_GATE:
+        for results in _ENGINE_RESULTS:
+            results.clear()
+
+
 def engine_status() -> list[dict]:
-    """What each chart engine is running, with its recent log lines."""
+    """What each chart engine is running, with its recent log lines and last 20 results."""
     with _ENGINE_GATE:
         rows = []
-        for row, logs in zip(_ENGINE_STATUS, _ENGINE_LOGS):
+        for row, logs, results in zip(_ENGINE_STATUS, _ENGINE_LOGS, _ENGINE_RESULTS):
             item = dict(row)
-            item["system"] = "Backtrader"
+            item["system"] = "PineTS"
             item["logs"] = list(logs)
+            item["results"] = list(results)
             rows.append(item)
         return rows
 
@@ -633,45 +853,121 @@ def _settings_line(inputs: dict | None) -> str:
     return text
 
 
-def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, index: int) -> dict:
-    """Run one backtest. Engine processes call this. It does not touch the desk."""
+def script_trades(source: str, series: list[Bar], inputs: dict | None, root: str = "ES", timeframe: str = "2m", *, as_written: bool = False) -> list[dict]:
+    """The closed trades one script takes on these bars.
+
+    PineTS runs the script. Research rewrites the session and arms the dollar
+    stop before that run. A TradingView comparison passes as_written so the
+    script's own orders are what fill.
+    """
+    from futuresfund.pinets_engine import run_pinets
+    from futuresfund.strategy import _apply_inputs
+
+    if not as_written:
+        from futuresfund.risk_style import merge_risk
+        from futuresfund.strategy_team import prepare_backtest
+
+        source = prepare_backtest(source, root)
+        inputs = merge_risk(inputs, root)
+    if inputs:
+        source = _apply_inputs(source, inputs)
+    return run_pinets(source, series, timeframe, root)
+
+
+def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, index: int, full: bool = False) -> dict:
+    """Run one backtest. Chart engines keep the last year. The creation engine passes full=True for the five-year download."""
+    from futuresfund.pinets_engine import PineTSError
+
     title = _strategy_title(source)
-    series = _bars_from(bars)
+    every = _bars_from(bars)
+    if full:
+        series = every
+        start_epoch = every[0].epoch if every else None
+    else:
+        from futuresfund.objective import window_start
+
+        start_epoch = window_start(bar.epoch for bar in every)
+        series = every if start_epoch is None else [bar for bar in every if bar.epoch >= start_epoch]
+    start = ""
+    if start_epoch is not None:
+        start = datetime.fromtimestamp(start_epoch, timezone.utc).astimezone(ET).strftime("%Y-%m-%d %H:%M")
     name = label or title or "script"
     logs: list[str] = []
-    if title == "POC Confluence":
-        trades = run_poc(series, _params_from(inputs))
-    else:
-        from futuresfund.script_backtest import Unsupported, run_source
-
-        try:
-            trades = run_source(source, series, inputs)
-        except Unsupported as exc:
-            logs.append(f"STOP   Backtrader  {name}  this script has no entry rule on the engine")
-            return {
-                "engine": ENGINE,
-                "runner": ENGINE,
-                "error": f"{exc} is not on the Backtrader engine.",
-                "fatal": True,
-                "net_profit": None,
-                "max_drawdown": None,
-                "trades": 0,
-                "timeframe": timeframe,
-                "instrument": instrument,
-                "logs": logs,
-            }
+    try:
+        trades = script_trades(source, series, inputs, str(instrument or "ES").upper(), timeframe)
+    except PineTSError as exc:
+        logs.append(f"STOP   PineTS  {name}  the script stopped: {exc}")
+        return {
+            "engine": ENGINE,
+            "runner": ENGINE,
+            "error": f"The script stopped in PineTS: {exc}",
+            "fatal": True,
+            "net_profit": None,
+            "max_drawdown": None,
+            "trades": 0,
+            "timeframe": timeframe,
+            "instrument": instrument,
+            "logs": logs,
+        }
     measured = _metrics(trades)
+    from futuresfund.objective import session_days, trade_spans
+
+    days = session_days(bar.epoch for bar in series)
+    end = ""
+    if series:
+        end = datetime.fromtimestamp(series[-1].epoch, timezone.utc).astimezone(ET).strftime("%Y-%m-%d %H:%M")
+    measured["days"] = days
+    if end:
+        measured["spans"] = trade_spans(trades, datetime.strptime(end, "%Y-%m-%d %H:%M"))
+    else:
+        measured["spans"] = {}
+    from futuresfund.tv_broker import sharpe_ratio
+
+    measured["sharpe"] = sharpe_ratio(
+        [float(trade["pnl"]) for trade in trades if trade.get("exit_time") and trade.get("pnl") is not None],
+        days,
+    )
+    measured["bars"] = len(series)
+    measured["tested_through"] = end
+    measured["trades_per_day"] = round(int(measured.get("trades") or 0) / days, 2) if days else None
+    measured["full_dataset"] = bool(full)
+    measured["window"] = "five years" if full else "one year"
+    span = "five-year download" if full else "one-year window"
     logs.append(
-        f"DONE   Backtrader  {name}  profit {measured.get('net_profit')}  drawdown {measured.get('max_drawdown')}  trades {measured.get('trades')}"
+        f"DONE   PineTS  {name}  profit {measured.get('net_profit')}  drawdown {measured.get('max_drawdown')}  "
+        f"profit factor {measured.get('profit_factor')}  profit ratio {measured.get('profit_ratio')}  "
+        f"trades {measured.get('trades')}  win rate {measured.get('win_rate')}%  "
+        f"{measured['trades_per_day'] if days else '?'} a day over {days} days  "
+        f"{span}  {len(series):,} bars  {start} through {end}"
     )
     measured["timeframe"] = timeframe
     measured["instrument"] = instrument
     measured["engine_slot"] = index + 1
+    measured["tested_from"] = start
     measured["logs"] = logs
     return measured
 
 
-def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, instrument: str = "ES", label: str = "", slot: int | None = None) -> dict:
+def tester_range(today=None, last_epoch: int | None = None) -> tuple[int, str]:
+    """TradingView's "Last 30 days": the script starts at 00:00 UTC, 30 days before today, with no earlier bars.
+
+    Bars that stop more than four days before today are older files, so the range ends at their last bar instead.
+    Returns the epoch of that first bar and the same moment in New York time.
+    """
+    day = today or datetime.now(ET).date()
+    if today is None and last_epoch is not None:
+        last_day = datetime.fromtimestamp(last_epoch, timezone.utc).astimezone(ET).date()
+        if (day - last_day).days > 4:
+            day = last_day + timedelta(days=1)
+    first = datetime(day.year, day.month, day.day, tzinfo=timezone.utc) - timedelta(days=TESTER_DAYS)
+    return int(first.timestamp()), first.astimezone(ET).strftime("%Y-%m-%d %H:%M")
+
+
+def tester_start(today=None) -> str:
+    return tester_range(today)[1]
+
+
+def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, cancel, instrument: str = "ES", label: str = "", slot: int | None = None, full: bool = False) -> dict:
     """Backtest one script. A running desk sends it to that engine's process."""
     if cancel is not None and cancel.is_set():
         return _stopped(timeframe)
@@ -680,7 +976,7 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
     name = label or title or "script"
     series = _bars_from(bars)
     if "volume" in (source or "").lower() and not any(bar.v > 0 for bar in series):
-        _engine_log(index, f"BLOCK  Backtrader  {name}  {timeframe} {instrument}  no volume column")
+        _engine_log(index, f"BLOCK  PineTS  {name}  {timeframe} {instrument}  no volume column")
         return {
             "engine": ENGINE,
             "runner": ENGINE,
@@ -692,24 +988,25 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
             "timeframe": timeframe,
             "instrument": instrument,
         }
-    start_line = f"START  Backtrader  {name}  {timeframe} {instrument}  {len(series):,} bars  {_settings_line(inputs)}"
+    start_line = f"START  PineTS  {name}  {timeframe} {instrument}  {len(series):,} bars  {_settings_line(inputs)}"
     from futuresfund.engine_workers import active_desk
 
     desk = active_desk()
     if desk is not None:
         if cancel is not None and cancel.is_set():
-            _engine_log(index, f"STOP   Backtrader  {name}  cancelled")
+            _engine_log(index, f"STOP   PineTS  {name}  cancelled")
             return _stopped(timeframe)
-        return desk.run(index, source, bars, timeframe, inputs, instrument, name, cancel, start_line)
+        return desk.run(index, source, bars, timeframe, inputs, instrument, name, cancel, start_line, full=full)
     _acquire_engine(name, timeframe, instrument, index)
     _engine_log(index, start_line)
     try:
         if cancel is not None and cancel.is_set():
-            _engine_log(index, f"STOP   Backtrader  {name}  cancelled")
+            _engine_log(index, f"STOP   PineTS  {name}  cancelled")
             return _stopped(timeframe)
-        measured = execute_script(source, bars, timeframe, inputs, instrument, name, index)
+        measured = execute_script(source, bars, timeframe, inputs, instrument, name, index, full=full)
         for line in measured.pop("logs", []):
             _engine_log(index, line)
+        record_engine_result(index, {**measured, "script": name})
         return measured
     finally:
         _release_engine(index)
@@ -765,21 +1062,12 @@ def _bars_from(rows: list[dict]) -> list[Bar]:
 
 
 def _metrics(trades: list[dict]) -> dict:
-    closed = [float(trade["pnl"]) for trade in trades if trade.get("pnl") is not None and trade.get("exit_time")]
-    equity = 0.0
-    peak = 0.0
-    drawdown = 0.0
-    for value in closed:
-        equity += value
-        peak = max(peak, equity)
-        drawdown = max(drawdown, peak - equity)
-    return {
-        "engine": ENGINE,
-        "runner": ENGINE,
-        "net_profit": round(sum(closed), 2),
-        "max_drawdown": round(drawdown, 2),
-        "trades": len(closed),
-    }
+    from futuresfund.tv_broker import tv_metrics
+
+    measured = tv_metrics(trades)
+    measured["engine"] = ENGINE
+    measured["runner"] = ENGINE
+    return measured
 
 
 def _stopped(timeframe: str = "") -> dict:

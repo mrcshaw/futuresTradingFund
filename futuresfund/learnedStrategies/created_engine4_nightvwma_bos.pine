@@ -1,0 +1,93 @@
+//@version=5
+// Built from: delta_volume_bos_night.pine, ta.vwma, ta.ema
+strategy("Engine4_NightVWMA_BOS", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_pct          = input.float(0.1, "Stop (% of account)", minval=0.1, maxval=3)
+tp_pct            = input.float(1, "Take Profit (% of account)", minval=0.1, maxval=4)
+stop_cash         = input.float(0, "Stop ($)", minval=0, maxval=1500)
+tp_cash           = input.float(0, "Take Profit ($)", minval=0, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
+trail_step_acct   = input.float(1, "Trail: Tighten every % of account")
+trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
+trail_min_pct     = input.float(2, "Trail: Min Profit (% of account)")
+stop_dollars      = strategy.initial_capital * stop_pct / 100
+tp_dollars        = strategy.initial_capital * tp_pct / 100
+trail_step_amt    = strategy.initial_capital * trail_step_acct / 100
+trail_min_dollars = strategy.initial_capital * trail_min_pct / 100
+if stop_cash > 0
+    stop_dollars := stop_cash
+if tp_cash > 0
+    tp_dollars := tp_cash
+if strategy.position_size != 0 and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Dollar stop")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+// Inputs
+vwma_len = input.int(28, "VWMA Length", minval=10, maxval=60)
+ema_len = input.int(200, "EMA Length", minval=100, maxval=400)
+
+// Risk Calculation
+
+// Indicators
+vwap = ta.vwma(close, vwma_len)
+ema = ta.ema(close, ema_len)
+
+// Trend Filter: Price above EMA and VWMA rising
+trend_up = close > ema and ta.rising(vwap, 5)
+trend_down = close < ema and ta.falling(vwap, 5)
+
+// BOS Logic: Break of Structure
+// We look for a swing high/low break relative to the VWMA trend
+swing_len = 5
+ph = ta.pivothigh(high, swing_len, swing_len)
+pl = ta.pivotlow(low, swing_len, swing_len)
+
+// Convert pivots to series for comparison
+last_high = ta.valuewhen(not na(ph), high, 1)
+last_low = ta.valuewhen(not na(pl), low, 1)
+
+// Entry Conditions
+// Long: Trend up, price breaks above last pivot high, and pulls back to VWMA
+breakout_long = ta.crossover(close, last_high) and ta.crossunder(close, vwap)
+// Short: Trend down, price breaks below last pivot low, and rallies to VWMA
+breakout_short = ta.crossunder(close, last_low) and ta.crossover(close, vwap)
+
+// Session Check
+
+// Entries
+if trend_up and breakout_long and in_session
+    strategy.entry("Long", strategy.long)
+
+if trend_down and breakout_short and in_session
+    strategy.entry("Short", strategy.short)
+
+// Exits
+// Calculate prices
+long_stop = close - stop_dollars / pv
+long_tp = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_tp = close - tp_dollars / pv
+
+// Exit Logic
+if strategy.position_size > 0
+    strategy.exit("ExitLong", "Long", stop=long_stop, limit=long_tp)
+if strategy.position_size < 0
+    strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_tp)
+
+// Guideline 1: Flatten at 16:45

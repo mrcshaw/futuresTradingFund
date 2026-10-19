@@ -1,0 +1,71 @@
+//@version=5
+// Built from: RSI pullback in EMA trend + VWMA direction (cards: EMA 55 trend, VWMA 28, RSI 14), ta.ema, ta.rsi, ta.crossover, ta.crossunder
+strategy("RSI VWMA Trend Pullback", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+
+// ===== RISK =====
+pv = input.float(2, "Point Value ($)")
+stop_dollars = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail = input.bool(false, "Enable Trailing Stop")
+trail_step_amt = input.int(500, "Trail: Tighten every ($)")
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)")
+
+// ===== SESSION =====
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+
+// ===== INDICATORS =====
+ema_len = input.int(55, "EMA Length", minval=20, maxval=200)
+rsi_len = input.int(14, "RSI Length", minval=7, maxval=30)
+vwma_len = input.int(28, "VWMA Length", minval=14, maxval=60)
+rsi_long = input.int(40, "RSI Long Level", minval=20, maxval=50)
+rsi_short = input.int(60, "RSI Short Level", minval=50, maxval=80)
+cooldown_bars = input.int(12, "Cooldown Bars", minval=4, maxval=50)
+
+ema_val = ta.ema(close, ema_len)
+rsi_val = ta.rsi(close, rsi_len)
+vwma_val = math.sum(close * volume, vwma_len) / math.sum(volume, vwma_len)
+
+// ===== SESSION LOGIC =====
+t = time(timeframe.period, "0000-2359", "America/New_York")
+t_hr = t / 10000
+t_mn = (t / 100) % 100
+start_t = sess_start_hr * 100 + sess_start_mn
+end_t = sess_end_hr * 100 + sess_end_mn
+in_session = use_session ? (start_t < end_t ? (t_hr * 100 + t_mn >= start_t and t_hr * 100 + t_mn < end_t) : (t_hr * 100 + t_mn >= start_t or t_hr * 100 + t_mn < end_t)) : true
+
+// ===== COOLDOWN =====
+var int last_entry_bar = -999
+can_trade = bar_index - last_entry_bar >= cooldown_bars
+
+// ===== ENTRIES =====
+long_sig = close > ema_val and ta.crossover(rsi_val, rsi_long) and vwma_val > vwma_val[1] and can_trade and in_session
+short_sig = close < ema_val and ta.crossunder(rsi_val, rsi_short) and vwma_val < vwma_val[1] and can_trade and in_session
+
+if long_sig and strategy.position_size <= 0
+    strategy.entry("L", strategy.long)
+    last_entry_bar := bar_index
+if short_sig and strategy.position_size >= 0
+    strategy.entry("S", strategy.short)
+    last_entry_bar := bar_index
+
+// ===== EXITS =====
+if strategy.position_size > 0
+    strategy.exit("XL", from_entry="L", stop=long_stop, limit=long_limit)
+if strategy.position_size < 0
+    strategy.exit("XS", from_entry="S", stop=long_stop, limit=long_limit)
+
+// ===== OPEN P&L STOP =====
+if strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== SESSION CLOSE =====
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session")

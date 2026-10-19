@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from futuresfund.config import LIVE_BARS_PATH
+from futuresfund.config import LIVE_ARCHIVE_DIR, LIVE_BARS_PATH
 from futuresfund.contracts import root_of
 from futuresfund.timeframe import bar_minutes, parse_timeframe
 
@@ -64,12 +64,63 @@ def record_live_bar(signal: dict, bar: dict) -> dict:
     kept = [row for row in rows if (row.get("root"), row.get("timeframe"), row.get("epoch")) != key]
     kept.append(stored)
     kept.sort(key=lambda row: row.get("epoch") or 0)
+    _seed_archive(kept)
     _save(kept[-20000:])
+    _archive(stored)
     return stored
 
 
 def live_bars(root: str) -> list[dict]:
     return [row for row in _load() if row.get("root") == root and row.get("epoch")]
+
+
+def _archive_dir():
+    """The archive sits beside the live candle file, so a test that moves that file moves the archive too."""
+    if LIVE_BARS_PATH.parent == LIVE_ARCHIVE_DIR.parent:
+        return LIVE_ARCHIVE_DIR
+    return LIVE_BARS_PATH.parent / LIVE_ARCHIVE_DIR.name
+
+
+def archived_bars(root: str) -> list[dict]:
+    """Every alert candle kept for one root. The chart file above keeps only the newest 20,000."""
+    _seed_archive(None)
+    found: dict[tuple, dict] = {}
+    folder = _archive_dir()
+    if not folder.is_dir():
+        return []
+    for path in sorted(folder.glob(f"{root}_*.jsonl")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get("root") == root and row.get("epoch"):
+                found[(row.get("timeframe"), row["epoch"])] = row
+    return [found[key] for key in sorted(found, key=lambda item: item[1])]
+
+
+def _archive(row: dict) -> None:
+    if not row.get("root") or not row.get("epoch"):
+        return
+    month = datetime.fromtimestamp(row["epoch"] / 1000, timezone.utc).strftime("%Y-%m")
+    folder = _archive_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    with (folder / f"{row['root']}_{month}.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row) + "\n")
+
+
+def _seed_archive(rows: list[dict] | None) -> None:
+    """The first time, copy the candles already on file into the archive."""
+    folder = _archive_dir()
+    if folder.is_dir():
+        return
+    folder.mkdir(parents=True, exist_ok=True)
+    for row in rows if rows is not None else _load():
+        _archive(row)
 
 
 def place_root(named: str, price: float | None, anchors: dict[str, float]) -> str:

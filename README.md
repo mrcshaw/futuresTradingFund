@@ -20,7 +20,7 @@ TradingView cannot call `127.0.0.1`. The webhook URL TradingView uses has to be 
 From this folder:
 
 ```
-python -m uvicorn futuresfund.server:app --host 127.0.0.1 --port 8788
+python -m uvicorn futuresfund.server:app --host 127.0.0.1 --port 8788 --timeout-keep-alive 120
 ```
 
 Open http://127.0.0.1:8788
