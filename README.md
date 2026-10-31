@@ -46,6 +46,8 @@ tif=DAY;
 
 Webhook URL: `https://YOUR_PUBLIC_HOST/hooks/tradingview/YOUR_TOKEN`
 
+In Docker the public host belongs to the `tunnel` service in `docker-compose.yml`. `docker compose restart desk` leaves it alone. Restarting the tunnel service or Docker Desktop, or running `docker compose down`, opens a new host, and the portfolio manager emails it. Update the TradingView alerts when that email arrives.
+
 For a Tradovate-linked CrossTrade account, add `destination=tradovate;`.
 
 8:00am and 3:00pm re-read the strategy. They keep it when the new rating has the same side, and adjust it when the side changes.

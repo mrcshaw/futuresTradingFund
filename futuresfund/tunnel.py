@@ -1,9 +1,12 @@
 """The public address for this desk.
 
 The desk listens on this machine only. cloudflared opens a temporary public address to it.
-That address is replaced at 5:30pm New York, during the 5:00pm to 6:00pm session close,
-and whenever the tunnel stops. The portfolio manager emails the new one through the desk
-mail service. An address already emailed is not emailed again.
+In Docker the tunnel is its own compose service, so a desk restart leaves the address alone.
+The desk only reads it there, and it changes only when that service restarts.
+On Windows the desk runs cloudflared itself. That address is replaced at 5:30pm New York,
+during the 5:00pm to 6:00pm session close, and whenever the tunnel stops.
+The portfolio manager emails a new address through the desk mail service. An address already
+emailed is not emailed again.
 """
 
 from __future__ import annotations
@@ -24,10 +27,13 @@ ISSUE_HOUR = 17
 ISSUE_MINUTE = 30
 CLOSE_START = 17 * 60
 CLOSE_END = 18 * 60
+LINK_WAITS = (15, 15, 30, 30)
 _URL = re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
 _STATE = Path.home() / ".futuresfund" / "public_url.json"
 _LOG = Path.home() / ".futuresfund" / "cloudflared.log"
 _BINARY = Path(__file__).resolve().parent.parent / ".tools" / "cloudflared.exe"
+_SERVICE = "http://tunnel:2000/quicktunnel"
+_SERVICE_MISSES = 3
 
 # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | CREATE_BREAKAWAY_FROM_JOB.
 # The tunnel has to outlive a desk restart. A restart must not count as the 5:30pm expiry.
@@ -36,6 +42,11 @@ _DETACH = 0x00000008 | 0x00000200 | 0x08000000 | 0x01000000
 _lock = threading.Lock()
 _started = False
 _dead_checks = 0
+
+
+def tunnel_is_service() -> bool:
+    """In Docker the tunnel belongs to its own compose service. The desk does not open or stop it."""
+    return os.name != "nt"
 
 
 def address_from(text: str) -> str:
@@ -75,7 +86,10 @@ def webhook_line() -> str:
 def service_lines() -> list[str]:
     """The address, the TradingView alert URL, and when the next one is due."""
     lines = [line for line in (view_line(), webhook_line()) if line]
-    lines.append("This address is replaced at 5:30pm New York, during the session close. The portfolio manager emails the next one when it expires.")
+    if tunnel_is_service():
+        lines.append("This address stays the same when the desk restarts. It changes only when the tunnel service or Docker Desktop restarts, and the portfolio manager emails the new one.")
+    else:
+        lines.append("This address is replaced at 5:30pm New York, during the session close. The portfolio manager emails the next one when it expires.")
     return lines
 
 
@@ -114,6 +128,8 @@ def expired(state: dict | None = None, now: float | None = None) -> bool:
 
 def issue_due(state: dict | None = None, now: float | None = None) -> bool:
     """Replace the address at 5:30pm, and only while the 5:00pm to 6:00pm close is still open."""
+    if tunnel_is_service():
+        return False
     moment = time.time() if now is None else now
     return expired(state, moment) and in_close_hour(moment)
 
@@ -144,6 +160,15 @@ def alert_link_ok(base_url: str, timeout: float = 20) -> bool:
         return False
 
 
+def _link_answers(url: str) -> bool:
+    """A new address takes up to a minute to reach the public name servers. That wait is not a failure."""
+    for wait in LINK_WAITS:
+        if alert_link_ok(url):
+            return True
+        time.sleep(wait)
+    return alert_link_ok(url)
+
+
 def note_url(url: str, *, board=None, pid: int | None = None) -> bool:
     """Remember an address. The portfolio manager emails it once, and again when a different one replaces it.
 
@@ -164,7 +189,7 @@ def note_url(url: str, *, board=None, pid: int | None = None) -> bool:
             state["pid"] = int(pid)
         _save(state)
         pending = not already
-    if pending and not alert_link_ok(found):
+    if pending and not _link_answers(found):
         _complain(board, "The TradingView alert address did not answer. It was not sent.")
         return changed
     if pending:
@@ -182,6 +207,12 @@ def note_url(url: str, *, board=None, pid: int | None = None) -> bool:
 
 def renew(board=None) -> str:
     """Open a new public address and have the portfolio manager email it."""
+    if tunnel_is_service():
+        url = _service_url()
+        if not url:
+            raise RuntimeError("The tunnel service has no public address.")
+        note_url(url, board=board)
+        return url
     binary = _binary()
     if binary is None:
         raise RuntimeError("cloudflared is not on this machine, so there is no public address.")
@@ -227,7 +258,42 @@ def _announce(board, url: str, *, renewed: bool) -> None:
         pass
 
 
+def _service_url(timeout: float = 5) -> str:
+    """The address the tunnel service holds, or empty when it does not answer."""
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(_SERVICE, timeout=timeout) as response:
+            host = json.loads(response.read().decode("utf-8")).get("hostname")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    url = f"https://{host}"
+    return url if host and _URL.fullmatch(url) else ""
+
+
+def _follow_service(board, misses: int = 0) -> int:
+    """Read the tunnel service once and email an address that is new. Returns the misses so far."""
+    url = _service_url()
+    if not url:
+        misses += 1
+        if misses == _SERVICE_MISSES:
+            _complain(board, "The tunnel service did not give a public address.")
+        return misses
+    state = _load()
+    if url != state.get("url") or url != state.get("emailed"):
+        note_url(url, board=board)
+    return 0
+
+
 def _watch(board) -> None:
+    if tunnel_is_service():
+        misses = 0
+        while True:
+            try:
+                misses = _follow_service(board, misses)
+            except Exception as exc:
+                _complain(board, f"The tunnel service could not be read: {exc}")
+            time.sleep(20)
     failures = 0
     while True:
         try:
@@ -292,6 +358,9 @@ def _binary() -> Path | None:
 def _launch(binary: Path) -> tuple[int, int]:
     _LOG.parent.mkdir(parents=True, exist_ok=True)
     offset = _LOG.stat().st_size if _LOG.is_file() else 0
+    pid = _launch_outside(binary)
+    if pid:
+        return pid, offset
     handle = open(_LOG, "a", encoding="utf-8", errors="replace")
     try:
         proc = subprocess.Popen(
@@ -307,12 +376,41 @@ def _launch(binary: Path) -> tuple[int, int]:
             stdout=handle,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
-            creationflags=_DETACH,
             close_fds=True,
+            creationflags=_DETACH,
         )
     finally:
         handle.close()
     return proc.pid, offset
+
+
+def _launch_outside(binary: Path) -> int:
+    """Start the tunnel through Windows' process service, so it is not a child of the desk.
+
+    Stopping the desk ends its whole process tree. A tunnel started as its child went
+    with it, and every restart opened a new address that the TradingView alerts did not
+    know. Returns 0 when this start is not possible, and the desk starts its own child.
+    """
+    command = f'"{binary}" tunnel --url {LOCAL} --no-autoupdate --proxy-keepalive-timeout 60s --logfile "{_LOG}"'
+    script = (
+        "$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ShowWindow=[uint16]0}; "
+        "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create "
+        "-Arguments @{CommandLine=$env:FF_TUNNEL_COMMAND; ProcessStartupInformation=$si}; "
+        "if ($r.ReturnValue -eq 0) { $r.ProcessId }"
+    )
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env={**os.environ, "FF_TUNNEL_COMMAND": command},
+            creationflags=0x08000000,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return 0
+    found = (out.stdout or "").strip().splitlines()
+    return int(found[-1]) if found and found[-1].strip().isdigit() else 0
 
 
 def _wait_url(offset: int, timeout: float) -> str:
@@ -349,11 +447,12 @@ def _stop(pid: int) -> None:
 
 
 def _alive(pid: int) -> bool:
+    """The saved tunnel is still running. A process number reused by another program is not the tunnel."""
     if pid <= 0:
         return False
     try:
         out = subprocess.run(
-            ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+            ["tasklist", "/FI", f"PID eq {pid}", "/FI", "IMAGENAME eq cloudflared.exe", "/NH"],
             capture_output=True,
             text=True,
             timeout=10,

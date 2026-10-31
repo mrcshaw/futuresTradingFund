@@ -1,0 +1,27 @@
+# The futures desk in Docker Desktop. Start it with: docker compose up -d
+# It restarts on its own after a crash or when Docker Desktop starts.
+# Run one desk at a time. Stop the desk on Windows before starting this one.
+services:
+  desk:
+    build: ./docker
+    image: futures-desk
+    container_name: futures-desk
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8788:8788"
+    volumes:
+      - .:/app
+      - ${USERPROFILE}/.futuresfund:/root/.futuresfund
+    environment:
+      FUTURES_OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stop_grace_period: 30s
+  # The public address belongs to this service, so restarting the desk does not change it.
+  # Do not tie it to the desk with depends_on. Restarting this service opens a new address,
+  # and the desk reads it from /quicktunnel and emails it.
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.3
+    container_name: futures-tunnel
+    restart: unless-stopped
+    command: tunnel --url http://desk:8788 --proxy-keepalive-timeout 60s --metrics 0.0.0.0:2000

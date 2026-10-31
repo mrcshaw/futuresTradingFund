@@ -3,7 +3,95 @@
 from __future__ import annotations
 
 import unittest
+from datetime import datetime
+from pathlib import Path
 from unittest import mock
+from zoneinfo import ZoneInfo
+
+from futuresfund import tunnel
+
+
+class TunnelServiceTests(unittest.TestCase):
+    """In Docker the address belongs to the tunnel service. The desk reads it and never opens one."""
+
+    def _answer(self, body: bytes):
+        response = mock.MagicMock()
+        response.read.return_value = body
+        response.__enter__.return_value = response
+        return mock.patch("urllib.request.urlopen", return_value=response)
+
+    def test_reads_the_address_from_the_service(self):
+        with self._answer(b'{"hostname":"desk-name.trycloudflare.com"}'):
+            self.assertEqual(tunnel._service_url(), "https://desk-name.trycloudflare.com")
+
+    def test_a_bad_answer_is_no_address(self):
+        for body in (b'{"hostname":""}', b'{"hostname":"evil.example.com"}', b"not json", b"[]"):
+            with self._answer(body):
+                self.assertEqual(tunnel._service_url(), "")
+        with mock.patch("urllib.request.urlopen", side_effect=OSError("down")):
+            self.assertEqual(tunnel._service_url(), "")
+
+    def test_the_same_address_is_left_alone(self):
+        held = {"url": "https://desk.trycloudflare.com", "emailed": "https://desk.trycloudflare.com"}
+        with mock.patch.object(tunnel, "_service_url", lambda: held["url"]), \
+                mock.patch.object(tunnel, "_load", lambda: dict(held)), \
+                mock.patch.object(tunnel, "note_url") as noted:
+            self.assertEqual(tunnel._follow_service(None), 0)
+        noted.assert_not_called()
+
+    def test_a_new_address_is_noted(self):
+        held = {"url": "https://old.trycloudflare.com", "emailed": "https://old.trycloudflare.com"}
+        with mock.patch.object(tunnel, "_service_url", lambda: "https://new.trycloudflare.com"), \
+                mock.patch.object(tunnel, "_load", lambda: dict(held)), \
+                mock.patch.object(tunnel, "note_url") as noted:
+            tunnel._follow_service("board")
+        noted.assert_called_once_with("https://new.trycloudflare.com", board="board")
+
+    def test_a_silent_service_is_reported_once(self):
+        complaints = []
+        with mock.patch.object(tunnel, "_service_url", lambda: ""), \
+                mock.patch.object(tunnel, "_complain", lambda board, text: complaints.append(text)):
+            misses = 0
+            for _ in range(tunnel._SERVICE_MISSES + 3):
+                misses = tunnel._follow_service(None, misses)
+        self.assertEqual(len(complaints), 1)
+
+    def test_no_daily_replacement_and_no_new_tunnel(self):
+        opened = datetime(2026, 10, 19, 12, 0, tzinfo=ZoneInfo("America/New_York")).timestamp()
+        at = datetime(2026, 10, 19, 17, 30, tzinfo=ZoneInfo("America/New_York")).timestamp()
+        state = {"url": "https://desk.trycloudflare.com", "opened": opened}
+        with mock.patch.object(tunnel, "tunnel_is_service", lambda: True), \
+                mock.patch.object(tunnel, "_service_url", lambda: "https://desk.trycloudflare.com"), \
+                mock.patch.object(tunnel, "note_url") as noted, \
+                mock.patch.object(tunnel, "_launch") as launched, \
+                mock.patch.object(tunnel, "_stop") as stopped:
+            self.assertFalse(tunnel.issue_due(state, at))
+            self.assertEqual(tunnel.renew(), "https://desk.trycloudflare.com")
+        noted.assert_called_once()
+        launched.assert_not_called()
+        stopped.assert_not_called()
+
+    def test_asking_for_a_new_address_emails_the_one_held(self):
+        from futuresfund import desk_chat
+
+        with mock.patch.object(tunnel, "tunnel_is_service", lambda: True), \
+                mock.patch.object(tunnel, "current_url", lambda: "https://desk.trycloudflare.com"), \
+                mock.patch.object(tunnel, "renew") as renewed, \
+                mock.patch("futuresfund.mailer.send_report", return_value={"sent": True, "to": "desk"}) as sent:
+            text = desk_chat._deliver_address(None, "send me a new address")
+        renewed.assert_not_called()
+        sent.assert_called_once()
+        self.assertIn("I emailed the address", text)
+        self.assertIn("stays the same when the desk restarts", text)
+
+    def test_the_desk_and_the_tunnel_restart_apart(self):
+        text = (Path(__file__).resolve().parent.parent / "docker-compose.yml").read_text(encoding="utf-8")
+        desk, service = text.split("\n  tunnel:\n")
+        self.assertIn("--url http://desk:8788", service)
+        self.assertIn("--metrics 0.0.0.0:2000", service)
+        self.assertNotIn("depends_on:", service)
+        self.assertNotIn("depends_on:", desk)
+        self.assertNotIn(":latest", service)
 
 
 class AddressTests(unittest.TestCase):
@@ -47,6 +135,7 @@ class AddressTests(unittest.TestCase):
         with mock.patch.object(tunnel, "_load", lambda: dict(state)), \
                 mock.patch.object(tunnel, "_save", lambda item: state.update(item)), \
                 mock.patch.object(tunnel, "alert_link_ok", lambda url: False), \
+                mock.patch.object(tunnel, "LINK_WAITS", ()), \
                 mock.patch.object(tunnel, "_announce", lambda board, url, renewed: sent.append(url)), \
                 mock.patch.object(tunnel, "_complain", lambda board, text: None):
             self.assertTrue(tunnel.note_url("https://silent.trycloudflare.com", pid=12))

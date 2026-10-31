@@ -239,7 +239,7 @@ def abilities() -> list[str]:
         f"State the research objective: {goal_line()} The take profit is larger than the stop, and no trade is down more than $1,500.",
         "Say what the strategy creation team is trained on and how each created script did.",
         "Say whether reports are being emailed, to whom, and when the last one went out; send the fund report on request.",
-        "Give the web address and the TradingView alert address. A new address is opened at 5:30pm New York, during the session close, and emailed through the desk mail service.",
+        "Give the web address and the TradingView alert address. A new address is emailed through the desk mail service whenever it changes.",
         "Send an email on request through the desk mail service.",
         "Say what errors the workflow has raised; have the Systems Administrator compile the error report and email it on request.",
         "File a pasted Pine strategy into the learning folder so the chart developers study it.",
@@ -369,9 +369,10 @@ def _phone_answer() -> str:
 def _deliver_address(board, asked: str) -> str:
     """Open a new address when this one is due, and email it through the desk mail service."""
     from futuresfund.mailer import send_report
-    from futuresfund.tunnel import current_url, issue_due, renew, service_lines
+    from futuresfund.tunnel import current_url, issue_due, renew, service_lines, tunnel_is_service
 
-    make_new = _mentions(asked, ("new", "expired", "renew", "refresh", "another")) or issue_due() or not current_url()
+    replaceable = not tunnel_is_service() and (_mentions(asked, ("new", "expired", "renew", "refresh", "another")) or issue_due())
+    make_new = replaceable or not current_url()
     try:
         if make_new:
             renew(board)

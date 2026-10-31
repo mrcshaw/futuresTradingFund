@@ -1,0 +1,10 @@
+fastapi==0.146.0
+starlette==1.9.0
+uvicorn==0.54.0
+pydantic==2.14.1
+python-multipart==0.0.32
+numpy==2.5.4
+pandas==3.0.6
+tabulate>=0.9
+tzdata==2026.5
+yfinance>=0.2
