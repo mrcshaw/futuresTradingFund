@@ -1,0 +1,69 @@
+//@version=5
+// Built from: EMA SMA Pivot Filter (atr_len 16 to 14), rsi_3system_v2 (cooldown_bars 376), indicators: ta.ema, ta.rsi, ta.atr, ta.pivothigh, ta.pivotlow, ta.crossover, ta.crossunder.
+strategy("POC Momentum Breakout v1 QO 5min chart", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000, process_orders_on_close=true)
+
+// Inputs
+lookback = input.int(60, "Profile Lookback", minval=30, maxval=100)
+atr_len = input.int(14, "ATR Length", minval=5, maxval=50)
+rsi_len = input.int(14, "RSI Length", minval=5, maxval=50)
+stop_mult = input.float(3.09, "Stop Multiplier", minval=0.5, maxval=5.0)
+tp_mult = input.float(2.4413, "TP Multiplier", minval=0.5, maxval=5.0)
+cooldown_bars = input.int(3, "Cooldown Bars", minval=1, maxval=20)
+
+// Indicators
+atr_val = ta.atr(atr_len)
+rsi_val = ta.rsi(close, rsi_len)
+ema_fast = ta.ema(close, 9)
+ema_slow = ta.ema(close, 21)
+
+// Pivot Structure
+left = 5
+right = 5
+p_high = ta.pivothigh(high, left, right)
+p_low = ta.pivotlow(low, left, right)
+
+// Trend Filter: Higher Lows / Lower Highs structure
+var float last_pivot_low = na
+var float last_pivot_high = na
+var int last_pivot_type = 0 // 1=low, -1=high
+
+if not na(p_low)
+    last_pivot_low := p_low
+    last_pivot_type := 1
+if not na(p_high)
+    last_pivot_high := p_high
+    last_pivot_type := -1
+
+// Momentum Confirmation
+momentum_up = ta.crossover(ema_fast, ema_slow)
+momentum_dn = ta.crossunder(ema_fast, ema_slow)
+
+// RSI Filter
+rsi_oversold = rsi_val < 30
+rsi_overbought = rsi_val > 70
+
+// Entry Conditions
+long_cond = momentum_up and (last_pivot_type == 1 or na) and not rsi_overbought
+short_cond = momentum_dn and (last_pivot_type == -1 or na) and not rsi_oversold
+
+// Cooldown Logic
+var int last_entry_bar = -cooldown_bars
+
+// Session Filter
+inSession = not na(time(timeframe.period, "0930-1600", "America/New_York"))
+
+// Execution
+if long_cond and bar_index >= cooldown_bars and last_entry_bar <= bar_index - cooldown_bars and inSession
+    strategy.entry("Long", strategy.long)
+    last_entry_bar := bar_index
+
+if short_cond and bar_index >= cooldown_bars and last_entry_bar <= bar_index - cooldown_bars and inSession
+    strategy.entry("Short", strategy.short)
+    last_entry_bar := bar_index
+
+// Exits
+stop_dist = atr_val * stop_mult
+tp_dist = atr_val * tp_mult
+
+strategy.exit("Exit Long", "Long", stop=close - stop_dist, limit=close + tp_dist)
+strategy.exit("Exit Short", "Short", stop=close + stop_dist, limit=close - tp_dist)

@@ -1,0 +1,56 @@
+{
+ "qid": "FFQ-7e1c98",
+ "file": "StochasticRSIDoubleStrategy.txt",
+ "origin_folder": "/app/futuresfund/learningStrategies",
+ "timeframe": "2m",
+ "root": "ES",
+ "chart": {
+  "root": "ES",
+  "timeframe": "2m",
+  "engine": 4
+ },
+ "kind": "repair",
+ "title": "a compile repair started",
+ "reason": "StochasticRSIDoubleStrategy.txt did not compile: The function stoch is not supported yet. The Creation tester is repairing it now. A fixed script or a hint helps the next try.",
+ "context": {},
+ "options": [
+  {
+   "action": "keep",
+   "text": "Let the developer's own repair go on",
+   "n": 1
+  },
+  {
+   "action": "park",
+   "text": "Park it in cannotRunStrategies",
+   "n": 2
+  }
+ ],
+ "default_action": "repair",
+ "applied_default": "The developer's own repair is running and the script stays in its folder.",
+ "blocking": false,
+ "status": "applied",
+ "asked_by": "Creation tester",
+ "developer": "Creation tester",
+ "asked_at": "2026-11-06 23:10:09",
+ "asked_ts": 1794024609.8593745,
+ "explanation": "The StochasticRSIDoubleStrategy.txt script failed to compile on the ES 2m chart because the stoch function is not supported. The Creation tester is currently running a repair process, and the script remains in its folder. While the developer’s own repair runs, I need a fixed script or a specific hint to help the next attempt. Please provide either the corrected code or guidance on how to handle the unsupported function so we can proceed.",
+ "worded_by": "model",
+ "sent_at": "2026-11-06 23:11:06",
+ "message_id": "<179402466345.1.16167220998133716879.ffq@gmail.com>",
+ "answer_text": "Yes, this function does not exist anywhere but on tradingview.That script\nStochasticRSIDoubleStrategy.txt can be deleted.",
+ "answer_from": "thefutureoffuturestrading@gmail.com",
+ "answer_parsed": {
+  "action": "free",
+  "text": "Yes, this function does not exist anywhere but on tradingview.That script\nStochasticRSIDoubleStrategy.txt can be deleted."
+ },
+ "answered_at": "2026-11-07 01:11:05",
+ "applied_at": "2026-11-07 01:18:07",
+ "followups": 0,
+ "followup_pending": "",
+ "result": "I passed the owner's note from FFQ-7e1c98 to the developer for the next repair of StochasticRSIDoubleStrategy.txt.",
+ "send_failures": 0,
+ "next_try": 0,
+ "message_ids": [
+  "<179402466345.1.16167220998133716879.ffq@gmail.com>"
+ ]
+}

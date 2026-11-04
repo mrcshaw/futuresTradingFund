@@ -114,7 +114,7 @@
  "untested": [],
  "baseline": {
   "params": {
-   "pv": 5.0,
+   "pv": 50.0,
    "stop_dollars": 250,
    "tp_dollars": 500,
    "use_trail": false,
@@ -142,7 +142,7 @@
    "use_external_block": false,
    "external_position": 0,
    "use_session": true,
-   "sess_start_hr": 8,
+   "sess_start_hr": 23,
    "sess_start_mn": 0,
    "sess_end_hr": 16,
    "sess_end_mn": 0,
@@ -164,21 +164,42 @@
    "use_reversal": true,
    "rev_on_any_loss": false
   },
-  "net_profit": 16.5,
-  "max_drawdown": 11.75,
-  "trades": 1,
-  "win_rate": 100.0,
-  "profit_factor": null,
-  "biggest_winner": 16.5,
-  "biggest_loser": 16.5,
-  "held_loser": 16.5,
+  "net_profit": 1520.0,
+  "max_drawdown": 273.5,
+  "trades": 5,
+  "win_rate": 80.0,
+  "profit_factor": 6.558,
+  "biggest_winner": 626.5,
+  "biggest_loser": -273.5,
+  "held_loser": -273.5,
   "exits": [
+   {
+    "exit": "XL",
+    "trades": 2,
+    "pnl": 353.0,
+    "favorable": 482.0,
+    "adverse": -211.75
+   },
    {
     "exit": "Session Close",
     "trades": 1,
-    "pnl": 16.5,
-    "favorable": 39.5,
-    "adverse": -11.75
+    "pnl": 251.5,
+    "favorable": 432.0,
+    "adverse": -68.0
+   },
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": 626.5,
+    "favorable": 632.0,
+    "adverse": -143.0
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 1,
+    "pnl": 289.0,
+    "favorable": 332.0,
+    "adverse": -130.5
    }
   ]
  },

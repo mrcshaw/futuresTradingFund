@@ -73,6 +73,8 @@ Prove in stages
 Then raise profit
 
 - Change one input at a time. Keep a step that improves the result. Reverse a step that adds risk, even if the profit rose.
+- An input that leaves the result exactly as it was (the same profit, drawdown, trade count, and win rate) did nothing that way. The search does not move it that way again. A number that changed nothing up and down, or a switch or choice that changed nothing when flipped, is out of that search and stays where it was. The attempts go to the inputs that change the result. A repeat that taught this does not count toward leaving the script. The next, longer stage has more trades, so it tries every input again.
+- What each input did is kept in researchNotes/input_effects, one file per script: how often it was moved, how often it changed the result, and how far profit moved. Use it to tell which inputs matter. A new script keeps the inputs that move results and leaves out the ones that never changed one.
 - Read the description at the top of the script, the lines under "How this script works". The Trading Analyst wrote that description. Think about how a change affects the trade that description names, then change the indicator value that reduces risk or raises profit.
 - Start at a $250 stop and a $500 take profit. Raise the stop through $700, then raise the take profit. It has no maximum. Keep the pair that makes the most profit inside that risk.
 - If a week is under 2 trades, loosen the entry. If a year is over 600 trades, tighten the entry.

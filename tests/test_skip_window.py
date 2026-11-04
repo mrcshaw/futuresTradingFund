@@ -97,6 +97,15 @@ class ScriptTests(unittest.TestCase):
 
 
 class ResearchTests(unittest.TestCase):
+
+    def setUp(self):
+        # These check the logic changes themselves. The desk runs with VALUES_ONLY on, which turns them off.
+        from futuresfund import learn
+
+        patcher = mock.patch.object(learn, "VALUES_ONLY", False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _trials(self):
         losing = [_trade("02:05", -200) for _ in range(5)] + [_trade("20:00", 100) for _ in range(8)]
         return [{"net_profit": -200, "trades": 13, "params": {"stop_dollars": 500}, "clock": skip_window.clock(losing)}]

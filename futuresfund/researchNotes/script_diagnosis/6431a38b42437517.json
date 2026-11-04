@@ -1,0 +1,210 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -405.0,
+   "max_drawdown": 1301.0,
+   "trades": 5
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 190.0,
+   "max_drawdown": 1144.0,
+   "trades": 10
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -1144.0,
+   "max_drawdown": 1144.0,
+   "trades": 4
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -1525.5,
+   "max_drawdown": 1716.0,
+   "trades": 8
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": -1013.5,
+   "max_drawdown": 2257.5,
+   "trades": 16
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -1716.0,
+   "max_drawdown": 1716.0,
+   "trades": 6
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -286.0,
+   "max_drawdown": 286.0,
+   "trades": 1
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -858.0,
+   "max_drawdown": 858.0,
+   "trades": 3
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 2616.0,
+   "max_drawdown": 1797.5,
+   "trades": 24
+  },
+  "cooldown_bars": {
+   "value": 2,
+   "net_profit": 5015.0,
+   "max_drawdown": 1819.5,
+   "trades": 25
+  },
+  "use_breakeven": {
+   "value": true,
+   "net_profit": 7656.0,
+   "max_drawdown": 1797.5,
+   "trades": 24
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 3895.0,
+   "max_drawdown": 1819.5,
+   "trades": 25
+  }
+ },
+ "flat": [
+  "ema_len",
+  "ema_slope_len",
+  "be_trigger_dollars",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 700,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 2,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 21,
+   "skip_start_mn": 0,
+   "skip_end_hr": 23,
+   "skip_end_mn": 0,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": 4536.0,
+  "max_drawdown": 1819.5,
+  "trades": 24,
+  "win_rate": 75.0,
+  "profit_factor": 2.155,
+  "biggest_winner": 479.0,
+  "biggest_loser": -731.0,
+  "held_loser": -731.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 12,
+    "pnl": 4538.0,
+    "favorable": 483.67,
+    "adverse": -207.17
+   },
+   {
+    "exit": "XL",
+    "trades": 10,
+    "pnl": -50.0,
+    "favorable": 376.5,
+    "adverse": -528.5
+   },
+   {
+    "exit": "Session Close",
+    "trades": 2,
+    "pnl": 48.0,
+    "favorable": 304.5,
+    "adverse": -255.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "stalled": true,
+ "answer": {
+  "because": "The last three runs are a one-trade path, so those inputs cannot change the result. The measured miss is trade count, so shorten confirm_candles to 1 to loosen the entry.",
+  "script": null,
+  "params": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 15.0,
+   "min_slope": 0.0,
+   "confirm_candles": 1,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 21,
+   "skip_start_mn": 0,
+   "skip_end_hr": 23,
+   "skip_end_mn": 0,
+   "use_breakeven": false
+  },
+  "settings": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 15.0,
+   "min_slope": 0.0,
+   "confirm_candles": 2,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 21,
+   "skip_start_mn": 0,
+   "skip_end_hr": 23,
+   "skip_end_mn": 0,
+   "use_breakeven": false
+  },
+  "redesign": false
+ }
+}

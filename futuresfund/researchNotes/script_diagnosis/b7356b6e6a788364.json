@@ -1,0 +1,190 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 62,
+   "net_profit": -702.5,
+   "max_drawdown": 898.0,
+   "trades": 15
+  },
+  "tp_dollars": {
+   "value": 125,
+   "net_profit": -700.25,
+   "max_drawdown": 885.25,
+   "trades": 14
+  },
+  "ema55_len": {
+   "value": 14,
+   "net_profit": -67.0,
+   "max_drawdown": 302.25,
+   "trades": 7
+  },
+  "sma_len": {
+   "value": 6,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema55_slope_len": {
+   "value": 2,
+   "net_profit": -41.0,
+   "max_drawdown": 216.75,
+   "trades": 1
+  },
+  "min_slope": {
+   "value": 0.3125,
+   "net_profit": -609.5,
+   "max_drawdown": 1003.5,
+   "trades": 22
+  },
+  "pivot_left": {
+   "value": 2,
+   "net_profit": -385.75,
+   "max_drawdown": 724.0,
+   "trades": 17
+  },
+  "pivot_right": {
+   "value": 2,
+   "net_profit": -558.5,
+   "max_drawdown": 977.75,
+   "trades": 26
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -1577.25,
+   "max_drawdown": 2185.0,
+   "trades": 26
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -307.75,
+   "max_drawdown": 339.75,
+   "trades": 4
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -544.0,
+   "max_drawdown": 566.25,
+   "trades": 9
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -700.25,
+   "max_drawdown": 882.75,
+   "trades": 14
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "ema_len",
+  "cooldown_bars",
+  "use_breakeven",
+  "be_trigger_dollars",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "ema_len": 200,
+   "ema55_len": 55,
+   "sma_len": 25,
+   "ema55_slope_len": 10,
+   "min_slope": 1.25,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "cooldown_bars": 5,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": -657.75,
+  "max_drawdown": 885.25,
+  "trades": 14,
+  "win_rate": 28.57,
+  "profit_factor": 0.297,
+  "biggest_winner": 155.25,
+  "biggest_loser": -138.5,
+  "held_loser": -138.5,
+  "exits": [
+   {
+    "exit": "Session Close",
+    "trades": 9,
+    "pnl": -167.75,
+    "favorable": 53.25,
+    "adverse": -79.94
+   },
+   {
+    "exit": "Long",
+    "trades": 3,
+    "pnl": -281.75,
+    "favorable": 27.83,
+    "adverse": -110.92
+   },
+   {
+    "exit": "Short",
+    "trades": 2,
+    "pnl": -208.25,
+    "favorable": -5.5,
+    "adverse": -162.38
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 2m",
+  "365 YM 5m",
+  "7 ES 5m",
+  "7 MES 5m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "answer": {
+  "because": "The last 7-day run had a 20% win rate and three XL stop-outs at -$530.5, so the average cross is too slow for the $500 stop; shorten ema55_len from 55 to 14, the measured 21-session setting that cut drawdown to $302.25 and profit to -$67.0.",
+  "script": null,
+  "params": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "ema55_len": 14,
+   "sma_len": 25,
+   "ema55_slope_len": 10,
+   "min_slope": 1.25,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0
+  },
+  "settings": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "ema55_len": 55,
+   "sma_len": 25,
+   "ema55_slope_len": 10,
+   "min_slope": 1.25,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0
+  },
+  "redesign": false
+ }
+}

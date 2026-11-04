@@ -132,9 +132,11 @@ class SearchTests(unittest.TestCase):
             script = folder / "sample.pine"
             script.write_text('//@version=5\nstrategy("Sample")\n', encoding="utf-8")
             board = Board()
-            with patch("futuresfund.learn.LEARNING", folder), patch("futuresfund.attempt_reason.reasoned_change", reasoned):
+            with patch("futuresfund.learn.LEARNING", folder), patch("futuresfund.attempt_reason.reasoned_change", reasoned), patch(
+                "futuresfund.risk_style.SUGGESTIONS_PATH", folder / "risk_suggestions.json"
+            ), patch("futuresfund.errors.JOURNAL", folder / "errors.json"):
                 trials = _search(
-                    {"length": 10, "stop_dollars": 1000.0},
+                    {"length": 10, "stop_dollars": 500.0},
                     execute,
                     50000,
                     2,
@@ -143,8 +145,9 @@ class SearchTests(unittest.TestCase):
                     None,
                 )
         self.assertEqual(len(trials), 2)
-        self.assertEqual(calls[0]["stop_dollars"], 250.0)
-        self.assertEqual(calls[1]["stop_dollars"], 500.0)
+        # The search opens at the script's own stop, then raises it to the next step.
+        self.assertEqual(calls[0]["stop_dollars"], 500.0)
+        self.assertEqual(calls[1]["stop_dollars"], 700.0)
         self.assertEqual(calls[1]["length"], 10)
         self.assertTrue(any("stop rises through" in item["text"] for item in board.snapshot()["messages"]))
 

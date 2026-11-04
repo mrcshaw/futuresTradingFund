@@ -25,6 +25,12 @@ def _cache_path() -> Path:
     return Path.home() / ".futuresfund" / "acceptance_gaps.json"
 
 
+def drawdown_share_text() -> str:
+    from futuresfund.objective import drawdown_share_text as text
+
+    return text()
+
+
 def _money(value: float) -> str:
     rounded = round(float(value), 2)
     sign = "-" if rounded < 0 else ""
@@ -64,19 +70,48 @@ def _trials_of(data: dict) -> list:
     return trials if isinstance(trials, list) else []
 
 
+def _stage_of(row: dict) -> int | None:
+    """The proving stage a trial ran on, in days, or None for a one-year run."""
+    try:
+        days = int(row.get("stage_days") or 0)
+    except (TypeError, ValueError):
+        return None
+    return days if 0 < days < 365 else None
+
+
 def _misses(row: dict, limits: dict, start: float, loss_cap: float) -> dict[str, float | None]:
+    """A stage trial against its own stage's bars, and a one-year trial against the year."""
     from futuresfund.objective import acceptance_misses
 
-    return acceptance_misses(row, limits=limits, start=start, loss_cap=loss_cap)
+    return acceptance_misses(row, days=_stage_of(row), limits=limits, start=start, loss_cap=loss_cap)
 
 
-def _row(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int) -> dict:
-    """One acceptance miss, with the typical result beside the bar."""
+def _bars(days: int | None, limits: dict) -> dict:
+    from futuresfund.objective import stage_bars
+
+    return stage_bars(days, limits)
+
+
+def _where(days: int | None) -> str:
+    return f" on the {int(days)}-day test" if days else ""
+
+
+def _fewest(bars: dict) -> int:
+    """The fewest trades the check asked for: the stage count, or on the year the library count (never under four)."""
+    if bars["year"]:
+        return max(bars["library_trades"], bars["least_trades"])
+    return bars["min_trades"]
+
+
+def _row(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int, days: int | None = None) -> dict:
+    """One acceptance miss, with the typical result beside the bar that window was held to."""
     from futuresfund.objective import TRADES_YEAR_MAX
 
+    bars = _bars(days, limits)
+    where = _where(days)
     share = f"{_count(misses)} of {_count(trials)}"
     if name == "error":
-        return {"reason": "Did not finish", "typical": "—", "acceptance": "A finished result", "compared": "Stopped before a result", "misses": share}
+        return {"reason": f"Did not finish{where}", "typical": "—", "acceptance": "A finished result", "compared": "Stopped before a result", "misses": share}
     if name == "growth":
         return {
             "reason": "Profit growing over 7, 30, 90, and 365 days",
@@ -86,56 +121,60 @@ def _row(name: str, values: list[float], limits: dict, start: float, misses: int
             "misses": share,
         }
     if not values:
-        return {"reason": name, "typical": "Not reported", "acceptance": "—", "compared": "No number was reported", "misses": share}
+        return {"reason": f"{name}{where}", "typical": "Not reported", "acceptance": "—", "compared": "No number was reported", "misses": share}
     typical = float(median(values))
     if name == "profit":
-        bar = float(limits["min_profit"])
+        bar = float(round(bars["profit"]))
+        steady = f" in {int(days)} days (a {_money(bars['year_profit'])} year)" if days and bars["use_profit"] else ""
         return {
-            "reason": "Profit",
+            "reason": f"Profit{where}",
             "typical": _money(typical),
-            "acceptance": f"Above {_money(bar)}",
+            "acceptance": f"Above {_money(bar)}{steady}",
             "compared": f"{_money(bar - typical)} under the line",
             "misses": share,
         }
     if name == "factor":
-        bar = float(limits["profit_factor"])
+        bar = float(bars["profit_factor"])
         compared = f"{typical / bar:.2f} times the bar" if bar and typical > 0 else "At or below the bar"
-        return {"reason": "Profit factor", "typical": _plain(typical), "acceptance": f"Above {_plain(bar)}", "compared": compared, "misses": share}
+        return {"reason": f"Profit factor{where}", "typical": _plain(typical), "acceptance": f"Above {_plain(bar)}", "compared": compared, "misses": share}
     if name == "drawdown":
+        same = ", the same as the year" if days else ""
         return {
-            "reason": "Drawdown",
+            "reason": f"Drawdown{where}",
             "typical": _money(typical),
-            "acceptance": f"Under 30 percent of the profit once the profit reaches {_money(start)}",
-            "compared": "Over 30 percent of the profit",
+            "acceptance": f"Inside {drawdown_share_text()}{same}",
+            "compared": "Over the limit at its profit high",
             "misses": share,
         }
     if name == "under_drawdown":
         return {"reason": "Profit under the drawdown", "typical": f"{_money(typical)} drawdown", "acceptance": "Profit above the drawdown", "compared": "Drawdown at or above the profit", "misses": share}
     if name == "trade_loss":
-        return {"reason": "The stop on one trade", "typical": _money(typical), "acceptance": "Stop set at no more than 1.5 percent of the account", "compared": "Over the limit", "misses": share}
+        return {"reason": f"The stop on one trade{where}", "typical": _money(typical), "acceptance": "Stop set at no more than 1.5 percent of the account", "compared": "Over the limit", "misses": share}
     if name == "trades":
-        bar = float(limits["min_trades"])
+        bar = float(_fewest(bars))
         compared = f"{typical / bar:.2f} times that count" if bar else "Under the count"
+        steady = f" in {int(days)} days ({bars['year_trades']} a year)" if days and bars["use_trades"] else ""
         return {
-            "reason": "Trade count",
+            "reason": f"Trade count{where}",
             "typical": f"{_plain(typical)} trades",
-            "acceptance": f"At least {_plain(bar)}",
+            "acceptance": f"At least {_plain(bar)}{steady}",
             "compared": compared,
             "misses": share,
         }
     if name == "pace":
         compared = f"{typical / TRADES_YEAR_MAX:.2f} times that cap" if TRADES_YEAR_MAX else "Over the cap"
+        most = f" ({bars['max_trades']} in {int(days)} days)" if days else ""
         return {
-            "reason": "Trades a year",
+            "reason": f"Trades a year{where}",
             "typical": f"{_plain(typical)} a year",
-            "acceptance": f"At most {_plain(float(TRADES_YEAR_MAX))}",
+            "acceptance": f"At most {_plain(float(TRADES_YEAR_MAX))}{most}",
             "compared": compared,
             "misses": share,
         }
-    bar = float(limits["win_rate"])
+    bar = float(bars["win_rate"])
     compared = f"{typical / bar:.2f} times that rate" if bar and typical > 0 else "At or below the rate"
     return {
-        "reason": "Win rate",
+        "reason": f"Win rate{where}",
         "typical": f"{_plain(typical)} percent",
         "acceptance": f"Above {_plain(bar)} percent",
         "compared": compared,
@@ -143,50 +182,57 @@ def _row(name: str, values: list[float], limits: dict, start: float, misses: int
     }
 
 
-def _line(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int) -> str:
+def _line(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int, days: int | None = None) -> str:
     from futuresfund.objective import TRADES_YEAR_MAX
 
-    share = f"{_count(misses)} of {_count(trials)} backtests miss it."
+    bars = _bars(days, limits)
+    where = _where(days)
+    tests = f"{int(days)}-day tests" if days else "backtests"
+    share = f"{_count(misses)} of {_count(trials)} {tests} miss it."
     if name == "error":
-        return f"The backtest did not finish. {_count(misses)} of {_count(trials)} backtests stopped before a result."
+        return f"The backtest did not finish{where}. {_count(misses)} of {_count(trials)} {tests} stopped before a result."
     if name == "growth":
         return f"Profit growing over 7, 30, 90, and 365 days. A longer window made less than the shorter one before it. {share}"
     if not values:
-        return f"{name}. The result did not report a number. {share}"
+        return f"{name}{where}. The result did not report a number. {share}"
     typical = float(median(values))
     if name == "profit":
-        bar = float(limits["min_profit"])
+        bar = float(round(bars["profit"]))
+        steady = f" in {int(days)} days (a {_money(bars['year_profit'])} year at a steady pace)" if days and bars["use_profit"] else ""
         return (
-            f"Profit. The typical miss made {_money(typical)} versus acceptance above {_money(bar)}. "
+            f"Profit{where}. The typical miss made {_money(typical)} versus acceptance above {_money(bar)}{steady}. "
             f"That is {_money(bar - typical)} under the line. {share}"
         )
     if name == "factor":
-        bar = float(limits["profit_factor"])
+        bar = float(bars["profit_factor"])
         times = f" That is {typical / bar:.2f} times the bar." if bar and typical > 0 else ""
-        return f"Profit factor. The typical miss is {_plain(typical)} versus acceptance above {_plain(bar)}.{times} {share}"
+        return f"Profit factor{where}. The typical miss is {_plain(typical)} versus acceptance above {_plain(bar)}.{times} {share}"
     if name == "drawdown":
-        return f"Drawdown. The typical miss is {_money(typical)}, over 30 percent of the profit once the profit reaches {_money(start)}. {share}"
+        same = " The limit is the same as the year's, because a shorter window's drawdown is never larger than the year that holds it." if days else ""
+        return f"Drawdown{where}. The typical miss is {_money(typical)}, over the limit of {drawdown_share_text()}.{same} {share}"
     if name == "under_drawdown":
         return f"Profit under the drawdown. The typical miss has a drawdown of {_money(typical)}, at or above its profit. {share}"
     if name == "trade_loss":
-        return f"The stop on one trade. The typical miss was set to risk {_money(typical)}, more than 1.5 percent of the account. {share}"
+        return f"The stop on one trade{where}. The typical miss was set to risk {_money(typical)}, more than 1.5 percent of the account. {share}"
     if name == "trades":
-        bar = float(limits["min_trades"])
+        bar = float(_fewest(bars))
         times = f" That is {typical / bar:.2f} times that count." if bar else ""
+        steady = f" in {int(days)} days ({bars['year_trades']} a year at a steady pace)" if days and bars["use_trades"] else ""
         return (
-            f"Trade count. The typical miss has {_plain(typical)} trades versus acceptance of at least {_plain(bar)}."
+            f"Trade count{where}. The typical miss has {_plain(typical)} trades versus acceptance of at least {_plain(bar)}{steady}."
             f"{times} {share}"
         )
     if name == "pace":
         times = f" That is {typical / TRADES_YEAR_MAX:.2f} times that cap." if TRADES_YEAR_MAX else ""
+        most = f" ({bars['max_trades']} in {int(days)} days)" if days else ""
         return (
-            f"Trades a year. The typical miss takes {_plain(typical)} trades a year versus acceptance of at most "
-            f"{_plain(float(TRADES_YEAR_MAX))}.{times} {share}"
+            f"Trades a year{where}. The typical miss takes {_plain(typical)} trades a year versus acceptance of at most "
+            f"{_plain(float(TRADES_YEAR_MAX))}{most}.{times} {share}"
         )
-    bar = float(limits["win_rate"])
+    bar = float(bars["win_rate"])
     times = f" That is {typical / bar:.2f} times that rate." if bar and typical > 0 else ""
     return (
-        f"Win rate. The typical miss wins {_plain(typical)} percent versus acceptance above {_plain(bar)} percent."
+        f"Win rate{where}. The typical miss wins {_plain(typical)} percent versus acceptance above {_plain(bar)} percent."
         f"{times} {share}"
     )
 
@@ -196,8 +242,11 @@ def measure(notes: Path, limits: dict, start: float, limit: int = 3) -> dict:
     from futuresfund.objective import account_trade_loss_cap
 
     loss_cap = account_trade_loss_cap()
-    buckets: dict[str, list[float]] = {name: [] for name in _ORDER}
-    counts = {name: 0 for name in _ORDER}
+    # Each miss is counted per window: a 7-day trial is held to the 7-day bars, a year to the year's,
+    # so the typical number in a line sits beside the bar its trials were judged against.
+    buckets: dict[tuple, list[float]] = {}
+    counts: dict[tuple, int] = {}
+    tried: dict[int | None, int] = {}
     trials = 0
     passed = 0
     if notes.is_dir():
@@ -216,25 +265,30 @@ def measure(notes: Path, limits: dict, start: float, limit: int = 3) -> dict:
                 if not isinstance(row, dict):
                     continue
                 trials += 1
+                days = _stage_of(row)
+                tried[days] = tried.get(days, 0) + 1
                 missed = _misses(row, limits, start, loss_cap)
                 if not missed:
                     passed += 1
                     continue
                 for name, value in missed.items():
-                    counts[name] = counts.get(name, 0) + 1
+                    key = (name, days)
+                    counts[key] = counts.get(key, 0) + 1
                     if value is not None:
-                        buckets.setdefault(name, []).append(float(value))
-    ranked = sorted(
-        (name for name, count in counts.items() if count),
-        key=lambda name: (-counts[name], _ORDER.index(name) if name in _ORDER else len(_ORDER)),
-    )
+                        buckets.setdefault(key, []).append(float(value))
+
+    def order(key: tuple) -> tuple:
+        name, days = key
+        return (-counts[key], _ORDER.index(name) if name in _ORDER else len(_ORDER), days or 365)
+
+    ranked = sorted((key for key, count in counts.items() if count), key=order)
     lines = [
-        _line(name, buckets.get(name) or [], limits, start, counts[name], trials)
-        for name in ranked[:limit]
+        _line(name, buckets.get((name, days)) or [], limits, start, counts[(name, days)], tried.get(days, trials), days)
+        for name, days in ranked[:limit]
     ]
     rows = [
-        _row(name, buckets.get(name) or [], limits, start, counts[name], trials)
-        for name in ranked[:limit]
+        _row(name, buckets.get((name, days)) or [], limits, start, counts[(name, days)], tried.get(days, trials), days)
+        for name, days in ranked[:limit]
     ]
     return {"ready": True, "trials": trials, "passed": passed, "lines": lines, "rows": rows}
 

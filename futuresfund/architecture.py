@@ -28,11 +28,13 @@ does not reach up to start research or send mail.
 
 3. Research
     ``learn.py`` reads Pine files only. It does not create strategy
-    ``.py`` files. ``pinets_engine.py`` runs the backtests through PineTS. Engine 1 is
-    the 2-minute chart and belongs to the 2min chart developer. Engine 2
-    is the 5-minute chart and belongs to the 5 min chart developer.
-    Engine 3 is the 15-minute chart only and belongs to the 15 min chart
-    developer. One chart researcher reads all three studies. A script is
+    ``.py`` files. ``pinets_engine.py`` runs the backtests through PineTS. Every
+    instrument has three chart engines (roster.ENGINE_DESKS): engines 1-3
+    are ES 2m/5m/15m, engine 4 is the creation engine, then 5-7 GC,
+    8-10 NQ, 11-13 MNQ, 14-16 MES, 17-19 M2K and 20-22 YM. The 2min,
+    5 min and 15 min chart developers each own their timeframe's seven
+    engines. The engines run their backtests on a bounded pool of worker
+    processes (engine_workers.ENGINES_AT_ONCE). One chart researcher reads all three studies. A script is
     filed only after each of those three charts has finished on every
     research instrument. ``library.py`` files a profitable result under ES
     or Gold. ``discuss.py`` holds the 8:00am and 5:00pm meetings.

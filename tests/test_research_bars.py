@@ -97,3 +97,62 @@ class ResearchBarTests(unittest.TestCase):
         ), mock.patch.object(research_bars, "_live", return_value=live):
             series = research_bars.research_series("ES", "5m", include_live=False)
         self.assertEqual(series, [])
+
+
+class AlertsAfterTheDownloadTests(unittest.TestCase):
+    """The Databento download stops on the day it was taken. The alert candles carry the chart on from there."""
+
+    def setUp(self):
+        from futuresfund import research_bars
+
+        self.bars = research_bars
+        research_bars._SERIES.clear()
+        research_bars._LIVE_TAIL.clear()
+
+    def tearDown(self):
+        self.bars._SERIES.clear()
+        self.bars._LIVE_TAIL.clear()
+
+    def _series(self, historical, live, include_live=True):
+        with mock.patch.object(self.bars, "_historical", return_value=historical), mock.patch.object(
+            self.bars, "_export", return_value={}
+        ), mock.patch.object(self.bars, "_live", return_value=live), mock.patch.object(
+            self.bars, "_sources", return_value=()
+        ):
+            return self.bars.research_series("ES", "5m", include_live=include_live)
+
+    def test_alert_candles_after_the_download_are_added(self):
+        last = 1_700_000_100  # a 5-minute bar start
+        historical = {last + index * 60: (1.0, 2.0, 0.5, 1.5, 9.0) for index in range(5)}
+        later = last + 300 * 10
+        live = {later + index * 60: (10.0, 11.0, 9.0, 10.5, 1.0) for index in range(5)}
+        series = self._series(historical, live)
+        self.assertEqual([bar["source"] for bar in series], ["databento", "alert"])
+        self.assertEqual(series[-1]["t"], later)
+        self.assertEqual(series[-1]["v"], 5.0)
+
+    def test_an_alert_minute_inside_the_download_does_not_replace_it(self):
+        last = 1_700_000_100
+        historical = {last + index * 60: (1.0, 2.0, 0.5, 1.5, 9.0) for index in range(5)}
+        live = {last + index * 60: (10.0, 11.0, 9.0, 10.5, 1.0) for index in range(5)}
+        series = self._series(historical, live)
+        self.assertEqual(len(series), 1)
+        self.assertEqual(series[0]["source"], "databento")
+        self.assertEqual(series[0]["o"], 1.0)
+
+    def test_a_tradingview_check_leaves_the_alert_candles_out(self):
+        last = 1_700_000_100
+        historical = {last + index * 60: (1.0, 2.0, 0.5, 1.5, 9.0) for index in range(5)}
+        live = {last + 3000 + index * 60: (10.0, 11.0, 9.0, 10.5, 1.0) for index in range(5)}
+        series = self._series(historical, live, include_live=False)
+        self.assertEqual([bar["source"] for bar in series], ["databento"])
+
+    def test_the_bar_still_forming_is_left_out(self):
+        import time
+
+        now = int(time.time())
+        forming = now - now % 300
+        historical = {forming - 3000 + index * 60: (1.0, 2.0, 0.5, 1.5, 9.0) for index in range(5)}
+        live = {forming: (10.0, 11.0, 9.0, 10.5, 1.0)}
+        series = self._series(historical, live)
+        self.assertEqual([bar["source"] for bar in series], ["databento"])

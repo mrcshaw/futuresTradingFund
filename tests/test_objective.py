@@ -55,7 +55,7 @@ class LimitTests(unittest.TestCase):
         band = {"net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 400, "days": 260, "profit_factor": 1.5, "win_rate": 50.0, "profit_ratio": 1.3}
         self.assertTrue(research_success(band, 50000))
         self.assertFalse(research_success({**band, "trades": 1335}, 50000))
-        self.assertFalse(research_success({**band, "max_drawdown": 16200.0}, 50000))
+        self.assertFalse(research_success({**band, "max_drawdown": 17800.0}, 50000))
         self.assertFalse(research_success({**band, "net_profit": 0}, 50000))
         self.assertFalse(research_success({**band, "net_profit": -40}, 50000))
         self.assertFalse(research_success({"net_profit": 9000.0, "max_drawdown": 100.0, "trades": 2, "days": 20}, 50000))
@@ -146,7 +146,7 @@ class RankTests(unittest.TestCase):
         from futuresfund.objective import TIER_COUNTS, TIER_LOSING, acceptable, rank, research_drawdown_cap, tier
 
         cap = research_drawdown_cap(50000)
-        deep = _row(self.target * 2, self.target * 2 * 0.3 + 1, 20)
+        deep = _row(self.target * 2, 2500 + (self.target * 2 - 3000) * 0.3 + 1, 20)
         self.assertEqual(tier(deep), TIER_LOSING)
         self.assertFalse(acceptable(deep))
         self.assertTrue(acceptable(_row(self.target, cap, 20, days=20)))
@@ -189,7 +189,7 @@ class RankTests(unittest.TestCase):
         _default_book(self)
         text = describe()
         self.assertIn("$3,000 profit target", text)
-        self.assertIn("one-year drawdown is no higher than 30 percent of the profit once the profit reaches $2,500", text)
+        self.assertIn("one-year drawdown is no higher than $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000", text)
         self.assertIn("$50,000 account", text)
         self.assertIn("set on headquarters", text)
         self.assertIn("130 to 600 trades a year", text)
@@ -199,23 +199,24 @@ class RankTests(unittest.TestCase):
 
         self.assertIn(f"trade count of {scale_min_trades():g}", text)
         self.assertIn("strategy library page", text)
-        self.assertIn("keep the drawdown inside 30 percent of the profit once the profit reaches $2,500, and meet the trade count", text)
+        self.assertIn("keep the drawdown inside $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000, and meet the trade count", text)
         self.assertIn("The stop is never set above 1.5 percent of the account", text)
         self.assertIn("larger than the stop loss", text)
         self.assertIn("its stop is set above 1.5 percent of the account", text)
         self.assertIn("Trade count only breaks a tie", text)
         self.assertIn("130 to 600 trades a year", short())
 
-    def test_the_drawdown_has_no_limit_until_2500_then_30_percent_of_the_profit(self):
+    def test_the_drawdown_stays_inside_2500_until_the_target_then_grows_by_30_percent(self):
         from futuresfund.objective import acceptance_misses, account_survives, drawdown_goal
 
         _default_book(self)
-        self.assertTrue(account_survives({"net_profit": -500, "max_drawdown": 9000}))
-        self.assertTrue(account_survives({"net_profit": 1000, "max_drawdown": 750.01}))
-        self.assertTrue(account_survives({"net_profit": 2499.99, "max_drawdown": 6000}))
-        self.assertFalse(account_survives({"net_profit": 2500, "max_drawdown": 750.01}))
-        self.assertTrue(account_survives({"net_profit": 2500, "max_drawdown": 750}))
-        self.assertFalse(account_survives({"net_profit": 3000, "max_drawdown": 900.01}))
+        self.assertFalse(account_survives({"net_profit": -500, "max_drawdown": 9000}))
+        self.assertTrue(account_survives({"net_profit": 1000, "max_drawdown": 2500}))
+        self.assertFalse(account_survives({"net_profit": 2499.99, "max_drawdown": 2500.01}))
+        self.assertTrue(account_survives({"net_profit": 3000, "max_drawdown": 2500}))
+        self.assertFalse(account_survives({"net_profit": 3000, "max_drawdown": 2500.01}))
+        self.assertTrue(account_survives({"net_profit": 6000, "max_drawdown": 3400}))
+        self.assertFalse(account_survives({"net_profit": 6000, "max_drawdown": 3400.01}))
         # A one-trade loss is checked on its own, and the search still aims under the lower goal.
         limits = {"use_drawdown": True, "use_trades": False, "use_profit": False, "use_factor": False, "use_win_rate": False}
         small = {"net_profit": 1000.0, "max_drawdown": 900.0, "trades": 5, "win_rate": 50.0, "profit_factor": 1.2, "profit_ratio": 1.3}
@@ -225,7 +226,8 @@ class RankTests(unittest.TestCase):
         self.assertEqual(drawdown_goal(10000.0, 50000), 3000.0)
         self.assertTrue(account_survives({"net_profit": 3000, "max_drawdown": 900}))
         self.assertTrue(account_survives({"net_profit": 35803, "max_drawdown": 7245.5}))
-        self.assertFalse(account_survives({"net_profit": 9000, "max_drawdown": 2701}))
+        self.assertTrue(account_survives({"net_profit": 9000, "max_drawdown": 4300}))
+        self.assertFalse(account_survives({"net_profit": 9000, "max_drawdown": 4300.01}))
         self.assertTrue(account_survives({"net_profit": 100, "max_drawdown": 0}))
 
 
@@ -1009,7 +1011,7 @@ class LeaderTests(unittest.TestCase):
             busy = self._note(folder, "busy", {**base, "net_profit": 3900, "max_drawdown": 200, "trades": 90})
             flat = self._note(folder, "flat", {**base, "net_profit": 3900, "max_drawdown": 20, "trades": 0})
             wide = self._note(folder, "wide", {**base, "net_profit": 9000, "max_drawdown": 2600, "trades": 40})
-            deep = self._note(folder, "deep", {**base, "net_profit": 9000, "max_drawdown": 2700.01, "trades": 40})
+            deep = self._note(folder, "deep", {**base, "net_profit": 9000, "max_drawdown": 4300.01, "trades": 40})
             learned = self._note(folder, "year_band", {**base, "net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 400, "days": 260})
             crowded = self._note(folder, "crowded", {**base, "net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 1335, "days": 260})
             listed = folder / "creation_lessons.json"
@@ -1079,12 +1081,12 @@ class CreationTests(unittest.TestCase):
         self.assertEqual(drawdown_cap(), research_drawdown_cap(50000))
         self.assertEqual(profit_target(), hq_target())
         self.assertTrue(meets_target({"net_profit": hq_target(), "max_drawdown": drawdown_cap(), "trades": 18, "days": 20}))
-        self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": hq_target() * 0.3 + 1, "trades": 18, "days": 20}))
+        self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": 2501, "trades": 18, "days": 20}))
         self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": 10, "trades": 8, "days": 20}))
         self.assertFalse(meets_target({"net_profit": hq_target() - 1, "max_drawdown": 10, "trades": 40, "days": 20}))
         text = target_text()
         self.assertIn("profit target $3,000", text)
-        self.assertIn("one-year drawdown no higher than 30 percent of the profit once the profit reaches $2,500", text)
+        self.assertIn("one-year drawdown no higher than $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000", text)
         self.assertIn("set on headquarters", text)
         self.assertIn("130 to 600 trades a year", text)
         self.assertIn("Trade count only breaks a tie", text)
@@ -1128,7 +1130,7 @@ class CreationTests(unittest.TestCase):
         cap = research_drawdown_cap(50000)
         self.assertTrue(_chart_inside({"net_profit": -120, "max_drawdown": 400, "trades": 6, "timeframe": "2m"}))
         self.assertTrue(_chart_inside({"net_profit": 3000, "max_drawdown": cap, "trades": 2, "timeframe": "2m"}))
-        self.assertFalse(_chart_inside({"net_profit": 3000, "max_drawdown": 900.01, "trades": 30, "timeframe": "2m"}))
+        self.assertFalse(_chart_inside({"net_profit": 3000, "max_drawdown": 2500.01, "trades": 30, "timeframe": "2m"}))
         self.assertTrue(_chart_inside({"net_profit": 1000, "max_drawdown": cap + 1, "trades": 30, "timeframe": "2m"}))
         self.assertFalse(_chart_inside({"net_profit": None, "max_drawdown": None, "trades": 0, "error": "stopped"}))
 

@@ -87,11 +87,15 @@ class TunnelServiceTests(unittest.TestCase):
     def test_the_desk_and_the_tunnel_restart_apart(self):
         text = (Path(__file__).resolve().parent.parent / "docker-compose.yml").read_text(encoding="utf-8")
         desk, service = text.split("\n  tunnel:\n")
-        self.assertIn("--url http://desk:8788", service)
-        self.assertIn("--metrics 0.0.0.0:2000", service)
+        folder = Path(__file__).resolve().parent.parent / "docker" / "tunnel"
+        # The cloudflared command lives in the watchdog that docker/tunnel builds.
+        self.assertIn("build: ./docker/tunnel", service)
+        watch = (folder / "watch.py").read_text(encoding="utf-8")
+        self.assertIn('"--url", "http://desk:8788"', watch)
+        self.assertIn('"--metrics", "0.0.0.0:2000"', watch)
         self.assertNotIn("depends_on:", service)
         self.assertNotIn("depends_on:", desk)
-        self.assertNotIn(":latest", service)
+        self.assertNotIn(":latest", service + (folder / "Dockerfile").read_text(encoding="utf-8"))
 
 
 class AddressTests(unittest.TestCase):

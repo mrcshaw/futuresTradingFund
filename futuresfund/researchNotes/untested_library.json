@@ -324,6 +324,71 @@
       "added_at": "2026-10-31 23:05"
     },
     {
+      "id": "Delta Volume Breakout Night Shift ES 2Min-5c043e4a7c22",
+      "title": "Delta Volume Breakout Night Shift \u2014 stop_dollars 250 to 500, tp_dollars 500 to 750",
+      "script": "Delta Volume Breakout Night Shift",
+      "file": "Delta Volume Breakout Night Shift ES 2Min.txt",
+      "contract": "YM1!",
+      "contract_label": "Dow",
+      "timeframe": "5m",
+      "net_profit": 12015.0,
+      "max_drawdown": 3883.5,
+      "dips": [
+        [
+          0.0,
+          2387.5
+        ],
+        [
+          9054.0,
+          2900.5
+        ],
+        [
+          9446.0,
+          3883.5
+        ]
+      ],
+      "trades": 165,
+      "win_rate": 51.52,
+      "sharpe": 1.988,
+      "profit_factor": 1.451,
+      "profit_ratio": 1.365,
+      "biggest_winner": 734.0,
+      "biggest_loser": -521.0,
+      "held_loser": -521.0,
+      "stop_dollars": 500.0,
+      "days": 260,
+      "trades_per_day": 0.63,
+      "params": {
+        "stop_dollars": 500,
+        "tp_dollars": 750,
+        "profile_lookback": 120,
+        "profile_rows": 10,
+        "min_delta_pct": 20.0,
+        "min_slope": 0.0,
+        "confirm_candles": 1,
+        "cooldown_bars": 10,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_skip": true,
+        "skip_start_hr": 21,
+        "skip_start_mn": 0,
+        "skip_end_hr": 23,
+        "skip_end_mn": 0,
+        "use_breakeven": false
+      },
+      "source_sha": "a9f4fcb39b6cb14a",
+      "engine": "pinets",
+      "runner": "pinets",
+      "full_dataset": false,
+      "window": "one year",
+      "profit_to_drawdown": 3.094,
+      "kind": "Not tested on the full dataset",
+      "primary": true,
+      "added_at": "2026-11-05 06:17"
+    },
+    {
       "id": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1792660984-0b14379fe3ac",
       "title": "Delta Volume Breakout Night Shift",
       "script": "Delta Volume Breakout Night Shift",

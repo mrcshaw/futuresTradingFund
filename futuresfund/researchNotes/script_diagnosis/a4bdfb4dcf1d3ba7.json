@@ -1,0 +1,243 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 125.0,
+   "net_profit": -1844.5,
+   "max_drawdown": 1844.5,
+   "trades": 12
+  },
+  "tp_dollars": {
+   "value": 200.0,
+   "net_profit": -421.0,
+   "max_drawdown": 1123.0,
+   "trades": 11
+  },
+  "reduced_stop_dollars": {
+   "value": 75.0,
+   "net_profit": -274.0,
+   "max_drawdown": 1331.0,
+   "trades": 9
+  },
+  "sensitivity": {
+   "value": 3,
+   "net_profit": -914.5,
+   "max_drawdown": 1971.5,
+   "trades": 7
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -3263.0,
+   "max_drawdown": 3295.0,
+   "trades": 8
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -947.5,
+   "max_drawdown": 1314.5,
+   "trades": 10
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -2601.0,
+   "max_drawdown": 3658.0,
+   "trades": 16
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 281.0,
+   "max_drawdown": 1152.5,
+   "trades": 4
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": -336.0,
+   "max_drawdown": 336.0,
+   "trades": 1
+  },
+  "pivot_right": {
+   "value": 2,
+   "net_profit": 2264.5,
+   "max_drawdown": 1981.0,
+   "trades": 18
+  },
+  "disarm_only_inside_poc": {
+   "value": false,
+   "net_profit": -414.5,
+   "max_drawdown": 1471.5,
+   "trades": 7
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": -840.0,
+   "max_drawdown": 1897.0,
+   "trades": 15
+  },
+  "vol_ma_len": {
+   "value": 5,
+   "net_profit": -574.0,
+   "max_drawdown": 1727.0,
+   "trades": 9
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": 267.5,
+   "max_drawdown": 2698.5,
+   "trades": 20
+  },
+  "require_trail": {
+   "value": false,
+   "net_profit": -1921.5,
+   "max_drawdown": 3369.0,
+   "trades": 19
+  },
+  "use_reduced_risk": {
+   "value": false,
+   "net_profit": -347.5,
+   "max_drawdown": 1446.5,
+   "trades": 10
+  },
+  "reduced_start_hr": {
+   "value": 3,
+   "net_profit": -933.5,
+   "max_drawdown": 1590.5,
+   "trades": 11
+  },
+  "reduced_start_mn": {
+   "value": 59,
+   "net_profit": -733.5,
+   "max_drawdown": 1895.0,
+   "trades": 11
+  },
+  "reduced_tp_dollars": {
+   "value": 100.0,
+   "net_profit": -272.5,
+   "max_drawdown": 1482.5,
+   "trades": 10
+  },
+  "use_trail_stop": {
+   "value": true,
+   "net_profit": -883.5,
+   "max_drawdown": 1940.5,
+   "trades": 11
+  }
+ },
+ "flat": [
+  "kc_len",
+  "kc_mult",
+  "vwma_slope_len",
+  "pivot_left",
+  "cooldown_bars",
+  "use_external_block",
+  "external_position",
+  "reduced_end_hr",
+  "reduced_end_mn",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct"
+ ],
+ "untested": [
+  "trail_min_dollars",
+  "use_breakeven",
+  "be_trigger_dollars",
+  "use_reversal",
+  "rev_on_any_loss",
+  "use_session",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "baseline": {
+  "params": {
+   "sensitivity": 13,
+   "kc_len": 20,
+   "kc_mult": 2.0,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "pivot_left": 3,
+   "pivot_right": 3,
+   "disarm_only_inside_poc": true,
+   "cooldown_bars": 5,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "require_trail": true,
+   "use_external_block": false,
+   "external_position": 0,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "pv": 50.0,
+   "stop_dollars": 500.0,
+   "tp_dollars": 800.0,
+   "use_reduced_risk": true,
+   "reduced_start_hr": 12,
+   "reduced_start_mn": 0,
+   "reduced_end_hr": 16,
+   "reduced_end_mn": 0,
+   "reduced_stop_dollars": 300.0,
+   "reduced_tp_dollars": 400.0,
+   "use_trail_stop": false,
+   "trail_pct": 75.0,
+   "trail_step_amt": 500.0,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 300.0,
+   "use_breakeven": true,
+   "be_trigger_dollars": 150.0,
+   "use_reversal": true,
+   "rev_on_any_loss": false
+  },
+  "net_profit": -1133.5,
+  "max_drawdown": 2190.5,
+  "trades": 11,
+  "win_rate": 18.18,
+  "profit_factor": 0.504,
+  "biggest_winner": 776.5,
+  "biggest_loser": -536.0,
+  "held_loser": -536.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 5,
+    "pnl": -655.0,
+    "favorable": 189.5,
+    "adverse": -253.0
+   },
+   {
+    "exit": "XL",
+    "trades": 4,
+    "pnl": 193.5,
+    "favorable": 563.25,
+    "adverse": -246.12
+   },
+   {
+    "exit": "XRL",
+    "trades": 2,
+    "pnl": -672.0,
+    "favorable": -5.5,
+    "adverse": -330.5
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 2m",
+  "30 GC 5m",
+  "365 GC 15m",
+  "7 MNQ 15m",
+  "90 ES 15m",
+  "90 ES 5m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true,
+ "repairs": 3
+}

@@ -1,0 +1,133 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 359.5,
+   "max_drawdown": 61.75,
+   "trades": 3
+  },
+  "ema55_len": {
+   "value": 14,
+   "net_profit": 523.5,
+   "max_drawdown": 31.75,
+   "trades": 4
+  },
+  "sma_len": {
+   "value": 6,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema55_slope_len": {
+   "value": 2,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "min_slope": {
+   "value": 0.3125,
+   "net_profit": 171.75,
+   "max_drawdown": 284.0,
+   "trades": 7
+  },
+  "pivot_left": {
+   "value": 2,
+   "net_profit": 295.0,
+   "max_drawdown": 75.5,
+   "trades": 5
+  },
+  "pivot_right": {
+   "value": 2,
+   "net_profit": 258.75,
+   "max_drawdown": 246.25,
+   "trades": 10
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 379.75,
+   "max_drawdown": 688.5,
+   "trades": 9
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 61.5,
+   "max_drawdown": 8.0,
+   "trades": 1
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": 111.75,
+   "max_drawdown": 61.75,
+   "trades": 2
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 329.5,
+   "max_drawdown": 61.75,
+   "trades": 3
+  }
+ },
+ "flat": [
+  "stop_dollars",
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "ema_len",
+  "cooldown_bars",
+  "use_breakeven",
+  "be_trigger_dollars",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "ema_len": 200,
+   "ema55_len": 55,
+   "sma_len": 25,
+   "ema55_slope_len": 10,
+   "min_slope": 1.25,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "cooldown_bars": 5,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": 289.5,
+  "max_drawdown": 61.75,
+  "trades": 3,
+  "win_rate": 100.0,
+  "profit_factor": null,
+  "biggest_winner": 167.75,
+  "biggest_loser": 60.25,
+  "held_loser": 60.25,
+  "exits": [
+   {
+    "exit": "Session Close",
+    "trades": 3,
+    "pnl": 289.5,
+    "favorable": 143.25,
+    "adverse": -28.42
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

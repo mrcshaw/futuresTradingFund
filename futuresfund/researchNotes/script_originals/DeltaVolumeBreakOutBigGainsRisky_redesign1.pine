@@ -1,0 +1,285 @@
+//@version=5
+strategy("Delta Volume Breakout Redesign 1", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(5, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== INPUTS =====
+// Risk
+
+// Profile
+profile_lookback  = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows      = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5)
+min_delta_pct     = input.float(5.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5)
+
+// Trend
+vwma_len          = input.int(20, "VWMA Length", minval=5, maxval=100)
+
+// Entry
+pivot_len         = input.int(2, "Pivot Length", minval=1, maxval=10)
+
+// Session
+sess_start_hr     = input.int(18, "Session Start Hour (ET)", minval=0, maxval=23)
+sess_end_hr       = input.int(16, "Session End Hour (ET)", minval=0, maxval=23)
+
+// ===== RISK DEFINITIONS =====
+
+// Ensure TP > Stop
+if tp_dollars <= stop_dollars
+    runtime.error("Take Profit must be larger than Stop")
+
+// ===== SESSION LOGIC =====
+// Session is 18:00 to 16:00 (overnight)
+bar_time = time(timeframe.period, "1800-1600", "America/New_York")
+in_session = not na(bar_time)
+
+// Detect session end (16:00)
+// We flatten at 16:00. 
+// Since the session string "1800-1600" handles the wrap, we need to detect the transition out of session or specifically the 16:00 close.
+// Easier: Check if current bar is 16:00 or if we just left the session.
+// However, the requirement says "Flatten any open trade when the session ends at 16:00 New York".
+// Let's check the hour in NY.
+ny_hour = hour(time, "America/New_York")
+ny_minute = minute(time, "America/New_York")
+
+bool is_session_end_bar = ny_hour == 16 and ny_minute == 0
+
+if is_session_end_bar and strategy.position_size != 0
+    strategy.close_all(comment="Session Close 16:00")
+
+// ===== VOLUME PROFILE CALCULATION =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    // Reset arrays
+    if vol_total.size() != rows
+        vol_total.clear()
+        vol_up.clear()
+        vol_dn.clear()
+        for i = 0 to rows - 1
+            vol_total.push(0.0)
+            vol_up.push(0.0)
+            vol_dn.push(0.0)
+    else
+        for i = 0 to rows - 1
+            vol_total.set(i, 0.0)
+            vol_up.set(i, 0.0)
+            vol_dn.set(i, 0.0)
+
+    // Populate profile
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+
+        if span <= 0
+            continue
+
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    // Find POC
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    // Delta at POC
+    float poc_up  = vol_up.get(poc_row)
+    float poc_dn  = vol_dn.get(poc_row)
+    float poc_tot = vol_total.get(poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+// ===== TREND FILTER (VWMA SLOPE) =====
+float vwma_val = ta.vwma(close, vwma_len)
+float vwma_prev = vwma_val[1]
+float vwma_slope = vwma_val - vwma_prev
+bool trend_up = vwma_slope > 0
+bool trend_dn = vwma_slope < 0
+
+// ===== PIVOT DETECTION =====
+// Pivot Low: Low is the lowest of the last and next pivot_len bars
+// Pivot High: High is the highest of the last and next pivot_len bars
+// We confirm a pivot on the bar where the pivot_len bars to the right have completed.
+// So, on bar i, we check if low[i] was a pivot low by looking at low[i-pivot_len] to low[i+pivot_len].
+// Actually, standard ta.pivotlow returns the value of the pivot low if the current bar is the confirmation bar.
+// ta.pivotlow(source, left, right) returns the value of the pivot low if the current bar is the rightmost bar of the pivot.
+// So if ta.pivotlow(low, pivot_len, pivot_len) is not na, we have a confirmed pivot low at low[pivot_len].
+
+float piv_low_val = ta.pivotlow(low, pivot_len, pivot_len)
+float piv_high_val = ta.pivothigh(high, pivot_len, pivot_len)
+
+bool has_piv_low = not na(piv_low_val)
+bool has_piv_high = not na(piv_high_val)
+
+// The price of the pivot is at the bar index: bar_index - pivot_len
+// But for entry logic, we need to know if the *current* close is valid relative to the POC.
+// The plan says: "Enter long on the next confirmed pivot low ... that remains above the POC low"
+// This implies we enter *at* the pivot confirmation? Or do we wait for the next bar?
+// "Enter long on the next confirmed pivot low... that remains above the POC low"
+// Usually, you enter on the close of the confirmation bar or the open of the next.
+// Given `process_orders_on_close=true`, entering on the confirmation bar's close is standard.
+// However, the pivot low is at `low[pivot_len]`. The confirmation happens at `bar_index`.
+// The condition "remains above the POC low" likely refers to the pivot low price itself or the current close?
+// "Enter long on the next confirmed pivot low ... that remains above the POC low"
+// Interpretation: The pivot low price must be > POC Low.
+// Let's assume the entry price is the close of the confirmation bar, but the condition is on the pivot low price.
+// Or does it mean we enter when price *retests*? No, "on the next confirmed pivot low".
+// Let's use the pivot low price for the condition and enter on the current close.
+
+// ===== ARMING LOGIC =====
+var int armed_dir = 0 // 1 for Long, -1 for Short, 0 for None
+var bool reversal_allowed = false
+var int last_exit_dir = 0 // 1 if last exit was Long stop, -1 if Short stop
+
+// Detect Stop Out for Reversal Logic
+// We need to know if the previous trade was stopped out.
+// We can track this by checking if position size changed from non-zero to zero and the P&L was negative.
+// However, `strategy.closedtrades` is easier if we track the last trade.
+// Let's use a simpler state machine.
+var float last_trade_pnl = 0.0
+var int last_trade_dir = 0
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    // Trade just closed
+    last_trade_pnl := strategy.closedtrades.profit(strategy.closedtrades - 1)
+    last_trade_dir := strategy.position_size[1] > 0 ? 1 : -1
+    
+    // If it was a stop out (loss), allow reversal
+    if last_trade_pnl < 0
+        reversal_allowed := true
+    else
+        reversal_allowed := false
+
+// Disarm if close returns inside POC zone
+if not na(poc_lo) and not na(poc_hi)
+    if close >= poc_lo and close <= poc_hi
+        armed_dir := 0
+
+// Arm Long
+bool arm_long_cond = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi and trend_up and (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)
+if arm_long_cond
+    armed_dir := 1
+
+// Arm Short
+bool arm_short_cond = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo and trend_dn and (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)
+if arm_short_cond
+    armed_dir := -1
+
+// ===== ENTRY LOGIC =====
+bool long_entry_sig = false
+bool short_entry_sig = false
+
+// Long Entry:
+// 1. Armed Long
+// 2. Confirmed Pivot Low exists
+// 3. Pivot Low Price > POC Low
+// 4. In Session
+// 5. No Position
+// 6. Reversal Logic: If last exit was Short stop, allow Long. If last exit was Long stop, do NOT allow Long (only Short reversal).
+//    Wait, "allow one reversal trade in the opposite direction".
+//    If I was Long and stopped out, I can go Short.
+//    If I was Short and stopped out, I can go Long.
+//    So:
+//    If last_exit_dir == 1 (Long stopped), I can only enter Short.
+//    If last_exit_dir == -1 (Short stopped), I can only enter Long.
+//    If no stop out (or profit), I can enter either if armed.
+
+bool can_enter_long = true
+bool can_enter_short = true
+
+if reversal_allowed
+    if last_trade_dir == 1 // Was Long, stopped out
+        can_enter_long := false
+    if last_trade_dir == -1 // Was Short, stopped out
+        can_enter_short := false
+
+if armed_dir == 1 and has_piv_low and in_session and strategy.position_size == 0 and can_enter_long
+    // Check if pivot low is above POC low
+    if not na(poc_lo) and piv_low_val > poc_lo
+        long_entry_sig := true
+        armed_dir := 0
+        reversal_allowed := false // Clear reversal permission after entry
+
+if armed_dir == -1 and has_piv_high and in_session and strategy.position_size == 0 and can_enter_short
+    // Check if pivot high is below POC high
+    if not na(poc_hi) and piv_high_val < poc_hi
+        short_entry_sig := true
+        armed_dir := 0
+        reversal_allowed := false // Clear reversal permission after entry
+
+// ===== EXECUTE ENTRIES =====
+if long_entry_sig
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+
+if short_entry_sig
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+// ===== PLOTS =====
+plot(vwma_val, "VWMA", color=color.blue, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC", color=color.yellow, style=plot.style_stepline, linewidth=1)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", color=color.green, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", color=color.red, style=plot.style_stepline, linewidth=2)
+
+bgcolor(in_session ? color.new(color.gray, 95) : na)
+
+plotshape(long_entry_sig, "Long Entry", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_entry_sig, "Short Entry", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(not na(poc_delta_pct) ? poc_delta_pct : na, "POC Delta %", color=color.orange, display=display.data_window)

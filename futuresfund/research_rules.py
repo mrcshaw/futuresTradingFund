@@ -1,6 +1,7 @@
 """Rules for every research run.
 
-A research run starts with the daily loss limit and the daily profit cap off.
+A research run starts with the daily loss limit and the daily profit cap off,
+except on a chart where the trade cut turned them on, and never the desk_ trade limits.
 Those inputs then change like any other input: the search can turn them on and
 move the amounts, and a change that raises profit stays for the following runs.
 The take profit stays larger than the stop: a stop of 100 keeps the take
@@ -10,6 +11,9 @@ larger than $700. There is no maximum on the take profit.
 """
 
 from __future__ import annotations
+
+import contextvars
+from contextlib import contextmanager
 
 _STOP_DOLLARS = ("stop_dollars", "stop_dollar", "sl_dollars", "stop_loss", "fixed_stop")
 _STOP_PCT = ("stop_pct",)
@@ -22,10 +26,75 @@ EXIT_DOLLAR_STEP = 50.0
 STOP_LADDER = (250.0, 500.0, 700.0)
 TARGET_LADDER = (250.0, 500.0, 750.0, 1000.0, 1250.0, 1500.0, 1750.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0, 7500.0, 10000.0)
 STOP_CHECKPOINTS = STOP_LADDER
+# A micro contract moves a tenth of the dollars, so its search starts at a $50 stop and a $100 take profit.
+MICRO_ROOTS = frozenset({"MES", "MNQ", "MYM", "M2K", "MCL", "MGC", "MBT", "SIL"})
+MICRO_STOP_LADDER = (50.0, 100.0, 150.0)
+MICRO_TARGET_LADDER = (100.0, 150.0, 200.0, 250.0, 300.0, 400.0, 500.0, 750.0, 1000.0, 1500.0, 2000.0, 3000.0, 5000.0)
+# The lowest dollar stop or take profit a script's minval may hold, so a micro search is not pushed back up.
+EXIT_MINVAL = 50
+
+_chart_root: contextvars.ContextVar[str] = contextvars.ContextVar("research_chart_root", default="")
+
+
+@contextmanager
+def chart_root(root: str | None):
+    """The search inside this block runs on this contract. A micro root uses the micro ladders."""
+    token = _chart_root.set(str(root or "").upper().strip())
+    try:
+        yield
+    finally:
+        _chart_root.reset(token)
+
+
+def is_micro(root: str | None = None) -> bool:
+    """MES, MNQ, and the other micro contracts. With no root, the contract of the search that is running."""
+    name = str(root if root is not None else _chart_root.get() or "").upper().strip()
+    if name.endswith("1!"):
+        name = name[:-2]
+    return name.split(":")[-1] in MICRO_ROOTS
+
+
+def stop_ladder(root: str | None = None) -> tuple[float, ...]:
+    return MICRO_STOP_LADDER if is_micro(root) else STOP_LADDER
+
+
+def target_ladder(root: str | None = None) -> tuple[float, ...]:
+    return MICRO_TARGET_LADDER if is_micro(root) else TARGET_LADDER
+
+
+def opening_target(root: str | None = None) -> float:
+    """The first take profit larger than the opening stop: $500 on a full contract, $100 on a micro."""
+    first = stop_ladder(root)[0]
+    return next(rung for rung in target_ladder(root) if rung > first + 1e-9)
+
+
+def dollar_list(amounts) -> str:
+    shown = [f"${amount:,.0f}" for amount in amounts]
+    return ", ".join(shown[:-1]) + f", and {shown[-1]}" if len(shown) > 1 else shown[0]
+
+
+def ladder_text(root: str | None = None) -> str:
+    """The opening stop and take profit, and the stops the search measures, for this contract."""
+    stops = stop_ladder(root)
+    if not is_micro(root):
+        return (
+            "The stop and the take profit start at the script's own values, with a stop over $700 brought down to $700. "
+            f"A losing start raises the stop through {dollar_list(stops)}, then the take profit rises with no maximum."
+        )
+    return (
+        f"The stop starts at ${stops[0]:,.0f} and the take profit at ${opening_target(root):,.0f}. "
+        f"The stop rises through {dollar_list(stops)}, then the take profit rises with no maximum."
+    )
 
 
 def is_daily_limit(name: str) -> bool:
-    """A daily loss limit or a daily profit cap. A max-trades-per-day input is not one."""
+    """A daily loss limit or a daily profit cap. A max-trades-per-day input is not one.
+
+    The desk's own trade limits (desk_daily_loss and the other desk_ inputs) are not either: the trade
+    cut set them, so a research run never turns them off.
+    """
+    if (name or "").lower().startswith("desk_"):
+        return False
     compact = (name or "").lower().replace("_", "")
     if "max" in compact and "trade" in compact:
         return False
@@ -106,7 +175,7 @@ def exit_ladder(name: str, account_size: float = 50_000.0) -> list[float]:
     kind = _exit_kind(name)
     if kind is None:
         return []
-    dollars = TARGET_LADDER if kind == "target" else STOP_LADDER
+    dollars = target_ladder() if kind == "target" else stop_ladder()
     compact = (name or "").lower().replace("_", "")
     if compact.endswith("pct") or "percent" in compact:
         account = float(account_size) if account_size else 50_000.0
@@ -129,14 +198,17 @@ def next_rung(name: str, current, account_size: float = 50_000.0):
 
 
 def stop_checkpoints(name: str, account_size: float = 50_000.0) -> list[float]:
-    """Dollar stops the search measures: $250, $500, and $700."""
+    """Dollar stops the search measures: $250, $500, and $700, or $50, $100, and $150 on a micro."""
     if _exit_kind(name) != "stop":
         return []
     return exit_ladder(name, account_size)
 
 
 def opening_stop_value(name: str, value, account_size: float = 50_000.0):
-    """A template stop at the $700 cap or above starts at $250. A $1,500 template target starts at $500."""
+    """A full contract starts at the script's own stop and take profit. A stop above the $700 cap starts at $700.
+
+    On a micro every stop above $50 starts at $50, and every take profit above $100 starts at $100.
+    """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return value
     compact = (name or "").lower().replace("_", "")
@@ -145,12 +217,17 @@ def opening_stop_value(name: str, value, account_size: float = 50_000.0):
     target = "takeprofit" in compact or "target" in compact or compact.startswith("tp")
     percent = compact.endswith("pct") or "percent" in compact
     number = float(value)
-    if target and not percent and number >= 1500:
-        nxt = 500.0
-    elif target and percent and number >= 3:
-        nxt = 1.0
-    elif not target and number >= (1.4 if percent else 700.0) and stop_checkpoints(name, account_size):
-        nxt = stop_checkpoints(name, account_size)[0]
+    if is_micro() and _exit_kind(name) is not None:
+        first = exit_ladder(name, account_size)
+        if target:
+            stop_first = stop_checkpoints("stop_pct" if percent else "stop_dollars", account_size)
+            first = [rung for rung in first if not stop_first or rung > stop_first[0] + 1e-9]
+        if not first or number <= first[0] + 1e-9:
+            return value
+        nxt = first[0]
+    elif not target and stop_checkpoints(name, account_size) and number > (1.4 if percent else 700.0) + 1e-9:
+        # A full contract starts from the script's own stop and take profit. Only a stop over the cap comes down to the cap.
+        nxt = 1.4 if percent else 700.0
     else:
         return value
     if isinstance(value, int) and not isinstance(value, bool) and nxt >= 1:

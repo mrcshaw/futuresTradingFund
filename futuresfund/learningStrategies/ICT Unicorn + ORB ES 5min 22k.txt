@@ -7,9 +7,14 @@ strategy("ICT Unicorn + ORB 100k", overlay=true,
   slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
   max_bars_back=5000)
 // ===== RISK =====
-pv                = input.float(100, "Point Value ($)")
-stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=750)
+pv                = input.float(5, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
 tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
 long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
 long_limit = close + tp_dollars / pv
 short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
@@ -17,7 +22,6 @@ short_limit = close - tp_dollars / pv
 if strategy.position_size != 0 and not na(stop_dollars)
     if strategy.openprofit <= -stop_dollars
         strategy.close_all(comment="Open P&L > SL Risk")
-
 // ===== SESSION =====
 use_session   = input.bool(true, "Use Session Filter")
 sess_start_hr = input.int(18, "Session Start Hour (ET)")
@@ -27,9 +31,9 @@ sess_end_mn   = input.int(0,  "Session End Minute")
 
 // ===== SKIP WINDOW (a time of day that keeps losing) =====
 use_skip      = input.bool(true, "Skip This Time Of Day", group="Skip Window", tooltip="No trade opens inside this window, and an open trade is closed when it starts.")
-skip_start_hr = input.int(10, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
-skip_start_mn = input.int(0, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
-skip_end_hr   = input.int(11, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_hr = input.int(11, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_mn = input.int(30, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
+skip_end_hr   = input.int(12, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
 skip_end_mn   = input.int(0, "Skip End Minute", minval=0, maxval=59, group="Skip Window")
 skip_bar_t = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
 skip_from = skip_start_hr * 100 + skip_start_mn
@@ -59,6 +63,11 @@ entry_end_mn = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5)
 eod_hr       = input.int(16, "EOD Flatten Hour")
 eod_mn       = input.int(30, "EOD Flatten Min")
 
+i_tp         = input.float(500.0, "Take Profit ($)")
+i_trail_act  = input.float(400.0, "Trail Activate ($)")
+i_trail_pct  = input.float(40.0, "Trail Keep %")
+max_stop     = input.float(0.0, "Max Stop Cap ($)", minval=0, step=50)
+
 // ===== FILTERS =====
 i_margin     = input.float(1.0, "Breakout Margin (pts)", minval=0, step=0.25)
 i_or_min     = input.float(0.0, "OR Min Size (pts)", minval=0, step=1)
@@ -69,6 +78,10 @@ max_attempts = input.int(2, "Max Attempts / Day", minval=1, maxval=5)
 fvg_lookback = input.int(30, "FVG Lookback (bars)", minval=10, maxval=100)
 fvg_min_atr  = input.float(0.04, "FVG Min Size (ATR ratio)", minval=0.02, step=0.01)
 atr_len      = input.int(14, "ATR Length")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float max_stop_pts  = max_stop / pv
 
 // ===== TIME HELPERS =====
 is_new_day = ta.change(time("D")) != 0
@@ -134,15 +147,27 @@ var int day_attempts = 0
 if is_new_day
     day_attempts := 0
 
-// ===== PLOT STOP STATE =====
-var float plot_stop = na
+// ===== TRAILING STOP STATE =====
+var float peak_profit     = 0.0
+var float current_stop   = na
+var float plot_stop      = na
+var float entry_stop_px  = na
+var bool  close_pending  = false
 
 if is_new_day
-    plot_stop := na
+    peak_profit    := 0.0
+    current_stop   := na
+    plot_stop      := na
+    entry_stop_px  := na
+    close_pending  := false
 
 // ===== EOD FLATTEN =====
 if at_eod and strategy.position_size != 0
     strategy.close_all(comment="EOD")
+    peak_profit    := 0.0
+    current_stop   := na
+    entry_stop_px  := na
+    close_pending  := false
 
 // ===== ENTRY SIGNALS =====
 bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts
@@ -165,40 +190,70 @@ bool entry_ok = barstate.isconfirmed
 
 if long_sig and entry_ok
     day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_low
+    close_pending := false
+    entry_stop_px := (max_stop_pts > 0 and (close - or_low) > max_stop_pts) ? (close - max_stop_pts) : or_low
     if in_session
         if skip_window_open
             strategy.entry("Long", strategy.long)
-        strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
-        float long_stop = close - stop_dollars / pv
-        float long_limit = close + tp_dollars / pv
-        plot_stop := long_stop
-        strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit, comment_loss="SL", comment_profit="TP")
 else if short_sig and entry_ok
     day_attempts += 1
+    peak_profit   := 0.0
+    current_stop  := or_high
+    close_pending := false
+    entry_stop_px := (max_stop_pts > 0 and (or_high - close) > max_stop_pts) ? (close + max_stop_pts) : or_high
     if in_session
         if skip_window_open
             strategy.entry("Short", strategy.short)
-        strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
-        float short_stop = close + stop_dollars / pv
-        float short_limit = close - tp_dollars / pv
-        plot_stop := short_stop
-        strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit, comment_loss="SL", comment_profit="TP")
 else if strategy.position_size > 0
-    float avg = na(strategy.position_avg_price) ? close : strategy.position_avg_price
-    float long_stop = avg - stop_dollars / pv
-    float long_limit = close + tp_dollars / pv
-    plot_stop := long_stop
-    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit, comment_loss="SL", comment_profit="TP")
+    float avg = strategy.position_avg_price
+    float tp_price = avg + tp_pts
+    float profit_now = high - avg
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg + lock
+        if ns > current_stop
+            current_stop := ns
+    float eff_stop = math.max(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if not close_pending
+        if low <= eff_stop
+            close_pending := true
+            strategy.close("Long", comment="SL")
+        else if high >= tp_price
+            close_pending := true
+            strategy.close("Long", comment="TP")
 else if strategy.position_size < 0
-    float avg = na(strategy.position_avg_price) ? close : strategy.position_avg_price
-    float short_stop = avg + stop_dollars / pv
-    float short_limit = close - tp_dollars / pv
-    plot_stop := short_stop
-    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit, comment_loss="SL", comment_profit="TP")
+    float avg = strategy.position_avg_price
+    float tp_price = avg - tp_pts
+    float profit_now = avg - low
+    if profit_now > peak_profit
+        peak_profit := profit_now
+    if peak_profit >= trail_act_pts
+        float lock = peak_profit * (i_trail_pct / 100.0)
+        float ns = avg - lock
+        if ns < current_stop
+            current_stop := ns
+    float eff_stop = math.min(nz(entry_stop_px), current_stop)
+    plot_stop := eff_stop
+    if not close_pending
+        if high >= eff_stop
+            close_pending := true
+            strategy.close("Short", comment="SL")
+        else if low <= tp_price
+            close_pending := true
+            strategy.close("Short", comment="TP")
 
 // ===== RESET ON FLAT =====
 if strategy.position_size == 0 and strategy.position_size[1] != 0
-    plot_stop := na
+    peak_profit   := 0.0
+    current_stop  := na
+    plot_stop     := na
+    entry_stop_px := na
+    close_pending := false
 
 // ===== PLOTS =====
 color or_hi_col = or_built and or_valid ? color.new(color.lime, 20) : or_built ? color.new(color.gray, 60) : na

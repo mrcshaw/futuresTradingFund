@@ -14,6 +14,8 @@ LIVE_BARS_PATH = _HOME / "futures_live_bars.json"
 LAB_PATH = _HOME / "futures_lab.json"
 YAHOO_DIR = _HOME / "yahoo"
 LIVE_ARCHIVE_DIR = _HOME / "live_bars"
+# The research settings and diagram layout saved on the Research workflow Design page (workflow_design.py).
+WORKFLOW_DESIGN_PATH = _HOME / "research_workflow.json"
 
 
 def _read_env_file(path: Path, *, overwrite: bool) -> None:
@@ -84,4 +86,10 @@ def public_settings() -> dict:
         "webhook_configured": bool(webhook_token()),
         "nt_configured": bool(os.environ.get("CROSSTRADE_API_TOKEN", "").strip() or crosstrade_key()),
         "mail_webhook_configured": bool(os.environ.get("MAIL_WEBHOOK_TOKEN", "").strip()),
+        # The Portfolio Manager reads answers to the researchers' questions from this mailbox (no secrets shown).
+        "question_inbox_configured": bool(
+            (os.environ.get("IMAP_USER", "").strip() or os.environ.get("SMTP_USER", "").strip())
+            and (os.environ.get("IMAP_PASSWORD", "").strip() or os.environ.get("SMTP_PASSWORD", "").strip())
+        ),
+        "question_mail_off": bool(str(os.environ.get("FUTURES_MAIL_OFF", "")).strip().lower() in {"1", "true", "yes", "on"}),
     }

@@ -1,0 +1,52 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {},
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "use_skip": true,
+   "skip_start_hr": 5,
+   "skip_start_mn": 30,
+   "skip_end_hr": 7,
+   "skip_end_mn": 0,
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 20,
+   "vwma_slope_len": 5,
+   "pivot_len": 5,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "max_entries_per_day": 2
+  },
+  "net_profit": 0.0,
+  "max_drawdown": 0.0,
+  "trades": 0,
+  "win_rate": null,
+  "profit_factor": null,
+  "biggest_winner": null,
+  "biggest_loser": null,
+  "held_loser": null,
+  "exits": []
+ },
+ "empty_charts": [
+  "ES 15m"
+ ],
+ "version": 3
+}

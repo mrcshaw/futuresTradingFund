@@ -93,6 +93,51 @@ class EngineProgressTests(unittest.TestCase):
         self.assertTrue(any("compiles" in line for line in board.lines))
         self.assertEqual(engine_status()[0]["notice"], "")
 
+    def test_a_script_the_owner_sends_during_the_repair_is_not_overwritten(self):
+        import time
+        from tempfile import TemporaryDirectory
+
+        from futuresfund import learn
+
+        broken = '//@version=5\nstrategy("Fix me", overlay=true)\nplot(BROKEN)\n'
+        owners = '//@version=5\nstrategy("Fix me", overlay=true)\nplot(close)  // the owner fixed it\n'
+
+        class Board:
+            def __init__(self):
+                self.lines = []
+                self.cancel = __import__("threading").Event()
+
+            def post(self, author, text, **kwargs):
+                self.lines.append(f"{author}: {text}")
+
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fix_me.pine"
+            path.write_text(broken, encoding="utf-8")
+
+            def developer(board, who, text, problem):
+                # The owner's emailed script lands while the developer's model is still working.
+                path.write_text(owners, encoding="utf-8")
+                return text.replace("BROKEN", "open")
+
+            board = Board()
+            with mock.patch.object(learn, "_ask_owner", lambda *args, **kwargs: None), \
+                    mock.patch("futuresfund.strategy_team.compile_error", lambda text: "Unknown name BROKEN." if "BROKEN" in text else ""), \
+                    mock.patch("futuresfund.strategy_team.engine_problem", lambda text: ""), \
+                    mock.patch("futuresfund.strategy_team.repair_for_pine", lambda text: ("", [])), \
+                    mock.patch("futuresfund.strategy_team.repair_with_developer", developer), \
+                    mock.patch("futuresfund.questions.repair_hint", lambda path: ""):
+                learn.start_compile_repair(board, path, "15 min chart developer", "15m", broken, "Unknown name BROKEN.", 2, "Chart researcher")
+                status = "pending"
+                for _ in range(80):
+                    status, _job = learn.collect_validated("15 min chart developer")
+                    if status != "pending":
+                        break
+                    time.sleep(0.05)
+            saved = path.read_text(encoding="utf-8")
+        self.assertEqual(saved, owners)
+        self.assertEqual(status, "rejected")
+        self.assertTrue(any("The repair of the old script is dropped" in line for line in board.lines))
+
     def test_a_blocked_engine_keeps_its_notice(self):
         from futuresfund.backtrader_engine import engine_status, set_engine_notice
 
@@ -255,9 +300,10 @@ class EngineProgressTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         with self.assertRaises(ValueError):
             request_skip(0)
-        # Engines 5 and 6 are the second 5-minute and 15-minute engines. There is no engine 7.
+        # Engines 1-22: three per instrument and the creation engine. There is no engine 23.
+        self.assertTrue(request_skip(22)["ok"])
         with self.assertRaises(ValueError):
-            request_skip(7)
+            request_skip(23)
 
     def test_restart_stops_a_hung_engine_and_sends_engine_4_to_the_learning_folder(self):
         from futuresfund.backtrader_engine import begin_study, request_restart, restarted
@@ -306,11 +352,18 @@ class EngineProgressTests(unittest.TestCase):
         self.assertIn("renderEngineResults", js)
         self.assertIn(".hood-result-table", css)
         self.assertIn("box-shadow", css)
-        self.assertIn("app.js?v=161", html)
-        self.assertIn("Six engines", html)
-        self.assertIn("Engines 2 and 5", html)
-        self.assertIn("Engines 3 and 6", html)
-        self.assertIn("styles.css?v=79", html)
+        self.assertIn("app.js?v=165", html)
+        # Three engines per instrument, grouped one row per instrument, and the creation engine.
+        self.assertIn("Three engines per instrument", html)
+        self.assertIn("engines 1-3 are ES", html)
+        self.assertIn("Waiting for a free worker", html)
+        self.assertNotIn("Six engines", html)
+        self.assertIn("isCreationEngine(engine)", js)
+        self.assertNotIn("engine.id === 4", js)
+        self.assertIn("function hoodGroup", js)
+        self.assertIn(".hood-row", css)
+        self.assertIn("repeat(auto-fit, minmax(min(100%, max(240px, (100% - 24px) / 3)), 1fr))", css)
+        self.assertIn("styles.css?v=81", html)
         self.assertIn("hood-run", js)
         self.assertIn(".hood-run", css)
         self.assertIn("hood-alert", js)

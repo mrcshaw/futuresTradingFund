@@ -177,7 +177,12 @@ class ScriptErrorTests(unittest.TestCase):
             calls.append(plan)
             return {"error": "The script stopped in PineTS: Invalid session specification", "fatal": True, "script_error": True, "net_profit": None, "max_drawdown": None, "trades": 0}
 
-        trials = _search({"stop_dollars": 500, "ema_len": 20}, execute, 50000, 20, None, None, None)
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("futuresfund.errors.JOURNAL", Path(tmp) / "errors.json"), mock.patch(
+            "futuresfund.risk_style.SUGGESTIONS_PATH", Path(tmp) / "risk_suggestions.json"
+        ):
+            trials = _search({"stop_dollars": 500, "ema_len": 20}, execute, 50000, 20, None, None, None)
         self.assertEqual(len(calls), 1)
         self.assertIn("Invalid session", trials[-1]["unrunnable"])
         self.assertNotIn("engine_fault", trials[-1])

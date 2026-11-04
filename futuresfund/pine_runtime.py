@@ -656,8 +656,12 @@ def _simple_statement(tokens, number: int, types: set):
     if mode or typed:
         raise PineUnsupported(f"Line {number}: cannot read the declaration.")
     p.k = start
-    target = _postfix(p)
-    if p.peek()[0] == "op" and p.peek()[1] in (":=", "+=", "-=", "*=", "/=", "%="):
+    try:
+        target = _postfix(p)
+    except PineUnsupported:
+        # A line such as -y * math.log(p) has no target: it is a value, read as an expression below.
+        target = None
+    if target is not None and p.peek()[0] == "op" and p.peek()[1] in (":=", "+=", "-=", "*=", "/=", "%="):
         op = p.take()[1]
         value = _expr(p)
         p.end()
@@ -736,6 +740,8 @@ _TA_PARAMS = {
     "rising": ["source", "length"], "falling": ["source", "length"], "vwap": ["source", "anchor", "stdev_mult"],
     "macd": ["source", "fastlen", "slowlen", "siglen"], "bb": ["series", "length", "mult"],
     "stoch": ["source", "high", "low", "length"], "tr": ["handle_na"],
+    "supertrend": ["factor", "atrPeriod"], "linreg": ["source", "length", "offset"], "hma": ["source", "length"],
+    "percentile_nearest_rank": ["source", "length", "percentage"],
 }
 
 

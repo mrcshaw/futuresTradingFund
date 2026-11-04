@@ -1,0 +1,43 @@
+{
+ "stalled": true,
+ "answer": {
+  "because": "The last run is one session-closed trade, so exit-side inputs cannot move it and the miss is too few POC breakouts. profile_rows is the untried POC-resolution input, so set it to 20.",
+  "script": null,
+  "params": {
+   "profile_lookback": 120,
+   "profile_rows": 20,
+   "min_delta_pct": 5.0,
+   "min_slope": 0.0,
+   "confirm_candles": 5,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "stop_dollars": 150.0,
+   "tp_dollars": 250.0,
+   "use_trail": false,
+   "be_trigger_dollars": 200.0
+  },
+  "settings": {
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "min_slope": 0.0,
+   "confirm_candles": 5,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "stop_dollars": 150.0,
+   "tp_dollars": 250.0,
+   "use_trail": false,
+   "be_trigger_dollars": 200.0
+  },
+  "redesign": false
+ },
+ "version": 3
+}

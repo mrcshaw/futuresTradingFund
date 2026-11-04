@@ -2553,7 +2553,9 @@
         "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226208.txt",
         "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt",
         "night_shift_nq_5m_fixed_stop.pine",
-        "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine"
+        "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -4690,7 +4692,8 @@
         "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt",
         "Delta Volume Breakout Night Shift ES 2Min_1793226206.txt",
         "night_shift_nq_5m_fixed_stop.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -6802,7 +6805,8 @@
         "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt",
         "Delta Volume Breakout Night Shift ES 2Min_1793226206.txt",
         "night_shift_nq_5m_fixed_stop.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -7131,7 +7135,15 @@
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "created_poc_rsi_momentum_pullback_5_redesign2.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+        "Golden NQ 5 min strat.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -7460,7 +7472,15 @@
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "created_poc_rsi_momentum_pullback_5_redesign2.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+        "Golden NQ 5 min strat.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -7618,7 +7638,13 @@
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign3.pine",
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
-        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine"
+        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "Golden NQ 5 min strat.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -7668,6 +7694,21 @@
           "script": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
           "hash": "7574d6cf8292",
           "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price     = na\nfloat poc_hi        = na\nfloat poc_lo        = na\nfloat poc_delta_pct = na\nint   poc_row       = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    for a = 0 to 2\n        array<float> arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn\n        if arr.size() != rows\n            arr.clear()\n            for i = 0 to rows - 1\n                arr.push(0.0)\n        else\n            for i = 0 to rows - 1\n                arr.set(i, 0.0)\n\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+          "hash": "49a269fbc5b6",
+          "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Reset arrays\n    if vol_total.size() != rows\n        vol_total.clear()\n        for i = 0 to rows - 1\n            vol_total.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_total.set(i, 0.0)\n\n    if vol_up.size() != rows\n        vol_up.clear()\n        for i = 0 to rows - 1\n            vol_up.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_up.set(i, 0.0)\n\n    if vol_dn.size() != rows\n        vol_dn.clear()\n        for i = 0 to rows - 1\n            vol_dn.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_dn.set(i, 0.0)\n\n    // Build Profile\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    // Find POC\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    // Delta at POC\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
+        },
+        {
+          "script": "Golden NQ 5 min strat.txt",
+          "hash": "ba5bae25ad04",
+          "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\n\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -stop_dollars\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    for a = 0 to 2\n        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn\n        if arr.size() != rows\n            arr.clear()\n            for i = 0 to rows - 1\n                arr.push(0.0)\n        else\n            for i = 0 to rows - 1\n                arr.set(i, 0.0)\n\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
+        },
+        {
+          "script": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+          "hash": "c161d0373d8a",
+          "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Reset arrays\n    if vol_total.size() != rows\n        vol_total.clear()\n        for i = 0 to rows - 1\n            vol_total.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_total.set(i, 0.0)\n\n    if vol_up.size() != rows\n        vol_up.clear()\n        for i = 0 to rows - 1\n            vol_up.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_up.set(i, 0.0)\n\n    if vol_dn.size() != rows\n        vol_dn.clear()\n        for i = 0 to rows - 1\n            vol_dn.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_dn.set(i, 0.0)\n\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
         }
       ]
     },
@@ -7718,7 +7759,10 @@
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1792215926_redesign1.pine",
         "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign1.pine",
-        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine"
+        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "Golden NQ 5 min strat.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -8115,7 +8159,11 @@
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
-        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine"
+        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Golden NQ 5 min strat.txt",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -8198,6 +8246,11 @@
           "script": "max profit slow grid with logging.txt",
           "hash": "01a1653fa23e",
           "source": "bool just_filled = strategy.position_size != 0 and strategy.position_size[1] == 0\nif just_filled\n    log.info(\"FILL: avg={0} dir={1} stop={2} bar={3}\",\n      strategy.position_avg_price,\n      strategy.position_size > 0 ? \"LONG\" : \"SHORT\",\n      current_stop, bar_index)\n\n// SHORT: EMA down + close breaks below tracked low\nif can_enter and ema_down and not na(tracked_low)\n    if close < tracked_low - break_buffer\n        float stop_px = close + stop_pts\n        strategy.entry(\"Short\", strategy.short)\n        if hard_tp_pts > 0\n            strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n        else\n            strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n        current_stop    := stop_px\n        peak_profit_pts := 0.0\n        trades_today   += 1\n        entry_bar       := bar_index\n        log.info(\"SIGNAL SHORT: close={0} level={1} buffer={2} stop={3} emaAngle={4} bar={5}\",\n          close, tracked_low, break_buffer, stop_px, ema_angle, bar_index)\n\n// LONG: EMA up + close breaks above tracked high\nif can_enter and ema_up and not na(tracked_high)\n    if close > tracked_high + break_buffer\n        float stop_px = close - stop_pts\n        strategy.entry(\"Long\", strategy.long)\n        if hard_tp_pts > 0\n            strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n        else\n            strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n        current_stop    := stop_px\n        peak_profit_pts := 0.0\n        trades_today   += 1\n        entry_bar       := bar_index\n        log.info(\"SIGNAL LONG: close={0} level={1} buffer={2} stop={3} emaAngle={4} bar={5}\",\n          close, tracked_high, break_buffer, stop_px, ema_angle, bar_index)"
+        },
+        {
+          "script": "max profit slow grid with logging.txt",
+          "hash": "a0c679959c11",
+          "source": "bool just_filled = strategy.position_size != 0 and strategy.position_size[1] == 0\nif just_filled\n    log.info(\"FILL: avg={0} dir={1} stop={2} bar={3}\",\n      strategy.position_avg_price,\n      strategy.position_size > 0 ? \"LONG\" : \"SHORT\",\n      current_stop, bar_index)\n\n// SHORT: EMA down + close breaks below tracked low\nif can_enter and ema_down and not na(tracked_low)\n    if close < tracked_low - break_buffer\n        float stop_px = close + stop_pts\n        strategy.entry(\"Short\", strategy.short)\n        strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n        if hard_tp_pts > 0\n            strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n        else\n            strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n        current_stop    := stop_px\n        peak_profit_pts := 0.0\n        trades_today   += 1\n        entry_bar       := bar_index\n        log.info(\"SIGNAL SHORT: close={0} level={1} buffer={2} stop={3} emaAngle={4} bar={5}\",\n          close, tracked_low, break_buffer, stop_px, ema_angle, bar_index)\n\n// LONG: EMA up + close breaks above tracked high\nif can_enter and ema_up and not na(tracked_high)\n    if close > tracked_high + break_buffer\n        float stop_px = close - stop_pts\n        strategy.entry(\"Long\", strategy.long)\n        strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n        if hard_tp_pts > 0\n            strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n        else\n            strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n        current_stop    := stop_px\n        peak_profit_pts := 0.0\n        trades_today   += 1\n        entry_bar       := bar_index\n        log.info(\"SIGNAL LONG: close={0} level={1} buffer={2} stop={3} emaAngle={4} bar={5}\",\n          close, tracked_high, break_buffer, stop_px, ema_angle, bar_index)"
         }
       ]
     },
@@ -10716,7 +10769,8 @@
         "ICT Unicorn + POC [Profit] ES 5min_1792294736.txt",
         "ICT Unicorn + POC [Profit] ES 5min_1792651777.txt",
         "ICT Unicorn + POC [Profit] ES 5min_1793226207.txt",
-        "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt"
+        "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -11102,7 +11156,16 @@
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "created_poc_rsi_momentum_pullback_5_redesign2.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+        "Golden NQ 5 min strat.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -15540,7 +15603,15 @@
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "created_poc_rsi_momentum_pullback_5_redesign2.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+        "Golden NQ 5 min strat.txt",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -17623,7 +17694,15 @@
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "created_poc_rsi_momentum_pullback_5_redesign2.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+        "Golden NQ 5 min strat.txt",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -19983,7 +20062,8 @@
         "night_shift_nq_5m_fixed_stop.pine",
         "ICT Unicorn + POC [Profit] ES 5min_redesign1.pine",
         "ICT Unicorn + POC [Profit] ES 5min_redesign2.pine",
-        "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine"
+        "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21253,7 +21333,8 @@
         "poc_break_retest_ema_simple.pine",
         "Night Shift 25sma 55ema es 1min 5k year .txt",
         "Night Shift 25sma 55ema es 1min 5k year _1792432098.txt",
-        "Night Shift 25sma 55ema es 1min 5k year _1792497862.txt"
+        "Night Shift 25sma 55ema es 1min 5k year _1792497862.txt",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21268,6 +21349,11 @@
           "script": "Night Shift 25sma 55ema es 1min 5k year .txt",
           "hash": "5398aeb388ea",
           "source": "float ph = ta.pivothigh(high, pivot_left, pivot_right)\nfloat pl = ta.pivotlow(low, pivot_left, pivot_right)\n\n// Store last 2 pivot highs and last 2 pivot lows\nvar float ph_prev  = na\nvar float ph_prev2 = na\nvar float pl_prev  = na\nvar float pl_prev2 = na\n\nif not na(ph)\n    ph_prev2 := ph_prev\n    ph_prev  := ph\nif not na(pl)\n    pl_prev2 := pl_prev\n    pl_prev  := pl"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+          "hash": "052b2521d173",
+          "source": "float pivot_low_val  = ta.pivotlow(low, pivot_len, pivot_len)\nfloat pivot_high_val = ta.pivothigh(high, pivot_len, pivot_len)\n\nbool pivot_low_confirmed  = not na(pivot_low_val)\nbool pivot_high_confirmed = not na(pivot_high_val)"
         }
       ]
     },
@@ -21556,7 +21642,8 @@
         "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1792506934.txt",
         "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined_1793233194.txt",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt",
-        "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt"
+        "SmartSingalES1Min21EMASmallGainsExitWithStopLoss_1793226208.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21635,7 +21722,12 @@
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign3.pine",
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
-        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine"
+        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "Golden NQ 5 min strat.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21665,6 +21757,16 @@
           "script": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign2.pine",
           "hash": "5c450026150f",
           "source": "float vwma_val   = ta.vwma(close, vwma_len)\nfloat vwma_slope = vwma_val - vwma_val[vwma_slope_len]\nbool  vwma_up    = vwma_slope > min_slope\nbool  vwma_dn    = vwma_slope < -min_slope"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+          "hash": "108af820a169",
+          "source": "float vwma_val = ta.vwma(close, ema_len)\nbool vwma_up   = vwma_val > vwma_val[1]\nbool vwma_dn   = vwma_val < vwma_val[1]\n\nbool long_trend  = close > vwma_val and vwma_up\nbool short_trend = close < vwma_val and vwma_dn"
+        },
+        {
+          "script": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+          "hash": "593859c9ceca",
+          "source": "float vwma_val = ta.vwma(close, vwma_len)\n// Simple slope check: current VWMA vs previous bar's VWMA\nbool vwma_up = vwma_val > vwma_val[1]\nbool vwma_dn = vwma_val < vwma_val[1]"
         }
       ]
     },
@@ -21709,7 +21811,10 @@
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
-        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine"
+        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Golden NQ 5 min strat.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21734,7 +21839,8 @@
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_redesign1.pine",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296_redesign1.pine",
-        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine"
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21785,7 +21891,10 @@
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296_redesign1.pine",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1792215926_redesign1.pine",
-        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine"
+        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt",
+        "Golden NQ 5 min strat.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21807,7 +21916,8 @@
         "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined_1792215988.txt",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296.txt",
         "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined_1793233194.txt",
-        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt"
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -21817,6 +21927,16 @@
           "script": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
           "hash": "07957dd4f926",
           "source": "var int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull and trail_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear and trail_bear\n    armed_dir := -1\n\nif armed_dir == 1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close <= poc_lo\n            armed_dir := 0\n    else if close <= poc_hi\n        armed_dir := 0\nelse if armed_dir == -1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close >= poc_hi\n            armed_dir := 0\n    else if close >= poc_lo\n        armed_dir := 0\n\nif require_trail\n    if armed_dir == 1 and trend == -1\n        armed_dir := 0\n    if armed_dir == -1 and trend == 1\n        armed_dir := 0\n\nbool pivot_confirm_long  = armed_dir == 1 and not na(ph)\nbool pivot_confirm_short = armed_dir == -1 and not na(pl)\n\nbool price_ok_long  = not use_price_vwma or close > vwma_val\nbool price_ok_short = not use_price_vwma or close < vwma_val\nbool vol_ok         = not use_vol_filter or high_vol\n\nbool confirmed_long  = pivot_confirm_long and price_ok_long and vol_ok\nbool confirmed_short = pivot_confirm_short and price_ok_short and vol_ok\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\n// Pre-trade check: is another script already in a trade?\nbool external_has_trade = use_external_block and external_position != 0\nbool no_conflict = not external_has_trade\n\nbool long_sig  = confirmed_long and in_session and cooled_down and no_conflict and strategy.position_size <= 0\nbool short_sig = confirmed_short and in_session and cooled_down and no_conflict and strategy.position_size >= 0"
+        },
+        {
+          "script": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+          "hash": "8847f1c86d6d",
+          "source": "var int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull and trail_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear and trail_bear\n    armed_dir := -1\n\nif armed_dir == 1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close <= poc_hi\n            armed_dir := 0\n    else if close <= poc_hi\n        armed_dir := 0\nelse if armed_dir == -1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close >= poc_lo\n            armed_dir := 0\n    else if close >= poc_lo\n        armed_dir := 0\n\n// Disarm if Smart Trail flips against armed direction\nif require_trail\n    if armed_dir == 1 and trend == -1\n        armed_dir := 0\n    if armed_dir == -1 and trend == 1\n        armed_dir := 0\n\nbool pivot_confirm_long  = armed_dir == 1 and not na(ph)\nbool pivot_confirm_short = armed_dir == -1 and not na(pl)\n\nbool price_ok_long  = not use_price_vwma or close > vwma_val\nbool price_ok_short = not use_price_vwma or close < vwma_val\nbool vol_ok         = not use_vol_filter or high_vol\n\nbool confirmed_long  = pivot_confirm_long and price_ok_long and vol_ok\nbool confirmed_short = pivot_confirm_short and price_ok_short and vol_ok\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\nbool long_sig  = confirmed_long and in_session and cooled_down and strategy.position_size <= 0\nbool short_sig = confirmed_short and in_session and cooled_down and strategy.position_size >= 0"
+        },
+        {
+          "script": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+          "hash": "1676bfdfb979",
+          "source": "var int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull and trail_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear and trail_bear\n    armed_dir := -1\n\nif armed_dir == 1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close <= poc_hi\n            armed_dir := 0\n    else if close <= poc_lo\n        armed_dir := 0\nelse if armed_dir == -1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close >= poc_lo\n            armed_dir := 0\n    else if close >= poc_hi\n        armed_dir := 0\n\n// Disarm if Smart Trail flips against armed direction\nif require_trail\n    if armed_dir == 1 and trend == -1\n        armed_dir := 0\n    if armed_dir == -1 and trend == 1\n        armed_dir := 0\n\nbool pivot_confirm_long  = armed_dir == 1 and not na(ph)\nbool pivot_confirm_short = armed_dir == -1 and not na(pl)\n\nbool price_ok_long  = not use_price_vwma or close > vwma_val\nbool price_ok_short = not use_price_vwma or close < vwma_val\nbool vol_ok         = not use_vol_filter or high_vol\n\nbool confirmed_long  = pivot_confirm_long and price_ok_long and vol_ok\nbool confirmed_short = pivot_confirm_short and price_ok_short and vol_ok\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\nbool long_sig  = confirmed_long and in_session and cooled_down and strategy.position_size <= 0\nbool short_sig = confirmed_short and in_session and cooled_down and strategy.position_size >= 0"
         }
       ]
     },
@@ -22020,7 +22140,9 @@
         "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine",
         "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine",
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -22060,6 +22182,16 @@
           "script": "created_poc_rsi_momentum_pullback_5_redesign1.pine",
           "hash": "7541f2578ac0",
           "source": "var float[] vp_up_vol = array.new_float(vpRows, 0.0)\nvar float[] vp_down_vol = array.new_float(vpRows, 0.0)\nvar float vp_high = 0.0\nvar float vp_low = 0.0\nvar int vp_initialized = 0\n\n// Determine the high/low of the lookback period to define the grid\n// We calculate this on the first bar of the lookback or when the lookback window shifts significantly?\n// Actually, for a rolling profile, we usually recalculate the grid or keep a fixed grid.\n// The plan says: \"build over the last vpLookback bars by dividing the high-low range into vpRows price rows.\"\n// This implies the grid changes as the high/low of the last 100 bars changes.\n// This is computationally expensive. A common approximation is to use the high/low of the current lookback window.\n\n// To keep it efficient and stable, let's calculate the High and Low of the last vpLookback bars.\nfloat lookback_high = ta.highest(high, vpLookback)\nfloat lookback_low = ta.lowest(low, vpLookback)\n\n// If the grid changes, we must reset the volumes.\n// However, resetting every bar is expensive.\n// A simpler interpretation for Pine Script performance:\n// Calculate the POC based on the current distribution.\n// Let's use a simpler approach: Calculate the POC price level directly using a histogram-like approximation\n// or just find the price level with the highest volume in the lookback period.\n// Given the constraints, let's implement a lightweight version:\n// We will iterate through the last vpLookback bars and assign volume to bins.\n\n// To avoid array reset issues and performance lag, we will calculate the POC zone bounds directly.\n// We need:\n// 1. Total Up Vol in POC Row\n// 2. Total Down Vol in POC Row\n// 3. POC Row Index\n\n// Let's define the bin size\nfloat bin_size = (lookback_high - lookback_low) / vpRows\n\n// We need to find the POC.\n// Since we can't easily store a dynamic histogram that resets perfectly without var arrays and careful management,\n// and the prompt asks for specific logic, let's use a loop to calculate the volume distribution for the current bar's context.\n// Wait, \"build over the last vpLookback bars\". This is a rolling window.\n// Recalculating a 50-row histogram every bar for 100 bars is 5000 operations. This is acceptable in Pine.\n\nvar int poc_row_idx = 0\nvar float poc_zone_upper = 0.0\nvar float poc_zone_lower = 0.0\nvar float poc_delta_pct = 0.0\n\n// We will recalculate the profile every bar.\n// Initialize arrays to 0\nfor i = 0 to vpRows - 1\n    array.set(vp_up_vol, i, 0.0)\n    array.set(vp_down_vol, i, 0.0)\n\n// Populate arrays\nfor i = 0 to vpLookback - 1\n    float bar_close = close[i]\n    float bar_open = open[i]\n    float bar_vol = volume[i]\n\n    // Determine which row this close falls into\n    // Row 0 is the lowest price (lookback_low)\n    // Row vpRows-1 is the highest price (lookback_high)\n    if bar_close >= lookback_low and bar_close <= lookback_high\n        int row_idx = int(math.round((bar_close - lookback_low) / bin_size))\n        // Clamp row index\n        row_idx := math.min(math.max(row_idx, 0), vpRows - 1)\n\n        if bar_close >= bar_open\n            array.set(vp_up_vol, row_idx, array.get(vp_up_vol, row_idx) + bar_vol)\n        else\n            array.set(vp_down_vol, row_idx, array.get(vp_down_vol, row_idx) + bar_vol)\n\n// Find POC Row (Highest Total Volume)\nint max_vol_row = 0\nfloat max_vol = 0.0\nfor i = 0 to vpRows - 1\n    float total_row_vol = array.get(vp_up_vol, i) + array.get(vp_down_vol, i)\n    if total_row_vol > max_vol\n        max_vol := total_row_vol\n        max_vol_row := i\n\npoc_row_idx := max_vol_row\n\n// Calculate POC Zone Bounds\n// POC Row Price Center\nfloat poc_price = lookback_low + (poc_row_idx + 0.5) * bin_size\nfloat poc_zone_width = pocZoneRows * bin_size\n\npoc_zone_upper := poc_price + poc_zone_width\npoc_zone_lower := poc_price - poc_zone_width\n\n// Clamp to profile bounds? \"clamped to the profile\"\npoc_zone_upper := math.min(poc_zone_upper, lookback_high)\npoc_zone_lower := math.max(poc_zone_lower, lookback_low)\n\n// Calculate POC Delta Percent\nfloat poc_row_up = array.get(vp_up_vol, poc_row_idx)\nfloat poc_row_down = array.get(vp_down_vol, poc_row_idx)\nfloat poc_row_total = poc_row_up + poc_row_down\npoc_delta_pct := poc_row_total > 0 ? ((poc_row_up - poc_row_down) / poc_row_total) * 100 : 0.0"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+          "hash": "21e2821a76cd",
+          "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Reset arrays\n    if vol_total.size() != rows\n        vol_total.clear()\n        vol_up.clear()\n        vol_dn.clear()\n        for i = 0 to rows - 1\n            vol_total.push(0.0)\n            vol_up.push(0.0)\n            vol_dn.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_total.set(i, 0.0)\n            vol_up.set(i, 0.0)\n            vol_dn.set(i, 0.0)\n\n    // Populate profile\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    // Find POC\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    // Delta at POC\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+          "hash": "23802bab88b0",
+          "source": "int lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Reset arrays\n    for a = 0 to 2\n        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn\n        if arr.size() != rows\n            arr.clear()\n            for i = 0 to rows - 1\n                arr.push(0.0)\n        else\n            for i = 0 to rows - 1\n                arr.set(i, 0.0)\n\n    // Fill arrays\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    // Find POC\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    // Delta at POC\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
         }
       ]
     },
@@ -22157,7 +22289,9 @@
         "Day shift BOS Profitable 16k Delta Volume Breakout  safe dual time split_1793236137.txt",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
         "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1792215926_redesign1.pine",
-        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine"
+        "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign1.pine",
+        "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1793833888.txt",
+        "Golden NQ 5 min strat.txt"
       ],
       "engine": true,
       "added_by": "Systems Administrator",
@@ -23934,7 +24068,8 @@
       "scripts": [
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1792216296.txt",
-        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt"
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269.txt",
+        "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793833889.txt"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -23976,7 +24111,14 @@
       ],
       "engine": true,
       "added_by": "Chart researcher",
-      "added_at": "2026-10-09 07:20"
+      "added_at": "2026-10-09 07:20",
+      "variants": [
+        {
+          "script": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+          "hash": "638c8e950010",
+          "source": "var int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear\n    armed_dir := -1\n\n// Disarm if price re-enters POC before BOS\nif armed_dir == 1 and not na(poc_hi) and close <= poc_hi\n    armed_dir := 0\nelse if armed_dir == -1 and not na(poc_lo) and close >= poc_lo\n    armed_dir := 0"
+        }
+      ]
     },
     {
       "id": "section:breakout_detection",
@@ -24008,7 +24150,8 @@
         "DeltaVolumeBreakOutBigGainsRiskyWithBackground_1792433166.txt",
         "DeltaVolumeBreakOutBigGainsRiskyWithBackground_1792480547.txt",
         "Day Shift Delta Volume Breakout colored Back ground Good Copy_1793243202.txt",
-        "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_1793249257.txt"
+        "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_1793249257.txt",
+        "added_delta_volume_breakout_night_shift_gc_5min_attemp_1adcde21.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -24095,6 +24238,11 @@
           "script": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
           "hash": "3716d287f698",
           "source": "bool in_poc_channel = not na(poc_lo) and not na(poc_hi) and close >= poc_lo and close <= poc_hi\n\nvar int armed_dir     = 0\nvar int skip_count   = 0\nvar int confirm_count = 0\nvar bool armed_long_pullback  = false\nvar bool armed_short_pullback = false\n\nif in_poc_channel and delta_bull and vwma_up and armed_dir != 1\n    armed_dir     := 1\n    confirm_count := 0\n    skip_count    := 0\nelse if in_poc_channel and delta_bear and vwma_dn and armed_dir != -1\n    armed_dir     := -1\n    confirm_count := 0\n    skip_count    := 0\n\nif armed_dir == 1\n    if close > close[1]\n        confirm_count += 1\n        skip_count    := 0\n    else\n        if skip_count < 1\n            skip_count += 1\n        else\n            armed_dir     := 0\n            confirm_count := 0\n            skip_count    := 0\nelse if armed_dir == -1\n    if close < close[1]\n        confirm_count += 1\n        skip_count    := 0\n    else\n        if skip_count < 1\n            skip_count += 1\n        else\n            armed_dir     := 0\n            confirm_count := 0\n            skip_count    := 0\n\nbool confirmed_long  = armed_dir == 1 and confirm_count >= confirm_candles\nbool confirmed_short = armed_dir == -1 and confirm_count >= confirm_candles\n\nif confirmed_long\n    armed_long_pullback  := true\n    armed_dir            := 0\n    confirm_count        := 0\nif confirmed_short\n    armed_short_pullback := true\n    armed_dir            := 0\n    confirm_count        := 0\n\nif vwma_dn\n    armed_long_pullback := false\nif vwma_up\n    armed_short_pullback := false\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\n// New Entry Logic: Enter on breakout of POC channel if trend and delta align\nbool long_sig  = above_poc and delta_bull and vwma_up and in_session and cooled_down and not daily_locked and strategy.position_size <= 0 and near_vwma\nbool short_sig = below_poc and delta_bear and vwma_dn and in_session and cooled_down and not daily_locked and strategy.position_size >= 0 and near_vwma"
+        },
+        {
+          "script": "NQResearchFirm.txt",
+          "hash": "d81dd1f3ec80",
+          "source": "bool in_poc_channel = not na(poc_lo) and not na(poc_hi) and close >= poc_lo and close <= poc_hi\n\nvar int armed_dir     = 0\nvar int skip_count   = 0\nvar int confirm_count = 0\nvar bool armed_long_pullback  = false\nvar bool armed_short_pullback = false\n\nif above_poc and delta_bull and vwma_up and armed_dir != 1\n    armed_dir     := 1\n    confirm_count := 0\n    skip_count    := 0\nelse if below_poc and delta_bear and vwma_dn and armed_dir != -1\n    armed_dir     := -1\n    confirm_count := 0\n    skip_count    := 0\n\nif in_poc_channel and armed_dir != 0\n    armed_dir := 0\n    confirm_count := 0\n    skip_count := 0\n    armed_long_pullback := false\n    armed_short_pullback := false\n\nif armed_dir == 1\n    if close > close[1]\n        confirm_count += 1\n        skip_count    := 0\n    else\n        if skip_count < 1\n            skip_count += 1\n        else\n            armed_dir     := 0\n            confirm_count := 0\n            skip_count    := 0\nelse if armed_dir == -1\n    if close < close[1]\n        confirm_count += 1\n        skip_count    := 0\n    else\n        if skip_count < 1\n            skip_count += 1\n        else\n            armed_dir     := 0\n            confirm_count := 0\n            skip_count    := 0\n\nbool confirmed_long  = armed_dir == 1 and confirm_count >= confirm_candles\nbool confirmed_short = armed_dir == -1 and confirm_count >= confirm_candles\n\nif confirmed_long\n    armed_long_pullback  := true\n    armed_dir            := 0\n    confirm_count        := 0\nif confirmed_short\n    armed_short_pullback := true\n    armed_dir            := 0\n    confirm_count        := 0\n\nif vwma_dn\n    armed_long_pullback := false\nif vwma_up\n    armed_short_pullback := false\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\nbool long_sig  = armed_long_pullback and near_vwma and vwma_up and in_session and cooled_down and not daily_locked and strategy.position_size <= 0\nbool short_sig = armed_short_pullback and near_vwma and vwma_dn and in_session and cooled_down and not daily_locked and strategy.position_size >= 0\n\nif strategy.position_size > 0\n    strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\nelse if strategy.position_size < 0\n    strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)"
         }
       ]
     },
@@ -26652,7 +26800,8 @@
         "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_redesign1.pine",
         "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine",
         "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine"
       ],
       "engine": true,
       "added_by": "2min strategy developer",
@@ -26702,6 +26851,11 @@
           "script": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine",
           "hash": "b2044ae01596",
           "source": "vwma_val   = ta.vwma(close, vwma_len)\ntrend_long  = close > vwma_val\ntrend_short = close < vwma_val"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+          "hash": "3fe337607ed0",
+          "source": "float vwma_val   = ta.vwma(close, vwma_len)\nfloat vwma_slope = vwma_val - vwma_val[vwma_slope_len]\nbool  long_trend  = close > vwma_val and vwma_slope > 0\nbool  short_trend = close < vwma_val and vwma_slope < 0"
         }
       ]
     },
@@ -27128,7 +27282,8 @@
         "Night Shift 25sma 55ema es 1min 5k year _1792432098.txt",
         "Night Shift 25sma 55ema es 1min 5k year _1792497862.txt",
         "Night Shift 25sma 55ema es 1min 5k year .txt",
-        "night_shift_nq_5m_fixed_stop.pine"
+        "night_shift_nq_5m_fixed_stop.pine",
+        "NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure (Reserached).txt"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -27287,7 +27442,8 @@
       "scripts": [
         "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine",
         "hull_ma_cross_redesign1.pine",
-        "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine"
+        "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -27297,6 +27453,11 @@
           "script": "hull_ma_cross_redesign1.pine",
           "hash": "d177bb9219e8",
           "source": "float min_price = ta.lowest(low, profile_lookback)\nfloat max_price = ta.highest(high, profile_lookback)\nfloat bin_size = (max_price - min_price) / profile_rows\n\n// Arrays for up/down volume per bin\nvar array<float> up_vol = array.new_float(profile_rows, 0.0)\nvar array<float> down_vol = array.new_float(profile_rows, 0.0)\n\n// Reset arrays every bar? No, we need to accumulate over the lookback period.\n// But Pine Script arrays persist. We need to clear them and refill every bar.\n// This is expensive but necessary for a rolling profile.\narray.clear(up_vol)\narray.clear(down_vol)\nfor i = 0 to profile_rows - 1\n    array.push(up_vol, 0.0)\n    array.push(down_vol, 0.0)\n\n// Fill arrays\nfor i = 0 to profile_lookback - 1\n    float c = close[i]\n    float o = open[i]\n    float v = volume[i]\n    if bin_size > 0\n        int idx = int((c - min_price) / bin_size)\n        if idx < 0\n            idx := 0\n        if idx >= profile_rows\n            idx := profile_rows - 1\n        if c > o\n            float current_up = array.get(up_vol, idx)\n            array.set(up_vol, idx, current_up + v)\n        else\n            float current_down = array.get(down_vol, idx)\n            array.set(down_vol, idx, current_down + v)\n\n// Find POC index\nint poc_idx = 0\nfloat max_vol = 0.0\nfor i = 0 to profile_rows - 1\n    float total_vol = array.get(up_vol, i) + array.get(down_vol, i)\n    if total_vol > max_vol\n        max_vol := total_vol\n        poc_idx := i\n\n// POC Price (center of bin)\nfloat poc_price = min_price + (poc_idx + 0.5) * bin_size\nfloat poc_zone_high = poc_price + poc_zone_rows * bin_size\nfloat poc_zone_low = poc_price - poc_zone_rows * bin_size\n\n// POC Delta\nfloat poc_up = array.get(up_vol, poc_idx)\nfloat poc_down = array.get(down_vol, poc_idx)\nfloat poc_total = poc_up + poc_down\nfloat poc_delta = poc_total > 0 ? (poc_up - poc_down) / poc_total * 100 : 0.0"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+          "hash": "865010f3f678",
+          "source": "int lb = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi = na\nfloat prof_lo = na\n\nif lb > 0\n    // Calculate high/low excluding current bar\n    float max_h = low[1]\n    float min_l = high[1]\n    for i = 1 to lb\n        max_h := math.max(max_h, high[i])\n        min_l := math.min(min_l, low[i])\n    prof_hi := max_h\n    prof_lo := min_l\n\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Initialize arrays\n    for a = 0 to 2\n        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn\n        if arr.size() != rows\n            arr.clear()\n            for i = 0 to rows - 1\n                arr.push(0.0)\n        else\n            for i = 0 to rows - 1\n                arr.set(i, 0.0)\n\n    // Populate profile\n    for iBar = 1 to lb\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    // Find POC\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    // Delta at POC\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0"
         }
       ]
     },
@@ -27317,7 +27478,11 @@
         "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine",
         "created_poc_rsi_momentum_pullback_5_redesign1.pine",
         "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
-        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine"
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1_1793825336.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -27352,6 +27517,26 @@
           "script": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
           "hash": "f6b8f7088293",
           "source": "var int armed_dir = 0\nvar bool reversal_allowed = false\nvar int last_exit_dir = 0\nvar bool last_exit_was_stop = false\n\n// Detect exit to update reversal state\nif strategy.position_size == 0\n    if strategy.closedtrades > 0\n        int last_trade = strategy.closedtrades - 1\n        float last_exit_price = strategy.closedtrades.exit_price(last_trade)\n        float last_entry_price = strategy.closedtrades.entry_price(last_trade)\n        int last_dir = strategy.closedtrades.profit(last_trade) > 0 ? (last_entry_price < last_exit_price ? 1 : -1) : (last_entry_price < last_exit_price ? 1 : -1)\n        // Determine if it was a stop out\n        bool was_stop = false\n        if last_dir > 0\n            was_stop := math.abs(last_exit_price - (last_entry_price - stop_dollars / pv)) < 0.01\n        else\n            was_stop := math.abs(last_exit_price - (last_entry_price + stop_dollars / pv)) < 0.01\n\n        if was_stop\n            last_exit_dir := last_dir\n            last_exit_was_stop := true\n            reversal_allowed := true\n        else\n            last_exit_dir := 0\n            last_exit_was_stop := false\n            reversal_allowed := false\n\n// Arm Long\nif above_poc and vwma_up and delta_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear\n    armed_dir := -1\n\n// Clear arm if close returns inside POC zone\nif not na(poc_hi) and not na(poc_lo)\n    if close >= poc_lo and close <= poc_hi\n        armed_dir := 0"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign1.pine",
+          "hash": "736501b492d9",
+          "source": "var int armed_dir = 0\n\n// Breakout conditions\nbool above_poc = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi\nbool below_poc = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo\n\nbool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nbool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\n\n// Arm\nif above_poc and long_trend and delta_bull\n    armed_dir := 1\nelse if below_poc and short_trend and delta_bear\n    armed_dir := -1\n\n// Disarm if close returns inside POC zone\nif not na(poc_lo) and not na(poc_hi)\n    if close >= poc_lo and close <= poc_hi\n        armed_dir := 0"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+          "hash": "d566de6d67d9",
+          "source": "var int armed_dir = 0 // 1 for Long, -1 for Short, 0 for None\nvar bool reversal_allowed = false\nvar int last_exit_dir = 0 // 1 if last exit was Long stop, -1 if Short stop\n\n// Detect Stop Out for Reversal Logic\n// We need to know if the previous trade was stopped out.\n// We can track this by checking if position size changed from non-zero to zero and the P&L was negative.\n// However, `strategy.closedtrades` is easier if we track the last trade.\n// Let's use a simpler state machine.\nvar float last_trade_pnl = 0.0\nvar int last_trade_dir = 0\n\nif strategy.position_size == 0 and strategy.position_size[1] != 0\n    // Trade just closed\n    last_trade_pnl := strategy.closedtrades.profit(strategy.closedtrades - 1)\n    last_trade_dir := strategy.position_size[1] > 0 ? 1 : -1\n\n    // If it was a stop out (loss), allow reversal\n    if last_trade_pnl < 0\n        reversal_allowed := true\n    else\n        reversal_allowed := false\n\n// Disarm if close returns inside POC zone\nif not na(poc_lo) and not na(poc_hi)\n    if close >= poc_lo and close <= poc_hi\n        armed_dir := 0\n\n// Arm Long\nbool arm_long_cond = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi and trend_up and (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nif arm_long_cond\n    armed_dir := 1\n\n// Arm Short\nbool arm_short_cond = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo and trend_dn and (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\nif arm_short_cond\n    armed_dir := -1"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+          "hash": "29622bbebd6a",
+          "source": "var int armed_dir = 0\n\nif above_poc and long_trend and delta_bull\n    armed_dir := 1\nelse if below_poc and short_trend and delta_bear\n    armed_dir := -1\n\n// Clear armed state if price returns to or through POC zone\nif armed_dir == 1 and close <= poc_hi\n    armed_dir := 0\nelse if armed_dir == -1 and close >= poc_lo\n    armed_dir := 0"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+          "hash": "801fbf627f26",
+          "source": "var int armed_dir = 0 // 1 for long, -1 for short, 0 for neutral\n\nbool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nbool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\n\nbool above_poc_zone = not na(poc_hi) and close > poc_hi\nbool below_poc_zone = not na(poc_lo) and close < poc_lo\nbool inside_poc_zone = not na(poc_hi) and not na(poc_lo) and close >= poc_lo and close <= poc_hi\n\n// Update Arming State\nif above_poc_zone and vwma_up and delta_bull\n    armed_dir := 1\nelse if below_poc_zone and vwma_dn and delta_bear\n    armed_dir := -1\nelse if inside_poc_zone\n    armed_dir := 0"
         }
       ]
     },
@@ -27366,11 +27551,25 @@
       "hash": "66a860ff3aab",
       "scripts": [
         "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine",
-        "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine"
+        "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
-      "added_at": "2026-11-02 00:15"
+      "added_at": "2026-11-02 00:15",
+      "variants": [
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine",
+          "hash": "c9f834daeae8",
+          "source": "float piv_low_val = ta.pivotlow(low, pivot_len, pivot_len)\nfloat piv_high_val = ta.pivothigh(high, pivot_len, pivot_len)\n\nbool has_piv_low = not na(piv_low_val)\nbool has_piv_high = not na(piv_high_val)\n\n// The price of the pivot is at the bar index: bar_index - pivot_len\n// But for entry logic, we need to know if the *current* close is valid relative to the POC.\n// The plan says: \"Enter long on the next confirmed pivot low ... that remains above the POC low\"\n// This implies we enter *at* the pivot confirmation? Or do we wait for the next bar?\n// \"Enter long on the next confirmed pivot low... that remains above the POC low\"\n// Usually, you enter on the close of the confirmation bar or the open of the next.\n// Given `process_orders_on_close=true`, entering on the confirmation bar's close is standard.\n// However, the pivot low is at `low[pivot_len]`. The confirmation happens at `bar_index`.\n// The condition \"remains above the POC low\" likely refers to the pivot low price itself or the current close?\n// \"Enter long on the next confirmed pivot low ... that remains above the POC low\"\n// Interpretation: The pivot low price must be > POC Low.\n// Let's assume the entry price is the close of the confirmation bar, but the condition is on the pivot low price.\n// Or does it mean we enter when price *retests*? No, \"on the next confirmed pivot low\".\n// Let's use the pivot low price for the condition and enter on the current close."
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign2.pine",
+          "hash": "d72c46dd3f0f",
+          "source": "bool pivot_low_confirmed  = false\nbool pivot_high_confirmed = false\n\nif bar_index >= pivot_left + pivot_right\n    float pivot_low_price = low[pivot_left]\n    bool is_pivot_low = true\n    for i = 1 to pivot_left\n        if low[pivot_left - i] < pivot_low_price or low[pivot_left + i] < pivot_low_price\n            is_pivot_low := false\n    if is_pivot_low\n        pivot_low_confirmed := true\n\n    float pivot_high_price = high[pivot_left]\n    bool is_pivot_high = true\n    for i = 1 to pivot_left\n        if high[pivot_left - i] > pivot_high_price or high[pivot_left + i] > pivot_high_price\n            is_pivot_high := false\n    if is_pivot_high\n        pivot_high_confirmed := true"
+        }
+      ]
     },
     {
       "id": "section:arm_on_poc_breakout_enter_on_pivot",
@@ -27474,7 +27673,8 @@
       "hash": "17123431e4d4",
       "scripts": [
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign1.pine",
-        "ICT Unicorn + POC [Profit] ES 5min_redesign1.pine"
+        "ICT Unicorn + POC [Profit] ES 5min_redesign1.pine",
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -27489,6 +27689,11 @@
           "script": "ICT Unicorn + POC [Profit] ES 5min_redesign1.pine",
           "hash": "aba60f6fd6ea",
           "source": "var bool long_armed  = false\nvar bool short_armed = false\nvar int stop_out_occurred = 0\nvar bool reversal_used = false\n\nif is_new_day\n    long_armed := false\n    short_armed := false\n    stop_out_occurred := 0\n    reversal_used := false\n\n// Reset arms if close returns inside POC zone\nif not na(poc_lo) and not na(poc_hi)\n    if close >= poc_lo and close <= poc_hi\n        long_armed := false\n        short_armed := false\n\n// Arm Long\nbool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nbool arm_long_cond = not na(poc_hi) and close > poc_hi and vwma_up and delta_bull\nif arm_long_cond and not long_armed and not short_armed\n    long_armed := true\n\n// Arm Short\nbool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\nbool arm_short_cond = not na(poc_lo) and close < poc_lo and vwma_dn and delta_bear\nif arm_short_cond and not short_armed and not long_armed\n    short_armed := true"
+        },
+        {
+          "script": "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+          "hash": "54836fb9717f",
+          "source": "var bool armed_long = false\nvar bool armed_short = false\n\n// Arm Long: Cross above POC High, Trend Long, Delta Bull\nbool cross_above_poc = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi\nbool cross_below_poc = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo\n\nbool delta_bull = not na(poc_delta_pct) and poc_delta_pct > min_delta_pct\nbool delta_bear = not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct\n\nif cross_above_poc and trend_long and delta_bull\n    armed_long := true\nelse if cross_below_poc and trend_short and delta_bear\n    armed_short := true\n\n// Disarm Long: Close <= POC High\nif armed_long and not na(poc_hi) and close <= poc_hi\n    armed_long := false\n\n// Disarm Short: Close >= POC Low\nif armed_short and not na(poc_lo) and close >= poc_lo\n    armed_short := false"
         }
       ]
     },
@@ -27508,7 +27713,8 @@
         "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign2.pine",
         "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign3.pine",
         "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
-        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine"
+        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine"
       ],
       "engine": true,
       "added_by": "Chart researcher",
@@ -27543,6 +27749,11 @@
           "script": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
           "hash": "b0b262eecc99",
           "source": "float pivot_low  = ta.pivotlow(low, pivot_len, pivot_len)\nfloat pivot_high = ta.pivothigh(high, pivot_len, pivot_len)\n\n// Pivot signals are confirmed on the bar where the pivot is detected (which is pivot_len bars after the actual pivot point)\n// We want to enter on the \"next confirmed\" pivot.\n// ta.pivotlow returns the value of the low at the pivot point, but it is available only after 'right' bars.\n// So if pivot_low is not na, a pivot low was confirmed 'pivot_len' bars ago.\n// The plan says: \"Enter long on the next confirmed ta.pivotlow... while armed long\"\n// This implies we wait for the pivot to be confirmed.\n\nbool pivot_low_confirmed = not na(pivot_low)\nbool pivot_high_confirmed = not na(pivot_high)\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\n// Check if we are allowed to enter based on reversal logic\nbool can_enter_long = false\nbool can_enter_short = false\n\nif armed_dir == 1\n    if last_exit_was_stop and last_exit_dir == -1 and reversal_allowed\n        can_enter_long := true\n    else if not last_exit_was_stop\n        can_enter_long := true\n    else if last_exit_dir == 1\n        // Same direction stop out, not a reversal\n        can_enter_long := false\n    else\n        can_enter_long := false\n\nif armed_dir == -1\n    if last_exit_was_stop and last_exit_dir == 1 and reversal_allowed\n        can_enter_short := true\n    else if not last_exit_was_stop\n        can_enter_short := true\n    else if last_exit_dir == -1\n        can_enter_short := false\n    else\n        can_enter_short := false\n\nbool long_sig  = pivot_low_confirmed and armed_dir == 1 and in_session and cooled_down and strategy.position_size <= 0 and can_enter_long\nbool short_sig = pivot_high_confirmed and armed_dir == -1 and in_session and cooled_down and strategy.position_size >= 0 and can_enter_short"
+        },
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+          "hash": "ad507faebe45",
+          "source": "float pivot_low_val = ta.pivotlow(low, confirm_candles, confirm_candles)\nfloat pivot_high_val = ta.pivothigh(high, confirm_candles, confirm_candles)\n\n// Check if pivot is valid and in the correct zone\nbool long_pivot_valid = not na(pivot_low_val) and not na(poc_hi) and pivot_low_val > poc_hi\nbool short_pivot_valid = not na(pivot_high_val) and not na(poc_lo) and pivot_high_val < poc_lo"
         }
       ]
     },
@@ -27757,11 +27968,59 @@
       "source": "use_skip      = input.bool(true, \"Skip This Time Of Day\", group=\"Skip Window\", tooltip=\"No trade opens inside this window, and an open trade is closed when it starts.\")\nskip_start_hr = input.int(11, \"Skip Start Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_start_mn = input.int(30, \"Skip Start Minute\", minval=0, maxval=59, group=\"Skip Window\")\nskip_end_hr   = input.int(13, \"Skip End Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_end_mn   = input.int(30, \"Skip End Minute\", minval=0, maxval=59, group=\"Skip Window\")\n\nskip_bar_t = hour(time, \"America/New_York\") * 100 + minute(time, \"America/New_York\")\nskip_from  = skip_start_hr * 100 + skip_start_mn\nskip_to    = skip_end_hr * 100 + skip_end_mn\nin_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))\nskip_window_open = not in_skip_window\n\nif in_skip_window and strategy.position_size != 0\n    strategy.close_all(comment=\"Skip Window\")",
       "hash": "838a84a34d80",
       "scripts": [
-        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine"
+        "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+        "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt"
       ],
       "engine": true,
       "added_by": "Chart researcher",
-      "added_at": "2026-11-04 14:16"
+      "added_at": "2026-11-04 14:16",
+      "variants": [
+        {
+          "script": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+          "hash": "0f1c8e39681e",
+          "source": "use_skip      = input.bool(true, \"Skip This Time Of Day\", group=\"Skip Window\", tooltip=\"No trade opens inside this window, and an open trade is closed when it starts.\")\nskip_start_hr = input.int(8, \"Skip Start Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_start_mn = input.int(30, \"Skip Start Minute\", minval=0, maxval=59, group=\"Skip Window\")\nskip_end_hr   = input.int(10, \"Skip End Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_end_mn   = input.int(30, \"Skip End Minute\", minval=0, maxval=59, group=\"Skip Window\")\n\nskip_bar_t = hour(time, \"America/New_York\") * 100 + minute(time, \"America/New_York\")\nskip_from  = skip_start_hr * 100 + skip_start_mn\nskip_to    = skip_end_hr * 100 + skip_end_mn\nin_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))\nskip_window_open = not in_skip_window\n\nif in_skip_window and strategy.position_size != 0\n    strategy.close_all(comment=\"Skip Window\")"
+        }
+      ]
+    },
+    {
+      "id": "section:trend_filter_vwma",
+      "name": "Trend Filter (Vwma)",
+      "kind": "script section",
+      "signature": "Trend Filter (Vwma)",
+      "summary": "Calculated in Delta Volume Breakout Night Shift ES 2Min_redesign2.pine.",
+      "example": "",
+      "source": "float vwma_val = ta.vwma(close, vwma_len)\nbool trend_long = close > vwma_val\nbool trend_short = close < vwma_val",
+      "hash": "98093670aa8a",
+      "scripts": [
+        "Delta Volume Breakout Night Shift ES 2Min_redesign2.pine",
+        "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine"
+      ],
+      "engine": true,
+      "added_by": "Chart researcher",
+      "added_at": "2026-11-04 22:52",
+      "variants": [
+        {
+          "script": "DeltaVolumeBreakOutBigGainsRisky_redesign3.pine",
+          "hash": "faee86743a86",
+          "source": "float vwma_val   = ta.vwma(close, vwma_len)\nfloat vwma_prev  = vwma_val[1]\nfloat vwma_slope = vwma_val - vwma_val[vwma_slope_len]\n\nbool vwma_up = close > vwma_val and vwma_slope > 0\nbool vwma_dn = close < vwma_val and vwma_slope < 0"
+        }
+      ]
+    },
+    {
+      "id": "section:trend_filter_vwma_slope",
+      "name": "Trend Filter (Vwma Slope)",
+      "kind": "script section",
+      "signature": "Trend Filter (Vwma Slope)",
+      "summary": "Calculated in DeltaVolumeBreakOutBigGainsRisky_redesign1.pine.",
+      "example": "",
+      "source": "float vwma_val = ta.vwma(close, vwma_len)\nfloat vwma_prev = vwma_val[1]\nfloat vwma_slope = vwma_val - vwma_prev\nbool trend_up = vwma_slope > 0\nbool trend_dn = vwma_slope < 0",
+      "hash": "8749fb0b9693",
+      "scripts": [
+        "DeltaVolumeBreakOutBigGainsRisky_redesign1.pine"
+      ],
+      "engine": true,
+      "added_by": "Chart researcher",
+      "added_at": "2026-11-04 23:58"
     }
   ]
 }

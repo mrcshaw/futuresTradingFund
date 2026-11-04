@@ -704,11 +704,203 @@
    "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
    "source": "engine",
    "repeats": 1
+  },
+  {
+   "time": "2026-11-04T20:17:29-05:00",
+   "last": "2026-11-04T20:17:29-05:00",
+   "desk": "5 min chart developer",
+   "text": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine stopped on an engine error: [Errno 22] Invalid argument: '/app/futuresfund/researchNotes/ICT_Unicorn_+_POC_[Profit]_ES_5min_redesign3.json'. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-04T20:29:30-05:00",
+   "last": "2026-11-04T20:49:38-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 4
+  },
+  {
+   "time": "2026-11-05T03:47:52-05:00",
+   "last": "2026-11-05T03:54:49-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-05T03:57:43-05:00",
+   "last": "2026-11-05T03:57:43-05:00",
+   "desk": "15 min chart developer",
+   "text": "NQResearchFirm.txt stopped on an engine error: Engine 6 stopped. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T03:57:44-05:00",
+   "last": "2026-11-05T03:57:44-05:00",
+   "desk": "5 min chart developer",
+   "text": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt stopped on an engine error: Engine 5 stopped. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T03:57:44-05:00",
+   "last": "2026-11-05T03:57:44-05:00",
+   "desk": "15 min chart developer",
+   "text": "Golden NQ 5 min strat.txt stopped on an engine error: Engine 3 stopped. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T06:12:24-05:00",
+   "last": "2026-11-05T06:12:24-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T16:28:17-05:00",
+   "last": "2026-11-05T16:32:17-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-05T18:03:15-05:00",
+   "last": "2026-11-05T18:03:15-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T19:51:18-05:00",
+   "last": "2026-11-05T19:51:18-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T20:40:30-05:00",
+   "last": "2026-11-05T20:40:30-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-05T21:30:35-05:00",
+   "last": "2026-11-05T21:30:35-05:00",
+   "desk": "5 min chart developer",
+   "text": "Delta Volume Breakout Night Shift ES 2Min.txt stopped on an engine error: Engine 2 stopped. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T12:33:52-05:00",
+   "last": "2026-11-06T12:33:52-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T15:39:25-05:00",
+   "last": "2026-11-06T15:39:25-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T16:55:45-05:00",
+   "last": "2026-11-06T16:55:45-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T20:07:09-05:00",
+   "last": "2026-11-06T20:13:36-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 3
+  },
+  {
+   "time": "2026-11-06T20:39:09-05:00",
+   "last": "2026-11-06T20:39:09-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T21:06:04-05:00",
+   "last": "2026-11-06T21:06:04-05:00",
+   "desk": "Portfolio Manager",
+   "text": "Email not sent: Futures desk report. Email is off in this process (a test run or FUTURES_MAIL_OFF), so nothing was sent.",
+   "source": "mail",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T21:06:13-05:00",
+   "last": "2026-11-06T21:08:31-05:00",
+   "desk": "Portfolio Manager",
+   "text": "Email not sent: Futures fund library: Kept Run. Email is off in this process (a test run or FUTURES_MAIL_OFF), so nothing was sent.",
+   "source": "mail",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-06T21:06:13-05:00",
+   "last": "2026-11-06T21:08:32-05:00",
+   "desk": "Portfolio Manager",
+   "text": "Email not sent: Futures fund research report: Test. Email is off in this process (a test run or FUTURES_MAIL_OFF), so nothing was sent.",
+   "source": "mail",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-06T21:06:47-05:00",
+   "last": "2026-11-06T21:06:47-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-06T21:25:10-05:00",
+   "last": "2026-11-06T21:38:06-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 3
+  },
+  {
+   "time": "2026-11-06T22:08:44-05:00",
+   "last": "2026-11-06T22:18:02-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 3
+  },
+  {
+   "time": "2026-11-06T23:09:23-05:00",
+   "last": "2026-11-06T23:09:23-05:00",
+   "desk": "5 min chart developer",
+   "text": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt stopped on an engine error: Engine 5 stopped. It was not marked finished.",
+   "source": "board",
+   "repeats": 1
   }
  ],
  "last_report": {
-  "time": "2026-11-04T17:17:40-05:00",
-  "errors": 5,
+  "time": "2026-11-06T17:19:12-05:00",
+  "errors": 7,
   "sent": true,
   "reason": "sent",
   "to": "thefutureoffuturestrading@gmail.com"

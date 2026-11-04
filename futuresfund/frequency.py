@@ -1,4 +1,7 @@
-"""When a result is far under 4 trades a week, read this script and change its entry.
+"""When a result is far under the weekly trade floor, read this script and change its entry.
+
+The floor is the library trade count over 52 weeks (60 a year is about 1.2 a week), or the optional
+trades-a-week setting when that is higher. "Far under" is under that floor, and never above 2 a week.
 
 The guideline the user edits is researchNotes/how_to_research.md. This module
 applies that method to the script that is open: a short session is widened only
@@ -13,7 +16,7 @@ import json
 import re
 
 FULL_SESSION = "1800-1600"
-FAR_UNDER_WEEK = 2.0
+FAR_UNDER_WEEK = 2.0   # the most a week can be and still count as far under, whatever the floor
 
 _TIME_SESSION = re.compile(
     r'(time\s*\(\s*timeframe\.period\s*,\s*")(\d{4}-\d{4})(")',
@@ -50,8 +53,34 @@ def apply_session(source: str, window: str | None) -> str:
     return _TIME_SESSION.sub(repl, source or "")
 
 
+def far_under_week() -> float:
+    """The trades a week under which a run is far under: the weekly floor, and never more than FAR_UNDER_WEEK.
+
+    The weekly floor is objective.weekly_trade_floor: the library trade count over 52 weeks, or the
+    optional trades-a-week setting when that is higher. A script that already clears the floor is left
+    to the ordinary search, so its entries are not loosened past what the library asks for.
+    """
+    try:
+        from futuresfund.objective import weekly_trade_floor
+
+        floor = float(weekly_trade_floor())
+    except Exception:
+        floor = FAR_UNDER_WEEK
+    return min(FAR_UNDER_WEEK, floor)
+
+
+def _week_words(value: float) -> str:
+    shown = f"{float(value):.1f}"
+    return shown[:-2] if shown.endswith(".0") else shown
+
+
+def far_under_text() -> str:
+    """The floor in the frequency plan's sentences."""
+    return f"{_week_words(far_under_week())} trades a week"
+
+
 def far_under(row: dict | None) -> bool:
-    """True when the measured week is under 2 trades.
+    """True when the measured week is under the weekly floor (far_under_week).
 
     A finished run with no trades is under that floor even when the day count is missing.
     Unknown days on a run that did trade are not treated as far under.
@@ -62,7 +91,7 @@ def far_under(row: dict | None) -> bool:
     if found is not None and found[2] < 1:
         return True
     weekly = trades_per_week(row)
-    return weekly is not None and weekly < FAR_UNDER_WEEK
+    return weekly is not None and weekly < far_under_week()
 
 
 def is_average_length(name: str, source: str = "") -> bool:
@@ -226,6 +255,12 @@ def frequency_plan(origin: dict, trials: list, source: str, bounds: dict | None 
     """One change that follows from this script, or None when the week is not far under the floor."""
     if not trials or not far_under(trials[-1]):
         return None
+    from futuresfund.objective import numbers
+    last = numbers(trials[-1])
+    if last and last[2] < 1 and any((numbers(row) or (0, 0, 0))[2] >= 1 for row in trials[:-1]):
+        # The last change stopped every entry. Loosening a filter on top of it cannot bring the
+        # trades back, so the search steps back from that change instead.
+        return None
     bounds = bounds or {}
     current = dict(carried or (trials[-1].get("params") or origin) or {})
     used = set(seen or ())
@@ -254,12 +289,12 @@ def frequency_reason(before: dict | None, plan: dict, source: str) -> str:
         found = found_cash_session(source) or "0930-1600"
         start, end = _clock_pair(found)
         return (
-            f"This result is far under 4 trades a week. This script enters only from {start} to {end} New York. "
+            f"This result is far under {far_under_text()}. This script enters only from {start} to {end} New York. "
             f"The futures session opens at 18:00, so the next run uses {FULL_SESSION}, 18:00 to 16:00."
         )
     if name == "sess_start_hr":
         return (
-            f"This result is far under 4 trades a week. This script enters only from {_hour_clock(before, 'start')} to {_hour_clock(before, 'end')} New York. "
+            f"This result is far under {far_under_text()}. This script enters only from {_hour_clock(before, 'start')} to {_hour_clock(before, 'end')} New York. "
             "The futures session opens at 18:00, so the next run starts that window at 18:00 and keeps the afternoon end."
         )
     if name and is_average_length(name, source) and _uses_cross(source):
@@ -276,10 +311,10 @@ def frequency_reason(before: dict | None, plan: dict, source: str) -> str:
         return reason
     if name:
         return (
-            f"This result is far under 4 trades a week. This script requires {name} before an entry. "
+            f"This result is far under {far_under_text()}. This script requires {name} before an entry. "
             f"The next run moves it from {before.get(name)} to {plan.get(name)}."
         )
-    return "This result is far under 4 trades a week. The next change is the condition in this script that keeps bars from entering."
+    return f"This result is far under {far_under_text()}. The next change is the condition in this script that keeps bars from entering."
 
 
 _CROSS = re.compile(r"ta\.crossover\s*\(|ta\.crossunder\s*\(|ta\.cross\s*\(", re.I)

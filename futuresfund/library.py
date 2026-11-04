@@ -264,7 +264,8 @@ def waiting_rows(rows: list[dict]) -> list[dict]:
     accepted. One version of each name stays on each contract and timeframe. A
     hand-added script stays.
     """
-    added = [dict(row) for row in rows if row.get("kind") == "Added"]
+    # A hand-added row comes back from the shelf on every read, so it is kept once per id.
+    added = list({row.get("id"): dict(row) for row in rows if row.get("kind") == "Added"}.values())
     ready = [row for row in rows if row.get("kind") != "Added" and measured_on_one_year(row)]
     shown = _pick_best(ready) + added
     return sorted(shown, key=lambda item: float(item.get("net_profit") or 0), reverse=True)

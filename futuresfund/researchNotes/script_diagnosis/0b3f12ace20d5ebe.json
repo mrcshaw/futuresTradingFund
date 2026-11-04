@@ -1,0 +1,227 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 50.0,
+   "net_profit": -3224.5,
+   "max_drawdown": 3224.5,
+   "trades": 42
+  },
+  "tp_dollars": {
+   "value": 75.0,
+   "net_profit": -712.0,
+   "max_drawdown": 895.5,
+   "trades": 42
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -3918.5,
+   "max_drawdown": 4928.0,
+   "trades": 96
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -2287.5,
+   "max_drawdown": 2328.0,
+   "trades": 25
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -3872.0,
+   "max_drawdown": 4191.5,
+   "trades": 52
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": -2972.5,
+   "max_drawdown": 4026.5,
+   "trades": 110
+  },
+  "cooldown_bars": {
+   "value": 40,
+   "net_profit": -2941.0,
+   "max_drawdown": 2941.0,
+   "trades": 31
+  },
+  "use_breakeven": {
+   "value": true,
+   "net_profit": -2587.0,
+   "max_drawdown": 2604.0,
+   "trades": 42
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -2535.5,
+   "max_drawdown": 2535.5,
+   "trades": 68
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -2463.5,
+   "max_drawdown": 2463.5,
+   "trades": 16
+  },
+  "sess_start_mn": {
+   "value": 10,
+   "net_profit": -3691.5,
+   "max_drawdown": 3691.5,
+   "trades": 39
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -1032.5,
+   "max_drawdown": 1459.0,
+   "trades": 20
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -3676.0,
+   "max_drawdown": 3676.0,
+   "trades": 41
+  }
+ },
+ "flat": [
+  "ema_len",
+  "ema_slope_len",
+  "be_trigger_dollars"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 3,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "pv": 50.0,
+   "stop_dollars": 200.0,
+   "tp_dollars": 300.0,
+   "use_trail": false,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": -3415.0,
+  "max_drawdown": 3415.0,
+  "trades": 40,
+  "win_rate": 30.0,
+  "profit_factor": 0.474,
+  "biggest_winner": 276.5,
+  "biggest_loser": -236.0,
+  "held_loser": -236.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 27,
+    "pnl": -2784.5,
+    "favorable": 150.06,
+    "adverse": -207.81
+   },
+   {
+    "exit": "XS",
+    "trades": 10,
+    "pnl": -310.0,
+    "favorable": 190.75,
+    "adverse": -188.0
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": 39.0,
+    "favorable": 107.0,
+    "adverse": -93.0
+   },
+   {
+    "exit": "Short",
+    "trades": 1,
+    "pnl": -136.0,
+    "favorable": 132.0,
+    "adverse": -130.5
+   },
+   {
+    "exit": "Open P&L > SL Risk",
+    "trades": 1,
+    "pnl": -223.5,
+    "favorable": 219.5,
+    "adverse": -218.0
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 15m",
+  "30 GC 2m",
+  "30 MNQ 15m",
+  "365 YM 5m",
+  "7 ES 15m",
+  "7 ES 2m",
+  "7 GC 15m",
+  "7 NQ 15m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true,
+ "answer": {
+  "because": "The first run misses with -3415 profit and a 30% win rate, and the measured sess_end_hr=2 end improves profit to -1032 while cutting drawdown to 1459 and trades to 20.",
+  "script": null,
+  "params": {
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 3,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 2,
+   "sess_end_mn": 0,
+   "pv": 50.0,
+   "stop_dollars": 200.0,
+   "tp_dollars": 300.0,
+   "use_trail": false,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "settings": {
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 3,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "pv": 50.0,
+   "stop_dollars": 200.0,
+   "tp_dollars": 300.0,
+   "use_trail": false,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "redesign": false
+ }
+}

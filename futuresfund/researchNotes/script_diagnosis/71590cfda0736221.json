@@ -1,0 +1,211 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -26.75,
+   "max_drawdown": 318.0,
+   "trades": 3
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -204.25,
+   "max_drawdown": 263.5,
+   "trades": 3
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -409.0,
+   "max_drawdown": 527.0,
+   "trades": 9
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -127.25,
+   "max_drawdown": 388.0,
+   "trades": 6
+  },
+  "min_delta_pct": {
+   "value": 0.75,
+   "net_profit": -86.5,
+   "max_drawdown": 263.5,
+   "trades": 4
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 490.5,
+   "max_drawdown": 262.75,
+   "trades": 7
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": 335.5,
+   "max_drawdown": 153.0,
+   "trades": 2
+  },
+  "min_slope": {
+   "value": 0.5,
+   "net_profit": 295.75,
+   "max_drawdown": 272.75,
+   "trades": 8
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": 375.5,
+   "max_drawdown": 199.0,
+   "trades": 7
+  },
+  "cooldown_bars": {
+   "value": 2,
+   "net_profit": 98.25,
+   "max_drawdown": 263.5,
+   "trades": 3
+  },
+  "pullback_dollars": {
+   "value": 25.0,
+   "net_profit": -263.5,
+   "max_drawdown": 263.5,
+   "trades": 1
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -1036.75,
+   "max_drawdown": 1036.75,
+   "trades": 8
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": -100.75,
+   "max_drawdown": 527.0,
+   "trades": 7
+  },
+  "sess_start_mn": {
+   "value": 10,
+   "net_profit": 165.5,
+   "max_drawdown": 199.0,
+   "trades": 2
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -30.5,
+   "max_drawdown": 425.25,
+   "trades": 8
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -119.25,
+   "max_drawdown": 263.5,
+   "trades": 3
+  }
+ },
+ "flat": [
+  "use_daily_limits",
+  "daily_loss_limit",
+  "daily_profit_cap"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 2.0,
+   "confirm_candles": 2,
+   "cooldown_bars": 10,
+   "pullback_dollars": 100.0,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_daily_limits": true,
+   "daily_loss_limit": 1000.0,
+   "daily_profit_cap": 6000.0
+  },
+  "net_profit": -98.0,
+  "max_drawdown": 263.5,
+  "trades": 3,
+  "win_rate": 33.33,
+  "profit_factor": 0.778,
+  "biggest_winner": 344.0,
+  "biggest_loser": -263.5,
+  "held_loser": -263.5,
+  "exits": [
+   {
+    "exit": "Short",
+    "trades": 1,
+    "pnl": -178.5,
+    "favorable": 27.0,
+    "adverse": -195.5
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": 344.0,
+    "favorable": 455.75,
+    "adverse": -20.5
+   },
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": -263.5,
+    "favorable": -3.0,
+    "adverse": -258.0
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3,
+ "stalled": true,
+ "answer": {
+  "because": "The last run has only 1 trade and $39 profit, so the entry is too tight; the $100 pullback filter can block confirmed breakouts, which is why profile/confirm/stop/tp moves left the result flat.",
+  "script": null,
+  "params": {
+   "stop_dollars": 700,
+   "tp_dollars": 4000,
+   "profile_lookback": 180,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 1.0,
+   "confirm_candles": 6,
+   "pullback_dollars": 0.0,
+   "use_session": true,
+   "sess_end_hr": 16
+  },
+  "settings": {
+   "stop_dollars": 700,
+   "tp_dollars": 4000,
+   "profile_lookback": 180,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 1.0,
+   "confirm_candles": 6,
+   "pullback_dollars": 100.0,
+   "use_session": true,
+   "sess_end_hr": 16
+  },
+  "redesign": false
+ }
+}

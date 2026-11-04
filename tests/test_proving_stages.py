@@ -27,25 +27,51 @@ class StageGateTests(unittest.TestCase):
     def setUp(self):
         _default_book(self)
 
-    def test_a_profitable_week_with_three_trades_passes(self):
+    def test_a_profitable_week_with_its_share_of_the_library_trades_passes(self):
+        # The default book asks for 100 trades a year: 100 x 5/260 is 1.9, so a week needs 2.
+        self.assertTrue(stage_passed(_row(400, 2), 7))
         self.assertTrue(stage_passed(_row(400, 3), 7))
 
     def test_a_loss_or_too_few_trades_stays_on_the_stage(self):
         self.assertFalse(stage_passed(_row(-50, 6), 7))
-        self.assertFalse(stage_passed(_row(400, 2), 7))
+        self.assertFalse(stage_passed(_row(400, 1), 7))
 
-    def test_a_stage_needs_three_trades_a_week(self):
-        # 3 trades for every 7 days: 13 on 30 days, 39 on 90, 157 on the year.
-        self.assertFalse(stage_passed(_row(900, 12), 30))
-        self.assertTrue(stage_passed(_row(900, 13), 30))
-        self.assertFalse(stage_passed(_row(900, 38), 90))
-        self.assertTrue(stage_passed(_row(900, 39), 90))
-        self.assertFalse(stage_passed(_row(9000, 156), 365))
-        self.assertTrue(stage_passed(_row(9000, 157), 365))
+    def test_a_stage_needs_the_library_trade_count_pro_rated(self):
+        # 100 a year pro-rated by sessions out of 260: 9 on 30 days (21), 25 on 90 (64), 100 on the year.
+        self.assertFalse(stage_passed(_row(900, 8), 30))
+        self.assertTrue(stage_passed(_row(900, 9), 30))
+        self.assertFalse(stage_passed(_row(900, 24), 90))
+        self.assertTrue(stage_passed(_row(900, 25), 90))
+        self.assertFalse(stage_passed(_row(9000, 99), 365))
+        self.assertTrue(stage_passed(_row(9000, 100), 365))
+
+    def test_the_optional_weekly_floor_adds_trades_only_when_it_is_on(self):
+        from futuresfund import objective
+
+        self.assertEqual(objective.STAGE_TRADES_PER_WEEK, 0)
+        with mock.patch.object(objective, "STAGE_TRADES_PER_WEEK", 3):
+            # 3 for every five sessions: 3 on 7 days, 13 on 30, 39 on 90, 156 on the year.
+            self.assertFalse(stage_passed(_row(400, 2), 7))
+            self.assertTrue(stage_passed(_row(400, 3), 7))
+            self.assertFalse(stage_passed(_row(900, 12), 30))
+            self.assertTrue(stage_passed(_row(900, 13), 30))
+            self.assertFalse(stage_passed(_row(900, 38), 90))
+            self.assertTrue(stage_passed(_row(900, 39), 90))
+            self.assertFalse(stage_passed(_row(9000, 155), 365))
+            self.assertTrue(stage_passed(_row(9000, 156), 365))
+
+    def test_a_stage_takes_at_most_600_trades_a_year_at_its_pace(self):
+        # 600 x 5/260 is 11.5, so a week of 5 sessions passes on 11 trades and not on 12.
+        self.assertTrue(stage_passed({**_row(400, 11), "days": 5}, 7))
+        self.assertFalse(stage_passed({**_row(400, 12), "days": 5}, 7))
+        # Without the sessions on the row the stage's own sessions stand in.
+        self.assertFalse(stage_passed(_row(400, 12), 7))
+        self.assertTrue(stage_passed(_row(900, 48), 30))
+        self.assertFalse(stage_passed(_row(900, 49), 30))
 
     def test_the_drawdown_cap_and_the_single_trade_loss_still_apply(self):
-        # Drawdown under 5 percent of $50,000, and no trade down more than $1,700.
-        self.assertFalse(stage_passed(_row(4000, 15, drawdown=2600), 30))
+        # Drawdown inside $2,500 plus 30 percent of the profit past $3,000, and no trade down more than $1,700.
+        self.assertFalse(stage_passed(_row(4000, 15, drawdown=2900), 30))
         self.assertFalse(stage_passed(_row(4000, 15, worst=-1800), 30))
         self.assertFalse(stage_passed({"error": "stopped", "net_profit": 10, "trades": 9}, 7))
 
@@ -69,7 +95,7 @@ class RecentWindowCheckTests(unittest.TestCase):
     def test_settings_that_pass_every_window_pass_the_check(self):
         from futuresfund.learn import _stage_checks
 
-        execute, windows = self._executor(lambda sessions, params: {"net_profit": 600 * sessions, "max_drawdown": 100, "trades": 40, "days": sessions})
+        execute, windows = self._executor(lambda sessions, params: {"net_profit": 600 * sessions, "max_drawdown": 100, "trades": 2 * sessions, "days": sessions})
         check = _stage_checks(execute)
         self.assertIsNone(check({"params": {"length": 10}}))
         self.assertEqual(windows, [sessions for _days, sessions in PROVING_STAGES])
@@ -135,18 +161,21 @@ class ProvingTests(unittest.TestCase):
     def test_every_stage_passes_and_the_year_starts_from_those_settings(self):
         from futuresfund.learn import _prove_stages
 
-        execute, windows = self._executor(lambda sessions, params: {"net_profit": 600, "max_drawdown": 100, "trades": 40, "days": sessions})
+        execute, windows = self._executor(lambda sessions, params: {"net_profit": 600, "max_drawdown": 100, "trades": 2 * sessions, "days": sessions})
         with mock.patch("futuresfund.attempt_reason.reasoned_change", lambda *args: None):
             settings, stopped = _prove_stages({"length": 10}, execute, None, None, None, None, "5 min chart developer", "Chart researcher", None)
         self.assertIsNone(stopped)
         self.assertEqual(settings["length"], 10)
-        self.assertEqual(windows, [sessions for _days, sessions in PROVING_STAGES])
+        # A pass no longer ends a stage, so each window runs more than once, shortest window first.
+        self.assertEqual(windows, sorted(windows))
+        self.assertEqual(sorted(set(windows)), [sessions for _days, sessions in PROVING_STAGES])
         self.assertIsNone(execute.source["sessions"])
-        # The run that passed each stage is kept for the losing-time check at the end of the study.
+        # The best pass of each stage is kept for the losing-time check at the end of the study.
         self.assertEqual(sorted(execute.source["stage_runs"]), [7, 30, 90])
+        self.assertEqual(sorted(execute.source["stage_attempts"]), [7, 30, 90])
 
     def test_a_script_that_fails_a_stage_never_reaches_the_longer_windows(self):
-        from futuresfund.learn import STAGE_ATTEMPTS, _prove_stages
+        from futuresfund.learn import STAGE_30_ATTEMPTS, _prove_stages
 
         def results(sessions, params):
             if sessions == 5:
@@ -159,11 +188,12 @@ class ProvingTests(unittest.TestCase):
         self.assertIsNone(settings)
         self.assertEqual(stopped.stage_failed, 30)
         self.assertNotIn(64, windows)
-        self.assertLessEqual(windows.count(21), STAGE_ATTEMPTS)
+        self.assertLessEqual(len(stopped), STAGE_30_ATTEMPTS)
+        self.assertLessEqual(windows.count(21), 2 * STAGE_30_ATTEMPTS + 1)
         self.assertTrue(all(row.get("stage_days") == 30 for row in stopped))
 
     def test_a_stage_keeps_trying_when_a_change_moves_no_trade(self):
-        from futuresfund.learn import STAGE_ATTEMPTS, _prove_stages
+        from futuresfund.learn import STAGE_7_ATTEMPTS, _prove_stages
 
         # Every setting gives the same losing week, as a stop change often does on a short window.
         execute, windows = self._executor(lambda sessions, params: {"net_profit": -200, "max_drawdown": 300, "trades": 5, "days": sessions})
@@ -175,7 +205,7 @@ class ProvingTests(unittest.TestCase):
         self.assertIsNone(settings)
         self.assertEqual(stopped.stage_failed, 7)
         self.assertGreater(len(windows), 3)
-        self.assertLessEqual(len(windows), 2 * STAGE_ATTEMPTS + 1)
+        self.assertLessEqual(len(windows), 2 * STAGE_7_ATTEMPTS + 1)
 
     def test_an_executor_without_a_window_goes_straight_to_the_year(self):
         from futuresfund.learn import _prove_stages

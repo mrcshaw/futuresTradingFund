@@ -1,0 +1,200 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -786.0,
+   "max_drawdown": 786.0,
+   "trades": 1
+  },
+  "sensitivity": {
+   "value": 3,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema_len": {
+   "value": 50,
+   "net_profit": -1572.5,
+   "max_drawdown": 2718.5,
+   "trades": 10
+  },
+  "ema_slope_len": {
+   "value": 20,
+   "net_profit": -672.0,
+   "max_drawdown": 672.0,
+   "trades": 2
+  },
+  "min_slope": {
+   "value": 0.05,
+   "net_profit": -220.5,
+   "max_drawdown": 672.0,
+   "trades": 3
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_hr": {
+   "value": 23,
+   "net_profit": 1.5,
+   "max_drawdown": 255.5,
+   "trades": 1
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 955.0,
+   "max_drawdown": 576.5,
+   "trades": 10
+  },
+  "min_score": {
+   "value": 4,
+   "net_profit": 335.0,
+   "max_drawdown": 862.5,
+   "trades": 5
+  },
+  "pullback_dollars": {
+   "value": 12.5,
+   "net_profit": 1422.0,
+   "max_drawdown": 175.5,
+   "trades": 3
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 1180.0,
+   "max_drawdown": 1658.5,
+   "trades": 15
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 1435.0,
+   "max_drawdown": 1018.5,
+   "trades": 10
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 500,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "sensitivity": 12,
+   "min_score": 2,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 50.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 19,
+   "skip_start_mn": 30,
+   "skip_end_hr": 21,
+   "skip_end_mn": 30
+  },
+  "net_profit": 1060.0,
+  "max_drawdown": 1018.5,
+  "trades": 10,
+  "win_rate": 60.0,
+  "profit_factor": 1.752,
+  "biggest_winner": 474.0,
+  "biggest_loser": -541.0,
+  "held_loser": -541.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 4,
+    "pnl": 881.0,
+    "favorable": 404.5,
+    "adverse": -259.25
+   },
+   {
+    "exit": "XS",
+    "trades": 3,
+    "pnl": 407.0,
+    "favorable": 397.83,
+    "adverse": -242.17
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": 99.0,
+    "favorable": 204.5,
+    "adverse": -50.5
+   },
+   {
+    "exit": "Short",
+    "trades": 1,
+    "pnl": -156.0,
+    "favorable": 384.5,
+    "adverse": -500.5
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 1,
+    "pnl": -171.0,
+    "favorable": 44.5,
+    "adverse": -205.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "stalled": true,
+ "answer": {
+  "because": "The 7-day run has only 1 trade, so the miss is trade count. min_score=2 is effectively >=3 because get_ai_score never returns 2, so lower it to 1 to admit score-1 signals.",
+  "script": null,
+  "params": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "sensitivity": 12,
+   "min_score": 1,
+   "ema_len": 100,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 50.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 8,
+   "use_skip": true,
+   "skip_start_hr": 19,
+   "skip_end_hr": 21
+  },
+  "settings": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "sensitivity": 12,
+   "min_score": 2,
+   "ema_len": 100,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 50.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 8,
+   "use_skip": true,
+   "skip_start_hr": 19,
+   "skip_end_hr": 21
+  },
+  "redesign": false
+ }
+}

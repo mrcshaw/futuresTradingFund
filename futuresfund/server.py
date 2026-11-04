@@ -607,6 +607,103 @@ def proving_script(id: str, days: int):
     return row
 
 
+class WorkflowKnobs(BaseModel):
+    knobs: dict = Field(default_factory=dict)
+
+
+class WorkflowReset(BaseModel):
+    keys: list = Field(default_factory=list)
+
+
+class WorkflowLayout(BaseModel):
+    layout: dict = Field(default_factory=dict)
+
+
+class WorkflowQueue(BaseModel):
+    names: list = Field(default_factory=list)
+
+
+@app.get("/api/workflow-design")
+def workflow_design():
+    from futuresfund.workflow_design import state
+
+    return state()
+
+
+@app.post("/api/workflow-design/knobs")
+def workflow_design_knobs(body: WorkflowKnobs):
+    from futuresfund.workflow_design import save_knobs
+
+    try:
+        return save_knobs(body.knobs)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/workflow-design/reset")
+def workflow_design_reset(body: WorkflowReset):
+    from futuresfund.workflow_design import reset
+
+    try:
+        return reset(body.keys)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/workflow-design/layout")
+def workflow_design_layout(body: WorkflowLayout):
+    from futuresfund.workflow_design import save_layout
+
+    try:
+        return save_layout(body.layout)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/workflow-design/queue")
+def workflow_design_queue(body: WorkflowQueue):
+    from futuresfund.workflow_design import save_queue
+
+    try:
+        return save_queue(body.names)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+class QuestionAnswer(BaseModel):
+    text: str = ""
+
+
+@app.get("/api/questions")
+def questions_list():
+    """The researchers' open questions for the owner and the recent answered ones (questions.py)."""
+    from futuresfund.questions import view
+
+    return view()
+
+
+@app.post("/api/questions/{qid}/answer")
+def questions_answer(qid: str, body: QuestionAnswer):
+    """The desk's own answer box: the same parser as an emailed reply. The researcher who asked applies it."""
+    from futuresfund.questions import answer, get
+
+    if not str(body.text or "").strip():
+        raise HTTPException(status_code=400, detail="Write an answer first.")
+    if get(qid) is None:
+        raise HTTPException(status_code=404, detail=f"{qid} is not a question the desk asked.")
+    result = answer(qid, body.text, "desk", board=board)
+    if not result.get("ok") and result.get("status") != "open":
+        raise HTTPException(status_code=409, detail=result.get("reason") or "The answer was not taken.")
+    return result
+
+
+@app.get("/api/workflow-design/changes")
+def workflow_design_changes(limit: int = 80):
+    from futuresfund.workflow_design import changes
+
+    return changes(limit)
+
+
 @app.get("/api/engines/results/{run}/script")
 def engine_result_script(run: int):
     from futuresfund.backtrader_engine import engine_result_script as result_script
@@ -828,6 +925,11 @@ async def inbound_mail(token: str, request: Request):
     if not secrets.compare_digest(token, expected):
         raise HTTPException(status_code=404, detail="Unknown webhook.")
     payload = await _mail_payload(request)
+    from futuresfund.questions import QID, accept_answer
+
+    if QID.search(str(payload.get("subject") or "")):
+        # A reply to one of the researchers' questions goes to the Portfolio Manager, not to the prop-firm mail.
+        return accept_answer(payload, board)
     return accept_mail(board, payload)
 
 
@@ -844,7 +946,14 @@ async def _mail_payload(request: Request) -> dict:
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="The email body must be an object.")
         return body
-    return {"subject": request.headers.get("subject", ""), "from": request.headers.get("from", ""), "text": raw}
+    return {
+        "subject": request.headers.get("subject", ""),
+        "from": request.headers.get("from", ""),
+        "text": raw,
+        "in_reply_to": request.headers.get("in-reply-to", ""),
+        "references": request.headers.get("references", ""),
+        "authentication_results": request.headers.get("authentication-results", ""),
+    }
 
 
 class ToggleRequest(BaseModel):
@@ -1068,6 +1177,13 @@ def _startup():
     start_engines()
     get_crew(board)
     threading.Thread(target=scheduler, args=(board,), daemon=True, name="futures-scheduler").start()
+    try:
+        from futuresfund.questions import start as start_questions
+
+        # The Portfolio Manager's question outbox and inbox. FUTURES_MAIL_OFF keeps them off.
+        start_questions(board)
+    except Exception:
+        traceback.print_exc()
     from futuresfund.ninjatrader import start_listener
 
     start_listener(board)
@@ -1138,7 +1254,7 @@ def _startup():
         )
         board.post(
             "System",
-            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own thread. Each PineTS engine has its own process: engine 1 is the 2-minute chart, engines 2 and 5 are the 5-minute chart, and engines 3 and 6 are the 15-minute chart. Engine 4 is the creation engine. The strategy developers write new scripts from scratch the whole time research is running, and engine 4 develops them. A new library strategy is learned before the next script. The systems administrator serves the library and the other desk requests.",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own thread. Each instrument has its own three PineTS engines, one each for the 2-minute, 5-minute and 15-minute charts: engines 1-3 are ES, 5-7 GC, 8-10 NQ, 11-13 MNQ, 14-16 MES, 17-19 M2K and 20-22 YM. Engine 4 is the creation engine. The engines share a pool of worker processes, one backtest per worker at a time. The strategy developers write new scripts from scratch the whole time research is running, and engine 4 develops them. A new library strategy is learned before the next script. The systems administrator serves the library and the other desk requests.",
             kind="system",
             channel="headquarters",
         )
@@ -1207,7 +1323,7 @@ def _refold_library_if_needed() -> None:
     if changed:
         board.post(
             "Systems Administrator",
-            "The strategy library was refolded from the research notes. Each script keeps its most profitable run that trades at least 4 times a week. More than 7 a week still counts. "
+            "The strategy library was refolded from the research notes. Each script keeps its most profitable run that meets the acceptance boxes, the library trade count included, with no more than 600 trades a year. "
             "Two or three trades stays off the shelf. Engine 4 measures each row again next.",
             kind="report",
             channel="Systems Administrator",

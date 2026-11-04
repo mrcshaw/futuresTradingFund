@@ -1,0 +1,112 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -2214.5,
+   "max_drawdown": 3309.0,
+   "trades": 7
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -738.0,
+   "max_drawdown": 1107.5,
+   "trades": 8
+  },
+  "profile_lookback": {
+   "value": 8,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 346.5,
+   "max_drawdown": 1119.0,
+   "trades": 6
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -822.5,
+   "max_drawdown": 1917.0,
+   "trades": 10
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 1713.5,
+   "max_drawdown": 1262.0,
+   "trades": 9
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": 251.0,
+   "max_drawdown": 843.5,
+   "trades": 9
+  },
+  "pivot_len": {
+   "value": 1,
+   "net_profit": -2072.0,
+   "max_drawdown": 3205.5,
+   "trades": 27
+  }
+ },
+ "flat": [
+  "use_reversal"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 33,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "pivot_len": 3,
+   "use_reversal": true
+  },
+  "net_profit": -275.5,
+  "max_drawdown": 1370.0,
+  "trades": 8,
+  "win_rate": 25.0,
+  "profit_factor": 0.836,
+  "biggest_winner": 951.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 5,
+    "pnl": -655.0,
+    "favorable": 244.5,
+    "adverse": -233.0
+   },
+   {
+    "exit": "XS",
+    "trades": 3,
+    "pnl": 379.5,
+    "favorable": 498.67,
+    "adverse": -234.67
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 15m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}
