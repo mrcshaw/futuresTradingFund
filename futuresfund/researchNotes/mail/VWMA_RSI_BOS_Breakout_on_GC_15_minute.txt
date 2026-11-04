@@ -1,0 +1,11 @@
+Subject: Desk Update: VWMA RSI BOS Breakout Result Not Filed
+
+The VWMA RSI BOS Breakout strategy on the 15-minute Gold (GC1!) chart has completed its run. The result shows a profit of $19,850.00 and a drawdown of $31,100.00 across 492 trades. This equates to approximately 9.45 trades per day over the 260-day period.
+
+This run was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.05, a win rate above 45%, and at least 60 trades. While the profit exceeds the $14,000 threshold, the drawdown of $31,100.00 is excessive relative to the profit, and the strategy notes indicate that a stronger version of this name is already on this contract and timeframe. Therefore, this specific configuration does not meet the filing standards for inclusion in the library. The settings used were stop_dollars=1250.0, tp_dollars=1500.0, len_vwma=28, len_ema=200, and len_atr=14.
+
+Desk clock: Tuesday 09:51 AM ET.
+
+Best,
+
+Portfolio Manager

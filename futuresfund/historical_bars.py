@@ -50,14 +50,14 @@ def expiry_key(symbol: str) -> tuple[int, int]:
 
 
 def organize() -> dict[str, int]:
-    """Move each symbol file into chartData/es, nq, gc, or mnq. Spreads go in spreads/."""
-    counts = {"ES": 0, "NQ": 0, "GC": 0, "MNQ": 0, "spreads": 0, "left": 0}
+    """Move each symbol file into chartData/es, nq, gc, mnq, mes, m2k, or ym. Spreads go in spreads/."""
+    counts = {"ES": 0, "NQ": 0, "GC": 0, "MNQ": 0, "MES": 0, "M2K": 0, "YM": 0, "spreads": 0, "left": 0}
     if not HISTORY.is_dir():
         return counts
     for path in sorted(HISTORY.glob("*.csv")):
         symbol = path.stem.split(".")[-1]
         product = product_of(symbol)
-        if product not in {"ES", "NQ", "GC", "MNQ"}:
+        if product not in {"ES", "NQ", "GC", "MNQ", "MES", "M2K", "YM"}:
             counts["left"] += 1
             continue
         folder_name = "gc" if product == "GC" else product.lower()
@@ -123,6 +123,30 @@ def load_minutes(root: str) -> dict[int, tuple] | None:
     minutes = _read_cache(path)
     _CACHE[key] = minutes
     return minutes
+
+
+def load_outright(symbol: str) -> dict[int, tuple] | None:
+    """One expiration's one-minute bars, such as MNQZ6, or None when the download does not have it.
+
+    A Strategy Tester export of a dated contract (MNQZ2026) ran on this chart,
+    not on the front-month series. A deferred month trades thinly, so its quiet
+    minutes are absent here as they are on TradingView.
+    """
+    key = str(symbol or "").strip().upper()
+    if key in _CACHE:
+        return _CACHE[key]
+    root = product_of(key)
+    if not root or "-" in key:
+        return None
+    found: dict[int, tuple] = {}
+    for path in outright_files(root):
+        for epoch, opened, high, low, close, volume, name in _read_csv(path):
+            if name == key:
+                found[epoch] = (opened, high, low, close, volume)
+    if not found:
+        return None
+    _CACHE[key] = found
+    return found
 
 
 def roll_calendar(leaders: dict) -> dict:

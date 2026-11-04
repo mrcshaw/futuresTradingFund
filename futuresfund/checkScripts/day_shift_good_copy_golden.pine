@@ -1,0 +1,72 @@
+//@version=5
+// How this script works
+// The entry is a mean reversion signal that opens long_sig or short_sig when the price closes below the 20-period Simple Moving Average (SMA) and then closes back above it, or closes above the 20-period SMA and then closes back below it.
+// Longs require the close to be greater than the SMA and the previous close to be less than the SMA. Shorts require the close to be less than the SMA and the previous close to be greater than the SMA.
+// The stop is a fixed dollar stop computed from stop_dollars divided by the point value.
+// The script also uses a fixed dollar take-profit and a cooldown before new entries.
+
+strategy("Day Shift Delta Volume Breakout colored Back ground Good Copy", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_boxes_count=500)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_dollars      = input.int(500, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(750, "Take Profit ($)", minval=250, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+trail_step_pct = input.float(50, "trail_step_pct")
+trail_pct = input.float(50, "trail_pct")
+
+// ===== ENTRY =====
+cooldown_bars   = input.int(10, "Cooldown Bars", minval=0, maxval=100)
+use_session     = input.bool(true, "Use Session Filter")
+sess_start_hr   = input.int(8, "Session Start Hour", minval=0, maxval=23)
+sess_start_mn   = input.int(0, "Session Start Minute", minval=0, maxval=59)
+sess_end_hr     = input.int(16, "Session End Hour", minval=0, maxval=23)
+sess_end_mn     = input.int(0, "Session End Minute", minval=0, maxval=59)
+
+// Calculate SMA
+sma_len = 20
+sma_val = ta.sma(close, sma_len)
+prev_sma = ta.sma(close[1], sma_len)
+prev_close = close[1]
+
+// Entry Logic: Mean Reversion Cross
+long_sig  = close > sma_val and prev_close < prev_sma
+short_sig = close < sma_val and prev_close > prev_sma
+
+// Session Filter
+in_session = use_session ? (hour(time, "America/New_York") >= sess_start_hr and minute(time, "America/New_York") >= sess_start_mn or (hour(time, "America/New_York") > sess_start_hr)) and (hour(time, "America/New_York") < sess_end_hr or (hour(time, "America/New_York") == sess_end_hr and minute(time, "America/New_York") < sess_end_mn)) : true
+
+// Cooldown Filter
+var int last_entry_bar = na
+in_cooldown = not na(last_entry_bar) and bar_index - last_entry_bar < cooldown_bars
+
+// Execute Trades
+if long_sig and in_session and not in_cooldown and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+    last_entry_bar := bar_index
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+
+if short_sig and in_session and not in_cooldown and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+    last_entry_bar := bar_index
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+
+// Flatten at 16:45 New York
+if hour(time, "America/New_York") == 16 and minute(time, "America/New_York") == 45 and strategy.position_size != 0
+    strategy.close_all(comment="EOD Flatten")
+
+plot(sma_val, "20 Bar SMA", color.blue, linewidth=2)
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)

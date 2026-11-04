@@ -1,0 +1,9 @@
+Strategy: ES RSI Pullback BOS.
+File: created_es_rsi_pullback_bos.pine.
+Chart: 2m GC1!.
+Profit 28170.0. Drawdown 9810.0. Trades 268.
+Profit ratio 1.226. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.87 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.05, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

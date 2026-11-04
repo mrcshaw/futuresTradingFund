@@ -1,0 +1,82 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -568.0,
+   "max_drawdown": 2971.5,
+   "trades": 13
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -476.0,
+   "max_drawdown": 1048.0,
+   "trades": 16
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -2098.5,
+   "max_drawdown": 2890.5,
+   "trades": 26
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -572.5,
+   "max_drawdown": 1370.0,
+   "trades": 10
+  },
+  "min_delta_pct": {
+   "value": 1.25,
+   "net_profit": -2670.0,
+   "max_drawdown": 2895.5,
+   "trades": 20
+  },
+  "vwma_len": {
+   "value": 80,
+   "net_profit": -1240.0,
+   "max_drawdown": 1942.0,
+   "trades": 15
+  },
+  "pivot_len": {
+   "value": 12,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 20,
+   "pivot_len": 3
+  },
+  "net_profit": -1526.0,
+  "max_drawdown": 2514.0,
+  "trades": 16,
+  "win_rate": 25.0,
+  "profit_factor": 0.555,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 16,
+    "pnl": -1526.0,
+    "favorable": 230.44,
+    "adverse": -232.06
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

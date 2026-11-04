@@ -1,0 +1,9 @@
+Subject: POC RSI Momentum v3 Result: 571 Trades, $5,950 Profit
+
+The POC RSI Momentum v3 strategy just completed its run on the 2-minute ES chart. The result is a profit of $5,950.00 with a drawdown of $16,187.50 across 571 trades. This pace equates to approximately 11 trades per week over 260 trading days, which falls within the acceptable range of 130 to 600 trades per year.
+
+The profit ratio (average winning trade divided by average losing trade) is below the 1.12 threshold required for this notification. Consequently, this result is not filed in the strategy library. The shelf requires a profit over $10,000, and this run is under that target. The settings used were pivot_left=5, pivot_right=5, rsiLen=14, emaLen=50, atrLen=14, stopMult=4.0, tpMult=16.0, and cooldownLen=3.
+
+Desk clock: Wednesday 04:29 PM ET.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 3 minutes 15 seconds.

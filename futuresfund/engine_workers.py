@@ -11,7 +11,7 @@ import queue
 import threading
 import time
 
-_SLOTS = 4
+_SLOTS = 6
 _desk: "EngineDesk | None" = None
 _desk_lock = threading.Lock()
 
@@ -91,6 +91,7 @@ def _engine_process(slot: int, inbound: mp.Queue, outbound: mp.Queue, stop: mp.s
                 job.get("label") or "",
                 slot,
                 full=bool(job.get("full")),
+                sessions=job.get("sessions"),
             )
             logs = result.pop("logs", [])
             outbound.put({"id": job_id, "ok": True, "result": result, "logs": logs})
@@ -99,7 +100,7 @@ def _engine_process(slot: int, inbound: mp.Queue, outbound: mp.Queue, stop: mp.s
 
 
 class EngineDesk:
-    """Four engine threads. Each thread waits on its own engine process."""
+    """One thread per engine. Each thread waits on its own engine process."""
 
     def __init__(self) -> None:
         self.online = False
@@ -147,7 +148,7 @@ class EngineDesk:
         for jobs in self._local:
             jobs.put(None)
 
-    def run(self, slot: int, source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, cancel, start_line: str, full: bool = False) -> dict:
+    def run(self, slot: int, source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, cancel, start_line: str, full: bool = False, sessions: int | None = None) -> dict:
         """Queue one backtest on this engine and wait for that process only."""
         return self._dispatch(
             slot,
@@ -161,6 +162,7 @@ class EngineDesk:
             cancel=cancel,
             start_line=start_line,
             full=bool(full),
+            sessions=sessions,
         )
 
     def hold(self, slot: int, seconds: float) -> None:
@@ -263,10 +265,15 @@ class EngineDesk:
                     box["result"] = message.get("result") or {}
                     from futuresfund.backtrader_engine import record_engine_result
 
-                    record_engine_result(slot, {**box["result"], "script": job.get("label") or ""})
+                    record_engine_result(slot, {**box["result"], "script": job.get("label") or "", "source": job.get("source") or "", "inputs": job.get("inputs"), "instrument": job.get("instrument") or "ES", "timeframe": job.get("timeframe") or ""})
             except Exception as exc:
-                box["error"] = exc
-                if not self._closed.is_set():
+                from futuresfund.backtrader_engine import skipped, skipped_measurement
+
+                if skipped(slot):
+                    box["result"] = skipped_measurement(job.get("timeframe") or "")
+                else:
+                    box["error"] = exc
+                if not self._closed.is_set() and not skipped(slot):
                     try:
                         self._spawn(slot)
                     except Exception:
@@ -287,6 +294,7 @@ class EngineDesk:
             "label": job.get("label") or "",
             "seconds": job.get("seconds") or 0,
             "full": bool(job.get("full")),
+            "sessions": job.get("sessions"),
         }
         key = None
         if payload["op"] != "hold":
@@ -309,6 +317,12 @@ class EngineDesk:
                 }
             if proc is None or not proc.is_alive():
                 self._sent[slot] = None
+                if skipped(slot):
+                    return {
+                        "ok": True,
+                        "result": skipped_measurement(job.get("timeframe") or ""),
+                        "logs": [f"SKIP   PineTS  {job.get('label') or 'script'}  skipped"],
+                    }
                 raise RuntimeError(f"Engine {slot + 1} stopped.")
             try:
                 message = outbound.get(timeout=0.4)
@@ -326,7 +340,7 @@ class EngineDesk:
 
 
 def start_engines() -> EngineDesk:
-    """Start the four engine processes once. A second call leaves them running."""
+    """Start the engine processes once. A second call leaves them running."""
     global _desk
     with _desk_lock:
         if _desk is None:

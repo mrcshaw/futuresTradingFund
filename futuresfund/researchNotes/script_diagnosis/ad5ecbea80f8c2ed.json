@@ -1,0 +1,167 @@
+{
+ "sessions": 21,
+ "unread": [
+  "trail_step_amt",
+  "trail_step_pct"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 750,
+   "net_profit": 632.5,
+   "max_drawdown": 2501.0,
+   "trades": 30
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -1494.5,
+   "max_drawdown": 2095.5,
+   "trades": 37
+  },
+  "gather_min": {
+   "value": 60,
+   "net_profit": 27.5,
+   "max_drawdown": 815.0,
+   "trades": 10
+  },
+  "entry_end_hr": {
+   "value": 10,
+   "net_profit": -1202.0,
+   "max_drawdown": 1362.0,
+   "trades": 7
+  },
+  "entry_end_mn": {
+   "value": 59,
+   "net_profit": -679.0,
+   "max_drawdown": 2315.5,
+   "trades": 39
+  },
+  "eod_hr": {
+   "value": 4,
+   "net_profit": -1182.0,
+   "max_drawdown": 2250.5,
+   "trades": 37
+  },
+  "eod_mn": {
+   "value": 11,
+   "net_profit": -1522.5,
+   "max_drawdown": 3203.5,
+   "trades": 35
+  },
+  "i_margin": {
+   "value": 4.0,
+   "net_profit": -987.5,
+   "max_drawdown": 3040.5,
+   "trades": 25
+  },
+  "i_or_min": {
+   "value": 10.0,
+   "net_profit": -628.5,
+   "max_drawdown": 2097.0,
+   "trades": 31
+  },
+  "i_or_max": {
+   "value": 12.5,
+   "net_profit": -1106.5,
+   "max_drawdown": 1106.5,
+   "trades": 4
+  },
+  "max_attempts": {
+   "value": 1,
+   "net_profit": -1531.0,
+   "max_drawdown": 2453.0,
+   "trades": 21
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_pct",
+  "trail_min_dollars",
+  "fvg_lookback",
+  "fvg_min_atr",
+  "atr_len",
+  "profile_lookback",
+  "profile_rows",
+  "min_delta_pct",
+  "ema_len",
+  "ema_slope_len",
+  "min_slope",
+  "poc_filter_mode",
+  "use_session",
+  "sess_start_hr"
+ ],
+ "untested": [
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "gather_min": 15,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "eod_hr": 15,
+   "eod_mn": 45,
+   "i_margin": 1.0,
+   "i_or_min": 0.0,
+   "i_or_max": 50.0,
+   "max_attempts": 2,
+   "fvg_lookback": 20,
+   "fvg_min_atr": 0.04,
+   "atr_len": 14,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "poc_filter_mode": "Off"
+  },
+  "net_profit": -1735.0,
+  "max_drawdown": 3203.5,
+  "trades": 35,
+  "win_rate": 31.43,
+  "profit_factor": 0.745,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "SL",
+    "trades": 24,
+    "pnl": -6801.5,
+    "favorable": 184.08,
+    "adverse": -277.9
+   },
+   {
+    "exit": "TP",
+    "trades": 10,
+    "pnl": 4615.0,
+    "favorable": 467.0,
+    "adverse": -165.5
+   },
+   {
+    "exit": "EOD",
+    "trades": 1,
+    "pnl": 451.5,
+    "favorable": 1194.5,
+    "adverse": -80.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

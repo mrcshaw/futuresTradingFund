@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: EMA SMA Pivot Filter v2.
+Chart tested: 5-minute ES (ES1!).
+Profit 79387.5. Drawdown 5300.0. Trades 9.
+Trades a week: 0.05 over 1293 trading days.
+Bars in this test: 354,310 from 2021-10-03 20:00 through 2026-10-02 16:55.
+On this full chart the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: yes.
+This result is on the ES strategy library.
+Settings of this version: ema200_len=172, ema55_len=55, sma_len=33, tp_pips=3164.6108, stop_pips=31.968, cooldown_bars=194, sess_end_mn=32.
+Different results on this chart: 50.
+Engine runs on this chart: 61.

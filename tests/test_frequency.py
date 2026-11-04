@@ -236,14 +236,13 @@ class GuidanceTests(unittest.TestCase):
         self.assertIn("18:00 to 16:00 New York", text)
         self.assertIn("Flat the trade when the session ends.", text)
         self.assertIn("Every trade has a dollar stop.", text)
-        self.assertIn("3 percent of the account", text)
-        self.assertIn("3.6 percent", text)
-        self.assertIn("$1,500", text)
+        self.assertIn("1.5 percent of the account", text)
+        self.assertIn("$750", text)
         self.assertIn("larger than the stop", text)
-        self.assertIn("$2,000", text)
-        self.assertIn("under 5 percent of the account", text)
-        self.assertIn("$3,000", text)
-        self.assertIn("1.5 times the drawdown", text)
+        self.assertIn("no maximum", text)
+        self.assertIn("30 percent of the profit", text)
+        self.assertIn("$2,500", text)
+        self.assertIn("30 percent of the profit", text)
         self.assertIn("stop_dollars", text)
         self.assertIn("No ATR stop.", text)
         self.assertIn("Change one input at a time.", text)
@@ -254,8 +253,8 @@ class GuidanceTests(unittest.TestCase):
         self.assertIn("20 attempts", text)
         self.assertIn("learning folder", text)
         self.assertIn("How this script works", text)
-        self.assertIn("Every script uses this exit.", text)
-        self.assertIn("long_stop = close - stop_dollars / pv", text)
+        self.assertIn("Every script uses this style of exit.", text)
+        self.assertIn("long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv", text)
         root = Path(__file__).resolve().parents[1] / "futuresfund"
         html = (root / "static" / "index.html").read_text(encoding="utf-8")
         js = (root / "static" / "app.js").read_text(encoding="utf-8")
@@ -287,15 +286,15 @@ class GuidanceTests(unittest.TestCase):
 
     def test_every_library_script_uses_the_standard_session(self):
         root = Path(__file__).resolve().parents[1] / "futuresfund"
-        for folder in ("learnedStrategies", "learningStrategies"):
-            pines = list((root / folder).glob("*.pine"))
-            self.assertTrue(pines)
-            for path in pines:
-                text = path.read_text(encoding="utf-8")
-                self.assertNotIn(":12345", text, path.name)
-                self.assertNotIn("before1645", text, path.name)
-                self.assertIn("strategy.close_all", text, path.name)
-                self.assertTrue("sess_start_hr" in text or "in_session" in text, path.name)
+        # A rerun moves learned scripts back to the learning and created folders, so the three are read together.
+        pines = [path for folder in ("learnedStrategies", "learningStrategies", "createdStrategies") for path in (root / folder).glob("*.pine")]
+        self.assertTrue(pines)
+        for path in pines:
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn(":12345", text, path.name)
+            self.assertNotIn("before1645", text, path.name)
+            self.assertIn("strategy.close_all", text, path.name)
+            self.assertTrue("sess_start_hr" in text or "in_session" in text, path.name)
 
 
 class ScriptReadingTests(unittest.TestCase):

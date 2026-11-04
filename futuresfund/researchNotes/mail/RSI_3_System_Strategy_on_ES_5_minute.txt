@@ -1,0 +1,15 @@
+Subject: New Result on RSI 3-System Strategy - 5-Minute ES (ES1!)
+
+Dear Team,
+
+I am pleased to share the latest result from the RSI 3-System Strategy on the 5-minute ES (ES1!) chart. The strategy achieved a profit of $4,674.00 with a drawdown of $1,942.00 over 41 trades. The average number of trades per day was 1.95, spread across 21 trading days.
+
+This result meets all of Headquarters' requirements: it exceeded the $3,000 profit target, remained within the $2,500 trailing drawdown, and maintained a pace of 1 to 3 trades per day. As a result, it has been added to the ES strategy library.
+
+The settings for this version of the strategy include: rsi_len=14, htf_rsi_len=4, pullback_lo=42.0, pullback_hi=58.0, lbL=5, lbR=5, rangeUpper=60, rangeLower=5, div_window=12, use_pullback=True, use_divergence=True, use_htf_bias=True.
+
+A total of 200 engine attempts were conducted on this chart to achieve these results.
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

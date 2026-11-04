@@ -1,0 +1,21 @@
+Subject: Desk Update: RSI ATR Momentum Breakout (Gold) Result
+
+The RSI ATR Momentum Breakout strategy has completed its run on the 5-minute Gold (GC1!) chart. The engine recorded a profit of $6,100.00 with a drawdown of $1,512.50 across 39 trades. The trade frequency is 2.75 trades per week, which projects to approximately 143 trades per year. This falls within the required annual range of 130 to 600 trades.
+
+The strategy achieved a profit factor of 3.00, which exceeds the minimum threshold of 1.12. The average winning trade is significantly larger than the average losing trade, satisfying the profit ratio requirement. The run made a profit and meets the pace criteria.
+
+However, this result is not on the strategy library. The library requires a minimum of 100 trades for inclusion. This run has only 39 trades, so it was not filed. The result is noted in the desk log but not added to the active strategy library.
+
+Desk Status:
+- Strategy: RSI ATR Momentum Breakout
+- Chart: 5-minute Gold (GC1!)
+- Profit: $6,100.00
+- Drawdown: $1,512.50
+- Trades: 39
+- Annualized Pace: ~143 trades/year
+- Profit Factor: 3.00
+- Library Status: Not filed (Insufficient trade count)
+
+Email sent.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 17 seconds.

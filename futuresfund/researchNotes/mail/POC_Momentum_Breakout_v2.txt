@@ -1,0 +1,7 @@
+Strategy: POC Momentum Breakout v2.
+File: poc_momentum_breakout_v2.pine.
+Chart: 15m NQ1!.
+Profit 45660.0. Drawdown 21865.0. Trades 178.
+Profit is 2.09 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

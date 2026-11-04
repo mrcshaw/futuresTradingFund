@@ -1,0 +1,5 @@
+Subject: Day Shift Delta Volume Breakout on 15-minute Gold: Not Filed
+
+The Day Shift Delta Volume Breakout colored Back ground Good Copy strategy just finished a run on the 15-minute Gold (GC1!) chart. The result shows a profit of $4,559.0 and a drawdown of $4,866.5 across 142 trades. This pace equates to 2.75 trades per week over the 260 trading days in the test period. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the application facts, so it cannot be quoted.
+
+This run was not filed in the strategy library. The acceptance line for filing on this desk requires a profit above $8,000, a drawdown under 11 percent of the account, at least 80 trades, and a win rate above 40 percent. While the trade count of 142 exceeds the 80-trade minimum and the drawdown of $4,866.5 is well under the 11 percent limit (which is $5,500 on a $50,000 account), the profit of $4,559.0 is under the required $8,000 threshold. Therefore, the run fails the profit requirement specified in the strategy library criteria.

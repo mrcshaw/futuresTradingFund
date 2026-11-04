@@ -11,12 +11,13 @@ the research guide. Deny leaves the guide as it is.
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 from pathlib import Path
 
 RISK_DEFAULTS = {
-    "stop_dollars": 1000.0,
+    "stop_dollars": 700.0,
     "tp_dollars": 1500.0,
     "use_trail": False,
     "trail_pct": 50.0,
@@ -24,10 +25,10 @@ RISK_DEFAULTS = {
     "trail_step_pct": 50.0,
     "trail_min_dollars": 1000.0,
 }
-STOP_PCT_CAP = 3.0
-TP_PCT_CAP = 4.0
-STOP_CAP = 1500.0  # 3 percent of a $50,000 account, for a leftover dollar stop
-TP_CAP = 2000.0    # 4 percent of a $50,000 account, for a leftover dollar target
+STOP_PCT_CAP = 1.4
+TP_PCT_CAP = float("inf")  # there is no maximum on the profit
+STOP_CAP = 700.0   # costs add up to $36 a trade, so a stop here stays inside the $750 limit on one trade
+TP_CAP = float("inf")
 
 GUIDE_PATH = Path(__file__).resolve().parent / "researchNotes" / "how_to_research.md"
 SUGGESTIONS_PATH = Path(__file__).resolve().parent / "researchNotes" / "risk_suggestions.json"
@@ -37,14 +38,14 @@ _ISSUE_ORDER = ("loss-past-stop", "drawdown-before-profit", "losing-and-too-many
 _PROPOSED = {
     "loss-past-stop": (
         "Do not raise the stop to cover a fill that went past it. "
-        "One trade down more than 3.6 percent of the account stays off the list. "
-        "The stop starts at $50 and rises by $100 up to $1,500."
+        "A stop set above 1.5 percent of the account stays off the list. A fill past a stop set inside it is fine. "
+        "The stop starts at $50 and rises by $100 up to $700."
     ),
     "drawdown-before-profit": (
-        "When a run draws down 5 percent of the account or more, try the trail before raising the stop. "
+        "When a run draws down past the pro account rule, try the trail before raising the stop. "
         "use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, "
         "and tightens by 50 percent every 1 percent of the account. "
-        "The stop caps at 3 percent of the account and the take profit caps at 4 percent."
+        "The stop caps at 1.4 percent of the account and the take profit has no maximum."
     ),
     "losing-and-too-many-trades": (
         "On a losing script with more than 600 trades a year, tighten the entry before moving the stop "
@@ -52,8 +53,8 @@ _PROPOSED = {
     ),
 }
 _REASON = {
-    "loss-past-stop": "One trade lost more than 3.6 percent of the account.",
-    "drawdown-before-profit": "Drawdown reached 5 percent of the account.",
+    "loss-past-stop": "The stop was set above 1.5 percent of the account.",
+    "drawdown-before-profit": "Drawdown passed the pro account rule.",
     "losing-and-too-many-trades": "The run lost money and traded more than 600 times a year.",
 }
 
@@ -65,11 +66,16 @@ def point_value(root: str) -> float:
     return float(POINT_VALUE.get(root_of(root or "ES"), 50))
 
 
-def merge_risk(inputs: dict | None, root: str) -> dict:
-    """The settings for this run, with the dollar risk filled in where the script did not set it."""
+def merge_risk(inputs: dict | None, root: str, source: str | None = None) -> dict:
+    """The settings for this run, with the dollar risk filled in where the script did not set it.
+
+    source is the script as written. A risk input it declares keeps the script's
+    own default, so a run on original settings is the run TradingView shows.
+    """
     merged = dict(inputs or {})
+    declared = declared_inputs(source)
     for key, value in RISK_DEFAULTS.items():
-        if merged.get(key) in (None, ""):
+        if merged.get(key) in (None, "") and key not in declared:
             merged[key] = value
     merged["pv"] = point_value(root)
     merged["_risk_style"] = True
@@ -89,6 +95,14 @@ def merge_risk(inputs: dict | None, root: str) -> dict:
     if target_pct is None and target is not None and target > TP_CAP:
         merged["tp_dollars"] = TP_CAP
     return merged
+
+
+_INPUT_NAME = re.compile(r"(?m)^\s*(?:(?:var|varip|simple|const|int|float|bool)\s+)*(\w+)\s*=\s*input(?:\.\w+)?\s*\(")
+
+
+def declared_inputs(source: str | None) -> set[str]:
+    """The names the script declares with input()."""
+    return set(_INPUT_NAME.findall(source or ""))
 
 
 def _account_size() -> float:
@@ -205,26 +219,27 @@ def _review(data: dict, now: float) -> tuple[str | None, bool]:
     return idea["message"], True
 
 
-def _drawdown_cap() -> float:
-    from futuresfund.objective import account_drawdown_cap
-
-    return account_drawdown_cap()
-
-
 def _trade_loss_cap() -> float:
     from futuresfund.objective import account_trade_loss_cap
 
     return account_trade_loss_cap()
 
 
+def _drawdown_allowance(profit: float) -> float:
+    from futuresfund.objective import drawdown_allowance
+
+    return drawdown_allowance(profit)
+
+
 def _issues(stats: dict) -> list[str]:
     found = []
-    loser = _number(stats.get("biggest_loser"))
-    if loser is not None and loser < -_trade_loss_cap():
+    from futuresfund.objective import trade_loss_ok
+
+    if not trade_loss_ok(stats, _trade_loss_cap()):
         found.append("loss-past-stop")
     profit = _number(stats.get("net_profit"))
     drawdown = _number(stats.get("max_drawdown"))
-    if drawdown is not None and drawdown >= _drawdown_cap():
+    if drawdown is not None and drawdown > _drawdown_allowance(profit or 0.0):
         found.append("drawdown-before-profit")
     yearly = stats.get("trades_per_year")
     if profit is not None and profit <= 0 and isinstance(yearly, (int, float)) and not isinstance(yearly, bool) and yearly > 600:
@@ -249,10 +264,10 @@ def _proposed(issue: str) -> str:
 
         share = drawdown_share_text()
         return (
-            f"When a run draws down {share} or more, try the trail before raising the stop. "
+            f"When a run draws down past {share}, try the trail before raising the stop. "
             "use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, "
             "and tightens by 50 percent every 1 percent of the account. "
-            "The stop caps at 3 percent of the account and the take profit caps at 4 percent."
+            "The stop caps at 1.4 percent of the account and the take profit has no maximum."
         )
     return _PROPOSED.get(issue, "")
 
@@ -261,7 +276,7 @@ def _reason(issue: str) -> str:
     if issue == "drawdown-before-profit":
         from futuresfund.objective import drawdown_share_text
 
-        return f"Drawdown reached {drawdown_share_text()}."
+        return f"Drawdown went past {drawdown_share_text()}."
     return _REASON.get(issue, "")
 
 
@@ -313,6 +328,7 @@ def _hour_stats(runs: list[dict], hour_count: int) -> dict:
             stats[key] = choose(values)
 
     pick("biggest_loser", min)
+    pick("held_loser", min)
     pick("max_drawdown", max)
     pick("net_profit", min)
     pick("trades_per_year", max)
@@ -366,7 +382,7 @@ def _stats(row: dict, filename: str, title: str) -> dict:
     from futuresfund.objective import trades_per_year
 
     stats = {"script": title or filename, "file": filename}
-    for key in ("timeframe", "instrument", "net_profit", "max_drawdown", "trades", "win_rate", "profit_factor", "biggest_loser", "days"):
+    for key in ("timeframe", "instrument", "net_profit", "max_drawdown", "trades", "win_rate", "profit_factor", "biggest_loser", "held_loser", "stop_dollars", "days"):
         if row.get(key) is not None:
             stats[key] = row.get(key)
     yearly = trades_per_year(row)

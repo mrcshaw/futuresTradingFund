@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: POC Color + Pullback.
+Chart tested: 2-minute Nasdaq (NQ1!).
+Profit 4184.0. Drawdown 792.5. Trades 26.
+Trades a day: 1.3 over 20 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: yes.
+Inside the trailing drawdown: yes.
+Inside the pace: yes.
+On the strategy library: yes.
+This result is on the Nasdaq strategy library.
+Settings of this version: show_vwma=True, vwma_len=50, vwma_slope_len=5, min_slope_deg=6.48, atr_len_slope=4, show_ema=True, use_ema_filter=False, ema_len=14688, profile_lookback=30, profile_rows=10, use_pivot_filter=True, pivot_left=15.
+Engine attempts on this chart: 200.

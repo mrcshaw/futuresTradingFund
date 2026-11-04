@@ -85,17 +85,23 @@ class DeskStartTests(unittest.TestCase):
             self.assertEqual(self.calls, 1)
 
     def test_the_start_and_stop_routes_use_the_same_switch(self):
+        import tempfile
+        from pathlib import Path
+
+        marker = Path(tempfile.mkdtemp()) / "research_on"
         with patch("futuresfund.learn._run_learning", self._until_stopped), patch("futuresfund.server.board", self.board), patch(
-            "futuresfund.crew.get_crew"
-        ) as crew:
+            "futuresfund.server._RESEARCH_ON", marker
+        ), patch("futuresfund.crew.get_crew") as crew:
             crew.return_value.application.side_effect = lambda _label, work: work()
             from futuresfund.server import start_run, stop_run
 
             started = start_run()
             self.assertTrue(self.entered.wait(2))
             self.assertTrue(started["started"])
+            self.assertTrue(marker.exists())
             self.assertEqual(self.board.snapshot()["research"], "running")
             stop_run()
+            self.assertFalse(marker.exists())
             self._wait_until("stopped")
             self.entered.clear()
             start_run()

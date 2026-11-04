@@ -1,0 +1,8 @@
+Strategy: POC EMA VWMA Momentum.
+File: poc_ema_vwma_momentum.pine.
+Chart: 2m ES1!.
+Profit 42200.0. Drawdown 16075.0. Trades 131.
+Profit ratio 1.639. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.63 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

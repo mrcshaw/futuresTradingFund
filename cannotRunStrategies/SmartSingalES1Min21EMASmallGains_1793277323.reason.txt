@@ -1,0 +1,1 @@
+SmartSingalES1Min21EMASmallGains.txt took 930 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

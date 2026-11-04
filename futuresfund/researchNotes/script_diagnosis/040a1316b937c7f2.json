@@ -1,0 +1,117 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "profile_lookback",
+  "profile_rows",
+  "min_delta_pct",
+  "vwma_slope_len",
+  "min_slope",
+  "use_vol_filter"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -281.0,
+   "max_drawdown": 281.0,
+   "trades": 1
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 2014.0,
+   "max_drawdown": 736.5,
+   "trades": 6
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": 8742.0,
+   "max_drawdown": 1178.5,
+   "trades": 38
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_start_hr": {
+   "value": 23,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_start_mn": {
+   "value": 59,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [
+  "tp_dollars",
+  "vol_ma_len",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 350,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 45
+  },
+  "net_profit": -381.0,
+  "max_drawdown": 381.0,
+  "trades": 1,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -381.0,
+  "biggest_loser": -381.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 1,
+    "pnl": -381.0,
+    "favorable": 24.5,
+    "adverse": -375.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m",
+  "ES 5m",
+  "NQ 15m",
+  "MNQ 15m"
+ ],
+ "version": 3
+}

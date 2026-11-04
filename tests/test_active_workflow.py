@@ -19,7 +19,7 @@ import futuresfund.trading_engine as trading_engine
 from tests.test_live_trading import START, UP_BAR, Board
 
 ROOT = Path(__file__).resolve().parents[1]
-EMA_BB = (ROOT / "futuresfund" / "learnedStrategies" / "ema_bb_mean_reversion_nq.pine").read_text(encoding="utf-8")
+EMA_BB = (ROOT / "futuresfund" / "checkScripts" / "ema_bb_mean_reversion_nq.pine").read_text(encoding="utf-8")
 EMA_TITLE = "EMA BB Mean Reversion NQ"
 
 SERIES = [
@@ -360,7 +360,7 @@ class EngineLifetimeTests(unittest.TestCase):
         )
         self.assertEqual(done.returncode, 0, done.stderr)
         pids = [int(value) for value in done.stdout.split()]
-        self.assertEqual(len(pids), 5)
+        self.assertEqual(len(pids), 7)
         deadline = time.time() + 30
         while time.time() < deadline and any(_alive(pid) for pid in pids):
             time.sleep(0.25)

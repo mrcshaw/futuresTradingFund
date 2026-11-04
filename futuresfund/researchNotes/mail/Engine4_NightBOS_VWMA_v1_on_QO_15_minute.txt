@@ -1,0 +1,9 @@
+Subject: Engine4_NightBOS_VWMA_v1 Result: Gold GC1!
+
+This run on the 15-minute Gold chart did not clear the desk. The strategy is Engine4_NightBOS_VWMA_v1. It generated a profit of $6,400.00 with a drawdown of $8,662.50 over 121 trades. The profit ratio (average win divided by average loss) was not explicitly stated in the facts, but the profit figure itself is the primary metric for rejection here.
+
+The acceptance line requires a profit above $14,000, a profit factor above 1.1, a win rate above 45 percent, and at least 60 trades. This run’s profit of $6,400.00 is below the $14,000 threshold. Therefore, it was not filed in the strategy library. The library keeps only runs meeting all four criteria. This result was not filed because the profit target was not met.
+
+The settings used were len_vwma=28, atr_len=14, stop_mult=2.0, tp_mult=3.0, and lookback=20. The test covered 9,504 bars from April 16, 2026, through October 9, 2026. The trades per day were approximately 4.9 over 124 trading days.
+
+No action is taken on this run. It remains unfiled.

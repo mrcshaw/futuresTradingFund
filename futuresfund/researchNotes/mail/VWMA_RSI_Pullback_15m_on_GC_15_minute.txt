@@ -1,0 +1,5 @@
+Subject: VWMA RSI Pullback 15m on Gold (GC1!) — Not Filed
+
+The VWMA RSI Pullback 15m strategy just finished a test on the 15-minute Gold (GC1!) chart. The run generated a profit of $1,815.0 with a drawdown of $9,066.5 over 345 trades. The trading pace was 6.65 trades per week across 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the current application data for this specific run, so I cannot quote it.
+
+This result was not filed in the strategy library. The reason written in the application is that the library requires a profit over $8,000, and this run is under that threshold. The acceptance line on the strategy library page requires a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While this run meets the trade count requirement with 345 trades, it fails the profit requirement. The drawdown of $9,066.5 is also noted, but the primary rejection reason cited is the profit level.

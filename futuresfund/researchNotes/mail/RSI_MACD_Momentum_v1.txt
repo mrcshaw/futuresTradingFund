@@ -1,0 +1,7 @@
+Strategy: RSI MACD Momentum v1.
+File: created_rsi_macd_momentum_v1.pine.
+Chart: 5m ES1!.
+Profit 72050.0. Drawdown 33700.0. Trades 7313.
+Profit is 2.14 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

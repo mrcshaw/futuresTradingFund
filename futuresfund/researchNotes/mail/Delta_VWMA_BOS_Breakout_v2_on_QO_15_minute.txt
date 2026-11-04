@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.05, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+Strategy: Delta VWMA BOS Breakout v2.
+Chart tested: 15-minute Gold (GC1!).
+Profit 19437.5. Drawdown 13762.5. Trades 267.
+Trades a week: 10.75 over 124 trading days.
+Bars in this test: 9,504 from 2026-04-16 14:45 through 2026-10-09 11:00.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a win rate above 45 percent. This run's win rate is 37.08.
+Settings of this version: len_vwma=20, len_atr=14, len_rsi=14, stop_dollars=51562.5, tp_dollars=82500.01, cooldown_bars=10.
+Different results on this chart: 33.
+Engine runs on this chart: 34.

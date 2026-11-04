@@ -1,0 +1,60 @@
+//@version=5
+// How this script works
+// The script enters long or short when price crosses a 20-period EMA, provided the RSI is not overbought/oversold.
+// The stop is a fixed dollar amount divided by the point value, placed on the far side of the entry close, and a matching take-profit is set on the other side.
+// A session filter (default 18:00 to 08:00 ET) gates all entries and force-closes any open position the moment the session ends.
+
+strategy("Day Shift Delta Volume Breakout", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_boxes_count=500)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== SESSION FILTER =====
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour", minval=0, maxval=23)
+sess_start_mn = input.int(0, "Session Start Minute", minval=0, maxval=59)
+sess_end_hr = input.int(8, "Session End Hour", minval=0, maxval=23)
+sess_end_mn = input.int(0, "Session End Minute", minval=0, maxval=59)
+
+int session_start = time("1", "0000") + sess_start_hr * 3600000 + sess_start_mn * 60000
+int session_end = time("1", "0000") + sess_end_hr * 3600000 + sess_end_mn * 60000
+bool in_session = use_session ? (time >= session_start and time < session_end) : true
+
+// ===== INDICATORS =====
+ema_len = 20
+rsi_len = 14
+ema_val = ta.ema(close, ema_len)
+rsi_val = ta.rsi(close, rsi_len)
+
+// ===== ENTRY LOGIC =====
+long_sig = in_session and ta.crossover(close, ema_val) and rsi_val < 70
+short_sig = in_session and ta.crossunder(close, ema_val) and rsi_val > 30
+
+if long_sig and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+
+if short_sig and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+
+// Flatten at 16:45 New York
+if time("1", "1645") and strategy.position_size != 0
+    strategy.close_all(comment="EOD Flatten")
+
+plot(ema_val, "EMA 20", color.blue, linewidth=2)

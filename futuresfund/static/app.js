@@ -146,9 +146,11 @@ function renderChannels() {
     { name: "Active strategy", id: "active", role: "The strategies the floor trader and the quantitative trader execute.", responsibilities: ["Strategies the floor trader and the quantitative trader execute", "Paper or live is chosen on this page"] },
     { name: "Strategy library", id: "library", role: "Most profitable runs are filed after a profitable five-year test. One-year runs wait until then.", responsibilities: ["Acceptance numbers live here", "A run is filed after a profitable five-year test", "One-year runs wait until then"] },
     { name: "Indicator library", id: "indicators", role: "Indicators every desk can build and test strategies from.", responsibilities: ["Indicators every desk can build from", "Strategies are tested from these indicators"] },
+    { name: "Proving stages", id: "proving", role: "Each script's 7, 30, 90 and 365 day backtests.", responsibilities: ["A script moves to the next stage only after it passes this one", "Passed scripts can be opened and copied"] },
+    { name: "Golden strategy", id: "golden", role: "How this desk trades.", responsibilities: ["The idea every researcher and strategy developer builds on", "The engine checks the script against its TradingView export"] },
     { name: "Chart", id: "chart", role: "Candles for each futures contract.", responsibilities: ["Candles for each futures contract"] },
     { name: "R&D", id: "rnd", role: "Research ideas, then the developer runs them.", responsibilities: ["Research ideas", "The developer runs them"] },
-    { name: "Under the hood", id: "engine", role: "Four PineTS engines, one for each developer.", responsibilities: ["Four PineTS engines, one for each developer", "Restart stops a hung engine", "Skip leaves the current script and takes the next one"] },
+    { name: "Under the hood", id: "engine", role: "Six PineTS engines. The 5-minute and 15-minute developers each have two.", responsibilities: ["Six PineTS engines", "The 5-minute developer runs engines 2 and 5", "The 15-minute developer runs engines 3 and 6", "Restart stops a hung engine", "Skip leaves the current script and takes the next one"] },
     { name: "Book", id: "book", role: "Prop positions and the orders the floor trader sent.", responsibilities: ["Prop positions", "Orders the floor trader sent"] },
   ] }];
   for (const agent of state.roster) {
@@ -162,9 +164,9 @@ function renderChannels() {
   channelsEl.innerHTML = groups.map((group) => `
     <div class="team-label">${group.team}</div>
     ${group.agents.map((agent) => {
-      const key = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "chart"].includes(agent.id) ? agent.id : agent.name;
+      const key = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "chart"].includes(agent.id) ? agent.id : agent.name;
       const active = state.channel === key;
-      const dot = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "chart"].includes(key) ? "" : `<span class="dot ${statusOf(agent.name)}"></span>`;
+      const dot = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "chart"].includes(key) ? "" : `<span class="dot ${statusOf(agent.name)}"></span>`;
       const lines = state.snapshot.agent_logs?.[agent.name];
       const ownLine = lines && lines.length ? lines[lines.length - 1] : "";
       const taskText = ownLine || state.snapshot.agent_tasks?.[agent.name] || "";
@@ -232,6 +234,21 @@ function renderLiveAgents() {
   });
 }
 
+function renderEngineRun(card, logs) {
+  const text = (logs || []).slice(-6).join("\n");
+  let line = card.querySelector(".hood-run");
+  if (!text) {
+    if (line) line.remove();
+    return;
+  }
+  if (!line) {
+    line = document.createElement("pre");
+    line.className = "hood-run";
+    card.querySelector(".hood-results").insertAdjacentElement("beforebegin", line);
+  }
+  if (line.textContent !== text) line.textContent = text;
+}
+
 function renderEngineResults(host, results) {
   if (!host) return;
   const rows = (results || []).slice(-20).reverse();
@@ -260,6 +277,11 @@ function renderEngineResults(host, results) {
   }
   rows.forEach((row) => {
     const line = document.createElement("tr");
+    if (row.run != null) {
+      line.className = "hood-result-open";
+      line.title = "Open the script this run used";
+      line.addEventListener("click", () => openScriptAt(`/api/engines/results/${encodeURIComponent(row.run)}/script`));
+    }
     const profit = Number(row.net_profit);
     const factor = Number(row.profit_factor);
     const profitCell = document.createElement("td");
@@ -306,6 +328,14 @@ function progressText(engine) {
   return `Learning ${row.learning_done}/${row.learning_total} · Created ${row.created_done}/${row.created_total}${Number(engine.attempt) ? ` · attempt ${engine.attempt}` : ""}`;
 }
 
+function researcherText(engine) {
+  const model = Number(engine.model_choices || 0);
+  const search = Number(engine.search_choices || 0);
+  const tried = Number(engine.rewrites_tried || 0);
+  if (!model && !search && !tried) return "";
+  return `Researcher chose ${model} · Search chose ${search} · Rewrites kept ${Number(engine.rewrites_kept || 0)} of ${tried}`;
+}
+
 function sourceText(engine) {
   const report = state.lab && state.lab.progress;
   if (!report || !report.ready || !engine.timeframe) return "";
@@ -346,10 +376,12 @@ function renderUnderTheHood() {
     { id: 2, developer: "5 min chart developer", timeframe: "5m", system: "PineTS", busy: false, logs: [] },
     { id: 3, developer: "15 min chart developer", timeframe: "15m", system: "PineTS", busy: false, logs: [] },
     { id: 4, developer: "Creation tester", timeframe: "", system: "PineTS", busy: false, successes: 0, goal: 10, studying: false, study: "", logs: [] },
+    { id: 5, developer: "5 min chart developer", timeframe: "5m", system: "PineTS", busy: false, logs: [] },
+    { id: 6, developer: "15 min chart developer", timeframe: "15m", system: "PineTS", busy: false, logs: [] },
   ];
   const engines = (state.lab && state.lab.engines && state.lab.engines.length) ? state.lab.engines : fallback;
   const seen = new Set();
-  engines.slice(0, 4).forEach((engine) => {
+  engines.forEach((engine) => {
     seen.add(String(engine.id));
     let card = grid.querySelector(`[data-engine="${engine.id}"]`);
     if (!card) {
@@ -396,10 +428,22 @@ function renderUnderTheHood() {
       card.append(header, who, scale, tools, results);
       grid.append(card);
     }
+    const notice = String(engine.notice || "").trim();
+    let alert = card.querySelector(".hood-alert");
+    if (notice) {
+      if (!alert) {
+        alert = document.createElement("p");
+        alert.className = "hood-alert";
+        card.insertBefore(alert, card.firstChild);
+      }
+      alert.textContent = notice;
+    } else if (alert) {
+      alert.remove();
+    }
     card.querySelector("h3").textContent = `Engine ${engine.id}`;
     const stateLabel = card.querySelector("header span");
-    stateLabel.className = engine.busy ? "hood-state busy" : "hood-state";
-    stateLabel.textContent = engine.busy ? "Running" : (engine.studying ? "Studying" : "Idle");
+    stateLabel.className = engine.busy ? "hood-state busy" : (notice ? "hood-state blocked" : "hood-state");
+    stateLabel.textContent = engine.busy ? "Running" : (notice ? "Not backtesting" : (engine.studying ? "Studying" : "Idle"));
     const chart = charts[engine.timeframe] || (engine.id === 4 ? "creation" : "chart");
     const script = engine.busy && engine.script ? ` · ${engine.script}` : "";
     card.querySelector(".hood-who").textContent = `${engine.system || "PineTS"} · ${engine.developer || "Developer"} · ${chart}${sourceText(engine)}${script}`;
@@ -409,10 +453,13 @@ function renderUnderTheHood() {
       progress.className = "hood-progress";
       card.querySelector(".hood-who").insertAdjacentElement("afterend", progress);
     }
-    progress.textContent = progressText(engine);
+    progress.textContent = [engine.thinking, progressText(engine), researcherText(engine)].filter(Boolean).join(" · ");
     const running = Boolean(engine.studying || engine.busy);
     const successes = Number(engine.successes || 0);
-    if (running) stateLabel.textContent = `${engine.busy ? "Running" : "Studying"} · ${successes} successful`;
+    if (engine.busy) stateLabel.textContent = `Running · ${successes} successful`;
+    else if (notice) stateLabel.textContent = "Not backtesting";
+    else if (running) stateLabel.textContent = `Studying · ${successes} successful`;
+    if (engine.thinking && !engine.busy) stateLabel.textContent = "Researching";
     const goalEnd = card.querySelector(".hood-scale-goal");
     if (goalEnd) goalEnd.textContent = goalLabel((state.book && state.book.strategy_acceptance) || {});
     const position = Math.max(0, Math.min(1, Number(engine.scale || 0)));
@@ -423,7 +470,7 @@ function renderUnderTheHood() {
       farther: "Away from the goal",
       flat: "No helpful change",
       start: "Starting point",
-    }[engine.scale_move] || "Waiting for a result";
+    }[engine.scale_move] || (notice ? "" : "Waiting for a result");
     const phase = engine.scale_phase ? ` · ${engine.scale_phase}` : "";
     card.querySelector(".hood-scale-note").textContent = `${moveText}${phase}`;
     const restart = card.querySelector(".hood-restart");
@@ -432,6 +479,7 @@ function renderUnderTheHood() {
     const skip = card.querySelector(".hood-skip:not(.hood-restart)");
     skip.disabled = false;
     if (skip.dataset.sent !== "1") skip.textContent = "Skip";
+    renderEngineRun(card, engine.logs || []);
     renderEngineResults(card.querySelector(".hood-results"), engine.results || []);
   });
   grid.querySelectorAll("[data-engine]").forEach((card) => {
@@ -439,83 +487,23 @@ function renderUnderTheHood() {
   });
 }
 
-let kronosFetched = 0;
-
-async function loadKronosProgress() {
-  if (Date.now() - kronosFetched < 1000) return;
-  kronosFetched = Date.now();
-  try {
-    const response = await fetch("/api/kronos-training");
-    if (!response.ok) throw new Error(String(response.status));
-    paintKronosProgress(await response.json());
-  } catch (error) {
-    kronosFetched = 0;
-  }
-}
-
-function paintKronosProgress(row) {
-  const phase = document.querySelector("#kronos-phase");
-  const count = document.querySelector("#kronos-count");
-  const fill = document.querySelector("#kronos-fill");
-  const bar = document.querySelector("#kronos-bar");
-  const detail = document.querySelector("#kronos-detail");
-  if (!count || !fill || !bar) return;
-  const wholeDone = Number(row?.whole_done || 0);
-  const wholeTotal = Number(row?.whole_total || 0);
-  const step = Number(row?.step || 0);
-  const steps = Number(row?.steps || 0);
-  const percent = wholeTotal
-    ? Math.max(0, Math.min(100, Number.isFinite(Number(row?.percent)) ? Number(row.percent) : (wholeDone / wholeTotal) * 100))
-    : (steps ? Math.max(0, Math.min(100, (step / steps) * 100)) : 0);
-  count.textContent = wholeTotal
-    ? `${wholeDone.toLocaleString("en-US")} / ${wholeTotal.toLocaleString("en-US")}`
-    : `${step} / ${steps}`;
-  fill.style.width = `${percent}%`;
-  bar.setAttribute("aria-valuenow", String(Math.round(percent)));
-  bar.setAttribute("aria-valuemax", "100");
-  if (phase) phase.textContent = wholeTotal ? "Entire run" : "Kronos";
-  if (!detail) return;
-  detail.textContent = kronosDetail(row, wholeDone, wholeTotal);
-}
-
-function kronosDetail(row, wholeDone, wholeTotal) {
-  if (row?.finished) return "The fine-tune is complete.";
-  if (!row?.running || !wholeTotal) return "Waiting for the first step.";
-  const left = Math.max(0, wholeTotal - wholeDone).toLocaleString("en-US");
-  const epoch = Number(row.epoch || 0);
-  const epochs = Number(row.epochs || 0);
-  const step = Number(row.step || 0);
-  const steps = Number(row.steps || 0);
-  const loss = Number.isFinite(Number(row.loss)) ? ` Loss ${Number(row.loss).toFixed(4)}.` : "";
-  if (row.tokenizer_finished && row.phase === "predictor" && !step) {
-    return `Tokenizer finished. Predictor has ${epochs} epochs left. The first line is written at step 50. ${left} steps left.`;
-  }
-  const name = row.phase ? row.phase.charAt(0).toUpperCase() + row.phase.slice(1) : "Training";
-  return `${name} epoch ${epoch} of ${epochs}, step ${step} of ${steps}.${loss} ${left} steps left.`;
-}
-
 function renderFeed() {
   const pages = {
     headquarters: { name: "headquarters", team: "Floor", role: "Every desk, in one feed." },
     book: { name: "book", team: "Core Trading", role: "Prop positions and the orders the floor trader sent." },
-    engine: { name: "under the hood", team: "Technology & Operations", role: "Four PineTS engines, one for each developer." },
+    engine: { name: "under the hood", team: "Technology & Operations", role: "Six PineTS engines. The 5-minute and 15-minute developers each have two." },
     rnd: { name: "rnd", team: "Research", role: "Research ideas, then the developer runs them." },
     active: { name: "active", team: "Floor", role: "The strategies the floor trader and the quantitative trader execute." },
-    library: { name: "strategy library", team: "Research", role: "A strategy is filed when the checked boxes are met. Drawdown under 5 percent of the account and the trade count start on." },
+    library: { name: "strategy library", team: "Research", role: "A strategy is filed when the checked boxes are met. The pro account drawdown rule and the trade count start on." },
     indicators: { name: "indicator library", team: "Research", role: "Indicators every desk can build and test strategies from." },
+    proving: { name: "proving stages", team: "Research", role: "Each script's 7, 30, 90 and 365 day backtests." },
     chart: { name: "chart", team: "Floor", role: "Candles for each futures contract." },
   };
   const current = pages[state.channel] || state.roster.find((agent) => agent.name === state.channel);
-  const deskPage = ["book", "engine", "rnd", "active", "library", "indicators", "chart"].includes(state.channel);
+  const deskPage = ["book", "engine", "rnd", "active", "library", "indicators", "proving", "golden", "chart"].includes(state.channel);
   document.querySelector("#feed").hidden = deskPage;
   const callMeeting = document.querySelector("#call-meeting");
   if (callMeeting) callMeeting.hidden = state.channel !== "headquarters";
-  const kronosBar = document.querySelector("#kronos-progress");
-  if (kronosBar) {
-    const showKronos = state.channel === "Systems Administrator";
-    kronosBar.hidden = !showKronos;
-    if (showKronos) loadKronosProgress();
-  }
   const riskReview = document.querySelector("#risk-review");
   document.querySelector("main")?.classList.toggle("risk-open", state.channel === "Risk Manager");
   if (riskReview) {
@@ -531,11 +519,14 @@ function renderFeed() {
   document.querySelector("#library").hidden = state.channel !== "library";
   document.querySelector("#indicators").hidden = state.channel !== "indicators";
   if (state.channel === "indicators") ensureIndicators();
+  document.querySelector("#proving").hidden = state.channel !== "proving";
+  if (state.channel === "proving") ensureProving();
+  document.querySelector("#golden").hidden = state.channel !== "golden";
+  if (state.channel === "golden") ensureGolden();
   document.querySelector("#chart").hidden = state.channel !== "chart";
   if (state.channel === "chart") ensureChart();
   if (state.channel === "library") ensureLibrary().then(() => renderLibrary());
   renderActive();
-  paintKronosButton();
   titleEl.textContent = `# ${(current && current.name) || state.channel.toLowerCase()}`;
   teamEl.textContent = current?.team || "Floor";
   roleEl.textContent = current?.role || "Every desk, in one feed.";
@@ -872,7 +863,7 @@ function paintKey() {
     tasks: state.snapshot.agent_tasks,
     logs: state.snapshot.agent_logs,
     lab: `${state.lab.status}:${state.lab.attempts}:${(state.lab.trials || []).length}:${state.lab.running}`,
-    engines: (state.lab.engines || []).map((engine) => `${engine.id}:${engine.busy}:${engine.studying ? 1 : 0}:${engine.successes || 0}:${(engine.results || []).length}:${engine.study || ""}:${(engine.logs || []).at?.(-1) || ""}`).join("|"),
+    engines: (state.lab.engines || []).map((engine) => `${engine.id}:${engine.busy}:${engine.studying ? 1 : 0}:${engine.thinking || ""}:${engine.model_choices || 0}:${engine.search_choices || 0}:${engine.rewrites_kept || 0}:${engine.successes || 0}:${(engine.results || []).length}:${engine.study || ""}:${(engine.logs || []).at?.(-1) || ""}`).join("|"),
     progress: ((state.lab.progress && state.lab.progress.rows) || []).map((row) => `${row.timeframe}:${row.learning_done}/${row.learning_total}:${row.created_done}/${row.created_total}`).join(","),
     orders: (state.book.orders || []).length,
     positions: (state.book.positions || []).length,
@@ -924,11 +915,11 @@ async function refreshOnce() {
   if (seenActive !== activeEpoch) book.active_strategies = state.book.active_strategies;
   state.book = book;
   state.lab = lab;
-  paintKronosButton();
-  ensureKronosPaper();
   if (state.channel === "chart") ensureChart();
   if (state.channel === "engine") loadChecks();
   if (state.channel === "indicators") ensureIndicators();
+  if (state.channel === "proving") ensureProving();
+  if (state.channel === "golden") ensureGolden();
   if (libraryTask) await libraryTask;
   const key = paintKey();
   if (key === state.paint) return;
@@ -941,13 +932,12 @@ async function refreshOnce() {
 
 function shownAccounts() {
   const rows = state.book.accounts?.length ? state.book.accounts : [];
-  const names = ["paper", "paper-2"];
-  const paper = names.map((name) => rows.find((row) => row.account === name)).filter(Boolean);
+  const paper = rows.filter((row) => row.account === "paper");
   return paper.length ? paper : rows;
 }
 
 function accountLabel(name) {
-  return name === "paper" || name === "paper-2" ? "paper" : (name || "Account");
+  return name || "Account";
 }
 
 function renderAccounts() {
@@ -1065,7 +1055,6 @@ async function ensureChart() {
     }
     state.chartData = payload;
     chartAt = Date.now();
-    paintKronosAccuracy(payload);
     scheduleChartDraw();
   } catch (error) {
     if (token !== chartToken) return;
@@ -1164,13 +1153,7 @@ function withGaps(candles, timeframe) {
 }
 
 function chartCandles(payload) {
-  const printed = payload.candles || [];
-  const forecast = ((payload.prediction || {}).candles || []).map((candle) => ({ ...candle, predicted: true }));
-  return printed.concat(forecast);
-}
-
-function candleDash(candle) {
-  return candle && candle.predicted ? [5, 4] : [];
+  return payload.candles || [];
 }
 
 function drawCandles(payload) {
@@ -1242,7 +1225,7 @@ function drawCandlePlot(payload, canvas, readout) {
   if (boxes.volume) drawHistogram(context, candles, boxes.volume, slot, pad, width, "v", "Volume");
   if (boxes.macd) drawMacd(context, candles, boxes.macd, slot, pad, width);
   if (boxes.delta) drawHistogram(context, candles, boxes.delta, slot, pad, width, "delta", "Volume delta");
-  const latest = [...all].reverse().find((item) => item.kind === "candle" && !(item.candle && item.candle.predicted));
+  const latest = [...all].reverse().find((item) => item.kind === "candle");
   const first = candles.find((item) => item.kind === "candle");
   const lastDrawn = [...candles].reverse().find((item) => item.kind === "candle");
   context.fillStyle = "#8b98a5";
@@ -1253,130 +1236,8 @@ function drawCandlePlot(payload, canvas, readout) {
     const live = latest.candle.forming ? "  forming" : "";
     const hole = [...candles].reverse().find((item) => item.kind === "gap");
     const missing = hole ? `  no prices for ${gapLabel(hole.minutes)}` : "";
-    const forecast = (payload.prediction && payload.prediction.note) ? `  ${payload.prediction.note}` : "";
-    readout.textContent = `${payload.contract} ${payload.timeframe}${live}  ${latest.candle.et} ET${candleFacts(latest.candle)}${missing}${forecast}`;
+    readout.textContent = `${payload.contract} ${payload.timeframe}${live}  ${latest.candle.et} ET${candleFacts(latest.candle)}${missing}`;
   }
-}
-
-function paintKronosAccuracy(payload) {
-  const accuracy = document.querySelector("#kronos-accuracy");
-  const match = payload && payload.direction_match;
-  if (!accuracy || !match || !match.text) return;
-  accuracy.textContent = match.text;
-}
-
-function kronosFollowView() {
-  const executing = (state.book && state.book.executing) || [];
-  const kronos = executing.find((slot) => slot.kind === "kronos" || slot.id === "kronos-paper");
-  const taken = new Set(executing.filter((slot) => slot !== kronos).map((slot) => slot.trader));
-  const free = ["Floor Trader", "Quantitative Trader"].find((name) => !taken.has(name)) || "";
-  const chart = state.charts.find((item) => item.id === state.chartId) || state.charts[0] || { contract: "ES1!", timeframe: "5m" };
-  return { kronos, trader: (kronos && kronos.trader) || free, chart };
-}
-
-let kronosArmed = true;
-let kronosBusy = false;
-
-function paintKronosButton() {
-  const view = kronosFollowView();
-  document.querySelectorAll("[data-kronos-follow]").forEach((button) => {
-    if (button.dataset.busy === "1") return;
-    if (view.kronos) {
-      const where = `${view.kronos.contract} ${view.kronos.timeframe}`;
-      button.disabled = false;
-      button.textContent = `Stop ${view.trader}'s Kronos paper trades on ${where}`;
-      return;
-    }
-    if (!view.trader) {
-      button.disabled = true;
-      button.textContent = "Both traders are executing a strategy";
-      return;
-    }
-    button.disabled = false;
-    button.textContent = `Have the ${view.trader} paper trade Kronos on ${view.chart.contract} ${view.chart.timeframe}`;
-  });
-}
-
-async function ensureKronosPaper() {
-  if (!kronosArmed || kronosBusy) return;
-  const view = kronosFollowView();
-  if (!view.trader || !view.chart) return;
-  const chart = view.chart;
-  if (view.kronos) {
-    const same = view.kronos.contract === chart.contract && view.kronos.timeframe === chart.timeframe;
-    if (same || view.kronos.position) return;
-  }
-  kronosBusy = true;
-  try {
-    if (view.kronos) {
-      const stopped = await postKronos("/api/execution/kronos-paper/stop");
-      if (!stopped) return;
-    }
-    const started = await postKronos("/api/kronos-paper/start", { contract: chart.contract, timeframe: chart.timeframe });
-    if (!started) {
-      const note = document.querySelector("#kronos-follow-note")?.textContent || "";
-      if (!/already/i.test(note)) kronosArmed = false;
-    }
-  } finally {
-    kronosBusy = false;
-  }
-}
-
-async function onKronosFollow(button) {
-  const view = kronosFollowView();
-  const note = document.querySelector("#kronos-follow-note");
-  if (view.kronos) {
-    const open = view.kronos.position ? " The open paper trade is closed first." : "";
-    if (!window.confirm(`Stop ${view.trader}'s Kronos paper trades on ${view.kronos.contract} ${view.kronos.timeframe}?${open}`)) return;
-    kronosArmed = false;
-    button.dataset.busy = "1";
-    button.disabled = true;
-    await postKronos("/api/execution/kronos-paper/stop");
-    delete button.dataset.busy;
-    paintKronosButton();
-    return;
-  }
-  if (!view.trader) return;
-  const chart = view.chart;
-  if (!window.confirm(`Have the ${view.trader} paper trade Kronos buy and sell signals on ${chart.contract} ${chart.timeframe}? One contract, paper only. No order is sent to the live account.`)) return;
-  kronosArmed = true;
-  button.dataset.busy = "1";
-  button.disabled = true;
-  const payload = await postKronos("/api/kronos-paper/start", { contract: chart.contract, timeframe: chart.timeframe });
-  delete button.dataset.busy;
-  paintKronosButton();
-  if (note && payload && payload.note) note.textContent = payload.note;
-}
-
-async function postKronos(path, body) {
-  const note = document.querySelector("#kronos-follow-note");
-  const active = document.querySelector("#active-note");
-  if (note) note.textContent = "Asking the desk…";
-  let response;
-  try {
-    response = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch (error) {
-    if (note) note.textContent = "The desk did not answer.";
-    return null;
-  }
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const detail = payload.detail || "The desk refused.";
-    if (note) note.textContent = detail;
-    if (active) active.textContent = detail;
-    return null;
-  }
-  if (note) note.textContent = payload.note || "";
-  if (active) active.textContent = payload.note || "";
-  const list = document.querySelector("#active-list");
-  if (list) delete list.dataset.stamp;
-  state.paint = "";
-  refresh();
-  return payload;
 }
 
 function visibleCount(chart) {
@@ -1468,36 +1329,21 @@ function drawPrice(context, candles, orders, box, slot, pad, width) {
     const bodyX = x - Math.max(1, slot * 0.32);
     const bodyW = Math.max(2, slot * 0.64);
     const bodyH = Math.max(1, bodyBottom - bodyTop);
-    context.setLineDash(candleDash(candle));
     context.strokeStyle = up ? "#26a69a" : "#ef5350";
     context.beginPath();
     context.moveTo(x, y(candle.h));
     context.lineTo(x, y(candle.l));
     context.stroke();
-    if (candle.predicted) {
-      context.fillStyle = up ? "rgba(38,166,154,0.18)" : "rgba(239,83,80,0.18)";
-      context.fillRect(bodyX, bodyTop, bodyW, bodyH);
-      context.strokeRect(bodyX, bodyTop, bodyW, bodyH);
-    } else {
-      context.fillStyle = context.strokeStyle;
-      context.fillRect(bodyX, bodyTop, bodyW, bodyH);
-    }
-    context.setLineDash([]);
-    if (candle.predicted && candle.direction) {
-      context.fillStyle = "#d5dde6";
-      context.fillText(candle.direction, x + 6, Math.max(box.top + 12, y(candle.h) - 6));
-    }
-    if (!candle.predicted) {
-      orders.filter((order) => order.t === candle.t).forEach((order) => {
-        context.fillStyle = order.side === "BUY" ? "#26a69a" : "#ef5350";
-        context.beginPath();
-        context.arc(x, order.side === "BUY" ? y(candle.l) + 8 : y(candle.h) - 8, 3.5, 0, Math.PI * 2);
-        context.fill();
-      });
-    }
+    context.fillStyle = context.strokeStyle;
+    context.fillRect(bodyX, bodyTop, bodyW, bodyH);
+    orders.filter((order) => order.t === candle.t).forEach((order) => {
+      context.fillStyle = order.side === "BUY" ? "#26a69a" : "#ef5350";
+      context.beginPath();
+      context.arc(x, order.side === "BUY" ? y(candle.l) + 8 : y(candle.h) - 8, 3.5, 0, Math.PI * 2);
+      context.fill();
+    });
   });
-  const printed = priced.filter((candle) => !candle.predicted);
-  const last = printed.length ? printed[printed.length - 1] : priced[priced.length - 1];
+  const last = priced[priced.length - 1];
   context.strokeStyle = "#787b86";
   context.setLineDash([3, 3]);
   context.beginPath();
@@ -1512,7 +1358,7 @@ function drawPrice(context, candles, orders, box, slot, pad, width) {
 }
 
 function drawHistogram(context, candles, box, slot, pad, width, key, label) {
-  const values = candles.filter((item) => item.kind === "candle" && !item.candle.predicted).map((item) => Number(item.candle[key] || 0));
+  const values = candles.filter((item) => item.kind === "candle").map((item) => Number(item.candle[key] || 0));
   if (!values.length) return;
   const peak = Math.max(...values.map((value) => Math.abs(value)), 1);
   const signed = values.some((value) => value < 0);
@@ -1524,7 +1370,6 @@ function drawHistogram(context, candles, box, slot, pad, width, key, label) {
       drawGap(context, index, slot, pad, box, item.minutes);
       return;
     }
-    if (item.candle.predicted) return;
     const value = Number(item.candle[key] || 0);
     const x = pad.left + index * slot + slot * 0.2;
     const wide = Math.max(1, slot * 0.6);
@@ -1540,7 +1385,7 @@ function drawHistogram(context, candles, box, slot, pad, width, key, label) {
 }
 
 function drawMacd(context, candles, box, slot, pad, width) {
-  const values = candles.filter((item) => item.kind === "candle" && !item.candle.predicted).flatMap((item) => [Number(item.candle.macd || 0), Number(item.candle.macd_signal || 0), Number(item.candle.macd_histogram || 0)]);
+  const values = candles.filter((item) => item.kind === "candle").flatMap((item) => [Number(item.candle.macd || 0), Number(item.candle.macd_signal || 0), Number(item.candle.macd_histogram || 0)]);
   if (!values.length) return;
   const peak = Math.max(...values.map((value) => Math.abs(value)), 1);
   const y = (value) => box.top + box.height / 2 - (value / peak) * (box.height / 2 - 4);
@@ -1551,7 +1396,6 @@ function drawMacd(context, candles, box, slot, pad, width) {
       drawGap(context, index, slot, pad, box, item.minutes);
       return;
     }
-    if (item.candle.predicted) return;
     const hist = Number(item.candle.macd_histogram || 0);
     const barHeight = Math.abs(y(hist) - y(0));
     const x = pad.left + index * slot + slot * 0.25;
@@ -1619,7 +1463,7 @@ function renderAcceptance() {
   form.profit_factor.value = rules.profit_factor ?? 1.1;
   form.win_rate.value = rules.win_rate ?? 53;
   form.min_trades.value = rules.min_trades ?? 100;
-  form.drawdown_pct.value = rules.drawdown_pct ?? 5;
+  form.drawdown_pct.value = rules.drawdown_pct ?? 1.5;
   form.goal.value = rules.goal || "min_trades";
   form.use_drawdown.checked = rules.use_drawdown !== false;
   form.use_trades.checked = rules.use_trades !== false;
@@ -1808,6 +1652,229 @@ function strategyAlert(title, account) {
 let indicatorsFetched = 0;
 let indicatorRows = [];
 
+// The ledger keeps this many rows. A script still running a stage stays on the table.
+const PROVING_LIMIT = 100;
+let provingRows = [];
+let provingFetched = 0;
+
+async function ensureProving() {
+  if (Date.now() - provingFetched < 10000) return;
+  provingFetched = Date.now();
+  try {
+    const payload = await (await fetch("/api/proving")).json();
+    const listed = payload.rows || [];
+    let room = PROVING_LIMIT - listed.filter((row) => row.status === "testing").length;
+    provingRows = listed.filter((row) => row.status === "testing" || room-- > 0);
+  } catch (error) {
+    return;
+  }
+  renderProving();
+}
+
+function provingCell(row, days) {
+  const passed = (row.passed || {})[String(days)];
+  if (passed) {
+    const profit = Number(passed.net_profit);
+    const money = Number.isFinite(profit) ? `$${Math.round(profit).toLocaleString()}` : "Passed";
+    const detail = `${passed.trades ?? "?"} trades · drawdown ${passed.max_drawdown ?? "?"}`;
+    return `<td><button type="button" class="proving-pass" data-proving="${escapeHtml(row.id)}" data-days="${days}" title="Open the script that passed">${escapeHtml(money)}</button><small>${escapeHtml(detail)}</small></td>`;
+  }
+  if (row.stage === days && row.status === "testing") return `<td class="proving-now">Testing</td>`;
+  if (row.stage === days && row.status === "failed") return `<td class="proving-fail">Failed</td>`;
+  if (row.stage === days && row.status === "stopped") return `<td class="proving-stop" title="${escapeHtml(row.reason || "")}">Stopped</td>`;
+  return `<td class="proving-wait">—</td>`;
+}
+
+function renderProving() {
+  const body = document.querySelector("#proving-table tbody");
+  const empty = document.querySelector("#proving-empty");
+  if (!body) return;
+  const query = (document.querySelector("#proving-search")?.value || "").trim().toLowerCase();
+  const show = document.querySelector("#proving-filter")?.value || "all";
+  const rows = provingRows.filter((row) => {
+    if (show === "testing" && row.status !== "testing") return false;
+    if (show === "failed" && row.status !== "failed") return false;
+    if (show === "stopped" && row.status !== "stopped") return false;
+    if (show === "365" && !(row.passed || {})["365"]) return false;
+    return !query || String(row.file || "").toLowerCase().includes(query);
+  });
+  body.innerHTML = rows.map((row) => `<tr>
+      <td>${escapeHtml(row.file || "")}</td>
+      <td>${escapeHtml(row.root || "")}</td>
+      <td>${escapeHtml(row.timeframe || "")}</td>
+      <td>${escapeHtml(row.label || "")}${row.status === "stopped" && row.reason ? `<small>${escapeHtml(row.reason)}</small>` : ""}</td>
+      ${[7, 30, 90, 365].map((days) => provingCell(row, days)).join("")}
+      <td>${escapeHtml(row.updated || "")}</td>
+    </tr>`).join("");
+  if (empty) empty.textContent = rows.length ? "" : provingRows.length ? "No script matches." : "No script has started a stage yet. Rows appear as the charts start the 7-day stage.";
+}
+
+function openProving(id, days) {
+  return openScriptAt(`/api/proving/script?id=${encodeURIComponent(id)}&days=${encodeURIComponent(days)}`);
+}
+
+async function openScriptAt(url) {
+  const modal = document.querySelector("#script-modal");
+  const title = document.querySelector("#script-title");
+  const body = document.querySelector("#script-body");
+  const note = document.querySelector("#script-note");
+  setScriptMode("view");
+  modal.hidden = false;
+  modal.dataset.loading = "1";
+  title.textContent = "Strategy";
+  body.value = "";
+  note.textContent = "Loading the script.";
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+  delete modal.dataset.loading;
+  if (!response.ok || !payload.pine) {
+    note.textContent = payload.detail || "That script could not be opened.";
+    return;
+  }
+  title.textContent = payload.title || "Strategy";
+  body.value = payload.pine;
+  note.textContent = payload.note || "";
+}
+
+document.querySelector("#proving-table").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-proving]");
+  if (button) openProving(button.dataset.proving, button.dataset.days);
+});
+document.querySelector("#proving-filter").addEventListener("change", renderProving);
+document.querySelector("#proving-search").addEventListener("input", renderProving);
+
+let goldenData = { active: "", rows: [] };
+let goldenFetched = 0;
+let goldenTimer = 0;
+let goldenWaiting = "";
+let goldenWarning = "";
+
+async function ensureGolden(force = false) {
+  if (!force && Date.now() - goldenFetched < 10000) return;
+  goldenFetched = Date.now();
+  try {
+    goldenData = await (await fetch("/api/golden")).json();
+  } catch (error) {
+    return;
+  }
+  renderGolden();
+  const running = (goldenData.rows || []).some((row) => (row.check || {}).status !== "done");
+  if (running && !goldenTimer) {
+    goldenTimer = setTimeout(() => {
+      goldenTimer = 0;
+      ensureGolden(true);
+    }, 2000);
+  }
+}
+
+function goldenSignedMoney(value) {
+  const amount = Number(value || 0);
+  return `${amount < 0 ? "-" : ""}$${Math.abs(amount).toLocaleString()}`;
+}
+
+function goldenSummary(row) {
+  const check = row.check || {};
+  return `The engine ran this script on ${row.added_at || "the upload"}. ${check.matched} of ${check.covered} export trades match. `
+    + `On those dates the export made ${goldenSignedMoney(check.export_profit)} and the engine made ${goldenSignedMoney(check.engine_profit)}. `
+    + `The engine took ${check.extra} trades that are not in the export.`;
+}
+
+function goldenCheck(row) {
+  const check = row.check || {};
+  if (check.status !== "done") return `<span class="proving-now">Running the script</span>`;
+  if (check.error) return `<span class="proving-fail">${escapeHtml(check.error)}</span>`;
+  if (row.confirmed) return `<span class="proving-pass">Confirmed. ${escapeHtml(goldenSummary(row))}</span>`;
+  return `<span class="proving-fail">Not confirmed. ${escapeHtml(goldenSummary(row))} The team still uses the idea.</span>`;
+}
+
+function goldenUnknownSignals(pine, csvText) {
+  const lines = csvText.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  const head = (lines.shift() || "").split(",");
+  const column = head.indexOf("Signal");
+  if (column < 0) return [];
+  const names = new Set(lines.map((line) => (line.split(",")[column] || "").replace(/^"|"$/g, "").trim()));
+  return [...names].filter((name) => name && name !== "Open" && !/^(Close |Margin call)/.test(name) && !pine.includes(name)).sort();
+}
+
+function renderGolden() {
+  const body = document.querySelector("#golden-table tbody");
+  if (!body) return;
+  body.innerHTML = (goldenData.rows || []).slice().reverse().map((row) => {
+    const standard = row.id === goldenData.active;
+    return `<tr>
+      <td>${escapeHtml(row.title || "")}${standard ? "<br><small>The standard now</small>" : ""}</td>
+      <td>${escapeHtml(row.idea || "")}</td>
+      <td>${escapeHtml(row.contract || "")} ${escapeHtml(row.timeframe || "")}</td>
+      <td>${goldenCheck(row)}</td>
+      <td>
+        <button type="button" data-golden-view="${escapeHtml(row.id)}">Script</button>
+        ${standard ? "" : `<button type="button" data-golden-use="${escapeHtml(row.id)}">Use</button>`}
+        <button type="button" data-golden-remove="${escapeHtml(row.id)}">Remove</button>
+      </td>
+    </tr>`;
+  }).join("");
+  const empty = document.querySelector("#golden-empty");
+  if (empty) empty.textContent = (goldenData.rows || []).length ? "" : "No golden strategy is set.";
+  const waited = (goldenData.rows || []).find((row) => row.id === goldenWaiting);
+  if (waited && (waited.check || {}).status === "done") {
+    const check = waited.check;
+    goldenWaiting = "";
+    document.querySelector("#golden-note").textContent = `${check.error ? check.error : goldenSummary(waited)} ${goldenWarning}`.trim();
+  }
+}
+
+async function addGolden() {
+  const note = document.querySelector("#golden-note");
+  const idea = document.querySelector("#golden-idea");
+  const pine = document.querySelector("#golden-pine");
+  const file = document.querySelector("#golden-export");
+  if (!file.files.length) {
+    note.textContent = "Add the CSV TradingView exported for this script.";
+    return;
+  }
+  note.textContent = "Saving, then running the script against the export.";
+  const exportText = await file.files[0].text();
+  const unknown = goldenUnknownSignals(pine.value, exportText);
+  goldenWarning = unknown.length
+    ? `The export has signal names this script never uses: ${unknown.join(", ")}. TradingView takes those names from the script that made the trades, so this export came from a different script.`
+    : "";
+  const response = await fetch("/api/golden", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idea: idea.value, pine: pine.value, export_name: file.files[0].name, export_text: exportText }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    note.textContent = payload.detail || "That strategy could not be saved.";
+    return;
+  }
+  note.textContent = `Saved. The engine is running the script now. ${goldenWarning}`.trim();
+  goldenWaiting = payload.id || "";
+  idea.value = "";
+  pine.value = "";
+  file.value = "";
+  ensureGolden(true);
+}
+
+document.querySelector("#golden-add").addEventListener("click", addGolden);
+document.querySelector("#golden-table").addEventListener("click", async (event) => {
+  const view = event.target.closest("button[data-golden-view]");
+  if (view) {
+    const row = (goldenData.rows || []).find((item) => item.id === view.dataset.goldenView);
+    setScriptMode("view");
+    document.querySelector("#script-modal").hidden = false;
+    document.querySelector("#script-title").textContent = row?.title || "Strategy";
+    document.querySelector("#script-body").value = row?.pine || "";
+    document.querySelector("#script-note").textContent = "";
+    return;
+  }
+  const use = event.target.closest("button[data-golden-use]");
+  const gone = event.target.closest("button[data-golden-remove]");
+  if (use) await fetch(`/api/golden/${encodeURIComponent(use.dataset.goldenUse)}/activate`, { method: "POST" });
+  if (gone) await fetch(`/api/golden/${encodeURIComponent(gone.dataset.goldenRemove)}`, { method: "DELETE" });
+  if (use || gone) ensureGolden(true);
+});
+
 async function ensureIndicators() {
   if (Date.now() - indicatorsFetched < 10000) return;
   indicatorsFetched = Date.now();
@@ -1924,7 +1991,7 @@ function renderUntested() {
 function libraryRow(row) {
   return `<tr data-library="${escapeHtml(row.id)}" data-contract="${escapeHtml(row.contract)}">
     <td>${escapeHtml(row.title)}</td>
-    <td>${escapeHtml(row.kind || (row.target_met ? "Target met" : "Under the target"))}</td>
+    <td>${escapeHtml(row.fails ? `Fails: ${row.fails}` : (row.kind || (row.target_met ? "Target met" : "Under the target")))}</td>
     <td>${escapeHtml(row.contract_label)}</td>
     <td>${escapeHtml(row.timeframe || "")}</td>
     <td>${row.net_profit == null ? "" : money(row.net_profit)}</td>
@@ -2048,9 +2115,7 @@ function executionLine(slot) {
     : "<strong>Flat</strong>, waiting for the script's next entry.";
   const record = `${slot.trades} closed trade${slot.trades === 1 ? "" : "s"}, ${slot.wins} won, realized ${money(slot.realized)}.`;
   const bar = slot.last_bar ? ` Newest ${escapeHtml(slot.timeframe)} bar ${escapeHtml(slot.last_bar)} ET.` : "";
-  const feed = slot.kind === "kronos" || slot.feed === "kronos"
-    ? " Candles come from the desk chart. The fill stays on paper."
-    : slot.feed === "ninjatrader"
+  const feed = slot.feed === "ninjatrader"
     ? " Candles come from NinjaTrader. Fills stay on paper so they can be compared with the floor trader."
     : " Candles come from TradingView alerts.";
   const engine = slot.engine?.running
@@ -2272,23 +2337,6 @@ async function loadChecks() {
   }).join("") || `<tr><td colspan="6">${payload.running ? "Running the checks." : "No Strategy Tester trade list is saved in the project root."}</td></tr>`;
 }
 
-function kronosBoard(kronos) {
-  const row = kronos || {};
-  const line = (candle) => `${candle.t || ""} o${candle.o} h${candle.h} l${candle.l} c${candle.c} v${candle.v}`;
-  const closed = (row.candles || []).map(line).join("; ");
-  const predicted = (row.predicted || []).map(line).join("; ");
-  const parts = [
-    [row.owner, row.contract, row.timeframe].filter(Boolean).join(" "),
-    row.note || "",
-    closed ? `Closed candles ${closed}` : "",
-    predicted ? `Predicted ${predicted}` : "",
-    row.direction || "",
-    row.count ? `Stored ${row.count} times for this window.` : "",
-    row.reached ? `Five-year walk reached ${row.reached}.` : "",
-  ].filter(Boolean);
-  return `<h3>Kronos</h3>${parts.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}`;
-}
-
 function renderGaps(report) {
   const el = document.querySelector("#rnd-gaps");
   if (!el) return;
@@ -2390,7 +2438,7 @@ function renderLab() {
     const next = upcoming.length
       ? `<h3>Up next</h3>${upcoming.map((item) => `<p>${escapeHtml(item.title)}</p>`).join("")}`
       : `<h3>Up next</h3><p>No strategies are waiting.</p>`;
-    boardEl.innerHTML = now + next + kronosBoard(lab.kronos);
+    boardEl.innerHTML = now + next;
   }
 }
 
@@ -2720,7 +2768,7 @@ acceptanceForm.addEventListener("focusin", () => {
 });
 function acceptanceSaved(rules) {
   const on = [];
-  if (rules.use_drawdown !== false) on.push(`drawdown under ${rules.drawdown_pct}% of the account`);
+  if (rules.use_drawdown !== false) on.push("drawdown inside 30% of the profit once the profit reaches 5% of the account");
   if (rules.use_trades !== false) on.push(`at least ${rules.min_trades} trades`);
   if (rules.use_profit) on.push(`profit above $${Number(rules.min_profit).toLocaleString("en-US")}`);
   if (rules.use_factor) on.push(`profit factor ${rules.profit_factor}`);
@@ -2778,7 +2826,7 @@ acceptanceForm.addEventListener("submit", async (event) => {
     form.profit_factor.value = saved.profit_factor;
     form.win_rate.value = saved.win_rate;
     form.min_trades.value = saved.min_trades;
-    form.drawdown_pct.value = saved.drawdown_pct ?? 5;
+    form.drawdown_pct.value = saved.drawdown_pct ?? 1.5;
     form.goal.value = saved.goal || "min_trades";
     form.use_drawdown.checked = saved.use_drawdown !== false;
     form.use_trades.checked = saved.use_trades !== false;
@@ -2900,10 +2948,6 @@ document.querySelector("#active-list").addEventListener("focusout", () => {
       renderActive();
     }
   }, 0);
-});
-
-document.querySelectorAll("[data-kronos-follow]").forEach((button) => {
-  button.addEventListener("click", () => onKronosFollow(button));
 });
 
 document.querySelector("#active-list").addEventListener("click", async (event) => {

@@ -1,0 +1,118 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 948.0,
+   "max_drawdown": 295.5,
+   "trades": 2
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -67.0,
+   "max_drawdown": 291.0,
+   "trades": 2
+  },
+  "sensitivity": {
+   "value": 3,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema_len": {
+   "value": 50,
+   "net_profit": -690.0,
+   "max_drawdown": 1319.5,
+   "trades": 5
+  },
+  "ema_slope_len": {
+   "value": 20,
+   "net_profit": -291.0,
+   "max_drawdown": 291.0,
+   "trades": 1
+  },
+  "pullback_dollars": {
+   "value": 12.5,
+   "net_profit": -582.0,
+   "max_drawdown": 582.0,
+   "trades": 2
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 657.0,
+   "max_drawdown": 506.5,
+   "trades": 3
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 474.0,
+   "max_drawdown": 150.5,
+   "trades": 1
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -291.0,
+   "max_drawdown": 291.0,
+   "trades": 1
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "min_score",
+  "min_slope",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 20.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "sensitivity": 12,
+   "min_score": 2,
+   "ema_len": 200,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 50.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0
+  },
+  "net_profit": 183.0,
+  "max_drawdown": 291.0,
+  "trades": 2,
+  "win_rate": 50.0,
+  "profit_factor": 1.629,
+  "biggest_winner": 474.0,
+  "biggest_loser": -291.0,
+  "held_loser": -291.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 2,
+    "pnl": 183.0,
+    "favorable": 237.0,
+    "adverse": -218.0
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m"
+ ],
+ "version": 3
+}

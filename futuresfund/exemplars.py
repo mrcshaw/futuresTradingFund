@@ -40,7 +40,7 @@ def trailing_limit(size: float | None = None) -> float:
 
 
 def drawdown_cap(size: float | None = None) -> float:
-    """The most drawdown a one-year strategy may have and still be learned from: $35,000 on a $50,000 account."""
+    """One step on the research scale: $750 on a $50,000 account."""
     from futuresfund.objective import research_drawdown_cap
 
     return research_drawdown_cap(account_size() if size is None else float(size))
@@ -51,6 +51,18 @@ def profit_target(size: float | None = None) -> float:
     from futuresfund.objective import profit_target as target
 
     return target()
+
+
+def _allowance(profit: float) -> float:
+    from futuresfund.objective import year_allowance
+
+    return year_allowance(profit, account_size())
+
+
+def drawdown_cap_text() -> str:
+    from futuresfund.objective import drawdown_share_text
+
+    return drawdown_share_text()
 
 
 def meets_target(row: dict, size: float | None = None) -> bool:
@@ -67,7 +79,7 @@ def target_text(size: float | None = None) -> str:
 
     return (
         f"Creation target. Account ${account_size():,.0f}: profit target ${profit_target():,.0f} set on headquarters, "
-        f"one-year drawdown no higher than ${drawdown_cap():,.0f}. "
+        f"one-year drawdown no higher than {drawdown_cap_text()}. "
         f"A created script is accepted when, on the 5-minute ES chart, it reaches the profit target inside that drawdown "
         f"while averaging {pace_text()} over the tested range. Fewer than 130 is too quiet and more than 600 is too many trades. Two or three trades is not a strategy. "
         "It is promoted when the same settings also stay inside that drawdown on the 2-minute "
@@ -169,6 +181,7 @@ def _summarize(path: Path, data: dict) -> dict | None:
         "safe_green": len(safe),
         "losing": len(losing),
         "worst_drawdown": max((row["drawdown"] for row in tested), default=0.0),
+        "past_the_rule": any(row["drawdown"] > _allowance(row["profit"]) for row in tested),
         "total_profit": round(total_profit, 2),
         "total_drawdown": round(total_drawdown, 2),
         "efficiency": round(total_profit / max(total_drawdown, 1.0), 2),
@@ -335,8 +348,7 @@ def exemplars(limit: int = 6, notes: Path | None = None) -> list[dict]:
 
 def cautions(limit: int = 4, notes: Path | None = None) -> list[dict]:
     """Studies that lost money or drew down past the trailing limit."""
-    cap = drawdown_cap()
-    rows = [row for row in studies(notes) if row["losing"] >= 1 or row["worst_drawdown"] > cap]
+    rows = [row for row in studies(notes) if row["losing"] >= 1 or row["past_the_rule"]]
     rows.sort(key=lambda row: (row["worst_drawdown"], row["losing"]), reverse=True)
     return rows[:limit]
 

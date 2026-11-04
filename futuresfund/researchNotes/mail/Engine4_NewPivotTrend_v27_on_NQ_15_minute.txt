@@ -1,0 +1,13 @@
+Subject: Desk Result: Engine4_NewPivotTrend_v27 (NQ1!)
+
+The latest run for Engine4_NewPivotTrend_v27 on the 15-minute Nasdaq chart has completed. The strategy generated a profit of $33,950.00 with a maximum drawdown of $24,235.00 across 388 total trades. The trade frequency was 7.45 trades per week, which annualizes to approximately 1,940 trades. This pace exceeds the 600-trade upper limit for the 130–600 trades per year search objective, making it too active for the current selection criteria which prioritizes lower drawdowns at a moderate pace.
+
+The result did not meet the criteria for inclusion in the strategy library. It was not filed because a stronger version of this name is already present on this contract and timeframe. The settings used were pivot_left=1, pivot_right=1, len_ema1=55, len_ema2=200, len_sma=25, atr_len=14, stop_mult=3.0, tp_mult=0.75, and cooldown_bars=10. This was one of 22 different results generated on this chart.
+
+The desk is ready for the next instruction.
+
+Best,
+
+Portfolio Manager
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 46 seconds.

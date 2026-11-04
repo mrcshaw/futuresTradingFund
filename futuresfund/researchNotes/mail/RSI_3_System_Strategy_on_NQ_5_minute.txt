@@ -1,0 +1,24 @@
+Subject: RSI 3-System Strategy Result on 5-Minute Nasdaq (NQ1!)  
+
+Dear Team,  
+
+The RSI 3-System Strategy was recently tested on the 5-minute chart of Nasdaq (NQ1!). Here are the key results:  
+
+- **Strategy**: RSI 3-System Strategy  
+- **Chart Tested**: 5-minute Nasdaq (NQ1!)  
+- **Profit**: $1,235.0  
+- **Drawdown**: $141.0  
+- **Trades**: 5  
+- **Trades Per Day**: 0.24 (over 21 trading days)  
+
+**Key Notes**:  
+- The strategy did not meet the headquarters profit target of $3,000.  
+- The drawdown of $141.0 was within the trailing drawdown limit of $2,500.  
+- The pace of 0.24 trades per day was outside the required range of 1 to 3 trades per day.  
+
+**Library Status**:  
+This result was not filed in the strategy library. It was excluded because the profit was below the $3,000 target, and the pace of 0.24 trades per day was outside the required range.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

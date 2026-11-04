@@ -1,0 +1,7 @@
+Subject: Smart Trail + POC Delta Combined on 15-minute Micro Nasdaq (MNQ1!)
+
+The latest run of Smart Trail + POC Delta Combined on the 15-minute Micro Nasdaq (MNQ1!) chart has finished. The test covered 23,612 bars from October 15, 2025, to October 15, 2026. The strategy executed 134 trades, averaging 2.6 trades per week over the 260 trading days in the sample. The total profit was $7,297.00, with a maximum drawdown of $3,307.50. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the application data for this specific run.
+
+This run was not filed in the strategy library. The reason recorded is that a stronger version of this strategy name is already on this contract and timeframe, which made $11,807.50, whereas this run made $7,297.00.
+
+The acceptance line on the strategy library page requires a profit above $6,000, a profit factor above 1.05, a win rate above 40 percent, and at least 60 trades. This run met the profit requirement with $7,297.00 and the trade count requirement with 134 trades. However, the application data does not provide the profit factor or the win rate for this specific run, so it is not possible to confirm if those two specific boxes were checked. Regardless, the run was not filed because it did not outperform the existing version on the library.

@@ -1,0 +1,132 @@
+//@version=5
+strategy("Day Shift Delta Volume Breakout", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(900, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(1250, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+trail_step_pct = input.float(50, "trail_step_pct")
+trail_pct = input.float(50, "trail_pct")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5, tooltip="More rows = finer resolution but slower.")
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(5.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, tooltip="Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.")
+
+// ===== TREND FILTER =====
+vwma_len       = input.int(50, "Trend VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_slope      = input.float(0.0, "Min VWMA Slope (pts)", minval=0.0, tooltip="0 = disabled.")
+
+// ===== ENTRY =====
+fractal_len   = input.int(12, "Fractal Length (BOS)", minval=3, maxval=21, step=2, tooltip="LuxAlgo fractal length for BOS detection.")
+cooldown_bars = input.int(30, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== FILTERS (Distractors) =====
+use_price_vwma  = input.bool(true, "Price vs VWMA", group="Filters", tooltip="Long: close above VWMA. Short: close below VWMA.")
+use_bos_candle  = input.bool(true, "BOS Bar Color", group="Filters", tooltip="BOS bar must be same color as direction (bullish for long, bearish for short).")
+use_vol_filter  = input.bool(true, "High Volume on BOS", group="Filters", tooltip="BOS bar must have above-average volume.")
+vol_ma_len     = input.int(50, "Volume MA Length", minval=5, maxval=100, group="Filters")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(8, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== CALCULATIONS =====
+vwma_val = ta.vwma(close, vwma_len)
+vol_ma = ta.sma(volume, vol_ma_len)
+
+// Session Filter
+in_session = false
+if use_session
+    t = time(timeframe.period, "America/New_York")
+    h = hour(t)
+    m = minute(t)
+    start_time = h * 100 + m
+    end_time = sess_end_hr * 100 + sess_end_mn
+    start_time = sess_start_hr * 100 + sess_start_mn
+    in_session = start_time >= start_time and start_time < end_time
+
+// RSI for entry confirmation
+rsi_val = ta.rsi(close, 14)
+
+// Cooldown
+var int last_long_bar = 0
+var int last_short_bar = 0
+cooldown_ok_long = bar_index - last_long_bar >= cooldown_bars
+cooldown_ok_short = bar_index - last_short_bar >= cooldown_bars
+
+// New Entry Logic: VWMA Cross + RSI Confirmation
+// Long: Close crosses above VWMA, RSI > 50, Volume > MA, In Session, Cooldown OK
+long_sig = ta.crossover(close, vwma_val) and rsi_val > 50 and volume > vol_ma and in_session and cooldown_ok_long and use_price_vwma and use_vol_filter
+// Short: Close crosses below VWMA, RSI < 50, Volume > MA, In Session, Cooldown OK
+short_sig = ta.crossunder(close, vwma_val) and rsi_val < 50 and volume > vol_ma and in_session and cooldown_ok_short and use_price_vwma and use_vol_filter
+
+// Update Cooldown
+if long_sig
+    last_long_bar := bar_index
+    strategy.entry("Long", strategy.long)
+if short_sig
+    last_short_bar := bar_index
+    strategy.entry("Short", strategy.short)
+
+// Exit Logic
+if strategy.position_size > 0
+    if close <= long_stop
+        strategy.close("Long", comment="Stop Hit")
+    if close >= long_limit
+        strategy.close("Long", comment="TP Hit")
+    // Flatten at end of session
+    if use_session and (hour(time, "America/New_York") == sess_end_hr and minute(time, "America/New_York") >= sess_end_mn - 15)
+        strategy.close("Long", comment="EOD")
+
+if strategy.position_size < 0
+    if close >= short_stop
+        strategy.close("Short", comment="Stop Hit")
+    if close <= short_limit
+        strategy.close("Short", comment="TP Hit")
+    // Flatten at end of session
+    if use_session and (hour(time, "America/New_York") == sess_end_hr and minute(time, "America/New_York") >= sess_end_mn - 15)
+        strategy.close("Short", comment="EOD")
+
+// Trailing Stop Logic (Simplified)
+var float current_stop = na
+if strategy.position_size > 0
+    if na(current_stop)
+        current_stop := long_stop
+    // Update stop if price moves favorably
+    if close > current_stop
+        current_stop := close - stop_dollars / pv
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+else if strategy.position_size < 0
+    if na(current_stop)
+        current_stop := short_stop
+    if close < current_stop
+        current_stop := close + stop_dollars / pv
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+else
+    current_stop := na
+
+// PLOTS
+plot(vwma_val, "VWMA", color=color.lime, linewidth=2)
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color=fuchsia, style=plot.style_stepline, linewidth=2)

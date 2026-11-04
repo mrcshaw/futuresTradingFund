@@ -1,0 +1,5 @@
+Subject: Desk Update: POC RSI Momentum v4 Result
+
+The POC RSI Momentum v4 run on the 15-minute ES chart has finished. The strategy generated a profit of $19,812.50 with a maximum drawdown of $8,112.50 across 238 trades. With 4.6 trades per week over 260 trading days, the annual pace falls well within the 130 to 600 trade target. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 3.0, which exceeds the 1.12 threshold. The run met the profit target, controlled the trailing drawdown, and maintained the required trade frequency. However, this result was not filed in the strategy library because a stronger version of this name is already established on this contract and timeframe. The settings used were pivot_left=5, pivot_right=5, rsi_len=14, ema_len=50, atr_len=28, stop_mult=2.0, tp_mult=2.5, and cooldown_bars=20. This was one of 11 different results from 11 engine runs on this chart.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 17 seconds.

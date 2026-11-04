@@ -1,0 +1,5 @@
+Subject: POC Pullback Momentum v2 Result: Gold 15m
+
+This desk’s run on the 15-minute Gold chart for POC Pullback Momentum v2 did not clear the final threshold for the strategy library. The test generated a profit of $525.00 with a drawdown of $800.00 across 78 trades. The pace was 3.2 trades per week, which projects to approximately 166 trades a year, falling within the 130 to 600 trade annual band. However, the profit is significantly below the $10,000 shelf requirement for library inclusion. Consequently, this result was not filed. The settings used were len_ema=200, len_rsi=14, len_atr=28, stop_mult=2.5, tp_mult=4.0, and cooldown=99. While the trade count is sufficient, the profit magnitude is too low to justify library status at this time.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 4 minutes 1 seconds.

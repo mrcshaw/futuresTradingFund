@@ -264,34 +264,38 @@ def engine_issue_asked(message: str) -> bool:
     if "engine" not in asked:
         return False
     about_state = any(word in asked for word in (
-        "running", "working", "processing", "stopped", "stuck", "idle", "down", "fix",
+        "running", "working", "processing", "stopped", "stuck", "idle", "down", "fix", "wrong",
     ))
     if not about_state:
         return False
     return any(word in asked for word in (
         "not ", "isn't", "isnt", "ain't", "aint", "won't", "wont", "why",
-        "stopped", "stuck", "idle", "down", "fix",
+        "stopped", "stuck", "idle", "down", "fix", "wrong",
     ))
 
 
 def _engine_ids(message: str) -> list[int]:
     import re
 
+    from futuresfund.backtrader_engine import _ENGINE_SLOTS
+
     found = [int(item) for item in re.findall(r"engine\s*(\d+)", (message or "").lower())]
     ids: list[int] = []
     for item in found:
-        choices = [item] if 1 <= item <= 4 else [int(digit) for digit in str(item)]
+        choices = [item] if 1 <= item <= _ENGINE_SLOTS else [int(digit) for digit in str(item)]
         for engine_id in choices:
-            if 1 <= engine_id <= 4 and engine_id not in ids:
+            if 1 <= engine_id <= _ENGINE_SLOTS and engine_id not in ids:
                 ids.append(engine_id)
-    return ids or [1, 2, 3, 4]
+    return ids or list(range(1, _ENGINE_SLOTS + 1))
 
 
 def _unknown_engines(message: str) -> list[int]:
     import re
 
+    from futuresfund.backtrader_engine import _ENGINE_SLOTS
+
     found = [int(item) for item in re.findall(r"engine\s*(\d+)", (message or "").lower())]
-    return [item for item in found if item < 1 or item > 4]
+    return [item for item in found if item < 1 or item > _ENGINE_SLOTS]
 
 
 def explain_engines(
@@ -342,6 +346,10 @@ def explain_engines(
             continue
         if script:
             lines.append(f"Engine {engine_id} is running {script}.")
+            logs = row.get("logs") or []
+            last = str(logs[-1]).strip() if logs else ""
+            if "stopped" in last.lower() or "defval" in last.lower():
+                lines.append(last)
             continue
         if row.get("busy") or row.get("studying"):
             lines.append(f"Engine {engine_id} is marked working and has no file open.")

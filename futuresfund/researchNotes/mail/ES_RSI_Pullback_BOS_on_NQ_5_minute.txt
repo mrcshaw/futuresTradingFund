@@ -1,0 +1,15 @@
+Subject: Desk Update: ES RSI Pullback BOS Results
+
+The ES RSI Pullback BOS strategy was tested on the 5-minute Nasdaq (NQ1!) chart. The run generated a profit of $10,205.00 with a maximum drawdown of $6,520.00 across 182 trades. The trade frequency was 3.5 trades per week, which projects to approximately 910 trades per year (182 trades / 26 weeks * 52 weeks). This exceeds the upper limit of 600 trades per year.
+
+The profit ratio (average winning trade divided by average losing trade) was calculated based on the 182 trades. The profit factor for this run was 1.56. The win rate was 52.2%.
+
+This result did not meet the criteria for filing on the strategy library. The strategy library requires a profit above $14,000. This run’s profit of $10,205.00 is below that threshold. Additionally, the trade count pace of 910 trades per year exceeds the maximum allowed of 600 trades per year. Therefore, this result was not filed.
+
+The settings for this version were: len_rsi=14, len_ema=200, len_atr=14, stop_mult=0.9375, tp_mult=3.01, cooldown=20.
+
+This desk remains active. The next meeting is scheduled for Sunday at 5:00 PM ET.
+
+Regards,
+
+Portfolio Manager

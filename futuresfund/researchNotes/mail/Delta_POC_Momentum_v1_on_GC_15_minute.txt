@@ -1,0 +1,11 @@
+Subject: Delta POC Momentum v1 (Gold) - Not Filed
+
+Strategy: Delta POC Momentum v1
+Chart: 15-minute Gold (GC1!)
+Profit: $3,250.00
+Drawdown: $23,560.00
+Trades: 201
+Trades per Day: ~0.77 (3.85 per week over 260 days)
+Profit Ratio: N/A (Insufficient data to calculate average win/loss ratio from provided facts)
+
+This run was not filed in the strategy library. The library requires a profit above $14,000. This run is under that threshold.

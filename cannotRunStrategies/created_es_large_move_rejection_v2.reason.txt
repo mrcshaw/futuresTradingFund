@@ -1,0 +1,1 @@
+created_es_large_move_rejection_v2.pine had no profit after 20 attempts. It was scrapped. The researcher who wrote it will create a new script.

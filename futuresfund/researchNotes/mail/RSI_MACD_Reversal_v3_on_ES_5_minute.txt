@@ -1,0 +1,30 @@
+Subject: RSI+MACD Reversal v3 Results - 5-Minute ES Chart  
+
+Dear Team,  
+
+I wanted to share the results of the recent test for the **RSI+MACD Reversal v3** strategy on the **5-minute ES (ES1!) chart**. Here are the key details:  
+
+- **Profit**: $3,060.0  
+- **Drawdown**: $1,925.0  
+- **Trades**: 40  
+- **Trades per Day**: 1.9 (over 21 trading days)  
+
+This result meets the **headquarters requirements** of a $3,000 profit target, a $2,500 trailing drawdown, and a pace of 1 to 3 trades per day.  
+
+However, **this result was not filed in the strategy library**. While it meets the objective, it is not yet on the shelf.  
+
+The settings for this version include:  
+- `rsi_len=14`, `htf_rsi_len=1`,  
+- `pullback_lo=42.0`, `pullback_hi=58.0`,  
+- `lbL=6`, `lbR=6`,  
+- `rangeUpper=60`, `rangeLower=5`,  
+- `div_window=3`,  
+- `macd_fast=12`, `macd_slow=26`, `macd_signal=9`.  
+
+The engine ran **200 attempts** on this chart.  
+
+Let me know if you have any questions.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

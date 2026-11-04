@@ -1,0 +1,30 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {},
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 1000,
+   "tp_dollars": 1250
+  },
+  "net_profit": 0.0,
+  "max_drawdown": 0.0,
+  "trades": 0,
+  "win_rate": null,
+  "profit_factor": null,
+  "biggest_winner": null,
+  "biggest_loser": null,
+  "held_loser": null,
+  "exits": []
+ },
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m",
+  "NQ 15m",
+  "MNQ 15m"
+ ],
+ "version": 3
+}

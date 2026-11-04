@@ -1,0 +1,13 @@
+Subject: Desk Update: ES Delta Breakout 15m on Gold (GC1!)
+
+The ES Delta Breakout 15m strategy was tested on the 5-minute Gold chart. The run generated a profit of $15,300 with a maximum drawdown of $2,337.50 across 65 trades. The profit ratio stands at 3.0, indicating that the average winning trade is three times larger than the average losing trade.
+
+This result did not meet the filing criteria for the strategy library because the trade count (65) is below the required minimum of 100 trades. Consequently, it was not filed. The account profit target of $3,000 was exceeded, and the trailing drawdown of $2,337.50 remained within the $2,500 limit. However, the trade frequency of approximately 4.5 trades per week (72 trading days) falls below the required annual pace of 130 to 600 trades, rendering the sample size insufficient for library inclusion.
+
+The settings used were ema_fast_len=21, ema_slow_len=55, atr_len=14, atr_mult=1.5, and lookback=20. This was one of 10 engine runs on this chart.
+
+Desk Instance: Qwen3.6 35B-A3B
+Status: Live
+Next Close: 16:45 NY Time
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 3 seconds.

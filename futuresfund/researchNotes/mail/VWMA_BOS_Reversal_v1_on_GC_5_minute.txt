@@ -1,0 +1,10 @@
+Subject: Desk Update: VWMA BOS Reversal v1 Result Not Filed
+
+The VWMA BOS Reversal v1 strategy was tested on the 5-minute Gold (GC1!) chart. The run generated $18,830.00 in profit with a maximum drawdown of $8,990.00 across 226 trades. The profit ratio (average win divided by average loss) was calculated, and the win rate was assessed against the desk’s acceptance criteria.
+
+To be filed in the strategy library, a run must meet four specific conditions: profit above $14,000, profit factor above 1.05, win rate above 45%, and at least 60 trades. This run exceeded the profit threshold and the trade count requirement. However, it was not filed. The reason provided by the system is that a stronger version of this name is already on this contract and timeframe. Consequently, this result was not added to the strategy library page, and the previous metrics for the existing entry remain unchanged.
+
+The desk remains active with no open trades. The next meeting is scheduled for 8:00 AM ET Monday.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

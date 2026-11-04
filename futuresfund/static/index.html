@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Cache-Control" content="no-store" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=73" />
+  <link rel="stylesheet" href="/static/styles.css?v=79" />
 </head>
 <body>
   <div class="app">
@@ -95,23 +95,13 @@
         <p class="role">The line is the most common problem in the last hour of completed backtests. Apply adds it to the research guide. Deny leaves the guide as it is.</p>
         <div id="risk-suggestions"></div>
       </section>
-      <section class="kronos-progress" id="kronos-progress" hidden>
-        <div class="kronos-progress-head">
-          <p class="kicker" id="kronos-phase">Entire run</p>
-          <strong id="kronos-count">0 / 0</strong>
-        </div>
-        <div class="kronos-track" id="kronos-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Kronos training, entire run">
-          <span id="kronos-fill"></span>
-        </div>
-        <p class="role" id="kronos-detail">Waiting for the first step.</p>
-      </section>
       <section class="feed" id="feed"></section>
       <section class="book under-hood-page" id="engine" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">Under the hood</p>
-            <h2>Four engines</h2>
-            <p class="role" id="engine-note">Each developer has one PineTS engine in its own process. Engine 4 is the creation engine. The scale goal is the acceptance number chosen on the strategy library page. The table is the last 20 results on that engine. Restart stops a hung engine and takes the next learning script. Skip leaves the current script and takes the next one.</p>
+            <h2>Six engines</h2>
+            <p class="role" id="engine-note">Each PineTS engine is its own process. Engine 1 is the 2-minute chart. Engines 2 and 5 are the 5-minute chart. Engines 3 and 6 are the 15-minute chart. Engine 4 is the creation engine. The scale goal is the acceptance number chosen on the strategy library page. The table is the last 20 results on that engine. Click a result to open the script and settings that run used. Restart stops a hung engine and takes the next learning script. Skip leaves the current script and takes the next one.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
@@ -146,7 +136,6 @@
               <button type="button" data-mode="live">Live</button>
             </div>
             <button type="button" id="active-add">Add</button>
-            <button type="button" class="ghost" data-kronos-follow>Paper trade Kronos</button>
           </div>
         </div>
         <p class="hint" id="trading-mode-note"></p>
@@ -211,11 +200,6 @@
           <label><input type="checkbox" data-indicator="macd" checked /> MACD</label>
           <label><input type="checkbox" data-indicator="delta" checked /> Volume delta</label>
         </div>
-        <div class="kronos-score" id="kronos-score">
-          <p id="kronos-accuracy">Kronos direction match waits until 6 candles have printed after a forecast.</p>
-          <button type="button" class="ghost" data-kronos-follow>Paper trade Kronos</button>
-        </div>
-        <p class="hint" id="kronos-follow-note"></p>
         <p class="hint" id="chart-readout"></p>
         <div class="chart-stage">
           <canvas id="chart-canvas" width="1100" height="680"></canvas>
@@ -227,7 +211,7 @@
           <div>
             <p class="kicker">Strategy library</p>
             <h2>Most profitable runs</h2>
-            <p class="role">A run is filed when the checked boxes are met, plus a profit ratio above 1.12. Drawdown under 5 percent of the account and the trade count start checked. Check another box to require that number too. One version of each name stays on each contract and timeframe. A one-year research run stays in the list below until the longer test.</p>
+            <p class="role">A run is filed when it has passed the 7, 30, and 90-day stages, the year meets the checked boxes, and its profit grows from each window to the next longer one. It also trades at least 3 times a week, no more than 600 times a year, and makes more than its drawdown. The drawdown box is the pro account rule: there is no drawdown limit until the profit reaches 5 percent of the account, $2,500 on a $50,000 account, and from there the drawdown may not exceed 30 percent of the profit. The stop may never be set above 1.5 percent of the account, $750 on $50,000. A fill past a stop set there is the market, and the strategy still counts. The drawdown box and the trade count start checked. Check another box to require that number too. One version of each name stays on each contract and timeframe. A one-year research run stays in the list below until the longer test.</p>
           </div>
         </div>
         <div class="library-tools">
@@ -241,8 +225,8 @@
         </div>
         <form id="acceptance-rules" class="rules-form">
           <div class="rule">
-            <label class="rule-name"><input name="use_drawdown" type="checkbox" checked /> Drawdown under (% of account)</label>
-            <input name="drawdown_pct" type="number" min="0.1" max="100" step="any" value="5" required />
+            <label class="rule-name"><input name="use_drawdown" type="checkbox" checked /> Drawdown under 30% of profit, once profit reaches 5% of the account</label>
+            <input name="drawdown_pct" type="hidden" value="1.5" />
           </div>
           <div class="rule">
             <label class="rule-name"><input name="use_trades" type="checkbox" checked /> Trades at least</label>
@@ -298,7 +282,7 @@
           <div>
             <h2>Not tested on the full dataset</h2>
             <p class="hint" id="untested-counts"></p>
-            <p class="role">Research measures the last year. A run that clears the acceptance numbers above stays here until the five-year test. A run with one trade down more than 3 percent of the account does not stay. A run with more than 900 trades is not saved. It is not added to the most profitable runs until that full dataset is profitable. A hand-added script stays here too.</p>
+            <p class="role">Research measures the last year. A run that clears the acceptance numbers above stays here until the five-year test. A run with its stop set above 1.5 percent of the account does not stay. A run with more than 900 trades is not saved. It is not added to the most profitable runs until that full dataset is profitable. A hand-added script stays here too.</p>
           </div>
           <button type="button" id="untested-add">Add strategy</button>
         </div>
@@ -361,12 +345,87 @@
         </table>
         <p class="hint" id="indicators-empty"></p>
       </section>
+      <section class="book" id="proving" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Proving stages</p>
+            <h2>7, 30, 90 and 365 day backtests</h2>
+            <p class="role">Each script is backtested on the last 7 days first, then 30, then 90, then the full year. It moves to the next stage only after it passes the one it is on, starting from the settings that passed, and a failed stage ends the study there. Each row is one script on one contract and timeframe, and the table keeps the latest 100 rows. A window it passed shows that run's profit. Click a passed stage to open the script with the inputs that passed, and copy it.</p>
+          </div>
+        </div>
+        <div class="library-tools">
+          <label>Show
+            <select id="proving-filter">
+              <option value="all">All</option>
+              <option value="testing">Testing now</option>
+              <option value="failed">Failed a stage</option>
+              <option value="stopped">Stopped without a result</option>
+              <option value="365">Passed all four</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="proving-search" type="search" placeholder="Script name" />
+          </label>
+        </div>
+        <table id="proving-table">
+          <thead>
+            <tr>
+              <th>Script</th>
+              <th>Contract</th>
+              <th>Timeframe</th>
+              <th>Current stage</th>
+              <th>7 days</th>
+              <th>30 days</th>
+              <th>90 days</th>
+              <th>365 days</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="hint" id="proving-empty"></p>
+      </section>
+      <section class="book" id="golden" hidden>
+        <div class="book-head">
+          <div>
+            <p class="kicker">Golden strategy</p>
+            <h2>The standard for research and creation</h2>
+            <p class="role">Describe the idea, paste a Pine strategy that shows it, and add the List of trades CSV TradingView exported for it. The idea and the script are how every researcher and strategy developer should trade. The script's results are not a target. The engine runs the script and compares its trades with the export, so you can see how closely it follows.</p>
+          </div>
+        </div>
+        <div class="library-tools">
+          <label>The idea
+            <textarea id="golden-idea" rows="6" placeholder="How this strategy trades"></textarea>
+          </label>
+          <label>Pine script
+            <textarea id="golden-pine" rows="6" placeholder="//@version=5"></textarea>
+          </label>
+          <label>TradingView export (CSV)
+            <input id="golden-export" type="file" accept=".csv" />
+          </label>
+          <button id="golden-add" type="button">Set as golden strategy</button>
+        </div>
+        <p class="hint" id="golden-note"></p>
+        <table id="golden-table">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>The idea</th>
+              <th>Chart</th>
+              <th>Engine check</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="hint" id="golden-empty"></p>
+      </section>
       <section class="book" id="rnd" hidden>
         <div class="book-head">
           <div>
             <p class="kicker">R&amp;D</p>
             <h2>Research board</h2>
-            <p class="role">The strategy being studied, then the next two waiting. Kronos lists the closed candles it is reading, the six it chose, and Buy, Sell, or Flat.</p>
+            <p class="role">The strategy being studied, then the next two waiting.</p>
           </div>
           <button type="button" id="rnd-report">Criteria Failure Analysis</button>
           <button type="button" id="rnd-run">Start research</button>
@@ -451,6 +510,6 @@
     </div>
   </div>
   <div id="agent-tip" class="agent-tip" hidden></div>
-  <script type="module" src="/static/app.js?v=148"></script>
+  <script type="module" src="/static/app.js?v=161"></script>
 </body>
 </html>

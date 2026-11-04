@@ -1,0 +1,143 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "vwma_slope_len",
+  "min_slope",
+  "use_session",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 375,
+   "net_profit": -5985.5,
+   "max_drawdown": 5985.5,
+   "trades": 18
+  },
+  "tp_dollars": {
+   "value": 412,
+   "net_profit": 3652.0,
+   "max_drawdown": 1374.5,
+   "trades": 18
+  },
+  "trail_min_dollars": {
+   "value": 250,
+   "net_profit": 99.0,
+   "max_drawdown": 5525.5,
+   "trades": 16
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 136.5,
+   "max_drawdown": 5563.0,
+   "trades": 16
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": 136.5,
+   "max_drawdown": 5563.0,
+   "trades": 16
+  },
+  "use_bos_candle": {
+   "value": false,
+   "net_profit": 163.0,
+   "max_drawdown": 5563.0,
+   "trades": 17
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": 835.0,
+   "max_drawdown": 4777.0,
+   "trades": 15
+  },
+  "vol_ma_len": {
+   "value": 12,
+   "net_profit": 3702.5,
+   "max_drawdown": 2863.5,
+   "trades": 10
+  }
+ },
+ "flat": [
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 1500,
+   "tp_dollars": 1650,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "use_price_vwma": true,
+   "use_bos_candle": true,
+   "use_vol_filter": true,
+   "vol_ma_len": 50,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 45
+  },
+  "net_profit": 49.0,
+  "max_drawdown": 5563.0,
+  "trades": 16,
+  "win_rate": 25.0,
+  "profit_factor": 1.006,
+  "biggest_winner": 3239.0,
+  "biggest_loser": -786.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 6,
+    "pnl": -4691.0,
+    "favorable": 919.5,
+    "adverse": -776.33
+   },
+   {
+    "exit": "XL",
+    "trades": 4,
+    "pnl": -381.5,
+    "favorable": 1422.62,
+    "adverse": -655.5
+   },
+   {
+    "exit": "Short",
+    "trades": 3,
+    "pnl": 654.5,
+    "favorable": 2573.67,
+    "adverse": -676.33
+   },
+   {
+    "exit": "Long",
+    "trades": 3,
+    "pnl": 4467.0,
+    "favorable": 3877.83,
+    "adverse": -509.67
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 15m",
+  "30 GC 2m",
+  "30 YM 5m",
+  "7 GC 15m",
+  "7 M2K 15m",
+  "90 NQ 15m",
+  "90 YM 15m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true
+}

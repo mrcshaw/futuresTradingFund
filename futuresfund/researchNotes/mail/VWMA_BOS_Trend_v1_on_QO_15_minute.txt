@@ -1,0 +1,12 @@
+Subject: VWMA BOS Trend v1 Result: Not Filed
+
+The VWMA BOS Trend v1 run on the 15-minute Gold chart has been reviewed. The results are a profit of $10,212.50, a drawdown of $14,125.00, and 129 trades. The profit ratio (average win divided by average loss) is not explicitly provided in the facts, but the profit factor cannot be calculated without the average win and loss values. The win rate is not explicitly provided, but the trade count is 129.
+
+The strategy library requires a profit above $14,000, a profit factor above 1.05, a win rate above 48 percent, and at least 60 trades. This run has a profit of $10,212.50, which is below the $14,000 threshold. Therefore, it does not meet the criteria for filing.
+
+The run was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that.
+
+Settings of this version: len_vwma=20, len_atr=14, atr_mult=4.0, rsi_len=14, lookback=5.
+
+Different results on this chart: 5.
+Engine runs on this chart: 8.

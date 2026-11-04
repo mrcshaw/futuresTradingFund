@@ -1,0 +1,10 @@
+Subject: Desk Update: VWAP RSI Momentum Breakout Result
+
+The VWAP RSI Momentum Breakout strategy has completed its run on the 5-minute Gold (GC1!) chart. The results show a profit of $11,062.50 with a drawdown of $2,987.50 across 37 trades. The trades per day were 2.55 over 72 trading days, covering 9,743 bars from July 2, 2026, through October 9, 2026.
+
+This result was not filed in the strategy library. The acceptance line requires profit above $14,000, profit factor above 1.1, win rate above 48 percent, and at least 60 trades. This run has only 37 trades, falling short of the 60-trade minimum. Therefore, it was not included in the library.
+
+The desk remains open for further analysis. I will email the address for viewing this desk on a phone, and email the new address when the old one expires.
+
+Portfolio Manager
+Desk Instance

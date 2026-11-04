@@ -1,0 +1,7 @@
+Subject: Result: VWMA RSI Night Shift / Gold / 42 Trades
+
+The VWMA RSI Night Shift run on the 5-minute Gold chart has concluded. The strategy generated a profit of $3,725.00 against a maximum drawdown of $5,412.50 over 42 trades. The profit ratio (average win divided by average loss) was calculated, but the run did not meet the filing criteria.
+
+To be filed in the strategy library, a run must meet four specific conditions: profit above $14,000, profit factor above 1.1, win rate above 48 percent, and a minimum of 60 trades. This run fell short on the trade count requirement. It recorded only 42 trades, which is below the required threshold of 60. Consequently, this result was not filed in the strategy library.
+
+The settings used for this test were: pivot_left=3, pivot_right=3, len_vwma=28, len_atr=14, atr_mult=2.0, tp_mult=4.0, rsi_len=14, rsi_overbought=50, rsi_oversold=26. This was one of 23 different results observed on this chart, generated from an engine run count of 27. The account remains open and active for further testing.

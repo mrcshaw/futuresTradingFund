@@ -1,0 +1,13 @@
+Subject: Desk Result: RSI Momentum Trail v1 (ES 15m)
+
+The latest run for RSI Momentum Trail v1 on the 15-minute ES chart has finished. The strategy generated a profit of $8,525.00 with a maximum drawdown of $15,500.00 across 330 trades. This equates to approximately 6.35 trades per week over the 260-day trading year, which falls within the acceptable 130–600 trades per year band. The profit ratio (average win divided by average loss) is above 1.12.
+
+However, this result was not filed in the strategy library. The library requires a profit over $10,000 to accept a run, and this result fell short of that threshold. Consequently, it is not on the library. The settings tested were rsi_len=14, ema_len=20, atr_len=14, stop_mult=1.0, tp_mult=5.0, and cooldown_bars=2. This was one of 24 different results from the 24 engine runs on this chart.
+
+The desk is now live. The email address for viewing this desk on a phone is [email protected]. This address will be updated when the previous one expires.
+
+Best,
+
+Portfolio Manager
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 44 seconds.

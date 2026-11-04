@@ -1,0 +1,98 @@
+//@version=5
+// How this script works
+// The script uses a moving-average cross, entering long when the 5-period EMA goes above the 20-period EMA and short when it goes below, with the default 08:00–16:45 America/New_York session filter.
+// The stop is 1250 dollars divided by the 2 point value, placed below the close for longs and above the close for shorts.
+// For the short side, the trade has to be short, and a smaller length tracks price more closely and crosses sooner, so the trade can finish before that stop.
+
+strategy("Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+// ===== RISK =====
+pv                = input.float(5, "Point Value ($)")
+stop_dollars      = input.int(1250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(1750, "Take Profit ($)", minval=250, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+trail_step_pct = input.float(50, "trail_step_pct")
+trail_pct = input.float(50, "trail_pct")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5, tooltip="More rows = finer resolution but slower.")
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(10.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, tooltip="Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.")
+
+// ===== TREND FILTER =====
+vwma_len       = input.int(50, "Trend VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_slope      = input.float(0.0, "Min VWMA Slope (pts)", minval=0.0, tooltip="0 = disabled.")
+
+// ===== ENTRY (Pivot confirmation) =====
+pivot_left   = input.int(3, "Pivot Left Bars", minval=2, maxval=21, step=1, tooltip="Bars to left of pivot high/low.")
+pivot_right  = input.int(3, "Pivot Right Bars", minval=2, maxval=21, step=1, tooltip="Bars to right - pivot confirmed when this many bars pass.")
+disarm_only_inside_poc = input.bool(true, "Disarm Only When Back Inside POC", tooltip="If true, stay armed through pullbacks; only disarm when price fully re-enters POC zone.")
+cooldown_bars = input.int(5, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== FILTERS =====
+use_price_vwma  = input.bool(true, "Price vs VWMA", group="Filters", tooltip="Long: close above VWMA. Short: close below VWMA.")
+vol_ma_len     = input.int(20, "Volume MA Length", minval=5, maxval=100, group="Filters")
+use_vol_filter = input.bool(true, "High Volume on Confirmation", group="Filters", tooltip="Confirmation bar must have above-average volume.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter", group="Filters")
+sess_start_hr = input.int(8, "Session Start Hour", group="Filters")
+sess_start_mn = input.int(0, "Session Start Minute", group="Filters")
+sess_end_hr   = input.int(16, "Session End Hour", group="Filters")
+sess_end_mn   = input.int(45, "Session End Minute", group="Filters")
+
+// ===== HOW THIS SCRIPT WORKS =====
+// This script uses a simple moving average cross for entry.
+// It calculates a fast EMA and a slow EMA.
+// When the fast EMA crosses above the slow EMA, it enters long.
+// When the fast EMA crosses below the slow EMA, it enters short.
+// This replaces the complex pivot and volume profile entry to increase trade frequency.
+
+// ===== NEW ENTRY LOGIC =====
+fast_len = 5
+slow_len = 20
+fast_ema = ta.ema(close, fast_len)
+slow_ema = ta.ema(close, slow_len)
+
+long_signal = ta.crossover(fast_ema, slow_ema)
+short_signal = ta.crossunder(fast_ema, slow_ema)
+
+// Session check
+in_session = false
+if use_session
+    time_sess = time(timeframe.period, "0800-1645", "America/New_York")
+    in_session := not na(time_sess)
+
+// Execute trades
+if long_signal and in_session and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+
+if short_signal and in_session and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+
+// Flatten at 16:45
+if use_session
+    time_flat = time(timeframe.period, "1645-1646", "America/New_York")
+    if not na(time_flat) and strategy.position_size != 0
+        strategy.close_all(comment="Session Close")
+
+// ===== PLOT =====
+plot(fast_ema, "Fast EMA", color.lime, linewidth=2)
+plot(slow_ema, "Slow EMA", color.red, linewidth=2)

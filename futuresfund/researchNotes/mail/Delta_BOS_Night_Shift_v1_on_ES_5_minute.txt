@@ -1,0 +1,14 @@
+Subject: Strategy Result: Delta BOS Night Shift v1
+
+The Delta BOS Night Shift v1 run on the 5-minute ES chart has concluded. The strategy generated a profit of $4,087.50 with a drawdown of $1,612.50 across 148 trades.
+
+This result was not filed in the strategy library. The acceptance criteria require the drawdown to stay under 5 percent of the account ($2,500) and the run to have at least 60 trades. While the trade count of 148 meets the minimum threshold and the drawdown of $1,612.50 is within the 5 percent limit, the strategy library shelf keeps a profit over $5,000. This run’s profit of $4,087.50 is under that threshold. Therefore, it was not filed.
+
+The acceptance line on the strategy library page requires:
+1. Drawdown under 5% of account.
+2. At least 60 trades.
+3. Profit over $5,000 (as per current shelf rules).
+
+This run failed the profit requirement for filing.
+
+Desk clock: Wednesday 09:56 PM ET.

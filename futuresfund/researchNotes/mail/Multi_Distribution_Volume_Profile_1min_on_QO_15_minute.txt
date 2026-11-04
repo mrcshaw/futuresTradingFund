@@ -1,0 +1,25 @@
+Subject: Multi-Distribution Volume Profile 1min - Recent Test Results  
+
+Dear Team,  
+
+I wanted to share the results of the recent test for the Multi-Distribution Volume Profile 1min strategy on the 15-minute Gold (GC1!) chart. Here are the key details:  
+
+- **Strategy**: Multi-Distribution Volume Profile 1min  
+- **Chart Tested**: 15-minute Gold (GC1!)  
+- **Profit**: $565.0  
+- **Drawdown**: $849.5  
+- **Trades**: 10 (0.5 trades per day over 20 trading days)  
+
+**Performance Against Headquarters Requirements**:  
+- **Profit Target ($3,000)**: Not met ($565.0 < $3,000).  
+- **Trailing Drawdown ($2,500)**: Met ($849.5 < $2,500).  
+- **Pace (1-3 trades per day)**: Not met (0.5 trades per day).  
+
+**Strategy Library Filing**:  
+This result was not filed in the strategy library. It was excluded because the profit is below the $3,000 target, and the pace of 0.5 trades per day is outside the required range of 1-3 trades per day.  
+
+Let me know if you have any questions.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

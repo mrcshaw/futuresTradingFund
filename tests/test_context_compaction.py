@@ -283,7 +283,7 @@ class LessonSummaryTests(unittest.TestCase):
         self.assertIn("Portfolio Manager", body)
         self.assertIn("performance", body.lower())
         self.assertIn("summar", body.lower())
-        self.assertIn("28672", body)
+        self.assertIn("40960", body)
         self.assertNotIn("999999", body)
 
         learn.append_window_lesson({

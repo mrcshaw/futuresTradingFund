@@ -9,6 +9,7 @@ from futuresfund.csv_bars import parse_tradingview_csv
 
 # The token is the comma-space prefix in the TradingView file name, so 15 does not match 5, 2, or 1.
 _FRAMES = (("15m", ", 15_"), ("5m", ", 5_"), ("2m", ", 2_"), ("1m", ", 1_"))
+NOT_INSTRUMENTS = {"DATAUPDATES", "HISTORICALDATA"}
 
 
 def chart_roots() -> list[str]:
@@ -21,6 +22,9 @@ def chart_roots() -> list[str]:
                 name = child.name.upper()
                 if name == "GOLD":
                     name = "GC"
+                # chartData/dataUpdates holds new exports waiting to be filed. It is not an instrument.
+                if name in NOT_INSTRUMENTS:
+                    continue
                 if name not in found:
                     found.append(name)
     return found or ["ES"]

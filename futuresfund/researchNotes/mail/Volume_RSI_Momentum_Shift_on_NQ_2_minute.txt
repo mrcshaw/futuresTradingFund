@@ -1,0 +1,7 @@
+Subject: Volume RSI Momentum Shift on 2-minute Nasdaq (NQ1!)
+
+The latest run for Volume RSI Momentum Shift on the 2-minute Nasdaq (NQ1!) chart has finished. The test covered 177,782 bars from October 1, 2025, to October 2, 2026. This specific configuration used a stop of $1,000 and a take profit of $1,250, with a 50-period EMA and 14-period RSI, trading during the session from 18:00 to 16:00.
+
+The run generated a profit of $22,856.00 with a maximum drawdown of $7,863.50. It executed 139 trades, averaging 2.65 trades per day over the 260-day period. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 1.05.
+
+This run was not filed in the strategy library. The acceptance line on the strategy library page requires a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While this run meets the profit and trade count requirements, it was rejected because a stronger version of this strategy name is already on this contract and timeframe. That existing version made $26,803.00, whereas this run made $22,856.00. Therefore, this result was not filed.

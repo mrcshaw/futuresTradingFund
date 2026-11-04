@@ -1,0 +1,117 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "sensitivity",
+  "min_score",
+  "pullback_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": -1909.0,
+   "max_drawdown": 3380.0,
+   "trades": 19
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 191.0,
+   "max_drawdown": 1770.0,
+   "trades": 19
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -5530.5,
+   "max_drawdown": 5530.5,
+   "trades": 38
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -1539.5,
+   "max_drawdown": 1655.0,
+   "trades": 7
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": 251.0,
+   "max_drawdown": 952.5,
+   "trades": 9
+  }
+ },
+ "flat": [
+  "ema_len",
+  "ema_slope_len",
+  "min_slope",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "sensitivity": 12,
+   "min_score": 2,
+   "ema_len": 200,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 50.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0
+  },
+  "net_profit": -2296.5,
+  "max_drawdown": 2296.5,
+  "trades": 19,
+  "win_rate": 26.32,
+  "profit_factor": 0.496,
+  "biggest_winner": 451.5,
+  "biggest_loser": -336.0,
+  "held_loser": -336.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 9,
+    "pnl": -1449.0,
+    "favorable": 240.33,
+    "adverse": -297.17
+   },
+   {
+    "exit": "XL",
+    "trades": 8,
+    "pnl": -325.5,
+    "favorable": 271.06,
+    "adverse": -282.06
+   },
+   {
+    "exit": "Short",
+    "trades": 1,
+    "pnl": -211.0,
+    "favorable": 107.0,
+    "adverse": -205.5
+   },
+   {
+    "exit": "Open P&L > SL Risk",
+    "trades": 1,
+    "pnl": -311.0,
+    "favorable": 344.5,
+    "adverse": -305.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

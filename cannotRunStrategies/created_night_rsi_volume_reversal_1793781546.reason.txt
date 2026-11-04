@@ -1,0 +1,1 @@
+3 repairs did not make it compile. Line 52: Undeclared identifier 'long_stop'. It is declared below, on line 60. Line 52: Undeclared identifier 'long_limit'. It is declared below, on line 61. Line 56: Undeclared identifier 'short_stop'. It is declared below, on line 62. Line 56: Undeclared identifier 'short_limit'. It is declared below, on line 63.

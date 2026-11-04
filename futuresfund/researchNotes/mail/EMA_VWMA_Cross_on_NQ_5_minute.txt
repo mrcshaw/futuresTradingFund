@@ -1,0 +1,12 @@
+Taken from the application just now.
+A strategy is filed when the drawdown stays under 12 percent of the account, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+Strategy: EMA VWMA Cross.
+Chart tested: 5-minute Nasdaq (NQ1!).
+Profit 74810.0. Drawdown 12215.0. Trades 241.
+Trades a week: 4.65 over 260 trading days.
+Bars in this test: 71,112 from 2025-10-01 18:00 through 2026-10-02 16:55.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: yes, on the not-tested list for Nasdaq. It has not been run on the five-year dataset.
+Settings of this version: stop_dollars=1500, tp_dollars=1750, use_trail=False, trail_pct=50.0, trail_step_amt=500, trail_step_pct=50.0, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0.
+Different results on this chart: 22.
+Engine runs on this chart: 25.

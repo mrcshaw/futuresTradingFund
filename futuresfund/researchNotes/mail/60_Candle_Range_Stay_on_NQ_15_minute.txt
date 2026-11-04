@@ -1,0 +1,13 @@
+Subject: 60 Candle Range Stay - Recent Backtest Results  
+
+Dear Team,  
+
+The "60 Candle Range Stay" strategy was recently tested on the 15-minute Nasdaq (NQ1!) chart. Over 21 trading days, the strategy generated a profit of $799.0 with a drawdown of $462.0 and executed 6 trades, averaging approximately 0.29 trades per day.  
+
+This result did not meet the headquarters profit target of $3,000, but it remained within the trailing drawdown limit of $2,500. However, the pace of 0.29 trades per day fell outside the required range of 1 to 3 trades per day.  
+
+As a result, this strategy was not filed in the strategy library. It was excluded because the profit was below the $3,000 target, and the pace of 0.29 trades per day did not meet the required criteria.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

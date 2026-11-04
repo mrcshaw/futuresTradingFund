@@ -1,0 +1,17 @@
+Subject: POC Momentum Breakout v1 Result: Not Filed
+
+POC Momentum Breakout v1 on 5-minute Gold (GC1!) finished testing. Profit $4,037.50, drawdown $3,162.50, 42 trades. Trades per day: 2.9. Profit ratio: average win divided by average loss.
+
+The acceptance line is the only acceptance bar on this desk. It is the strategy library page: the profit, the profit factor, the win rate, and the trade count saved there. Judge this run against those four numbers. Quote them. Do not apply any other profit, profit factor, win rate, or trade count. Say it is on the strategy library only when the facts say it is. When the facts say it is not on the library, say it was not filed and give only the reason written there.
+
+A strategy is filed when profit is above $14,000, the profit factor is above 1.1, the win rate is above 48 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+
+On the strategy library: no.
+
+This result was not filed in the strategy library. The library keeps a strategy after at least 60 trades. This run has 42, so it was not filed.
+
+Settings of this version: len_ema=50, atr_len=14, atr_mult=1.5, rsi_len=14, rsi_overbought=70, rsi_oversold=30, cooldown_bars=20.
+
+Different results on this chart: 10.
+
+Engine runs on this chart: 10.

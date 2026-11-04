@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.1, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+Strategy: DeltaVWMA_NightShift_v29.
+Chart tested: 15-minute Gold (GC1!).
+Profit 8850.0. Drawdown 12762.5. Trades 123.
+Trades a week: 4.95 over 124 trading days.
+Bars in this test: 9,504 from 2026-04-16 14:45 through 2026-10-09 11:00.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that.
+Settings of this version: len_ema=200, len_atr=14, len_rsi=14, stop_mult=1.875, tp_mult=3.0, cooldown=10.
+Different results on this chart: 11.
+Engine runs on this chart: 11.

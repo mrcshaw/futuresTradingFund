@@ -1,0 +1,87 @@
+//@version=5
+// Built from: named-aa9c706871 (Opening Range Reversal), ta.highest, ta.lowest, strategy.exit
+strategy("Opening Range Reversal ES 15m", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+
+// ===== RISK =====
+pv = input.float(5, "Point Value ($)")
+stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=1500)
+tp_dollars = input.int(1000, "Take Profit ($)", minval=250, maxval=2000)
+use_trail = input.bool(false, "Enable Trailing Stop")
+trail_step_amt = input.int(500, "Trail: Tighten every ($)")
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)")
+
+// ===== SESSION =====
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+
+// ===== PATTERN INPUTS =====
+range_bars = input.int(16, "Opening Range Bars (4h)", minval=4, maxval=32)
+reversal_dist = input.float(5.0, "Reversal Distance (pts)", minval=1.0, maxval=20.0)
+
+// Session Logic
+sess_start = time(timeframe.period, "1800-2359")
+sess_end = time(timeframe.period, "0000-1600")
+in_session = use_session ? (sess_start or sess_end) : true
+
+// State Variables
+var float session_high = na
+var float session_low = na
+var int bars_in_session = 0
+var bool trade_taken = false
+var int last_entry_bar = -100
+
+// Reset at new session
+if in_session and bars_in_session == 0
+    session_high := high
+    session_low := low
+    bars_in_session := 1
+    trade_taken := false
+
+// Update Range during first 4 hours
+if in_session and bars_in_session > 0 and bars_in_session <= range_bars
+    session_high := math.max(session_high, high)
+    session_low := math.min(session_low, low)
+    bars_in_session += 1
+
+// Entry Logic: After range is set, look for reversal
+if in_session and bars_in_session > range_bars and not trade_taken
+    // Check if price has moved away from the range extreme
+    // Short: Price breaks above high, then reverses back down
+    // Long: Price breaks below low, then reverses back up
+    // "Within a range" implies proximity. We use a fixed distance for backtesting.
+    
+    // Short Condition: Price was above high, now closes back below high - distance
+    if high > session_high and close < session_high - reversal_dist
+        strategy.entry("Short", strategy.short)
+        strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+        trade_taken := true
+        last_entry_bar := bar_index
+        
+    // Long Condition: Price was below low, now closes back above low + distance
+    else if low < session_low and close > session_low + reversal_dist
+        strategy.entry("Long", strategy.long)
+        strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+        trade_taken := true
+        last_entry_bar := bar_index
+
+// Exits
+if strategy.position_size > 0
+    long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+    long_limit = close + tp_dollars / pv
+    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit)
+    
+if strategy.position_size < 0
+    short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+    short_limit = close - tp_dollars / pv
+    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit)
+
+// Stop Loss Check (Hard Stop)
+if strategy.position_size != 0 and stop_dollars != na and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+
+// Session End Close
+if not in_session
+    strategy.close_all(comment="Session")

@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: POC S/R + EMA.
+Chart tested: 15-minute Gold (GC1!).
+Profit -22016.0. Drawdown 66863.5. Trades 2336.
+Trades a week: 9.05 over 1291 trading days.
+Bars in this test: 118,259 from 2021-10-03 20:00 through 2026-10-02 16:45.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. It trades at least 4 times a week, and it is not on the shelf yet.
+Settings of this version: profile_lookback=120, profile_rows=10, min_delta_pct=5.0, poc_shift_pts=8.0, poc_history_count=5, sr_zone_pts=1.5, ema_len=237, ema_slope_len=3, min_slope=0.0, use_session=True, sess_start_hr=18, sess_start_mn=0.
+Different results on this chart: 50.
+Engine runs on this chart: 50.

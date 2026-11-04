@@ -16,7 +16,8 @@ import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 
-_URL = "http://127.0.0.1:11434/api/chat"
+# A desk inside Docker reaches Ollama on the host through FUTURES_OLLAMA_URL.
+_URL = os.environ.get("FUTURES_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/chat"
 _THINK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _current: contextvars.ContextVar[str | None] = contextvars.ContextVar("futures_agent", default=None)
 
@@ -233,15 +234,6 @@ def _library_catalog() -> str:
     return agent_catalog() + "\n" + indicator_catalog(900)
 
 
-def _chart_candle_vision(agent: str) -> str:
-    """The chart developer and the chart researcher adjust from the replay notes. Their window stays one year."""
-    if agent != "Chart researcher" and not str(agent).endswith("chart developer"):
-        return ""
-    from futuresfund.strategy_team import candle_lines
-
-    return candle_lines(audience="chart") + "\n"
-
-
 def _system(agent: str) -> str:
     from datetime import datetime
     from zoneinfo import ZoneInfo
@@ -284,9 +276,8 @@ def _system(agent: str) -> str:
         "You can talk about this desk: the charts, research, the strategy library, meetings, orders, and the open trade. "
         "You speak only for this desk. Another desk has its own instance and its own log. "
         "Guideline 1: flatten every open trade at 16:45 New York with strategy.close_all. A trade left open after 16:45 can liquidate the account. "
-        + f"{acceptance_line()} {account_line()} {goal_line()} The take profit is larger than the stop. A strategy with one trade down more than $1,500 is not included. "
+        + f"{acceptance_line()} {account_line()} {goal_line()} The take profit is larger than the stop. A strategy with one trade down more than $750 is not included. "
         + "Do not invent a profit, a drawdown, or a trade count. "
-        f"{_chart_candle_vision(agent)}"
         f"Desk clock: {clock}. {meeting_note()} Do not hold a meeting outside those times. "
         "Strategy notes already learned, use these before any other source:\n"
         f"{notes_digest()}\n"
@@ -315,9 +306,8 @@ def _chat_system(agent: str) -> str:
         "The Portfolio Manager may also reply TOOL task: and the task in plain words. "
         "No desk places an order from chat. "
         "Guideline 1: flatten every open trade at 16:45 New York with strategy.close_all. A trade left open after 16:45 can liquidate the account. "
-        + f"{acceptance_line()} {account_line()} {goal_line()} The take profit is larger than the stop. A strategy with one trade down more than $1,500 is not included. "
+        + f"{acceptance_line()} {account_line()} {goal_line()} The take profit is larger than the stop. A strategy with one trade down more than $750 is not included. "
         + "Do not invent a profit, a drawdown, or a trade count. The engine's backtest is the fact. "
-        f"{_chart_candle_vision(agent)}"
         f"{indicator_catalog(600)} "
         "A person is talking with you about this application. "
         "Answer the question they asked first, in plain words, from the facts and the firm record in the message. "
@@ -380,15 +370,22 @@ def _instance_line() -> str:
 # Extra-high thinking. This Qwen build rejects "xhigh". Ollama's highest
 # accepted level is max (above high, medium, and low).
 THINK_LEVEL = "max"
+# A max thinking pass runs for minutes, and it waits behind other desks on the one model.
+THINK_TIMEOUT = 300
+# The chart researcher's decisions go first. Other thinking passes hold back this long at most.
+URGENT_HOLD = 300
+_urgent = threading.Condition()
+_urgent_waiting = 0
+NOTES_KEPT = 6000
 
 
 def _reasons(agent: str) -> bool:
-    """Strategy design and the chart researcher use the model's thinking pass."""
+    """Strategy design, the chart developers, and the chart researcher use the model's thinking pass."""
     return agent in {
         "Chart researcher", "Card keeper", "Lesson writer", "Script checker", "Creation tester",
         "Systems Administrator", "Trading Analyst",
     } or agent.endswith(
-        "strategy developer"
+        ("strategy developer", "chart developer")
     )
 
 
@@ -456,13 +453,81 @@ def _ground_reply(reply: str, sources: str) -> str:
     return "I will not use a profit that is not in the desk records."
 
 
-def _post(model: str, messages: list[dict], *, think: bool = False, num_ctx: int = 4096, timeout: int = 120) -> str:
+def _post(model: str, messages: list[dict], *, think: bool = False, num_ctx: int = 4096, timeout: int = 120, urgent: bool = False) -> str:
+    """One reply from the shared model. An engine waiting on the researcher goes ahead of other thinking passes."""
+    if not urgent:
+        if think:
+            with _urgent:
+                _urgent.wait_for(lambda: _urgent_waiting == 0, timeout=URGENT_HOLD)
+        return _request(model, messages, think=think, num_ctx=num_ctx, timeout=timeout)
+    with _first_in_line():
+        return _request(model, messages, think=think, num_ctx=num_ctx, timeout=timeout)
+
+
+@contextmanager
+def _first_in_line():
+    global _urgent_waiting
+    with _urgent:
+        _urgent_waiting += 1
+    try:
+        yield
+    finally:
+        with _urgent:
+            _urgent_waiting -= 1
+            _urgent.notify_all()
+
+
+def decision_reply(model: str, messages: list[dict], *, timeout: int = THINK_TIMEOUT) -> str:
+    """A max thinking pass, then the reply. Blank when no reply came.
+
+    Thinking shares the model's window with the reply and can use all of it, which
+    leaves a reply cut short or none. A second pass without thinking then answers
+    from the end of those notes. The notes are never read as the reply: they hold
+    drafts of it.
+    """
+    with _first_in_line():
+        first = _request_parts(model, messages, think=True, num_ctx=CONTEXT_CAP, timeout=timeout)
+        if first.get("error"):
+            return ""
+        if first["content"] and first["done"] != "length":
+            return first["content"]
+        follow = [
+            *messages,
+            {
+                "role": "user",
+                "content": "Your working notes used up the room. Here is how they end:\n"
+                + first["thinking"][-NOTES_KEPT:]
+                + "\n\nReply now, in the shape the first message asks for, with nothing else.",
+            },
+        ]
+        second = _request_parts(model, follow, think=False, num_ctx=CONTEXT_CAP, timeout=timeout)
+    return "" if second.get("error") or second["done"] == "length" else second["content"]
+
+
+def _request(model: str, messages: list[dict], *, think: bool = False, num_ctx: int = 4096, timeout: int = 120) -> str:
+    """One reply. A reply left blank by a thinking pass uses the thinking."""
+    parts = _request_parts(model, messages, think=think, num_ctx=num_ctx, timeout=timeout)
+    if parts.get("error"):
+        return parts["error"]
+    return parts["content"] or _THINK.sub("", parts["thinking"]).strip()
+
+
+def _request_parts(model: str, messages: list[dict], *, think: bool = False, num_ctx: int = 4096, timeout: int = 120) -> dict:
+    """One request to the model, as its reply, its thinking, and why it stopped.
+
+    num_ctx is the room the caller needs. Every request is sent with the one
+    window the model is loaded with: Ollama reloads the whole 27B model when a
+    request names a different window, and every other desk waits on that reload.
+    A thinking call gets at least THINK_TIMEOUT seconds.
+    """
+    if think:
+        timeout = max(timeout, THINK_TIMEOUT)
     payload_body = {
         "model": runner_model(model),
         "messages": messages,
         "stream": False,
         "think": _think_value(think),
-        "options": {"temperature": 0.4, "num_ctx": num_ctx},
+        "options": {"temperature": 0.4, "num_ctx": max(int(num_ctx or 0), CONTEXT_CAP)},
     }
     body = json.dumps(payload_body).encode()
     request = urllib.request.Request(_URL, data=body, headers={"Content-Type": "application/json"})
@@ -472,15 +537,16 @@ def _post(model: str, messages: list[dict], *, think: bool = False, num_ctx: int
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:300]
         if exc.code == 400 and len(messages) > 2:
-            return _post(model, [messages[0], messages[-1]], think=False, num_ctx=num_ctx, timeout=timeout)
-        return f"The meeting model could not answer: HTTP {exc.code}. {detail}"
+            return _request_parts(model, [messages[0], messages[-1]], think=False, num_ctx=num_ctx, timeout=timeout)
+        return {"error": f"The meeting model could not answer: HTTP {exc.code}. {detail}"}
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        return f"The meeting model could not answer: {exc}"
+        return {"error": f"The meeting model could not answer: {exc}"}
     message = payload.get("message") or {}
-    text = str(message.get("content") or "").strip()
-    if not text:
-        text = str(message.get("thinking") or "").strip()
-    return _THINK.sub("", text).strip()
+    return {
+        "content": _THINK.sub("", str(message.get("content") or "")).strip(),
+        "thinking": str(message.get("thinking") or "").strip(),
+        "done": str(payload.get("done_reason") or ""),
+    }
 
 
 def ensure_agent_models() -> None:

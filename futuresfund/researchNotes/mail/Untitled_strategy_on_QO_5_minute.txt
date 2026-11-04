@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Untitled strategy.
+Chart tested: 5-minute Gold (GC1!).
+Profit 646.0. Drawdown 1635.5. Trades 14.
+Trades a day: 0.67 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; 0.67 trades a day is outside 1 to 3.
+Settings of this version: rsi_len=14, htf_rsi_len=3, pullback_lo=44.0, pullback_hi=56.0, extreme_hi=80.0, extreme_lo=20.0, div_lookback=30, macd_fast=12, macd_slow=26, macd_signal=9, use_rsi_pullback=True, use_rsi_divergence=True.
+Engine attempts on this chart: 200.

@@ -1,0 +1,16 @@
+Subject: Desk Update: POC Momentum Breakout v1 (NQ) Chart Complete
+
+The latest run on the 5-minute Nasdaq chart for POC Momentum Breakout v1 is complete. The strategy generated a profit of $32,985.00 with a drawdown of $20,155.00 across 558 trades. With a pace of 10.75 trades per week over 260 trading days, the annualized trade count falls within the required 130 to 600 trades per year band, meaning the activity level is appropriate.
+
+The run met the profit target and the trailing drawdown constraints. However, it was not filed in the strategy library. A stronger version of this name is already present on this contract and timeframe, so this result was not added to the library.
+
+Current settings: pivot_left=2, pivot_right=2, len_rsi=14, len_ema=20, atr_len=14, stop_mult=3.4333, tp_mult=1.3107, cooldown_bars=20.
+
+This desk instance is active. The next meeting is scheduled for 5:00 PM ET Sunday.
+
+Best,
+
+Portfolio Manager
+Desk: NQ POC Momentum Breakout v1
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 12 minutes 52 seconds.

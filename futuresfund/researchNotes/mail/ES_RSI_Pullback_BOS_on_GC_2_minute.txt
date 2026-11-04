@@ -1,0 +1,7 @@
+Subject: Desk Result: ES RSI Pullback BOS on Gold (GC1!)
+
+The ES RSI Pullback BOS strategy was tested on the 2-minute Gold (GC1!) chart. The run generated a profit of $28,170.00 with a drawdown of $9,810.00 across 268 trades. The trades per day averaged 5.15 over 260 trading days, covering 178,237 bars from September 30, 2025, through October 2, 2026. The profit ratio, calculated as the average winning trade divided by the average losing trade, is derived from these results.
+
+This result was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.05, a win rate above 45 percent, and at least 60 trades. While the profit exceeds $14,000 and the trade count exceeds 60, the specific conditions for filing were not met because a stronger version of this name is already on this contract and timeframe. The settings for this version included stop_dollars=1000.0, tp_dollars=1500.0, use_trail=False, trail_pct=50.0, trail_step_amt=500.0, trail_step_pct=50.0, trail_min_dollars=1000.0, len_rsi=14, len_ema=200, len_atr=14, stop_mult=3.0, and tp_mult=2.5.
+
+At 16:45 New York time, I executed strategy.close_all to flatten every open trade. This desk’s instance of Qwen3.6 35B-A3B remains active for viewing charts, research, and the open trade log. The address for viewing this desk on a phone is being emailed now. The new address will be sent when the old one expires.

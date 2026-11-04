@@ -1,0 +1,7 @@
+Subject: Desk Update: EMA Trend RSI Pullback on 15-minute Micro Nasdaq
+
+The latest run for the EMA Trend RSI Pullback strategy on the 15-minute Micro Nasdaq (MNQ1!) chart has concluded. This specific configuration, which uses a 100-period and 20-period EMA with a $750 stop and $1000 take-profit, generated a profit of $1,402.50 against a drawdown of $3,978.50. The test covered 203 trades over 260 trading days, resulting in a pace of 3.9 trades per week. The profit ratio, defined as the average winning trade divided by the average losing trade, is 0.35.
+
+This run was not filed in the strategy library. The reason provided is that the library requires a profit over $8,000, and this run is under that threshold. While the run met the trade count requirement of at least 80 trades with 203 executions, it failed to meet the profit target required for filing. The other acceptance criteria on the strategy library page, including a profit factor above 1.05 and a win rate above 40 percent, are part of the filing standards, but the primary reason for rejection cited in the application is the insufficient profit relative to the $8,000 bar. The drawdown of $3,978.50 remains under the 20 percent account limit, but the profit shortfall prevents filing.
+
+This result is not currently on the strategy library page. The desk continues to monitor the strategy library for any new filings that meet all four criteria: profit above $8,000, profit factor above 1.05, win rate above 40 percent, and at least 80 trades.

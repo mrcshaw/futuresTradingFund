@@ -1,0 +1,116 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_step_pct",
+  "trail_pct"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -291.5,
+   "max_drawdown": 3300.5,
+   "trades": 39
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -854.0,
+   "max_drawdown": 2432.5,
+   "trades": 39
+  },
+  "cooldown_bars": {
+   "value": 2,
+   "net_profit": 1108.5,
+   "max_drawdown": 4652.0,
+   "trades": 64
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -9248.0,
+   "max_drawdown": 9842.5,
+   "trades": 93
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": -5168.0,
+   "max_drawdown": 7343.5,
+   "trades": 63
+  },
+  "sess_start_mn": {
+   "value": 59,
+   "net_profit": 1226.0,
+   "max_drawdown": 2515.5,
+   "trades": 34
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_mn": {
+   "value": 59,
+   "net_profit": -824.5,
+   "max_drawdown": 4926.5,
+   "trades": 42
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 450,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_step_pct": 50.0,
+   "trail_pct": 50.0,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0
+  },
+  "net_profit": -1204.0,
+  "max_drawdown": 4926.5,
+  "trades": 39,
+  "win_rate": 46.15,
+  "profit_factor": 0.868,
+  "biggest_winner": 476.5,
+  "biggest_loser": -486.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 21,
+    "pnl": -2506.0,
+    "favorable": 268.9,
+    "adverse": -375.74
+   },
+   {
+    "exit": "Short Exit",
+    "trades": 13,
+    "pnl": 1382.0,
+    "favorable": 393.54,
+    "adverse": -273.77
+   },
+   {
+    "exit": "EOD Flatten",
+    "trades": 5,
+    "pnl": -80.0,
+    "favorable": 229.5,
+    "adverse": -228.0
+   }
+  ]
+ },
+ "reviewed": [
+  "30 GC 15m",
+  "90 ES 15m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

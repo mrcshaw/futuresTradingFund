@@ -127,7 +127,7 @@ class PageTests(unittest.TestCase):
         self.assertIn('fetch("/api/sentiment")', js)
         self.assertIn("gauge-delta", js)
         names = {row["name"] for row in FEEDS}
-        self.assertEqual(names, {"Federal Reserve press", "Google News politics", "EIA Today in Energy", "Google News energy"})
+        self.assertEqual(names, {"Federal Reserve press", "Google News politics", "EIA Today in Energy", "Google News energy", "Google News markets"})
         config = (ROOT.parent / "hedgeFund" / "tradingagents" / "default_config.py").read_text(encoding="utf-8")
         self.assertIn("US politics Congress White House sanctions election", config)
         self.assertIn("crude oil OPEC natural gas EIA inventory energy", config)

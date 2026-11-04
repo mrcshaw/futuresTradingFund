@@ -1,0 +1,3816 @@
+{
+  "file": "created_deltavwma_bos_trend_v1_2.pine",
+  "title": "DeltaVWMA_BOS_Trend_v1",
+  "attempts": 15,
+  "best": {
+    "params": {
+      "stop_dollars": 250,
+      "sess_start_hr": 18,
+      "sess_end_hr": 16,
+      "pivot_left": 3,
+      "pivot_right": 3
+    },
+    "net_profit": -250.0,
+    "max_drawdown": 250.0,
+    "trades": 1,
+    "win_rate": 0.0,
+    "sharpe": null,
+    "profit_factor": 0.0,
+    "profit_ratio": null,
+    "biggest_winner": -250.0,
+    "biggest_loser": -250.0,
+    "held_loser": -250.0,
+    "days": 5,
+    "bars": 1380,
+    "tested_from": "2026-10-25 18:00",
+    "tested_through": "2026-10-30 16:55",
+    "trades_per_day": 0.2,
+    "error": null,
+    "runner": "pinets",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "5m",
+    "frames": [
+      {
+        "timeframe": "5m",
+        "net_profit": -250.0,
+        "max_drawdown": 250.0,
+        "trades": 1,
+        "passed": false
+      }
+    ],
+    "blocked": false,
+    "stopped": false,
+    "fatal": false,
+    "engine": "pinets",
+    "instrument": "GC",
+    "contract": "GC1!",
+    "spans": {
+      "7": {
+        "net_profit": -250.0,
+        "trades": 1,
+        "biggest_loser": -250.0,
+        "held_loser": -250.0
+      },
+      "30": {
+        "net_profit": -250.0,
+        "trades": 1,
+        "biggest_loser": -250.0,
+        "held_loser": -250.0
+      },
+      "90": {
+        "net_profit": -250.0,
+        "trades": 1,
+        "biggest_loser": -250.0,
+        "held_loser": -250.0
+      },
+      "365": {
+        "net_profit": -250.0,
+        "trades": 1,
+        "biggest_loser": -250.0,
+        "held_loser": -250.0
+      }
+    },
+    "exits": [
+      {
+        "exit": "ExitLong",
+        "trades": 1,
+        "pnl": -250.0,
+        "favorable": 80.0,
+        "adverse": -250.0
+      }
+    ],
+    "passed": false,
+    "change": "Starting settings",
+    "impact": "Starting measurement. The next run changes one variable from here.",
+    "take_profit": 500,
+    "stage_days": 7,
+    "stage_passed": false,
+    "stage": "stopped at the 7-day stage"
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+  "analyst": "",
+  "trials": [
+    {
+      "params": {
+        "stop_dollars": 250,
+        "sess_start_hr": 18,
+        "sess_end_hr": 16,
+        "pivot_left": 3,
+        "pivot_right": 3
+      },
+      "net_profit": 0.0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": null,
+      "sharpe": null,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": null,
+      "biggest_loser": null,
+      "held_loser": null,
+      "stop_dollars": 250.0,
+      "days": 5,
+      "bars": 1116,
+      "tested_from": "2026-10-26 18:00",
+      "tested_through": "2026-11-01 18:55",
+      "trades_per_day": 0.0,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "5m",
+      "frames": [
+        {
+          "timeframe": "5m",
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "YM",
+      "contract": "YM1!",
+      "spans": {
+        "7": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null,
+          "held_loser": null
+        },
+        "30": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null,
+          "held_loser": null
+        },
+        "90": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null,
+          "held_loser": null
+        },
+        "365": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null,
+          "held_loser": null
+        }
+      },
+      "exits": [],
+      "passed": false,
+      "change": "Starting settings",
+      "impact": "Starting measurement. The next run changes one variable from here.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false,
+      "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+      "skipped": true
+    }
+  ],
+  "instruments": {
+    "ES": {
+      "attempts": 2,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "held_loser": null,
+        "days": 5,
+        "bars": 1380,
+        "tested_from": "2026-10-25 18:00",
+        "tested_through": "2026-10-30 16:55",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "ES",
+        "contract": "ES1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          }
+        },
+        "exits": [],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "ES",
+          "contract": "ES1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 1380,
+                "tested_from": "2026-10-25 18:00",
+                "tested_through": "2026-10-30 16:55",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "ES",
+                "contract": "ES1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "ES",
+                  "contract": "ES1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 460,
+                "tested_from": "2026-07-27 18:00",
+                "tested_through": "2026-08-03 16:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "ES",
+                "contract": "ES1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, its average win must be more than 1.12 times its average loss, no trade may lose more than 1.5 percent of the account, and it must pass on the last 64 sessions, which no search sees. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 460,
+                  "tested_from": "2026-07-27 18:00",
+                  "tested_through": "2026-08-03 16:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "ES",
+                  "contract": "ES1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    },
+    "GC": {
+      "attempts": 5,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": -250.0,
+        "max_drawdown": 250.0,
+        "trades": 1,
+        "win_rate": 0.0,
+        "sharpe": null,
+        "profit_factor": 0.0,
+        "profit_ratio": null,
+        "biggest_winner": -250.0,
+        "biggest_loser": -250.0,
+        "held_loser": -250.0,
+        "days": 5,
+        "bars": 1380,
+        "tested_from": "2026-10-25 18:00",
+        "tested_through": "2026-10-30 16:55",
+        "trades_per_day": 0.2,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": -250.0,
+            "max_drawdown": 250.0,
+            "trades": 1,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "GC",
+        "contract": "GC1!",
+        "spans": {
+          "7": {
+            "net_profit": -250.0,
+            "trades": 1,
+            "biggest_loser": -250.0,
+            "held_loser": -250.0
+          },
+          "30": {
+            "net_profit": -250.0,
+            "trades": 1,
+            "biggest_loser": -250.0,
+            "held_loser": -250.0
+          },
+          "90": {
+            "net_profit": -250.0,
+            "trades": 1,
+            "biggest_loser": -250.0,
+            "held_loser": -250.0
+          },
+          "365": {
+            "net_profit": -250.0,
+            "trades": 1,
+            "biggest_loser": -250.0,
+            "held_loser": -250.0
+          }
+        },
+        "exits": [
+          {
+            "exit": "ExitLong",
+            "trades": 1,
+            "pnl": -250.0,
+            "favorable": 80.0,
+            "adverse": -250.0
+          }
+        ],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                           -$250.00        $250.00        1      no\nstop_dollars 250 to 500                            -$500.00        $500.00        1      no\nstop_dollars 250 to 700                            -$700.00        $700.00        1      no\npivot_left 3 to 6                                     $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                           -$250.00        $250.00        1      no\n\nMost profitable change\nOriginal                                           -$250.00        $250.00        1      no\n\nNo change made money\n\nA change that lost money\nstop_dollars 250 to 700                            -$700.00        $700.00        1      no",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 4.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": -250.0,
+          "max_drawdown": 250.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -250.0,
+          "biggest_loser": -250.0,
+          "held_loser": -250.0,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": -250.0,
+              "max_drawdown": 250.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "GC",
+          "contract": "GC1!",
+          "spans": {
+            "7": {
+              "net_profit": -250.0,
+              "trades": 1,
+              "biggest_loser": -250.0,
+              "held_loser": -250.0
+            },
+            "30": {
+              "net_profit": -250.0,
+              "trades": 1,
+              "biggest_loser": -250.0,
+              "held_loser": -250.0
+            },
+            "90": {
+              "net_profit": -250.0,
+              "trades": 1,
+              "biggest_loser": -250.0,
+              "held_loser": -250.0
+            },
+            "365": {
+              "net_profit": -250.0,
+              "trades": 1,
+              "biggest_loser": -250.0,
+              "held_loser": -250.0
+            }
+          },
+          "exits": [
+            {
+              "exit": "ExitLong",
+              "trades": 1,
+              "pnl": -250.0,
+              "favorable": 80.0,
+              "adverse": -250.0
+            }
+          ],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 500,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": -500.0,
+          "max_drawdown": 500.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -500.0,
+          "biggest_loser": -500.0,
+          "held_loser": -500.0,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": -500.0,
+              "max_drawdown": 500.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "GC",
+          "contract": "GC1!",
+          "spans": {
+            "7": {
+              "net_profit": -500.0,
+              "trades": 1,
+              "biggest_loser": -500.0,
+              "held_loser": -500.0
+            },
+            "30": {
+              "net_profit": -500.0,
+              "trades": 1,
+              "biggest_loser": -500.0,
+              "held_loser": -500.0
+            },
+            "90": {
+              "net_profit": -500.0,
+              "trades": 1,
+              "biggest_loser": -500.0,
+              "held_loser": -500.0
+            },
+            "365": {
+              "net_profit": -500.0,
+              "trades": 1,
+              "biggest_loser": -500.0,
+              "held_loser": -500.0
+            }
+          },
+          "exits": [
+            {
+              "exit": "ExitLong",
+              "trades": 1,
+              "pnl": -500.0,
+              "favorable": 80.0,
+              "adverse": -500.0
+            }
+          ],
+          "passed": false,
+          "change": "stop_dollars 250 to 500",
+          "impact": "stop_dollars 250 to 500 did not move the result toward the goal. Profit moved -250. Drawdown moved 250. The next run leaves stop_dollars and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 700,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": -700.0,
+          "max_drawdown": 700.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -700.0,
+          "biggest_loser": -700.0,
+          "held_loser": -700.0,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": -700.0,
+              "max_drawdown": 700.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "GC",
+          "contract": "GC1!",
+          "spans": {
+            "7": {
+              "net_profit": -700.0,
+              "trades": 1,
+              "biggest_loser": -700.0,
+              "held_loser": -700.0
+            },
+            "30": {
+              "net_profit": -700.0,
+              "trades": 1,
+              "biggest_loser": -700.0,
+              "held_loser": -700.0
+            },
+            "90": {
+              "net_profit": -700.0,
+              "trades": 1,
+              "biggest_loser": -700.0,
+              "held_loser": -700.0
+            },
+            "365": {
+              "net_profit": -700.0,
+              "trades": 1,
+              "biggest_loser": -700.0,
+              "held_loser": -700.0
+            }
+          },
+          "exits": [
+            {
+              "exit": "ExitLong",
+              "trades": 1,
+              "pnl": -700.0,
+              "favorable": 80.0,
+              "adverse": -700.0
+            }
+          ],
+          "passed": false,
+          "change": "stop_dollars 500 to 700",
+          "impact": "stop_dollars 500 to 700 did not move the result toward the goal. Profit moved -200. Drawdown moved 200. The next run leaves stop_dollars and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 6,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "GC",
+          "contract": "GC1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "pivot_left 3 to 6, stop_dollars 700 to 250",
+          "impact": "That change did not move the result toward the goal. Profit moved 700. Drawdown moved -700. The next run leaves That change and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 4,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": -250.0,
+                "max_drawdown": 250.0,
+                "trades": 1,
+                "win_rate": 0.0,
+                "sharpe": null,
+                "profit_factor": 0.0,
+                "profit_ratio": null,
+                "biggest_winner": -250.0,
+                "biggest_loser": -250.0,
+                "held_loser": -250.0,
+                "days": 5,
+                "bars": 1380,
+                "tested_from": "2026-10-25 18:00",
+                "tested_through": "2026-10-30 16:55",
+                "trades_per_day": 0.2,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": -250.0,
+                    "max_drawdown": 250.0,
+                    "trades": 1,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "GC",
+                "contract": "GC1!",
+                "spans": {
+                  "7": {
+                    "net_profit": -250.0,
+                    "trades": 1,
+                    "biggest_loser": -250.0,
+                    "held_loser": -250.0
+                  },
+                  "30": {
+                    "net_profit": -250.0,
+                    "trades": 1,
+                    "biggest_loser": -250.0,
+                    "held_loser": -250.0
+                  },
+                  "90": {
+                    "net_profit": -250.0,
+                    "trades": 1,
+                    "biggest_loser": -250.0,
+                    "held_loser": -250.0
+                  },
+                  "365": {
+                    "net_profit": -250.0,
+                    "trades": 1,
+                    "biggest_loser": -250.0,
+                    "held_loser": -250.0
+                  }
+                },
+                "exits": [
+                  {
+                    "exit": "ExitLong",
+                    "trades": 1,
+                    "pnl": -250.0,
+                    "favorable": 80.0,
+                    "adverse": -250.0
+                  }
+                ],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                           -$250.00        $250.00        1      no\nstop_dollars 250 to 500                            -$500.00        $500.00        1      no\nstop_dollars 250 to 700                            -$700.00        $700.00        1      no\npivot_left 3 to 6                                     $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                           -$250.00        $250.00        1      no\n\nMost profitable change\nOriginal                                           -$250.00        $250.00        1      no\n\nNo change made money\n\nA change that lost money\nstop_dollars 250 to 700                            -$700.00        $700.00        1      no",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 4.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": -250.0,
+                  "max_drawdown": 250.0,
+                  "trades": 1,
+                  "win_rate": 0.0,
+                  "sharpe": null,
+                  "profit_factor": 0.0,
+                  "profit_ratio": null,
+                  "biggest_winner": -250.0,
+                  "biggest_loser": -250.0,
+                  "held_loser": -250.0,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.2,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": -250.0,
+                      "max_drawdown": 250.0,
+                      "trades": 1,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "GC",
+                  "contract": "GC1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": -250.0,
+                      "trades": 1,
+                      "biggest_loser": -250.0,
+                      "held_loser": -250.0
+                    },
+                    "30": {
+                      "net_profit": -250.0,
+                      "trades": 1,
+                      "biggest_loser": -250.0,
+                      "held_loser": -250.0
+                    },
+                    "90": {
+                      "net_profit": -250.0,
+                      "trades": 1,
+                      "biggest_loser": -250.0,
+                      "held_loser": -250.0
+                    },
+                    "365": {
+                      "net_profit": -250.0,
+                      "trades": 1,
+                      "biggest_loser": -250.0,
+                      "held_loser": -250.0
+                    }
+                  },
+                  "exits": [
+                    {
+                      "exit": "ExitLong",
+                      "trades": 1,
+                      "pnl": -250.0,
+                      "favorable": 80.0,
+                      "adverse": -250.0
+                    }
+                  ],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false
+                },
+                {
+                  "params": {
+                    "stop_dollars": 500,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": -500.0,
+                  "max_drawdown": 500.0,
+                  "trades": 1,
+                  "win_rate": 0.0,
+                  "sharpe": null,
+                  "profit_factor": 0.0,
+                  "profit_ratio": null,
+                  "biggest_winner": -500.0,
+                  "biggest_loser": -500.0,
+                  "held_loser": -500.0,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.2,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": -500.0,
+                      "max_drawdown": 500.0,
+                      "trades": 1,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "GC",
+                  "contract": "GC1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": -500.0,
+                      "trades": 1,
+                      "biggest_loser": -500.0,
+                      "held_loser": -500.0
+                    },
+                    "30": {
+                      "net_profit": -500.0,
+                      "trades": 1,
+                      "biggest_loser": -500.0,
+                      "held_loser": -500.0
+                    },
+                    "90": {
+                      "net_profit": -500.0,
+                      "trades": 1,
+                      "biggest_loser": -500.0,
+                      "held_loser": -500.0
+                    },
+                    "365": {
+                      "net_profit": -500.0,
+                      "trades": 1,
+                      "biggest_loser": -500.0,
+                      "held_loser": -500.0
+                    }
+                  },
+                  "exits": [
+                    {
+                      "exit": "ExitLong",
+                      "trades": 1,
+                      "pnl": -500.0,
+                      "favorable": 80.0,
+                      "adverse": -500.0
+                    }
+                  ],
+                  "passed": false,
+                  "change": "stop_dollars 250 to 500",
+                  "impact": "stop_dollars 250 to 500 did not move the result toward the goal. Profit moved -250. Drawdown moved 250. The next run leaves stop_dollars and changes another setting.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false
+                },
+                {
+                  "params": {
+                    "stop_dollars": 700,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": -700.0,
+                  "max_drawdown": 700.0,
+                  "trades": 1,
+                  "win_rate": 0.0,
+                  "sharpe": null,
+                  "profit_factor": 0.0,
+                  "profit_ratio": null,
+                  "biggest_winner": -700.0,
+                  "biggest_loser": -700.0,
+                  "held_loser": -700.0,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.2,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": -700.0,
+                      "max_drawdown": 700.0,
+                      "trades": 1,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "GC",
+                  "contract": "GC1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": -700.0,
+                      "trades": 1,
+                      "biggest_loser": -700.0,
+                      "held_loser": -700.0
+                    },
+                    "30": {
+                      "net_profit": -700.0,
+                      "trades": 1,
+                      "biggest_loser": -700.0,
+                      "held_loser": -700.0
+                    },
+                    "90": {
+                      "net_profit": -700.0,
+                      "trades": 1,
+                      "biggest_loser": -700.0,
+                      "held_loser": -700.0
+                    },
+                    "365": {
+                      "net_profit": -700.0,
+                      "trades": 1,
+                      "biggest_loser": -700.0,
+                      "held_loser": -700.0
+                    }
+                  },
+                  "exits": [
+                    {
+                      "exit": "ExitLong",
+                      "trades": 1,
+                      "pnl": -700.0,
+                      "favorable": 80.0,
+                      "adverse": -700.0
+                    }
+                  ],
+                  "passed": false,
+                  "change": "stop_dollars 500 to 700",
+                  "impact": "stop_dollars 500 to 700 did not move the result toward the goal. Profit moved -200. Drawdown moved 200. The next run leaves stop_dollars and changes another setting.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false
+                },
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 6,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "GC",
+                  "contract": "GC1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "pivot_left 3 to 6, stop_dollars 700 to 250",
+                  "impact": "That change did not move the result toward the goal. Profit moved 700. Drawdown moved -700. The next run leaves That change and changes another setting.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 460,
+                "tested_from": "2026-07-27 18:00",
+                "tested_through": "2026-08-03 16:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "GC",
+                "contract": "GC1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, its average win must be more than 1.12 times its average loss, no trade may lose more than 1.5 percent of the account, and it must pass on the last 64 sessions, which no search sees. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 460,
+                  "tested_from": "2026-07-27 18:00",
+                  "tested_through": "2026-08-03 16:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "GC",
+                  "contract": "GC1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    },
+    "NQ": {
+      "attempts": 2,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "held_loser": null,
+        "days": 5,
+        "bars": 1380,
+        "tested_from": "2026-10-25 18:00",
+        "tested_through": "2026-10-30 16:55",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "NQ",
+        "contract": "NQ1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          }
+        },
+        "exits": [],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 1380,
+                "tested_from": "2026-10-25 18:00",
+                "tested_through": "2026-10-30 16:55",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "NQ",
+                "contract": "NQ1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "NQ",
+                  "contract": "NQ1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 460,
+                "tested_from": "2026-07-27 18:00",
+                "tested_through": "2026-08-03 16:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "NQ",
+                "contract": "NQ1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, its average win must be more than 1.12 times its average loss, no trade may lose more than 1.5 percent of the account, and it must pass on the last 64 sessions, which no search sees. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 460,
+                  "tested_from": "2026-07-27 18:00",
+                  "tested_through": "2026-08-03 16:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "NQ",
+                  "contract": "NQ1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    },
+    "MNQ": {
+      "attempts": 2,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "held_loser": null,
+        "days": 5,
+        "bars": 1380,
+        "tested_from": "2026-10-25 18:00",
+        "tested_through": "2026-10-30 16:55",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "MNQ",
+        "contract": "MNQ1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          }
+        },
+        "exits": [],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "days": 5,
+          "bars": 1380,
+          "tested_from": "2026-10-25 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 1380,
+                "tested_from": "2026-10-25 18:00",
+                "tested_through": "2026-10-30 16:55",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "MNQ",
+                "contract": "MNQ1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 1380,
+                  "tested_from": "2026-10-25 18:00",
+                  "tested_through": "2026-10-30 16:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "MNQ",
+                  "contract": "MNQ1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "days": 5,
+                "bars": 460,
+                "tested_from": "2026-07-27 18:00",
+                "tested_through": "2026-08-03 16:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "MNQ",
+                "contract": "MNQ1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, its average win must be more than 1.12 times its average loss, no trade may lose more than 1.5 percent of the account, and it must pass on the last 64 sessions, which no search sees. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "days": 5,
+                  "bars": 460,
+                  "tested_from": "2026-07-27 18:00",
+                  "tested_through": "2026-08-03 16:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "MNQ",
+                  "contract": "MNQ1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    },
+    "M2K": {
+      "attempts": 2,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "held_loser": null,
+        "stop_dollars": 250.0,
+        "days": 5,
+        "bars": 1115,
+        "tested_from": "2026-10-26 18:00",
+        "tested_through": "2026-11-01 18:55",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "M2K",
+        "contract": "M2K1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          }
+        },
+        "exits": [],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "stop_dollars": 250.0,
+          "days": 5,
+          "bars": 1115,
+          "tested_from": "2026-10-26 18:00",
+          "tested_through": "2026-11-01 18:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "M2K",
+          "contract": "M2K1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "stop_dollars": 250.0,
+                "days": 5,
+                "bars": 1115,
+                "tested_from": "2026-10-26 18:00",
+                "tested_through": "2026-11-01 18:55",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "M2K",
+                "contract": "M2K1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "stop_dollars": 250.0,
+                  "days": 5,
+                  "bars": 1115,
+                  "tested_from": "2026-10-26 18:00",
+                  "tested_through": "2026-11-01 18:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "M2K",
+                  "contract": "M2K1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "stop_dollars": 250.0,
+                "days": 5,
+                "bars": 372,
+                "tested_from": "2026-10-26 18:00",
+                "tested_through": "2026-11-01 18:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "M2K",
+                "contract": "M2K1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "stop_dollars": 250.0,
+                  "days": 5,
+                  "bars": 372,
+                  "tested_from": "2026-10-26 18:00",
+                  "tested_through": "2026-11-01 18:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "M2K",
+                  "contract": "M2K1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    },
+    "YM": {
+      "attempts": 2,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "sess_start_hr": 18,
+          "sess_end_hr": 16,
+          "pivot_left": 3,
+          "pivot_right": 3
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "held_loser": null,
+        "stop_dollars": 250.0,
+        "days": 5,
+        "bars": 1116,
+        "tested_from": "2026-10-26 18:00",
+        "tested_through": "2026-11-01 18:55",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "5m",
+        "frames": [
+          {
+            "timeframe": "5m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "YM",
+        "contract": "YM1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null,
+            "held_loser": null
+          }
+        },
+        "exits": [],
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {},
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "pivot_left": 3,
+            "pivot_right": 3
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "held_loser": null,
+          "stop_dollars": 250.0,
+          "days": 5,
+          "bars": 1116,
+          "tested_from": "2026-10-26 18:00",
+          "tested_through": "2026-11-01 18:55",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "YM",
+          "contract": "YM1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null,
+              "held_loser": null
+            }
+          },
+          "exits": [],
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ],
+      "archived_charts": {
+        "5m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "stop_dollars": 250.0,
+                "days": 5,
+                "bars": 1116,
+                "tested_from": "2026-10-26 18:00",
+                "tested_through": "2026-11-01 18:55",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "5m",
+                "frames": [
+                  {
+                    "timeframe": "5m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "YM",
+                "contract": "YM1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "stop_dollars": 250.0,
+                  "days": 5,
+                  "bars": 1116,
+                  "tested_from": "2026-10-26 18:00",
+                  "tested_through": "2026-11-01 18:55",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "5m",
+                  "frames": [
+                    {
+                      "timeframe": "5m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "YM",
+                  "contract": "YM1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ],
+        "15m": [
+          {
+            "archived_at": "2026-11-04 13:23:20",
+            "reason": "Studied under the old 7-day-first stages. Re-queued for the year-first study.",
+            "record": {
+              "attempts": 1,
+              "best": {
+                "params": {
+                  "stop_dollars": 250,
+                  "sess_start_hr": 18,
+                  "sess_end_hr": 16,
+                  "pivot_left": 3,
+                  "pivot_right": 3
+                },
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "win_rate": null,
+                "sharpe": null,
+                "profit_factor": null,
+                "profit_ratio": null,
+                "biggest_winner": null,
+                "biggest_loser": null,
+                "held_loser": null,
+                "stop_dollars": 250.0,
+                "days": 5,
+                "bars": 372,
+                "tested_from": "2026-10-26 18:00",
+                "tested_through": "2026-11-01 18:45",
+                "trades_per_day": 0.0,
+                "error": null,
+                "runner": "pinets",
+                "stop_reason": "",
+                "breached": false,
+                "timeframe": "15m",
+                "frames": [
+                  {
+                    "timeframe": "15m",
+                    "net_profit": 0.0,
+                    "max_drawdown": 0.0,
+                    "trades": 0,
+                    "passed": false
+                  }
+                ],
+                "blocked": false,
+                "stopped": false,
+                "fatal": false,
+                "engine": "pinets",
+                "instrument": "YM",
+                "contract": "YM1!",
+                "spans": {
+                  "7": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "30": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "90": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  },
+                  "365": {
+                    "net_profit": 0.0,
+                    "trades": 0,
+                    "biggest_loser": null,
+                    "held_loser": null
+                  }
+                },
+                "exits": [],
+                "passed": false,
+                "change": "Starting settings",
+                "impact": "Starting measurement. The next run changes one variable from here.",
+                "take_profit": 500,
+                "stage_days": 7,
+                "stage_passed": false,
+                "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                "skipped": true,
+                "stage": "stopped at the 7-day stage"
+              },
+              "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+              "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses pivot_left=3, pivot_right=3, sess_end_hr=16, sess_start_hr=18, stop_dollars=250. Attempts recorded: 1.",
+              "trials": [
+                {
+                  "params": {
+                    "stop_dollars": 250,
+                    "sess_start_hr": 18,
+                    "sess_end_hr": 16,
+                    "pivot_left": 3,
+                    "pivot_right": 3
+                  },
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "win_rate": null,
+                  "sharpe": null,
+                  "profit_factor": null,
+                  "profit_ratio": null,
+                  "biggest_winner": null,
+                  "biggest_loser": null,
+                  "held_loser": null,
+                  "stop_dollars": 250.0,
+                  "days": 5,
+                  "bars": 372,
+                  "tested_from": "2026-10-26 18:00",
+                  "tested_through": "2026-11-01 18:45",
+                  "trades_per_day": 0.0,
+                  "error": null,
+                  "runner": "pinets",
+                  "stop_reason": "",
+                  "breached": false,
+                  "timeframe": "15m",
+                  "frames": [
+                    {
+                      "timeframe": "15m",
+                      "net_profit": 0.0,
+                      "max_drawdown": 0.0,
+                      "trades": 0,
+                      "passed": false
+                    }
+                  ],
+                  "blocked": false,
+                  "stopped": false,
+                  "fatal": false,
+                  "engine": "pinets",
+                  "instrument": "YM",
+                  "contract": "YM1!",
+                  "spans": {
+                    "7": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "30": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "90": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    },
+                    "365": {
+                      "net_profit": 0.0,
+                      "trades": 0,
+                      "biggest_loser": null,
+                      "held_loser": null
+                    }
+                  },
+                  "exits": [],
+                  "passed": false,
+                  "change": "Starting settings",
+                  "impact": "Starting measurement. The next run changes one variable from here.",
+                  "take_profit": 500,
+                  "stage_days": 7,
+                  "stage_passed": false,
+                  "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+                  "skipped": true
+                }
+              ],
+              "error": "",
+              "blocked": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+Subject: Engine4_DeltaVWMA_NightShift_v1 Result: Not Filed
+
+The Engine4_DeltaVWMA_NightShift_v1 run on the 15-minute Nasdaq (NQ1!) chart generated a profit of $30,125.0 with a drawdown of $9,875.0 across 529 trades. While the profit exceeds the $14,000 threshold and the trade count exceeds 60, this result was not filed in the strategy library. The acceptance criteria require a win rate above 45 percent; this run achieved a win rate of 34.22 percent. Consequently, it does not meet the library’s criteria. The profit factor and win rate recorded on the library page are the only metrics used for filing, and this run’s win rate falls below the required threshold.

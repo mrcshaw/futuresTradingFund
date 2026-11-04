@@ -1,0 +1,1 @@
+3 repairs did not make it compile. Line 65: 'long_stop' is already defined on line 21. Use := to change it. Line 66: 'long_limit' is already defined on line 22. Use := to change it. Line 67: 'short_stop' is already defined on line 23. Use := to change it. Line 68: 'short_limit' is already defined on line 24. Use := to change it.

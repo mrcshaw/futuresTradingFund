@@ -44,21 +44,25 @@ class RiskStyleTests(unittest.TestCase):
         compile_pine(source)
         held = run_pine(source, _bars([100, 100, 100, 100]), merge_risk({}, "ES"), root="ES", timeframe="2m")
         self.assertEqual(held, [])
+        # The desk stop is $700 and the target $1,500: 14 and 30 ES points from the fill.
         stopped = run_pine(source, _bars([100, 100, 70, 70]), merge_risk({}, "ES"), root="ES", timeframe="2m")
         self.assertEqual(len(stopped), 1)
-        self.assertGreater(stopped[0]["exit_price"], 97)
-        self.assertLess(stopped[0]["exit_price"], 100)
+        self.assertGreater(stopped[0]["exit_price"], 85)
+        self.assertLess(stopped[0]["exit_price"], 87)
+        self.assertEqual(stopped[0]["pnl"], -700.0)
         targeted = run_pine(source, _bars([100, 100, 140, 140]), merge_risk({}, "ES"), root="ES", timeframe="2m")
         self.assertEqual(len(targeted), 1)
-        self.assertGreater(targeted[0]["exit_price"], 100)
-        self.assertLess(targeted[0]["exit_price"], 104)
+        self.assertGreater(targeted[0]["exit_price"], 129)
+        self.assertLess(targeted[0]["exit_price"], 131)
 
     def test_a_script_without_the_block_still_gets_the_dollar_stop(self):
         source = HEADER + 'if bar_index == 1\n    strategy.entry("Long", strategy.long)\n'
+        # $700 at $20 a point is 35 NQ points.
         stopped = run_pine(source, _bars([100, 100, 40, 40]), merge_risk({}, "NQ"), root="NQ", timeframe="2m")
         self.assertEqual(len(stopped), 1)
-        self.assertGreater(stopped[0]["exit_price"], 96)
-        self.assertLess(stopped[0]["exit_price"], 99)
+        self.assertGreater(stopped[0]["exit_price"], 63)
+        self.assertLess(stopped[0]["exit_price"], 66)
+        self.assertEqual(stopped[0]["pnl"], -700.0)
 
     def test_an_atr_stop_cannot_lose_more_than_the_dollar_stop(self):
         source = (
@@ -76,10 +80,10 @@ class RiskStyleTests(unittest.TestCase):
             previous = close
         stopped = run_pine(source, bars, merge_risk({}, "ES"), root="ES", timeframe="2m")
         self.assertEqual(len(stopped), 1)
-        self.assertGreaterEqual(stopped[0]["exit_price"], 79.5)
-        self.assertLessEqual(stopped[0]["exit_price"], 80.5)
-        self.assertGreater(stopped[0]["pnl"], -1200)
-        self.assertLess(stopped[0]["pnl"], -800)
+        self.assertGreaterEqual(stopped[0]["exit_price"], 85.5)
+        self.assertLessEqual(stopped[0]["exit_price"], 86.5)
+        self.assertGreater(stopped[0]["pnl"], -900)
+        self.assertLess(stopped[0]["pnl"], -600)
 
     def test_the_pending_stop_stays_at_the_dollar_stop_after_the_script_widens_it(self):
         source = (
@@ -92,24 +96,25 @@ class RiskStyleTests(unittest.TestCase):
         state = run_pine_live(source, _bars([100, 100, 100, 100, 100]), merge_risk({}, "ES"), root="ES", timeframe="2m")
         pending = state["pending"]["exit"]
         self.assertIsNotNone(pending)
-        self.assertGreater(pending["stop"], 79)
-        self.assertLess(pending["stop"], 81)
+        self.assertGreater(pending["stop"], 85)
+        self.assertLess(pending["stop"], 87)
 
-    def test_a_stop_above_1500_and_a_target_above_2000_are_capped(self):
+    def test_a_stop_above_700_is_capped_and_the_target_has_no_maximum(self):
         from futuresfund.risk_style import merge_risk
 
         merged = merge_risk({"stop_dollars": 2200, "tp_dollars": 5000}, "ES")
-        self.assertEqual(merged["stop_dollars"], 1500)
-        self.assertEqual(merged["tp_dollars"], 2000)
-        kept = merge_risk({"stop_dollars": 800, "tp_dollars": 1200}, "NQ")
-        self.assertEqual(kept["stop_dollars"], 800)
+        self.assertEqual(merged["stop_dollars"], 700)
+        self.assertEqual(merged["tp_dollars"], 5000)
+        kept = merge_risk({"stop_dollars": 600, "tp_dollars": 1200}, "NQ")
+        self.assertEqual(kept["stop_dollars"], 600)
         self.assertEqual(kept["tp_dollars"], 1200)
-        typed = merge_risk({"stop_pct": 3, "tp_pct": 4, "stop_cash": 500, "tp_cash": 900}, "ES")
-        self.assertEqual(typed["stop_dollars"], 500)
-        self.assertEqual(typed["tp_dollars"], 900)
-        capped = merge_risk({"stop_cash": 4000, "tp_cash": 4000}, "ES")
-        self.assertEqual(capped["stop_dollars"], 1500)
-        self.assertEqual(capped["tp_dollars"], 2000)
+        # A percent stop is a share of the $50,000 account, capped at 1.4 percent. The target has no cap.
+        typed = merge_risk({"stop_pct": 1.5, "tp_pct": 4}, "ES")
+        self.assertEqual(typed["stop_dollars"], 700)
+        self.assertEqual(typed["tp_dollars"], 2000)
+        capped = merge_risk({"stop_pct": 8, "tp_pct": 9}, "ES")
+        self.assertEqual(capped["stop_dollars"], 700)
+        self.assertEqual(capped["tp_dollars"], 4500)
 
     def test_the_most_common_problem_in_the_last_hour_is_the_suggestion(self):
         loss = {
@@ -123,7 +128,7 @@ class RiskStyleTests(unittest.TestCase):
         }
         often = {
             "net_profit": -800,
-            "max_drawdown": 900,
+            "max_drawdown": 700,
             "trades": 900,
             "days": 260,
             "biggest_loser": -200,
@@ -157,7 +162,7 @@ class RiskStyleTests(unittest.TestCase):
         }
         often = {
             "net_profit": -800,
-            "max_drawdown": 900,
+            "max_drawdown": 700,
             "trades": 900,
             "days": 260,
             "biggest_loser": -200,
@@ -176,13 +181,13 @@ class RiskStyleTests(unittest.TestCase):
                 self.assertIsNone(note_risk(often, "often-two.pine", "Often Two", now=started + 20))
                 self.assertFalse(any(item["status"] == "pending" for item in suggestions()))
                 message = note_risk(loss, "sample.pine", "Sample", now=started + 4000)
-                self.assertIn("Keep the stop at 2 percent of the account", message)
+                self.assertIn("Do not raise the stop to cover a fill", message)
                 self.assertIn("-2400", message)
                 saved = apply(next(item["id"] for item in suggestions() if item["status"] == "pending"))
             self.assertEqual(saved["status"], "applied")
             text = guide.read_text(encoding="utf-8")
             self.assertIn("Risk adjustments", text)
-            self.assertIn("Keep the stop at 2 percent of the account", text)
+            self.assertIn("Do not raise the stop to cover a fill", text)
             self.assertNotIn("tighten the entry", text)
 
     def test_a_backtest_older_than_an_hour_drops_out_of_the_count(self):
@@ -195,7 +200,7 @@ class RiskStyleTests(unittest.TestCase):
         }
         often = {
             "net_profit": -800,
-            "max_drawdown": 900,
+            "max_drawdown": 700,
             "trades": 900,
             "days": 260,
             "biggest_loser": -200,

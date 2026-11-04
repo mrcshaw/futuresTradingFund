@@ -1,0 +1,9 @@
+Strategy: POC Momentum Breakout.
+File: created_poc_momentum_breakout.pine.
+Chart: 15m NQ1!.
+Profit 7450.0. Drawdown 4780.0. Trades 207.
+Profit ratio 1.125. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 1.56 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, and the run has at least 60 trades. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

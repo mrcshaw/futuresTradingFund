@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: Engine4_NewPivotTrend_v10.
+Chart tested: 15-minute Nasdaq (NQ1!).
+Profit 15070.0. Drawdown 11040.0. Trades 146.
+Trades a week: 2.8 over 260 trading days.
+Bars in this test: 23,704 from 2025-10-01 18:00 through 2026-10-02 16:45.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The profit was not filed. The library keeps a profit that comes from 4 or more trades a week. 4 to 7 is the average, and more than that still counts. This run is 2.8 trades a week.
+Settings of this version: pivot_left=5, pivot_right=5, ema_fast_len=27, ema_slow_len=100, sma_len=25, atr_len=8, stop_mult=1.0, tp_mult=45.4736, cooldown_bars=2.
+Different results on this chart: 200.
+Engine runs on this chart: 524.

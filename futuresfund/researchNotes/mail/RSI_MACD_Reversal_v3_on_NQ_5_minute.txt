@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: RSI+MACD Reversal v3.
+Chart tested: 5-minute Nasdaq (NQ1!).
+Profit 1113.0. Drawdown 211.5. Trades 7.
+Trades a day: 0.33 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; 0.33 trades a day is outside 1 to 3.
+Settings of this version: rsi_len=12, htf_rsi_len=24, pullback_lo=42.0, pullback_hi=58.0, lbL=6, lbR=6, rangeUpper=60, rangeLower=5, div_window=3, macd_fast=12, macd_slow=26, macd_signal=9.
+Engine attempts on this chart: 200.

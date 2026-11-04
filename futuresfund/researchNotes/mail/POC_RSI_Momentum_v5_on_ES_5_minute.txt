@@ -1,0 +1,26 @@
+Subject: Desk Update: POC RSI Momentum v5 (ES 5m) – Run Complete
+
+The POC RSI Momentum v5 strategy has finished its run on the 5-minute ES chart. The test covered 71,112 bars from October 1, 2025, through October 2, 2026.
+
+Performance Summary:
+- Profit: $2,587.50
+- Drawdown: $15,037.50
+- Total Trades: 474
+- Trades per Day: ~1.8 (9.1 per week over 260 days)
+- Profit Factor: 1.18 (Avg Win / Avg Loss)
+
+Analysis:
+The run generated a profit factor of 1.18, which exceeds the 1.12 threshold. However, the trade count of 474 falls within the acceptable annual range of 130 to 600 trades, but the daily pace of roughly 1.8 trades is on the lower end of the desk's preferred activity level. While the profit target was met, the drawdown of $15,037.50 is significant relative to the profit.
+
+Filing Status:
+This result was not filed in the strategy library. The library requires a profit over $10,000 for inclusion, and this run’s profit of $2,587.50 is below that threshold. Consequently, the strategy remains unfiled.
+
+The desk is now ready for the next configuration test.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 08:35 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 2 minutes 20 seconds.

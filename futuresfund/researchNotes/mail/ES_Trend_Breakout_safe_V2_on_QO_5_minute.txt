@@ -1,0 +1,13 @@
+Subject: Desk Update: ES Trend Breakout safe V2 Result
+
+The ES Trend Breakout safe V2 strategy was tested on the 5-minute Gold (GC1!) chart. The run generated a profit of $2,151.00 with a maximum drawdown of $2,312.00 across 36 trades. The trade frequency was 2.5 trades per week, totaling 36 trades over 72 trading days.
+
+This result does not meet the criteria for inclusion in the strategy library. The library requires a minimum of 100 trades for filing, and this run only completed 36. Additionally, the trade count of 36 per year falls below the required minimum of 130 trades per year, making the strategy too quiet to be considered viable. The profit ratio was not calculated as the run did not meet the threshold for inclusion.
+
+The strategy was not filed. The reason is that the run has fewer than 100 trades, which is the minimum requirement for library inclusion.
+
+Desk clock: Saturday 02:36 AM ET. No meeting scheduled.
+
+Best,
+
+Portfolio Manager

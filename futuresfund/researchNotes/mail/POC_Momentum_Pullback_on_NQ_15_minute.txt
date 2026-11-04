@@ -1,0 +1,5 @@
+Subject: POC Momentum Pullback Result: Not Filed
+
+The POC Momentum Pullback strategy was tested on the 15-minute Nasdaq (NQ1!) chart. The run generated $12,650.00 in profit with a maximum drawdown of $1,915.00 across 440 trades. The win rate was 14.32%.
+
+The acceptance criteria for the strategy library require a win rate above 40 percent. This run’s win rate of 14.32% does not meet that threshold. Therefore, this result was not filed in the strategy library. The library keeps a win rate above 40 percent. This run's win rate is 14.32.

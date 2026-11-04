@@ -1,0 +1,21 @@
+Subject: Desk Update: Delta Volume Breakout Night Shift [Optimized] Result
+
+The latest run for Delta Volume Breakout Night Shift [Optimized] on the 2-minute ES chart has concluded. The strategy generated a profit of -3,495.0 with a maximum drawdown of 9,318.0 across 195 trades. This equates to approximately 3.75 trades per week over the 260 trading days in the test period.
+
+Regarding the acceptance criteria:
+- **Pace:** The annualized trade count is 195, which falls within the required 130–600 trades per year band.
+- **Profit Target:** The run did not meet the profit target (negative profit).
+- **Trailing Drawdown:** The drawdown of $9,318.0 was evaluated against the strategy's internal constraints, but the primary rejection factor is the negative profit.
+- **Filing Status:** This result is **not** on the strategy library. The library shelf requires a profit over $10,000 to accept a run. Since this run resulted in a loss, it was not filed.
+
+The settings used were: profile_lookback=80, profile_rows=10, min_delta_pct=18.0, ema_len=50, ema_slope_len=5, min_slope=0.0, require_price_vs_ema=True, cooldown_bars=30, max_trades_session=1, use_session=True, sess_start_hr=18, sess_start_mn=0.
+
+This specific configuration is one of 46 different results generated from this chart, part of 97 total engine runs. The desk remains open for further optimization attempts on this strategy.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 01:24 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 hours 58 minutes.

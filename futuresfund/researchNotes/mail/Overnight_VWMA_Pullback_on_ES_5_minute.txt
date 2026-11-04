@@ -1,0 +1,35 @@
+Subject: Recent Strategy Result - Overnight VWMA Pullback  
+
+Dear Team,  
+
+I wanted to share the results of the recent strategy test for the "Overnight VWMA Pullback" strategy on the 5-minute ES (ES1!) chart. Here are the key details:  
+
+- **Strategy**: Overnight VWMA Pullback  
+- **Chart Tested**: 5-minute ES (ES1!)  
+- **Profit**: $1,281.50  
+- **Drawdown**: $1,054.00  
+- **Trades**: 21  
+- **Trades Per Day**: 1.0 over 21 trading days  
+
+This result met the trailing drawdown requirement ($1,054.00 < $2,500.00) and maintained the pace of 1 to 3 trades per day. However, it did not meet the headquarters profit target of $3,000.00.  
+
+As a result, this strategy was not filed in the strategy library. The reason for exclusion is that the profit ($1,281.50) is below the required $3,000.00 target.  
+
+The settings for this version of the strategy are as follows:  
+- session_start_hr=18  
+- session_end_hr=8  
+- entry_end_hr=6  
+- eod_hr=8  
+- vwma_len=20  
+- slope_bars=4  
+- min_slope_pts=0.5  
+- pullback_margin=1.0  
+- wait_bars=6  
+- i_tp=215.2858  
+- max_stop=500.0  
+- use_trail=True  
+
+This was one of 200 attempts on this chart.  
+
+Best regards,  
+[Your Name]

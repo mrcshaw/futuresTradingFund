@@ -1,0 +1,11 @@
+Subject: Desk Update: POC RSI Reversal v4 (ES 5m) – Live on Library
+
+The POC RSI Reversal v4 strategy has cleared the prop account on the 5-minute ES chart. The run generated $14,050.00 in profit with a maximum drawdown of $8,475.00 across 369 trades. This pace equates to 7.1 trades per week over 260 trading days, which falls comfortably within the 130 to 600 trades per year requirement. The profit ratio (average winning trade divided by average losing trade) is above the 1.12 threshold, confirming the run made a profit and meets the quality standards.
+
+The strategy is on the ES strategy library. The settings tested were rsiLen=14, rsiOverbought=70, rsiOversold=35, atrLen=3, atrMult=1.5, emaLen=10, and cooldownBars=40. The run met the profit target and the trailing drawdown constraints.
+
+I have emailed the address for viewing this desk on a phone. The new address will be sent when the old one expires.
+
+Desk clock: Wednesday 03:54 PM ET.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 19 seconds.

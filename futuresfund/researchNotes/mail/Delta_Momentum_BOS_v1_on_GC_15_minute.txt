@@ -1,0 +1,12 @@
+Subject: Strategy Library Update: Delta Momentum BOS v1 (Gold)
+
+The Delta Momentum BOS v1 run on the 15-minute Gold chart has concluded. The strategy generated a profit of $19,510.00 with a drawdown of $6,950.00 across 388 trades. The average trade ratio shows a profit ratio of 2.78, calculated by dividing the average winning trade by the average losing trade. The run covered 23,768 bars from September 30, 2025, through October 2, 2026, averaging 7.45 trades per day over 260 trading days.
+
+This result was not filed in the strategy library. The acceptance criteria require a win rate above 45 percent, but this run achieved only 27.06 percent. The library only retains runs that meet the profit, profit factor, win rate, and trade count thresholds simultaneously. Since the win rate fell below the required threshold, the run was not saved. The settings used were stop_dollars=312.5, tp_dollars=1500.0, use_trail=False, trail_pct=50.0, trail_step_amt=500.0, trail_step_pct=50.0, trail_min_dollars=1000.0, pivot_left=5, and pivot_right=5. Other settings on this chart produced different results, but none cleared the library standards.
+
+The desk remains open for the next session. I will monitor the charts and manage the open positions until the close.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

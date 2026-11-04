@@ -1,0 +1,25 @@
+Subject: Desk Update: POC RSI Momentum v4 (GC1!) Results
+
+The POC RSI Momentum v4 strategy has completed its run on the 15-minute Gold (GC1!) chart. The engine executed 45 distinct runs on this chart, and the best result is now under review.
+
+**Performance Summary:**
+*   **Strategy:** POC RSI Momentum v4
+*   **Profit:** $6,475.00
+*   **Drawdown:** $11,762.50
+*   **Total Trades:** 104
+*   **Pace:** 4.25 trades per week (122 trading days)
+
+**Analysis:**
+The strategy generated a profit of $6,475.00 with a drawdown of $11,762.50. The trade count of 104 falls within the acceptable annual range of 130 to 600 trades when annualized, maintaining a viable pace. The profit target and trailing drawdown limits are noted, but this specific run’s performance metrics are evaluated against the library’s acceptance criteria.
+
+**Filing Status:**
+This result is **not** on the strategy library. The library requires a profit over $18,000 for acceptance, and this run’s profit of $6,475.00 is below that threshold. Consequently, this run was not filed.
+
+The desk remains active. We continue to monitor for strategies that meet the profit target and drawdown constraints for potential inclusion.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 24 seconds.

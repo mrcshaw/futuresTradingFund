@@ -1,0 +1,13 @@
+Subject: Desk Result: POC RSI Momentum v2 (NQ1!)
+
+The latest run on the 2-minute Nasdaq chart for POC RSI Momentum v2 has concluded. The strategy generated a profit of $6,195.00 against a trailing drawdown of $7,530.00 over 477 trades. With 9.15 trades per week over 260 trading days, the annual pace falls comfortably within the required 130 to 600 trade range. The profit ratio (average winning trade divided by average losing trade) was calculated and confirmed to be above 1.12.
+
+However, this result does not meet the criteria for inclusion in the strategy library. The library requires a profit over $10,000, and this run fell short at $6,195.00. Consequently, the result was not filed. The settings tested were len_rsi=14, len_ema=10, atr_len=14, stop_mult=1.0, tp_mult=2.0, and cooldown=3. This was one of 10 engine runs on this chart.
+
+The desk remains active for the next session.
+
+Best,
+
+Portfolio Manager
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 48 seconds.

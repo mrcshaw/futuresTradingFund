@@ -1,0 +1,16 @@
+Subject: VWMA RSI Pullback 15m on NQ1! - Not Filed
+
+To the Desk,
+
+The latest run of VWMA RSI Pullback 15m on the 15-minute Nasdaq (NQ1!) chart has concluded. This test covered 23,704 bars from 2025-10-01 18:00 through 2026-10-02 16:45. The run generated a profit of $33,697.00 against a drawdown of $9,341.50. It executed 313 trades, averaging 6.0 trades per week over the 260 trading days in the test period.
+
+This run was not filed in the strategy library. The reason provided is that a stronger version of this strategy name is already on this contract and timeframe, which made $56,280.00, whereas this run made $33,697.00.
+
+While the run met the trade count requirement of at least 80 trades (313 trades) and kept the drawdown under 20 percent of the account, it did not clear the other boxes turned on at the strategy library page. Specifically, the profit of $33,697.00 is above the $8,000 threshold, but the profit factor and win rate were not provided in the facts to confirm they exceed 1.05 and 40 percent, respectively. However, the primary reason for non-filing is the existence of a superior version on the library.
+
+The settings for this version were: stop_dollars=750, tp_dollars=1000, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_slow_len=200, ema_fast_len=20.
+
+There are 7 different results on this chart and 10 engine runs recorded for this configuration.
+
+Regards,
+Portfolio Manager

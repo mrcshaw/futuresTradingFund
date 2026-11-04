@@ -1,0 +1,7 @@
+Subject: NightShift_Momentum_Pullback_v1 | ES 15m | Not Filed
+
+The NightShift_Momentum_Pullback_v1 strategy has completed its run on the 15-minute ES chart. The result shows a profit of $17,000.00 and a drawdown of $14,900.00 across 492 trades. The profit ratio (average win divided by average loss) was calculated based on the trade outcomes.
+
+This run was not filed in the strategy library. The acceptance criteria require a win rate above 48 percent. This run’s win rate is 45.12 percent. Because the win rate is below the threshold, the run does not meet the filing requirements, regardless of the profit amount. The strategy remains unfiled.
+
+Desk clock: Monday 08:24 PM ET.

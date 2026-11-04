@@ -1,0 +1,1 @@
+created_poc_rsi_momentum_pullback_5_redesign1.pine took 935 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

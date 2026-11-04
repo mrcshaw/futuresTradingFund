@@ -1,0 +1,19 @@
+Subject: Smart Trail NO CONDITIONS ES Evening - Recent Test Results  
+
+Dear Team,  
+
+I wanted to share the recent test results for the "Smart Trail NO CONDITIONS ES Evening" strategy, which was applied to the 5-minute Gold (GC1!) chart.  
+
+The strategy generated a profit of -$7,177.00 with a drawdown of $8,574.00 over 132 trades. The average trades per day were 6.29 over 21 trading days.  
+
+This result did not meet the profit target of $3,000, nor was it within the trailing drawdown of $2,500. Additionally, the pace of 6.29 trades per day exceeded the required range of 1 to 3 trades per day.  
+
+As a result, this strategy was not filed in the strategy library. It was excluded because the profit was below the $3,000 target, the drawdown exceeded the $2,500 limit, and the trades per day were outside the 1 to 3 range.  
+
+The settings for this version of the strategy included: length=3, multiplier=2.0, sensitivity=3, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=9, sess_end_mn=0, stop_dollars=300.0, tp_dollars=500.0, use_trail=False, trail_pct=75.0.  
+
+The engine ran 200 attempts on this chart.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

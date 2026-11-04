@@ -1,0 +1,11 @@
+Subject: Desk Result: ES Trend Breakout safe V2 (NQ1!)
+
+The latest run for ES Trend Breakout safe V2 on the 15-minute Nasdaq chart has been reviewed. The strategy generated a profit of $6,485.00 with a drawdown of $1,368.50 across 249 trades. The win rate for this specific run was 14.06%.
+
+Per the guidelines, a strategy is filed only when the drawdown stays under 5 percent of the account, the run has at least 60 trades, profit is above $5,000, and the win rate is above 40 percent. The acceptance line in the facts is the only acceptance bar on this desk. It is the strategy library page: the profit, the profit factor, the win rate, and the trade count saved there. Judge this run against those four numbers. Quote them. Do not apply any other profit, profit factor, win rate, or trade count. Say it is on the strategy library only when the facts say it is. When the facts say it is not on the library, say it was not filed and give only the reason written there. Do not use a template or numbered sections. Do not invent a profit, a drawdown, a trade count, or a filing.
+
+The facts state: "On the strategy library: no." and "This result was not filed in the strategy library. The library keeps a win rate above 40 percent. This run's win rate is 14.06."
+
+Therefore, this result was not filed in the strategy library. The reason is that the win rate of 14.06% is below the required 40 percent. Although the profit ($6,485.00) exceeds $5,000, the trade count (249) exceeds 60, and the drawdown ($1,368.50) is less than 5% of the $50,000 account, the win rate condition was not met.
+
+The strategy remains responsive. The desk continues to monitor open positions. The next meeting is scheduled for Monday at 8:00 AM ET.

@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.05, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+Strategy: VWAP RSI Momentum Breakout.
+Chart tested: 5-minute Gold (GC1!).
+Profit 9310.0. Drawdown 17220.0. Trades 220.
+Trades a week: 4.25 over 260 trading days.
+Bars in this test: 71,300 from 2025-09-30 18:00 through 2026-10-02 16:55.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that.
+Settings of this version: stop_dollars=1500.0, tp_dollars=1500.01, use_trail=False, trail_pct=50.0, trail_step_amt=500.0, trail_step_pct=50.0, trail_min_dollars=1000.0, pivot_left=2, pivot_right=2, len_vwap=20, len_atr=14, atr_mult=1.5.
+Different results on this chart: 15.
+Engine runs on this chart: 16.

@@ -1,0 +1,100 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -542.0,
+   "max_drawdown": 542.0,
+   "trades": 2
+  },
+  "min_delta_pct": {
+   "value": 12.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "vwma_slope_len": {
+   "value": 20,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_len": {
+   "value": 2,
+   "net_profit": -1684.0,
+   "max_drawdown": 1684.0,
+   "trades": 9
+  },
+  "pivot_wait_bars": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [
+  "profile_lookback",
+  "vwma_len",
+  "min_slope",
+  "cooldown_bars",
+  "use_reversal",
+  "reversal_cooldown_bars"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 20.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 2.0,
+   "pivot_len": 5,
+   "pivot_wait_bars": 20,
+   "cooldown_bars": 10,
+   "use_reversal": true,
+   "reversal_cooldown_bars": 5
+  },
+  "net_profit": -271.0,
+  "max_drawdown": 271.0,
+  "trades": 1,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -271.0,
+  "biggest_loser": -271.0,
+  "held_loser": -271.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": -271.0,
+    "favorable": 439.5,
+    "adverse": -265.5
+   }
+  ]
+ },
+ "reviewed": [
+  "7 YM 5m"
+ ],
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m"
+ ],
+ "version": 3
+}

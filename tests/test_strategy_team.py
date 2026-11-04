@@ -3,6 +3,31 @@
 import json
 import tempfile
 import unittest
+
+LIMITS = {
+    "min_profit": 6000.0, "profit_factor": 1.1, "win_rate": 40.0, "min_trades": 100, "drawdown_pct": 2.0, "goal": "win_rate",
+    "use_drawdown": True, "use_trades": True, "use_profit": True, "use_factor": True, "use_win_rate": True,
+}
+# A one-year run that clears every acceptance box above.
+PASSING = {
+    "net_profit": 9000, "max_drawdown": 1000, "trades": 200, "days": 260, "win_rate": 50.0, "profit_factor": 1.5,
+    "biggest_loser": -400, "stop_dollars": 500, "instrument": "ES", "timeframe": "5m",
+    "spans": {
+        "7": {"net_profit": 300, "trades": 5, "biggest_loser": -100},
+        "30": {"net_profit": 1200, "trades": 20, "biggest_loser": -100},
+        "90": {"net_profit": 3000, "trades": 60, "biggest_loser": -100},
+        "365": {"net_profit": 9000, "trades": 200, "biggest_loser": -100},
+    },
+}
+CORE_SCRIPT = (
+    "//@version=5\n// Built from: Created EMA Band, ta.ema, volume profile\n"
+    "strategy(\"Screen Test\", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1)\n"
+    "profile_lookback = input.int(120, minval=20, maxval=2000)\n"
+    "min_delta_pct = input.float(10.0, minval=0, maxval=80)\n"
+    "poc_price = ta.sma(close, profile_lookback)\n"
+    "if close > poc_price\n    strategy.entry(\"L\", strategy.long)\n"
+    "strategy.exit(\"XL\", from_entry=\"L\", stop=close - 8, limit=close + 16)\n"
+)
 from pathlib import Path
 
 from futuresfund.strategy_team import (
@@ -131,7 +156,7 @@ class StrategyTeamTests(unittest.TestCase):
             'pv = input.float(20, "Point Value", minval=1, maxval=100)',
             "vwap = ta.vwma(close, vwma_len)",
             'before1645 = not na(time(timeframe.period, "1800-1645", "America/New_York"))',
-            "long_stop = close - stop_dollars / pv",
+            "long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv",
             "long_tp = close + tp_dollars / pv",
             'if before1645',
             '    strategy.entry("Long", strategy.long)',
@@ -144,8 +169,8 @@ class StrategyTeamTests(unittest.TestCase):
         self.assertIn("// ===== RISK =====", fixed)
         self.assertNotIn("// ===== RISK Management=====", fixed)
         self.assertIn('pv                = input.float(50, "Point Value ($)")', fixed)
-        self.assertIn('stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)', fixed)
-        self.assertIn('tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)', fixed)
+        self.assertIn('stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)', fixed)
+        self.assertIn('tp_dollars        = input.int(500, "Take Profit ($)", minval=250)', fixed)
         self.assertNotIn("stop_pct", fixed)
         self.assertNotIn("tp_pct", fixed)
         self.assertIn("initial_capital=50000", fixed)
@@ -159,10 +184,10 @@ class StrategyTeamTests(unittest.TestCase):
         self.assertNotIn("stop_cash", fixed)
         self.assertNotIn("tp_cash", fixed)
         self.assertNotIn("ES (100)", fixed)
-        self.assertEqual(fixed.count("stop_dollars"), 5)
-        self.assertIn("long_stop = close - stop_dollars / pv", fixed)
+        self.assertEqual(fixed.count("stop_dollars"), 7)
+        self.assertIn("long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv", fixed)
         self.assertIn("long_limit = close + tp_dollars / pv", fixed)
-        self.assertIn("short_stop = close + stop_dollars / pv", fixed)
+        self.assertIn("short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv", fixed)
         self.assertIn("short_limit = close - tp_dollars / pv", fixed)
         self.assertIn("if strategy.position_size != 0 and not na(stop_dollars)", fixed)
         self.assertIn("if strategy.openprofit <= -stop_dollars", fixed)
@@ -174,7 +199,7 @@ class StrategyTeamTests(unittest.TestCase):
         compile_pine(fixed)
         self.assertEqual(pine_problems(fixed), [])
         atr = fixed.replace(
-            'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)',
+            'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)',
             'atr_mult_sl = input.float(5, "SL Multiplier", minval=1.0, maxval=5.0)\n'
             'atr_mult_tp = input.float(2.5, "TP Multiplier", minval=1.0, maxval=10.0)',
         )
@@ -195,8 +220,8 @@ class StrategyTeamTests(unittest.TestCase):
             'pv = input.float(20, "Point Value ($)")',
             'stop_pct = input.float(1, "Stop (% of account)", minval=0.1, maxval=3)',
             "stop_dollars = strategy.initial_capital * stop_pct / 100",
-            'stop_dollars = input.int(750, "Stop ($)", minval=250, maxval=1500)',
-            'tp_dollars = input.int(1250, "Take Profit ($)", minval=250, maxval=2000)',
+            'stop_dollars = input.int(750, "Stop ($)", minval=250, maxval=700)',
+            'tp_dollars = input.int(1250, "Take Profit ($)", minval=250)',
             "if strategy.position_size != 0 and not na(stop_dollars)",
             "    if strategy.openprofit <= -stop_dollars",
             '        strategy.close_all(comment="Open P&L > SL Risk")',
@@ -208,14 +233,14 @@ class StrategyTeamTests(unittest.TestCase):
         fixed = ensure_risk_management(source, 50)
         self.assertEqual(fixed.count('comment="Open P&L > SL Risk"'), 1)
         self.assertEqual(fixed.count('input.int(250, "Stop ($)"'), 0)
-        self.assertIn('stop_dollars = input.int(750, "Stop ($)", minval=250, maxval=1500)', fixed)
-        self.assertIn('tp_dollars = input.int(1250, "Take Profit ($)", minval=250, maxval=2000)', fixed)
+        self.assertIn('stop_dollars = input.int(750, "Stop ($)", minval=250, maxval=700)', fixed)
+        self.assertIn('tp_dollars = input.int(1250, "Take Profit ($)", minval=250)', fixed)
         self.assertNotIn("stop_pct", fixed)
         self.assertNotIn("strategy.initial_capital *", fixed)
         self.assertIn("initial_capital=50000", fixed)
         self.assertIn('pv = input.float(50, "Point Value ($)")', fixed)
         self.assertEqual(fixed.count('input.float(50, "Point Value ($)")'), 1)
-        self.assertIn("long_stop = close - stop_dollars / pv", fixed)
+        self.assertIn("long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv", fixed)
         self.assertIn("short_limit = close - tp_dollars / pv", fixed)
         self.assertIn('strategy.exit("X", "L", stop=long_stop, limit=long_limit)', fixed)
         self.assertNotIn("stop=close - stop_dollars / pv", fixed)
@@ -224,8 +249,8 @@ class StrategyTeamTests(unittest.TestCase):
             "//@version=5",
             'strategy("Held short", overlay=true, initial_capital=50000)',
             'pv = input.float(20, "Point Value ($)")',
-            'stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=1500)',
-            'tp_dollars = input.int(1000, "Take Profit ($)", minval=250, maxval=2000)',
+            'stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=700)',
+            'tp_dollars = input.int(1000, "Take Profit ($)", minval=250)',
             "if strategy.position_size != 0 and not na(stop_dollars)",
             "    if strategy.openprofit <= -stop_dollars",
             '        strategy.close_all(comment="Open P&L > SL Risk")',
@@ -233,7 +258,7 @@ class StrategyTeamTests(unittest.TestCase):
             "",
         ])
         wired = ensure_risk_management(short, 20)
-        self.assertIn('stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=1500)', wired)
+        self.assertIn('stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=700)', wired)
         self.assertIn('strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_limit)', wired)
         self.assertEqual(wired.count('comment="Open P&L > SL Risk"'), 1)
         self.assertEqual(ensure_risk_management(wired, 20), wired)
@@ -353,6 +378,20 @@ class StrategyTeamTests(unittest.TestCase):
                 self.assertTrue(chart_needs_a_script("15m", learning))
                 clear_holds()
 
+    def test_a_failed_or_skipped_script_stays_out_of_the_queue(self):
+        from futuresfund.learn import clear_holds, hold_script, park_engine_script, release_retries
+        from futuresfund.pinets_engine import _payload
+
+        clear_holds()
+        park_engine_script("slow.pine", "5m")
+        hold_script("once.pine", "5m")
+        self.assertTrue(release_retries("5m", {}))
+        self.assertFalse(release_retries("5m", {}))
+        logged = '[2025-10-01T18:20:00.000-04:00] SET COMPLETE\n{"trades":[{"exit_time":1,"profit":2}]}'
+        self.assertEqual(_payload(logged)["trades"][0]["profit"], 2)
+        self.assertIsNone(_payload("[2025-10-01] SET COMPLETE only"))
+        clear_holds()
+
     def test_the_creation_search_stops_when_the_result_is_profitable(self):
         from futuresfund.learn import _search
 
@@ -410,7 +449,7 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertGreater(target, 0)
         good = {"net_profit": target, "max_drawdown": cap, "trades": 24, "days": 20}
         self.assertTrue(meets_target(good))
-        self.assertFalse(meets_target({**good, "max_drawdown": cap + 1}))
+        self.assertFalse(meets_target({**good, "max_drawdown": target * 0.3 + 1}))
         self.assertTrue(meets_target({**good, "trades": 40}))
         self.assertFalse(meets_target({**good, "trades": 60}))
         self.assertFalse(meets_target({**good, "trades": 61}))
@@ -421,7 +460,7 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertFalse(meets_target({**good, "error": "down"}))
 
     def test_the_creation_search_stops_at_the_target_not_at_the_first_profit(self):
-        from futuresfund.exemplars import drawdown_cap, meets_target
+        from futuresfund.exemplars import drawdown_cap, meets_target, profit_target
         from futuresfund.learn import _search
 
         cap = drawdown_cap()
@@ -431,7 +470,7 @@ class CreationPipelineTests(unittest.TestCase):
             calls["n"] += 1
             if calls["n"] < 3:
                 return {"net_profit": 500 + calls["n"], "max_drawdown": cap * 3, "trades": 20, "days": 10, "runner": "backtrader", "engine": "backtrader"}
-            return {"net_profit": 3 * cap, "max_drawdown": cap * 0.5, "trades": 20, "days": 10, "runner": "backtrader", "engine": "backtrader"}
+            return {"net_profit": profit_target(), "max_drawdown": cap * 0.5, "trades": 20, "days": 10, "runner": "backtrader", "engine": "backtrader"}
 
         trials = _search({"length": 10}, execute, 50000, 20, None, None, None, accept=meets_target)
         self.assertEqual(len(trials), 3)
@@ -498,7 +537,11 @@ class CreationPipelineTests(unittest.TestCase):
             "changes": [{"change": "cooldown_bars 5 to 10", "impact": "cooldown_bars made the book steadier.", "net_profit": 2500, "max_drawdown": 700, "trades": 12}],
         }]
         lessons = [{"title": "Created EMA Band", "net_profit": -300, "max_drawdown": 1900, "trades": 9, "accepted": False, "built_from": "Steady Pullback, ta.ema", "indicators": ["ta.ema"]}]
-        text = prompt_for(cards, lessons)
+        from unittest import mock
+
+        # The brief reads the research notes folder. An empty one keeps the prompt off the desk's large saved notes.
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("futuresfund.exemplars.NOTES", Path(tmp)):
+            text = prompt_for(cards, lessons)
         self.assertIn("Creation target", text)
         self.assertIn("Strategy library", text)
         self.assertIn("Indicator library", text)
@@ -508,7 +551,7 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertNotIn("Lessons from scripts this creation team", text)
         self.assertIn("Not tested on the full dataset", text)
         self.assertIn("75 points", text)
-        self.assertIn("reverses the move when one trade loses more than 3 percent of the account", text)
+        self.assertIn("reverses the move when one trade loses more than 1.5 percent of the account", text)
         self.assertIn("more than 900 trades", text)
         self.assertIn("last 7 days", text)
         self.assertIn("atr * stop_mult", text)
@@ -559,7 +602,7 @@ class CreationPipelineTests(unittest.TestCase):
                 "best": {"net_profit": 6712.5, "max_drawdown": 5787.5, "trades": 144},
                 "instruments": {"NQ": {"trials": [
                     {"change": "stop_mult 3.125 to 3.75", "net_profit": 89430.0, "max_drawdown": 29725.0, "trades": 148, "biggest_loser": -10235.0},
-                    {"change": "tp_mult 2 to 3", "net_profit": 4200.0, "max_drawdown": 1800.0, "trades": 140, "biggest_loser": -900.0},
+                    {"change": "tp_mult 2 to 3", "net_profit": 4200.0, "max_drawdown": 1800.0, "trades": 140, "biggest_loser": -700.0},
                 ]}},
             }), encoding="utf-8")
             cards = build_cards(learning, notes, learned)
@@ -587,65 +630,52 @@ class CreationPipelineTests(unittest.TestCase):
             self.assertEqual(len(list(created.glob("*.pine"))), 1)
             self.assertIn("len = input.int(40,", (created / name).read_text(encoding="utf-8"))
 
-    def test_a_round_writes_tests_confirms_promotes_and_records_the_lesson(self):
+    def test_handoff_files_the_new_script_for_the_chart_engine(self):
         from unittest import mock
 
         from futuresfund import strategy_team
         from futuresfund.board import Board
 
-        script = (
-            "//@version=5\n// Built from: Steady Pullback, ta.ema\n"
-            "strategy(\"Band Pullback Test\", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1)\n"
-            "len = input.int(20, minval=5, maxval=200)\nstop_pts = input.float(8.0, minval=1, maxval=50)\n"
-            "fast = ta.ema(close, len)\nif close > fast and ta.crossover(close, fast)\n    strategy.entry(\"L\", strategy.long)\n"
-            "strategy.exit(\"XL\", from_entry=\"L\", stop=close - stop_pts, limit=close + stop_pts * 2)\n"
-        )
-        calls = []
+        script = CORE_SCRIPT
+        desk = {
+            "timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer",
+            "strategy_developer": "5 min strategy developer", "researcher": "Chart researcher", "engine": 2,
+        }
+        prompts = []
 
-        def fake_engine(text, frames, facts, board, instrument="ES", developer="", timeframe="2m", slot=None, full=False):
-            def execute(params):
-                calls.append((timeframe, dict(params), full))
-                base = {"runner": "backtrader", "engine": "backtrader", "timeframe": timeframe, "instrument": "ES", "contract": "ES1!", "days": 10}
-                if timeframe == "5m":
-                    if sum(1 for chart, *_ in calls if chart == "5m") == 1:
-                        return {**base, "net_profit": 2400, "max_drawdown": 600, "trades": 15}
-                    return {**base, "net_profit": 3300, "max_drawdown": 600, "trades": 15}
-                return {**base, "net_profit": 1500, "max_drawdown": 500, "trades": 10}
-            return execute
+        def ask(board, agent, activity, prompt):
+            prompts.append(prompt)
+            return "```pine\n" + script + "```"
 
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            created, learning, lessons = root / "createdStrategies", root / "learning", root / "creation_lessons.json"
-            with mock.patch.object(strategy_team, "CREATED", created), \
-                    mock.patch.object(strategy_team, "LEARNING", learning), \
-                    mock.patch.object(strategy_team, "LESSONS_PATH", lessons), \
-                    mock.patch.object(strategy_team, "_ask", lambda board, agent, activity, prompt: "```pine\n" + script + "```"), \
-                    mock.patch("futuresfund.learn._load_frames", lambda root="ES": {"2m": [], "5m": [], "15m": []}), \
-                    mock.patch("futuresfund.learn._engine_execute", fake_engine), \
-                    mock.patch("futuresfund.learn._document", lambda *args, **kwargs: None), \
+            with mock.patch.object(strategy_team, "CREATED", root / "created"), \
+                    mock.patch.object(strategy_team, "DRAFTS", root / "drafts"), \
+                    mock.patch.object(strategy_team, "UNPROVEN", root / "unproven"), \
+                    mock.patch.object(strategy_team, "LEARNING", root / "learning"), \
+                    mock.patch.object(strategy_team, "LESSONS_PATH", root / "creation_lessons.json"), \
+                    mock.patch.object(strategy_team, "QUEUE_PATH", root / "queue.json"), \
+                    mock.patch.object(strategy_team, "TARGETS_PATH", root / "targets.json"), \
+                    mock.patch.object(strategy_team, "_ask", ask), \
+                    mock.patch("futuresfund.delta_core.coverage", return_value={}), \
+                    mock.patch("futuresfund.delta_core.next_target", return_value="MES"), \
                     mock.patch("futuresfund.learn.file_indicators", lambda *args, **kwargs: []), \
-                    mock.patch("futuresfund.backtrader_engine._bars_from", lambda bars: []), \
-                    mock.patch("futuresfund.entry_rules.ensure_entry_rule", lambda *args, **kwargs: True):
-                board = Board()
-                outcome = strategy_team.create_once(board, None, [], "steady.pine")
-                self.assertEqual(outcome, "done")
-                self.assertTrue((created / "created_band_pullback_test.pine").is_file())
-                self.assertEqual(list(learning.glob("*.pine")), [])
-                rows = strategy_team.creation_lessons()
-            self.assertEqual(len(rows), 1)
-            self.assertTrue(rows[0]["accepted"], rows[0].get("verdict"))
-            self.assertEqual(rows[0]["promoted"], "created_band_pullback_test.pine")
-            self.assertEqual(rows[0]["green_charts"], 3)
-            self.assertEqual(rows[0]["net_profit"], 3300)  # the first 5m run made 2400, under the $3,000 target
-            self.assertEqual([chart for chart, _, _ in calls], ["5m", "5m", "2m", "15m"])
-            self.assertTrue(all(flag for _, _, flag in calls))
-            # The confirmation charts ran the accepted settings.
-            self.assertEqual(calls[2][1], calls[1][1])
-        posts = [m["text"] for m in board.snapshot()["messages"] if m["author"] == "Creation tester"]
-        self.assertTrue(any("stays in createdStrategies as created_band_pullback_test.pine" in text for text in posts))
-        self.assertTrue(any("Built from" in m["text"] or "Recorded" in m["text"] for m in board.snapshot()["messages"] if m["author"] == "Lesson writer"))
+                    mock.patch("futuresfund.exemplars.NOTES", root / "researchNotes"):
+                outcome = strategy_team.handoff(Board(), [], "Created EMA Band", desk)
+                queued = list((root / "drafts").glob("*.pine"))
+                created = list((root / "created").glob("*.pine")) if (root / "created").is_dir() else []
+                filed = list((root / "learning").glob("*.pine")) if (root / "learning").is_dir() else []
+                target = strategy_team.target_for("created_screen_test.pine")
+            self.assertEqual(outcome, "queued")
+            self.assertEqual([path.name for path in queued], ["created_screen_test.pine"])
+            self.assertEqual(created, [])
+            self.assertEqual(filed, [])
+            self.assertEqual(strategy_team._read_queue(root / "queue.json"), ["created_screen_test.pine"])
+            self.assertEqual(target, ("MES", "5m"))
+            self.assertIn("write this script for MES on the 5-minute chart", prompts[0])
+            self.assertIn("delta volume breakout", prompts[0])
 
-    def test_handoff_files_the_new_script_for_the_chart_engine(self):
+    def test_a_new_script_without_the_delta_volume_breakout_core_is_sent_back(self):
         from unittest import mock
 
         from futuresfund import strategy_team
@@ -658,25 +688,21 @@ class CreationPipelineTests(unittest.TestCase):
             "if close > ta.ema(close, len)\n    strategy.entry(\"L\", strategy.long)\n"
             "strategy.exit(\"XL\", from_entry=\"L\", stop=close - 8, limit=close + 16)\n"
         )
-        desk = {
-            "timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer",
-            "strategy_developer": "5 min strategy developer", "researcher": "Chart researcher", "engine": 2,
-        }
+        desk = {"timeframe": "2m", "label": "2-minute", "strategy_developer": "2min strategy developer"}
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            with mock.patch.object(strategy_team, "CREATED", root / "created"), \
-                    mock.patch.object(strategy_team, "LEARNING", root / "learning"), \
+            with mock.patch.object(strategy_team, "DRAFTS", root / "drafts"), \
                     mock.patch.object(strategy_team, "LESSONS_PATH", root / "creation_lessons.json"), \
                     mock.patch.object(strategy_team, "QUEUE_PATH", root / "queue.json"), \
+                    mock.patch.object(strategy_team, "TARGETS_PATH", root / "targets.json"), \
                     mock.patch.object(strategy_team, "_ask", lambda *args, **kwargs: "```pine\n" + script + "```"), \
-                    mock.patch("futuresfund.learn.file_indicators", lambda *args, **kwargs: []):
-                outcome = strategy_team.handoff(Board(), [], "Created EMA Band", desk)
-                queued = list((root / "created").glob("*.pine"))
-                filed = list((root / "learning").glob("*.pine")) if (root / "learning").is_dir() else []
-            self.assertEqual(outcome, "queued")
-            self.assertEqual([path.name for path in queued], ["created_screen_test.pine"])
-            self.assertEqual(filed, [])
-            self.assertEqual(strategy_team._read_queue(root / "queue.json"), ["created_screen_test.pine"])
+                    mock.patch("futuresfund.delta_core.coverage", return_value={}), \
+                    mock.patch("futuresfund.exemplars.NOTES", root / "researchNotes"):
+                outcome = strategy_team.handoff(Board(), [], "Created EMA Band", desk, target="ES")
+                lessons = strategy_team.creation_lessons(1)
+            self.assertEqual(outcome, "sent_back")
+            self.assertFalse((root / "drafts").exists() and list((root / "drafts").glob("*.pine")))
+            self.assertIn("not a delta volume breakout", str(lessons[-1].get("verdict") or ""))
 
     def test_a_developer_writes_from_scratch_from_the_creation_lessons(self):
         import threading
@@ -765,9 +791,9 @@ class CreationPipelineTests(unittest.TestCase):
 
         strategy_team._LIBRARY_SEEN.clear()
         rows = [{"id": "fresh-1", "title": "Fresh Band", "net_profit": 10, "max_drawdown": 4, "trades": 20, "timeframe": "5m", "contract_label": "ES"}]
-        with mock.patch("futuresfund.library._rows", return_value=rows), mock.patch(
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("futuresfund.library._rows", return_value=rows), mock.patch(
             "futuresfund.library._load_untested", return_value=[]
-        ):
+        ), mock.patch("futuresfund.exemplars.NOTES", Path(tmp)):
             text, ids = strategy_team.new_library_lines()
             self.assertIn("Fresh Band", text)
             self.assertEqual(ids, ["fresh-1"])
@@ -780,43 +806,70 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertEqual(empty, [])
         strategy_team._LIBRARY_SEEN.clear()
 
-    def test_engine_4_files_a_profitable_script_and_keeps_writing_the_queue(self):
+    def _develop(self, rows, target=None):
+        """Develop one draft on engine 4 with a faked search. Returns the outcome, the folders, and the engine calls."""
         from unittest import mock
 
-        from futuresfund import strategy_team
+        from futuresfund import learn, strategy_team
         from futuresfund.board import Board
         from futuresfund.learn import _Trials
 
         script = "//@version=5\nstrategy(\"Fresh\", overlay=true)\n"
-        slots = []
+        calls = []
 
-        def fake_execute(*args, **kwargs):
-            slots.append((args[7], kwargs.get("full")))
+        def fake_execute(text, frames, facts, board, instrument="ES", developer="", timeframe="2m", slot=None, full=False):
+            calls.append({"instrument": instrument, "timeframe": timeframe, "slot": slot, "full": full})
             return lambda params: {}
 
         def fake_search(*args, **kwargs):
-            slots.append(kwargs.get("slot"))
-            return _Trials([{"net_profit": 100, "max_drawdown": 50, "trades": 20, "days": 20, "params": {}}])
+            calls.append({"search_slot": kwargs.get("slot"), "accept": kwargs.get("accept")})
+            return _Trials([dict(row) for row in rows])
 
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            created = root / "createdStrategies"
-            created.mkdir()
-            (created / "created_fresh.pine").write_text(script, encoding="utf-8")
-            with mock.patch.object(strategy_team, "CREATED", created), \
-                    mock.patch.object(strategy_team, "LEARNING", root / "learning"), \
-                    mock.patch.object(strategy_team, "LESSONS_PATH", root / "lessons.json"), \
-                    mock.patch.object(strategy_team, "QUEUE_PATH", root / "queue.json"), \
-                    mock.patch("futuresfund.learn._load_frames", lambda root="ES": {"5m": []}), \
-                    mock.patch("futuresfund.learn._engine_execute", fake_execute), \
-                    mock.patch("futuresfund.learn._search", fake_search):
-                strategy_team.enqueue_script("created_fresh.pine")
-                outcome = strategy_team.develop_one(Board(), None)
-                self.assertEqual(outcome, "studied")
-            self.assertEqual(slots, [(3, True), 3])
-            self.assertEqual(list((root / "learning").glob("*.pine")), [])
-            self.assertTrue((created / "created_fresh.pine").is_file())
-            self.assertEqual(strategy_team.take_queued_script(root / "queue.json"), "")
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        folders = {name: root / name for name in ("draftStrategies", "createdStrategies", "unprovenStrategies", "learning", "researchNotes")}
+        folders["draftStrategies"].mkdir()
+        (folders["draftStrategies"] / "created_fresh.pine").write_text(script, encoding="utf-8")
+        with mock.patch.object(strategy_team, "DRAFTS", folders["draftStrategies"]), \
+                mock.patch.object(strategy_team, "CREATED", folders["createdStrategies"]), \
+                mock.patch.object(strategy_team, "UNPROVEN", folders["unprovenStrategies"]), \
+                mock.patch.object(learn, "UNPROVEN", folders["unprovenStrategies"]), \
+                mock.patch.object(learn, "NOTES", folders["researchNotes"]), \
+                mock.patch.object(strategy_team, "LEARNING", folders["learning"]), \
+                mock.patch.object(strategy_team, "LESSONS_PATH", root / "lessons.json"), \
+                mock.patch.object(strategy_team, "QUEUE_PATH", root / "queue.json"), \
+                mock.patch.object(strategy_team, "TARGETS_PATH", root / "targets.json"), \
+                mock.patch("futuresfund.book.strategy_acceptance", return_value=dict(LIMITS)), \
+                mock.patch("futuresfund.delta_core.coverage", return_value={}), \
+                mock.patch("futuresfund.learn._load_frames", lambda root="ES": {"2m": [], "5m": [], "15m": []}), \
+                mock.patch("futuresfund.learn._engine_execute", fake_execute), \
+                mock.patch("futuresfund.learn._search", fake_search):
+            strategy_team.enqueue_script("created_fresh.pine", target=target)
+            outcome = strategy_team.develop_one(Board(), None)
+            left = strategy_team.take_queued_script(root / "queue.json")
+        return outcome, folders, calls, left
+
+    def test_engine_4_moves_a_draft_that_clears_the_acceptance_into_created(self):
+        outcome, folders, calls, left = self._develop([{**PASSING, "params": {}}], target={"root": "MES", "timeframe": "15m"})
+        self.assertEqual(outcome, "studied")
+        # The last year of the chart the draft was written for, not the five-year ES download.
+        self.assertEqual(calls[0], {"instrument": "MES", "timeframe": "15m", "slot": 3, "full": False})
+        self.assertEqual(calls[1]["search_slot"], 3)
+        self.assertTrue((folders["createdStrategies"] / "created_fresh.pine").is_file())
+        self.assertFalse((folders["draftStrategies"] / "created_fresh.pine").exists())
+        self.assertFalse(folders["learning"].exists() and list(folders["learning"].glob("*.pine")))
+        self.assertEqual(left, "")
+
+    def test_engine_4_keeps_a_draft_with_no_passing_run_out_of_created(self):
+        profitable = {**PASSING, "net_profit": 700, "spans": {}, "params": {}}
+        outcome, folders, calls, _left = self._develop([profitable])
+        self.assertEqual(outcome, "unproven")
+        self.assertEqual(calls[0]["instrument"], "ES")
+        self.assertEqual(calls[0]["timeframe"], "5m")
+        self.assertFalse((folders["createdStrategies"] / "created_fresh.pine").exists())
+        self.assertTrue((folders["unprovenStrategies"] / "created_fresh.pine").is_file())
+        self.assertIn("No run cleared the acceptance", (folders["unprovenStrategies"] / "created_fresh.reason.txt").read_text(encoding="utf-8"))
 
     def test_lessons_are_recorded_and_read_back_for_the_next_prompt(self):
         from futuresfund.strategy_team import creation_lessons, lesson_text, record_lesson
@@ -845,7 +898,9 @@ class CreationPipelineTests(unittest.TestCase):
         ]
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(strategy_team, "CREATED", Path(tmp)), mock.patch(
             "futuresfund.library._rows", return_value=rows
-        ), mock.patch("futuresfund.library._load_untested", return_value=[]):
+        ), mock.patch("futuresfund.library._load_untested", return_value=[]), mock.patch(
+            "futuresfund.exemplars.NOTES", Path(tmp) / "researchNotes"
+        ):
             text, ids = strategy_team.new_library_lines()
             self.assertNotIn("Own Band", text)
             self.assertIn("Desk Band", text)
@@ -878,57 +933,3 @@ class CreationPipelineTests(unittest.TestCase):
             self.assertEqual(filed.call_count, 1)
             _offer_library(None, {"title": "Studied"}, Path("studied.pine"), row, "15 min chart developer")
             self.assertEqual(filed.call_count, 2)
-
-    def test_candle_notes_teach_the_creation_team_and_not_the_chart_engines(self):
-        from unittest import mock
-
-        from futuresfund import strategy_team
-        from futuresfund.learn import research_guidelines
-
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "candle_probabilities.json"
-            with mock.patch.object(strategy_team, "CANDLE_NOTES", path):
-                for _ in range(18):
-                    strategy_team.record_candle({
-                        "instrument": "NQ", "timeframe": "15m", "session": "overnight",
-                        "paths": 10, "agreed": 8, "direction": "up", "confidence": 0.8, "inside_90": True,
-                    })
-                for _ in range(4):
-                    strategy_team.record_candle({
-                        "instrument": "NQ", "timeframe": "15m", "session": "overnight",
-                        "paths": 10, "agreed": 8, "direction": "up", "confidence": 0.8, "inside_90": False,
-                    })
-                for _ in range(8):
-                    strategy_team.record_candle({
-                        "instrument": "NQ", "timeframe": "15m", "session": "afternoon",
-                        "paths": 10, "agreed": 5, "direction": "up", "confidence": 0.2, "inside_90": False,
-                    })
-                for _ in range(2):
-                    strategy_team.record_candle({
-                        "instrument": "NQ", "timeframe": "15m", "session": "afternoon",
-                        "paths": 10, "agreed": 5, "direction": "up", "confidence": 0.2, "inside_90": True,
-                    })
-                text = strategy_team.prompt_for([])
-                guide = research_guidelines()
-                from futuresfund.llm import _clip, _system
-
-                chart = _clip(_system("15 min chart developer"), 6000)
-                researcher = _clip(_system("Chart researcher"), 6000)
-        self.assertIn("inside the 0.9 set on 18 of 22 bars", text)
-        self.assertIn("NQ 15m, overnight, at least 8 of 10 paths up, next candle peaked", text)
-        self.assertIn("inside the 0.9 set on 2 of 10 bars", text)
-        self.assertIn("about half the paths each way", text)
-        self.assertIn("next candle flat", text)
-        self.assertIn("Do not enter on these", text)
-        self.assertNotIn("Created EMA Band", text)
-        self.assertNotIn("Candle notes for the chart teams", guide)
-        self.assertIn("Limit risk", guide)
-        self.assertIn("Candle notes for the chart teams", chart)
-        self.assertIn("260 sessions", chart)
-        self.assertIn("Candle notes for the chart teams", researcher)
-        self.assertIn("260 sessions", researcher)
-        self.assertIn("Do not invent", strategy_team.candle_lines(Path(tmp) / "missing.json"))
-        self.assertEqual(strategy_team.candle_session(22, 0), "overnight")
-        self.assertEqual(strategy_team.candle_session(10, 0), "morning")
-        self.assertEqual(strategy_team.candle_session(14, 0), "afternoon")
-        self.assertEqual(strategy_team.candle_session(17, 0), "halt")

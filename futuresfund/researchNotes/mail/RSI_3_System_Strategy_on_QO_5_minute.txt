@@ -1,0 +1,35 @@
+**Subject:** RSI 3-System Strategy Result on 5-Minute Gold (GC1!)  
+
+Hi Team,  
+
+The RSI 3-System Strategy has completed testing on the 5-minute Gold (GC1!) chart. Here are the key results:  
+
+- **Profit:** $3,815.50  
+- **Drawdown:** $1,901.00  
+- **Trades:** 27  
+- **Trades per Day:** 1.29 (over 21 trading days)  
+
+This result meets Headquarters' requirements:  
+- Profit target of $3,000: **Yes**  
+- Inside the trailing drawdown of $2,500: **Yes**  
+- Pace of 1 to 3 trades per day: **Yes**  
+
+As a result, this strategy is now on the **Gold strategy library**.  
+
+The settings for this version include:  
+- `rsi_len=528`  
+- `htf_rsi_len=339`  
+- `pullback_lo=42.0`  
+- `pullback_hi=58.0`  
+- `lbL=5`, `lbR=5`  
+- `rangeUpper=60`, `rangeLower=5`  
+- `div_window=12`  
+- `use_pullback=True`, `use_divergence=True`, `use_htf_bias=True`  
+
+The engine ran 200 attempts to identify this optimal version.  
+
+Let me know if you have any questions.  
+
+Best,  
+[Your Name]  
+Portfolio Manager

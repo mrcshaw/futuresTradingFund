@@ -1,0 +1,9 @@
+Strategy: VWMA RSI BOS Night Shift.
+File: created_vwma_rsi_bos_night_shift.pine.
+Chart: 5m GC1!.
+Profit 2950.0. Drawdown 1260.0. Trades 502.
+Profit ratio 2.0. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.34 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, and the run has at least 60 trades. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

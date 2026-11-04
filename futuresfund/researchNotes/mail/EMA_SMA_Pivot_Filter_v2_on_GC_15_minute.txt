@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: EMA SMA Pivot Filter v2.
+Chart tested: 15-minute Gold (GC1!).
+Profit 53840.0. Drawdown 7250.0. Trades 2.
+Trades a week: 0.0 over 1291 trading days.
+Bars in this test: 118,259 from 2021-10-03 20:00 through 2026-10-02 16:45.
+On this full chart the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library is a separate shelf. This five-year search did not use the profit target or the trailing drawdown. The result above is the run with the lower drawdown, then the larger profit.
+Settings of this version: ema200_len=202, ema55_len=55, sma_len=33, tp_pips=3164.6108, stop_pips=31.968, cooldown_bars=194, sess_end_mn=32.
+Different results on this chart: 50.
+Engine runs on this chart: 72.

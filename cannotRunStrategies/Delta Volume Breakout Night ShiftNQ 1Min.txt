@@ -1,0 +1,118 @@
+//@version=5
+// How this script works
+// The script uses an RSI mean-reversion entry.
+// It opens a long trade when RSI drops below 30 and a short trade when RSI rises above 70.
+// It uses a fixed dollar stop and take profit.
+// It flattens positions at the end of the session.
+
+strategy("RSI Mean Reversion", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+
+
+// ===== INDICATOR =====
+rsi_len = 14
+rsi_src = close
+rsi = ta.rsi(rsi_src, rsi_len)
+
+// ===== ENTRY LOGIC =====
+long_sig = rsi < 30
+short_sig = rsi > 70
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (NY)", minval=0, maxval=23)
+sess_start_mn = input.int(0, "Session Start Minute", minval=0, maxval=59)
+sess_end_hr   = input.int(8, "Session End Hour (NY)", minval=0, maxval=23)
+sess_end_mn   = input.int(0, "Session End Minute", minval=0, maxval=59)
+
+// Define session time in NY timezone
+timeframe = "1"
+session_str = "1800-0800" // 18:00 to 08:00 next day
+in_session = time(timeframe, session_str, "America/New_York")
+
+// Flatten at session end (approx 16:45 NY, but using session end for simplicity as per "Flatten at 16:45" instruction usually implies end of trading day or specific time. The prompt says "Flatten at 16:45 New York". Let's use a specific time check.)
+// 16:45 NY is 20:45 UTC in EST, 21:45 in EDT. Using time() with timezone is safer.
+// However, standard strategy.exit handles stops. We need to force close.
+// Let's stick to the session filter for entries and a specific time for exit if needed, or just rely on the session end.
+// The prompt says "Flatten at 16:45 New York".
+// 16:45 NY is roughly 20:45 UTC (EST) or 21:45 UTC (EDT).
+// Let's use a simple time check for 16:45 NY.
+// In Pine, time(timeframe, "1645", "America/New_York") returns the time in that timezone.
+// We want to close if we are in a position and it is 16:45 NY.
+// Actually, the previous script used a session filter. Let's keep it simple: Only enter during the session. Close at end of session or via TP/SL.
+// The prompt says "Flatten at 16:45 New York". This is a hard close.
+
+// Entry
+if long_sig and in_session and strategy.position_size == 0
+    strategy.entry("Long", strategy.long)
+
+if short_sig and in_session and strategy.position_size == 0
+    strategy.entry("Short", strategy.short)
+
+// Exit
+if strategy.position_size > 0
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+if strategy.position_size < 0
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+// Flatten at 16:45 NY
+// Get current time in NY
+t = time(timeframe, "1645", "America/New_York")
+// Check if current bar time is 16:45 NY
+// This is tricky with time() returning the timestamp of the start of the bar.
+// Better approach: Use a boolean for "is 16:45"
+is_1645 = time(timeframe, "1645", "America/New_York") == time(timeframe, "1645", "America/New_York") // This is always true if we just check the time string? No.
+// Let's use:
+// if time(timeframe, "1645", "America/New_York") == time_close
+// Actually, simpler:
+// if hour(time(timeframe, "America/New_York")) == 16 and minute(time(time(timeframe, "America/New_York"))) == 45
+// But time() returns the timestamp of the bar.
+// Let's use:
+// if time(timeframe, "1645", "America/New_York") == time(timeframe, "1645", "America/New_York") is not the right way.
+// Let's use:
+// int ny_hour = hour(time(timeframe, "America/New_York"))
+// int ny_min = minute(time(time(timeframe, "America/New_York")))
+// if ny_hour == 16 and ny_min == 45
+//    strategy.close_all()
+
+// Correct way to check time in specific timezone in Pine v5:
+// time(timeframe, "1645", "America/New_York") gives the timestamp of the 16:45 bar.
+// We can compare the current bar's time in NY to 16:45.
+// Let's use:
+// if time(timeframe, "1645", "America/New_York") == time(timeframe, "1645", "America/New_York") 
+// No, let's use:
+// if hour(time(timeframe, "America/New_York")) == 16 and minute(time(time(timeframe, "America/New_York"))) == 45
+//    strategy.close_all(comment="Flatten 16:45")
+
+// Let's refine the time check.
+// time(timeframe, "America/New_York") returns the timestamp of the current bar in NY timezone.
+// We can extract hour and minute.
+ny_time = time(timeframe, "America/New_York")
+ny_hour = hour(ny_time)
+ny_min = minute(ny_time)
+
+if ny_hour == 16 and ny_min == 45
+    strategy.close_all(comment="Flatten 16:45")
+
+// Plot
+plot(ta.rsi(close, 14), "RSI", color.purple)

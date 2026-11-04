@@ -1,0 +1,5 @@
+Subject: POC Momentum Pullback v5 on GC1! — Not Filed
+
+The POC Momentum Pullback v5 run on the 15-minute Gold chart produced a profit of $24,050.00 with a drawdown of $8,962.50 across 220 trades. The pace was 8.85 trades per week over 124 trading days, which falls within the 130 to 600 trades per year acceptance band. The win rate was 29.09%. This result was not filed in the strategy library because the win rate of 29.09% is below the required 48% threshold. The strategy library page is not updated for this run.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 6 seconds.

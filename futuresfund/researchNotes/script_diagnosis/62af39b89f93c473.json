@@ -1,0 +1,119 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -542.0,
+   "max_drawdown": 542.0,
+   "trades": 2
+  },
+  "min_delta_pct": {
+   "value": 12.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "vwma_slope_len": {
+   "value": 20,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_len": {
+   "value": 2,
+   "net_profit": -1684.0,
+   "max_drawdown": 1684.0,
+   "trades": 9
+  },
+  "pivot_wait_bars": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -1472.0,
+   "max_drawdown": 1472.0,
+   "trades": 2
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 581.0,
+   "max_drawdown": 1041.5,
+   "trades": 4
+  },
+  "min_slope": {
+   "value": 0.5,
+   "net_profit": -2363.0,
+   "max_drawdown": 3680.0,
+   "trades": 8
+  }
+ },
+ "flat": [
+  "cooldown_bars",
+  "use_reversal",
+  "reversal_cooldown_bars"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 700,
+   "tp_dollars": 1750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 2.0,
+   "pivot_len": 2,
+   "pivot_wait_bars": 20,
+   "cooldown_bars": 10,
+   "use_reversal": true,
+   "reversal_cooldown_bars": 5
+  },
+  "net_profit": 1317.0,
+  "max_drawdown": 1041.5,
+  "trades": 3,
+  "win_rate": 66.67,
+  "profit_factor": 2.789,
+  "biggest_winner": 1726.5,
+  "biggest_loser": -736.0,
+  "held_loser": -736.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 2,
+    "pnl": 990.5,
+    "favorable": 1000.75,
+    "adverse": -518.0
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": 326.5,
+    "favorable": 1244.5,
+    "adverse": -180.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "7 MNQ 2m"
+ ]
+}

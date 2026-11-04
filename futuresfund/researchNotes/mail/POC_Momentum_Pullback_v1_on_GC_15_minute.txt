@@ -1,0 +1,11 @@
+Subject: Desk Update: POC Momentum Pullback v1 (Gold) Results
+
+The POC Momentum Pullback v1 strategy has completed its run on the 15-minute Gold (GC1!) chart. The test covered 23,768 bars from September 30, 2025, through October 2, 2026, executing 134 trades. The final metrics show a profit of $400.00 against a maximum drawdown of $1,900.00.
+
+To be filed in the strategy library, a run must meet four specific criteria: profit above $5,000, drawdown under 5% of the account, at least 60 trades, and a win rate above 40%. The acceptance line on the strategy library page requires profit to be above $5,000. This run generated only $400.00 in profit. Consequently, it was not filed in the strategy library. The reason is that the profit target of $5,000 was not met.
+
+The strategy settings used were stop_pct=0.1, tp_pct=1.0, stop_cash=100.0, tp_cash=0.0, use_trail=False, trail_pct=50.0, trail_step_acct=1.0, trail_step_pct=50.0, trail_min_pct=2.0, use_session=True, sess_start_hr=18, sess_start_mn=0.
+
+As per the desk guideline, all open trades are flattened at 16:45 New York time. The drawdown remains well within the 5% limit, but the profit threshold was not reached. No action is taken to file this run.
+
+The desk clock is Friday 09:23 AM ET.

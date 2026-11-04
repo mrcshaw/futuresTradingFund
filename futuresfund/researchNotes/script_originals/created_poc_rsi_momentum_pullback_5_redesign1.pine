@@ -1,0 +1,303 @@
+//@version=5
+strategy("POC RSI Momentum Pullback Redesign 1", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+
+// ===== INPUTS =====
+pv                = input.float(20, "Point Value ($)", minval=1, maxval=100)
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+vpLookback        = input.int(100, "VP Lookback", minval=20, maxval=500)
+vpRows            = input.int(50, "VP Rows", minval=10, maxval=200)
+pocZoneRows       = input.int(1, "POC Zone Rows", minval=1, maxval=5)
+pivotLeft         = input.int(5, "Pivot Left", minval=1, maxval=20)
+pivotRight        = input.int(5, "Pivot Right", minval=1, maxval=20)
+
+// ===== RISK VARIABLES (Declared early for use in entries) =====
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+
+// ===== SESSION LOGIC =====
+// Session: 18:00 to 16:00 New York
+// Note: time(timeframe.period, session) handles the day wrap-around if session string is used, 
+// but manual calculation is often more robust for specific "flatten at 16:00" logic.
+sess_str = "1800-1600"
+in_session = not na(time(timeframe.period, sess_str))
+
+// Flatten at 16:00 NY
+hourNY = hour(time, "America/New_York")
+minuteNY = minute(time, "America/New_York")
+is_1600 = (hourNY == 16 and minuteNY == 0)
+
+if is_1600 and strategy.position_size != 0
+    strategy.close_all(comment="Session End 16:00")
+
+// No new entries at or after 16:00 (handled by in_session check mostly, but explicit check for safety)
+can_enter = in_session and not is_1600
+
+// ===== VOLUME PROFILE CALCULATION =====
+// Build profile over last vpLookback bars
+// We need to accumulate volume per price row.
+// Pine Script doesn't support dynamic arrays of structs easily for this without performance hits, 
+// but we can use a fixed array size based on vpRows.
+
+var float[] vp_up_vol = array.new_float(vpRows, 0.0)
+var float[] vp_down_vol = array.new_float(vpRows, 0.0)
+var float vp_high = 0.0
+var float vp_low = 0.0
+var int vp_initialized = 0
+
+// Determine the high/low of the lookback period to define the grid
+// We calculate this on the first bar of the lookback or when the lookback window shifts significantly?
+// Actually, for a rolling profile, we usually recalculate the grid or keep a fixed grid.
+// The plan says: "build over the last vpLookback bars by dividing the high-low range into vpRows price rows."
+// This implies the grid changes as the high/low of the last 100 bars changes.
+// This is computationally expensive. A common approximation is to use the high/low of the current lookback window.
+
+// To keep it efficient and stable, let's calculate the High and Low of the last vpLookback bars.
+float lookback_high = ta.highest(high, vpLookback)
+float lookback_low = ta.lowest(low, vpLookback)
+
+// If the grid changes, we must reset the volumes. 
+// However, resetting every bar is expensive. 
+// A simpler interpretation for Pine Script performance: 
+// Calculate the POC based on the current distribution.
+// Let's use a simpler approach: Calculate the POC price level directly using a histogram-like approximation 
+// or just find the price level with the highest volume in the lookback period.
+// Given the constraints, let's implement a lightweight version:
+// We will iterate through the last vpLookback bars and assign volume to bins.
+
+// To avoid array reset issues and performance lag, we will calculate the POC zone bounds directly.
+// We need:
+// 1. Total Up Vol in POC Row
+// 2. Total Down Vol in POC Row
+// 3. POC Row Index
+
+// Let's define the bin size
+float bin_size = (lookback_high - lookback_low) / vpRows
+
+// We need to find the POC. 
+// Since we can't easily store a dynamic histogram that resets perfectly without var arrays and careful management,
+// and the prompt asks for specific logic, let's use a loop to calculate the volume distribution for the current bar's context.
+// Wait, "build over the last vpLookback bars". This is a rolling window.
+// Recalculating a 50-row histogram every bar for 100 bars is 5000 operations. This is acceptable in Pine.
+
+var int poc_row_idx = 0
+var float poc_zone_upper = 0.0
+var float poc_zone_lower = 0.0
+var float poc_delta_pct = 0.0
+
+// We will recalculate the profile every bar.
+// Initialize arrays to 0
+for i = 0 to vpRows - 1
+    array.set(vp_up_vol, i, 0.0)
+    array.set(vp_down_vol, i, 0.0)
+
+// Populate arrays
+for i = 0 to vpLookback - 1
+    float bar_close = close[i]
+    float bar_open = open[i]
+    float bar_vol = volume[i]
+    
+    // Determine which row this close falls into
+    // Row 0 is the lowest price (lookback_low)
+    // Row vpRows-1 is the highest price (lookback_high)
+    if bar_close >= lookback_low and bar_close <= lookback_high
+        int row_idx = int(math.round((bar_close - lookback_low) / bin_size))
+        // Clamp row index
+        row_idx := math.min(math.max(row_idx, 0), vpRows - 1)
+        
+        if bar_close >= bar_open
+            array.set(vp_up_vol, row_idx, array.get(vp_up_vol, row_idx) + bar_vol)
+        else
+            array.set(vp_down_vol, row_idx, array.get(vp_down_vol, row_idx) + bar_vol)
+
+// Find POC Row (Highest Total Volume)
+int max_vol_row = 0
+float max_vol = 0.0
+for i = 0 to vpRows - 1
+    float total_row_vol = array.get(vp_up_vol, i) + array.get(vp_down_vol, i)
+    if total_row_vol > max_vol
+        max_vol := total_row_vol
+        max_vol_row := i
+
+poc_row_idx := max_vol_row
+
+// Calculate POC Zone Bounds
+// POC Row Price Center
+float poc_price = lookback_low + (poc_row_idx + 0.5) * bin_size
+float poc_zone_width = pocZoneRows * bin_size
+
+poc_zone_upper := poc_price + poc_zone_width
+poc_zone_lower := poc_price - poc_zone_width
+
+// Clamp to profile bounds? "clamped to the profile"
+poc_zone_upper := math.min(poc_zone_upper, lookback_high)
+poc_zone_lower := math.max(poc_zone_lower, lookback_low)
+
+// Calculate POC Delta Percent
+float poc_row_up = array.get(vp_up_vol, poc_row_idx)
+float poc_row_down = array.get(vp_down_vol, poc_row_idx)
+float poc_row_total = poc_row_up + poc_row_down
+poc_delta_pct := poc_row_total > 0 ? ((poc_row_up - poc_row_down) / poc_row_total) * 100 : 0.0
+
+// ===== TREND INDICATOR =====
+float vwm = ta.vwma(close, 20)
+
+// ===== PIVOT LOGIC =====
+float pivotLow = ta.pivotlow(low, pivotLeft, pivotRight)
+float pivotHigh = ta.pivothigh(high, pivotLeft, pivotRight)
+
+// ===== ARMING LOGIC =====
+var bool armed_long = false
+var bool armed_short = false
+
+// Check if close is inside POC zone
+bool close_in_poc_zone = close >= poc_zone_lower and close <= poc_zone_upper
+
+// Arm Long:
+// 1. Close moves from inside/below POC zone to ABOVE upper edge
+// 2. Close > VWMA
+// 3. POC Delta > 0
+bool long_arm_condition = (close > poc_zone_upper) and (close[1] <= poc_zone_upper) and (close > vwm) and (poc_delta_pct > 0)
+
+// Arm Short:
+// 1. Close moves from inside/above POC zone to BELOW lower edge
+// 2. Close < VWMA
+// 3. POC Delta < 0
+bool short_arm_condition = (close < poc_zone_lower) and (close[1] >= poc_zone_lower) and (close < vwm) and (poc_delta_pct < 0)
+
+// Update Arming State
+if long_arm_condition
+    armed_long := true
+if short_arm_condition
+    armed_short := true
+
+// Disarm if close returns inside POC zone
+if close_in_poc_zone
+    armed_long := false
+    armed_short := false
+
+// ===== REVERSAL FLAG LOGIC =====
+var bool reversal_flag = false
+var int reversal_direction = 0 // 1 for Long, -1 for Short
+
+// Detect if a trade was closed by stop
+// We need to track the previous position and check if it was closed.
+// A simpler way: If we are flat, and we were previously in a position, check the exit reason?
+// Pine doesn't easily expose "exit reason" directly in a boolean for "stopped out" vs "limit hit" without complex logic.
+// However, we can infer: If we are flat, and the previous bar had a position, and the current bar's open is near the stop?
+// Actually, the plan says: "when a trade is closed by the dollar stop, set a one-reversal flag".
+// We can detect this if strategy.position_size == 0 and strategy.position_size[1] != 0.
+// To distinguish stop from limit, we can check if the close was beyond the stop price or limit price.
+// But a more robust way in Pine for "closed by stop" is often checking if the low/high breached the stop.
+// Let's use a simpler heuristic: If we are flat, and we were long, and the low of the current bar (or previous bar if closed on previous) breached the stop?
+// Actually, if the trade is closed, strategy.position_size is 0.
+// Let's assume if we are flat, and we were previously long, and the low of the bar that closed the trade was <= long_stop (calculated at entry), it was a stop.
+// This is tricky because long_stop changes.
+// Alternative: Use strategy.closedtrades? No.
+// Let's use a variable to track the stop price of the last closed trade.
+
+var float last_long_stop = na
+var float last_short_stop = na
+var float last_long_limit = na
+var float last_short_limit = na
+
+// Update last stop/limit when entering
+if strategy.position_size > 0 and strategy.position_size[1] <= 0
+    last_long_stop := strategy.position_avg_price - stop_dollars / pv
+    last_long_limit := close + tp_dollars / pv
+if strategy.position_size < 0 and strategy.position_size[1] >= 0
+    last_short_stop := strategy.position_avg_price + stop_dollars / pv
+    last_short_limit := close - tp_dollars / pv
+
+// Detect Stop Out
+bool was_long = strategy.position_size[1] > 0
+bool was_short = strategy.position_size[1] < 0
+bool is_flat = strategy.position_size == 0
+
+if is_flat and was_long
+    // Check if low breached the stop
+    if low <= last_long_stop
+        reversal_flag := true
+        reversal_direction := -1 // Allow Short next
+    else
+        // Closed by limit or other
+        reversal_flag := false
+
+if is_flat and was_short
+    // Check if high breached the stop
+    if high >= last_short_stop
+        reversal_flag := true
+        reversal_direction := 1 // Allow Long next
+    else
+        reversal_flag := false
+
+// Clear flag at session end if unused
+if is_1600
+    reversal_flag := false
+
+// ===== ENTRY LOGIC =====
+
+// Entry Long:
+// 1. Armed Long
+// 2. Confirmed Pivot Low
+// 3. Pivot Low is ABOVE POC Zone (poc_zone_upper)
+// 4. No position
+// 5. Session OK
+// 6. Reversal Flag Check:
+//    - If reversal_flag is true, it must be for Long (reversal_direction == 1)
+//    - If reversal_flag is false, normal entry is allowed
+
+bool entry_long_allowed = false
+if armed_long and not na(pivotLow) and pivotLow > poc_zone_upper and strategy.position_size == 0 and can_enter
+    if not reversal_flag
+        entry_long_allowed := true
+    else if reversal_flag and reversal_direction == 1
+        entry_long_allowed := true
+
+if entry_long_allowed
+    strategy.entry("Long", strategy.long)
+    strategy.exit("ExitLong", "Long", stop=long_stop, limit=long_limit)
+    // Clear reversal flag if used
+    if reversal_flag
+        reversal_flag := false
+
+// Entry Short:
+// 1. Armed Short
+// 2. Confirmed Pivot High
+// 3. Pivot High is BELOW POC Zone (poc_zone_lower)
+// 4. No position
+// 5. Session OK
+// 6. Reversal Flag Check:
+//    - If reversal_flag is true, it must be for Short (reversal_direction == -1)
+//    - If reversal_flag is false, normal entry is allowed
+
+bool entry_short_allowed = false
+if armed_short and not na(pivotHigh) and pivotHigh < poc_zone_lower and strategy.position_size == 0 and can_enter
+    if not reversal_flag
+        entry_short_allowed := true
+    else if reversal_flag and reversal_direction == -1
+        entry_short_allowed := true
+
+if entry_short_allowed
+    strategy.entry("Short", strategy.short)
+    strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_limit)
+    // Clear reversal flag if used
+    if reversal_flag
+        reversal_flag := false
+
+// ===== EXIT LOGIC (Additional Checks) =====
+
+// Close if open profit is at or below negative stop_dollars
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== PLOTS =====
+plot(poc_zone_upper, "POC Upper", color=color.new(color.red, 50))
+plot(poc_zone_lower, "POC Lower", color=color.new(color.red, 50))
+fill(plot(poc_zone_upper, "POC Upper", color=color.new(color.red, 50)), plot(poc_zone_lower, "POC Lower", color=color.new(color.red, 50)), color=color.new(color.red, 90), title="POC Zone")
+plot(vwm, "VWMA", color=color.new(color.blue, 0))
+plotshape(armed_long ? low : na, "Armed Long", shape.triangleup, location.belowbar, color.new(color.green, 0), size=size.small)
+plotshape(armed_short ? high : na, "Armed Short", shape.triangledown, location.abovebar, color.new(color.red, 0), size=size.small)

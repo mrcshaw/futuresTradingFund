@@ -1,0 +1,152 @@
+//@version=5
+// How this script works
+// The size of the move is not measured until price moves more than impulse_ticks inside impulse_minutes.
+// On the 2-minute ES chart that starts at more than 250 ticks in 15 minutes, which is the last 8 bars.
+// A tick is tick_size. ES is 0.25, so 250 ticks is 62.5 points.
+// After that burst, the measured high and low extend with the move. move_points is how large that move must be.
+// That move has to finish within move_minutes of the burst. It starts at 45 minutes.
+// A new high or low after that window means the move was still going, so it is not traded.
+// After a move up, a later bar that trades within retest_points of the high and closes back down is the short.
+// After a move down, a later bar that bounces within retest_points of the low and closes up is the buy.
+// The trade fades the move. The stop is stop_dollars. The take profit is tp_dollars. The position is flat outside the New York session.
+// Realized profit of daily_profit_cap, or a realized loss of daily_loss_cap, stops new trades until the next session.
+// Cooldown bars must pass after a trade closes before the next entry.
+strategy("Large Move Rejection ES", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=500)
+
+// ===== RISK =====
+pv           = input.float(5, "Point Value ($)")
+stop_dollars = input.int(350, "Stop ($)", minval=250, maxval=1500)
+tp_dollars   = input.int(750, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+    else if strategy.openprofit >= tp_dollars
+        strategy.close_all(comment="Take profit")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr   = input.int(16, "Session End Hour (ET)")
+sess_end_mn   = input.int(0, "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+// ===== THE MOVE AND THE RETEST =====
+tick_size       = input.float(0.25, "Tick size", minval=0.01)
+impulse_ticks   = input.int(250, "Impulse ticks", minval=4, maxval=4000)
+impulse_minutes = input.int(15, "Impulse minutes", minval=2, maxval=180)
+move_minutes    = input.int(45, "Move minutes", minval=1, maxval=240)
+move_points     = input.float(50, "Move points", minval=4, maxval=200)
+retest_points   = input.float(5, "Retest points", minval=0.25, maxval=40)
+cooldown_bars   = input.int(5, "Cooldown (bars)", minval=0, maxval=100)
+daily_profit_cap = input.int(1000, "Daily Profit Cap ($)", minval=0, maxval=10000)
+daily_loss_cap   = input.int(750, "Daily Loss Cap ($)", minval=0, maxval=10000)
+
+impulse_points = impulse_ticks * tick_size
+impulse_bars = math.max(2, int(math.ceil(impulse_minutes / math.max(timeframe.multiplier, 1))))
+burst_high = ta.highest(high, impulse_bars)
+burst_low = ta.lowest(low, impulse_bars)
+burst_high_off = ta.highestbars(high, impulse_bars)
+burst_low_off = ta.lowestbars(low, impulse_bars)
+burst = burst_high - burst_low > impulse_points
+
+var int armed = 0
+var int dir = 0
+var float move_high = na
+var float move_low = na
+var int extreme_bar = 0
+var int arm_time = 0
+var int wait_gap = 0
+
+if not in_session
+    armed := 0
+    dir := 0
+    arm_time := 0
+    wait_gap := 0
+
+up_burst = burst_high_off > burst_low_off
+if in_session and wait_gap == 0 and burst and (armed == 0 or (up_burst and dir != 1) or (not up_burst and dir != -1))
+    armed := 1
+    dir := up_burst ? 1 : -1
+    arm_time := time
+    move_high := burst_high
+    move_low := burst_low
+    extreme_bar := bar_index + (up_burst ? burst_high_off : burst_low_off)
+
+move_limit = arm_time + move_minutes * 60 * 1000
+if in_session and armed == 1 and dir == 1 and high > move_high
+    if time <= move_limit
+        move_high := high
+        extreme_bar := bar_index
+    else if high > move_high + retest_points
+        armed := 0
+        dir := 0
+        wait_gap := 1
+if in_session and armed == 1 and dir == -1 and low < move_low
+    if time <= move_limit
+        move_low := low
+        extreme_bar := bar_index
+    else if low < move_low - retest_points
+        armed := 0
+        dir := 0
+        wait_gap := 1
+if wait_gap == 1 and not burst
+    wait_gap := 0
+
+move_size = move_high - move_low
+large_move = armed == 1 and move_size >= move_points
+up_move = large_move and dir == 1
+down_move = large_move and dir == -1
+aged = bar_index >= extreme_bar + 2
+
+// Realized profit for this New York session. The cap uses closed trades. Open profit does not count yet.
+var float day_base = 0.0
+var int seen_session = 0
+if not in_session
+    seen_session := 0
+if in_session and seen_session == 0
+    day_base := strategy.netprofit
+    seen_session := 1
+day_realized = strategy.netprofit - day_base
+day_locked = (daily_profit_cap > 0 and day_realized >= daily_profit_cap) or (daily_loss_cap > 0 and day_realized <= -daily_loss_cap)
+if day_locked and strategy.position_size != 0
+    strategy.close_all(comment="Daily cap")
+
+// The next entry waits until cooldown_bars have passed since the last trade went flat.
+var int last_exit_bar = -1000000
+var int was_open = 0
+if strategy.position_size != 0
+    was_open := 1
+if was_open == 1 and strategy.position_size == 0
+    last_exit_bar := bar_index
+    was_open := 0
+cooled = bar_index - last_exit_bar >= cooldown_bars
+
+// The bar before this one has left the extreme. This bar comes back within retest_points and closes away.
+tags_high = high >= move_high - retest_points and high <= move_high + retest_points
+tags_low = low <= move_low + retest_points and low >= move_low - retest_points
+short_reject = up_move and aged and high[1] < move_high - retest_points and tags_high and close < open and close < move_high - retest_points
+long_reject = down_move and aged and low[1] > move_low + retest_points and tags_low and close > open and close > move_low + retest_points
+
+if in_session and strategy.position_size == 0 and cooled and not day_locked and long_reject
+    strategy.entry("Long", strategy.long, comment="Bounce low")
+if in_session and strategy.position_size == 0 and cooled and not day_locked and short_reject
+    strategy.entry("Short", strategy.short, comment="Reject high")
+
+plot(large_move ? move_high : na, "Move high", color=color.new(color.fuchsia, 0), style=plot.style_linebr)
+plot(large_move ? move_low : na, "Move low", color=color.new(color.fuchsia, 0), style=plot.style_linebr)

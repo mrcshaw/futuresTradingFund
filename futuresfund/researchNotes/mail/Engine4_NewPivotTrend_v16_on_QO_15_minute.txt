@@ -1,0 +1,15 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v16 Gold Result
+
+The Engine4_NewPivotTrend_v16 strategy has finished its run on the 15-minute Gold (GC1!) chart. The test covered 9,495 bars from April 16, 2026, through October 1, 2026. The strategy generated a profit of $41,825.00 with a maximum drawdown of $18,187.50 across 61 trades.
+
+Regarding the pace and targets: The strategy executed 2.5 trades per week over the 121 trading days of this period. This results in an annualized trade count well below the 130-trade minimum threshold (fewer than 130 is too quiet). While the profit and drawdown figures are strong, the trade frequency does not meet the standard pace requirement of 130 to 600 trades per year. Consequently, the trailing drawdown and profit targets are not considered met for library inclusion under current rules.
+
+This result is not on the strategy library. It was not filed because a stronger version of this name is already on this contract and timeframe. The settings for this version were ema_fast_len=100, ema_slow_len=3, atr_len=34445, atr_mult=1.6384, cooldown_bars=32, and session_window=1800-1600. There were 164 different results on this chart and 907 engine runs total.
+
+The desk remains active. I will email the new address when the old one expires.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 12:12 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 11 minutes 2 seconds.

@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Smart Trail NO CONDITIONS ES Evening.
+Chart tested: 5-minute ES (ES1!).
+Profit -16691.5. Drawdown 17749.0. Trades 189.
+Trades a day: 9.0 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: no.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; the drawdown is past the $2,500 trailing drawdown; 9.0 trades a day is outside 1 to 3.
+Settings of this version: length=94, multiplier=2.0, sensitivity=3, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=9, sess_end_mn=0, stop_dollars=300.0, tp_dollars=500.0, use_trail=False, trail_pct=75.0.
+Engine attempts on this chart: 200.

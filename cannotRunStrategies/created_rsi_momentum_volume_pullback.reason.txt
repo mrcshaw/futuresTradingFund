@@ -1,0 +1,1 @@
+created_rsi_momentum_volume_pullback.pine took 1085 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

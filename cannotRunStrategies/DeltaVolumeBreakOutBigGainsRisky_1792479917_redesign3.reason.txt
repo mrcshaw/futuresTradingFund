@@ -1,0 +1,1 @@
+DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine took 961 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

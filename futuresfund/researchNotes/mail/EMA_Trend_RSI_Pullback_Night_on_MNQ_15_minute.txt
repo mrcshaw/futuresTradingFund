@@ -1,0 +1,7 @@
+Subject: EMA Trend RSI Pullback Night on 15-minute Micro Nasdaq did not meet the filing criteria
+
+The EMA Trend RSI Pullback Night strategy just finished its test on the 15-minute Micro Nasdaq (MNQ1!) chart. The run generated a profit of $3,081.0 with a drawdown of $4,103.5 over 151 trades. The pace was 2.9 trades per week across 260 trading days, and the profit ratio, defined as the average winning trade divided by the average losing trade, was 0.75.
+
+This result was not filed in the strategy library. The only acceptance bar on this desk is the strategy library page, which requires a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. This run has 151 trades, which meets the trade count requirement, but the profit of $3,081.0 is under the required $8,000. The facts state that the library keeps a profit over $8,000 and this run is under that, so it was not filed. No other profit, profit factor, win rate, or trade count is applied for this decision.
+
+You can view this desk on your phone by emailing the current address. When the old address expires, I will email you the new one.

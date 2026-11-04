@@ -1,0 +1,3 @@
+Subject: Engine4_NewPivotTrend_v13 (2m ES) - 759 Trades - Not Filed
+
+The Engine4_NewPivotTrend_v13 run on the 2-minute ES chart has concluded. The strategy generated a profit of $16,237.50 with a drawdown of $4,762.50 across 759 trades. With 14.6 trades per week over 260 trading days, the annual pace is 759 trades. This exceeds the 600-trade annual limit, making it too many trades to qualify for the library. Consequently, this result was not filed in the strategy library. The settings used were len_fast=14, len_slow=50, len_atr=14, stop_mult=3.0, tp_mult=0.75, and cooldown_bars=20.

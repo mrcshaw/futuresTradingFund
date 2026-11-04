@@ -12,11 +12,8 @@ _EASTERN = ZoneInfo("America/New_York")
 _FILED = {"ES", "GC", "NQ"}
 
 
-def chart_payload(contract: str, timeframe: str, limit: int = 160, predictor=None) -> dict:
-    """Recent candles and the orders that landed on them.
-
-    A Kronos forecast, when one is ready, is returned beside the printed candles.
-    """
+def chart_payload(contract: str, timeframe: str, limit: int = 160) -> dict:
+    """Recent candles and the orders that landed on them."""
     frame = parse_timeframe(timeframe)
     root = _root(contract)
     candles = _candles(root, frame)
@@ -24,32 +21,11 @@ def chart_payload(contract: str, timeframe: str, limit: int = 160, predictor=Non
     shown = [dict(candle) for candle in candles[-count:]]
     orders = _orders(root, frame, shown)
     last = shown[-1] if shown else None
-    try:
-        from futuresfund.kronos_replay import prediction_for
-
-        prediction = prediction_for(shown, root, frame, predictor=predictor)
-    except Exception:
-        prediction = {"candles": [], "agreed": 0, "paths": 0, "scored": False, "note": "The pattern table is empty."}
-    try:
-        from futuresfund.kronos_track import observe
-
-        direction_match = observe(root, frame, shown, prediction, contract=contract)
-    except Exception:
-        direction_match = {
-            "ready": False,
-            "correct": 0,
-            "scored": 0,
-            "percent": None,
-            "pending": 0,
-            "text": f"Kronos direction match on {contract} {frame} waits until 6 candles have printed after a forecast.",
-        }
     return {
         "contract": contract,
         "root": root,
         "timeframe": frame,
         "candles": shown,
-        "prediction": prediction,
-        "direction_match": direction_match,
         "orders": orders,
         "last": last,
         "count": len(candles),

@@ -453,7 +453,9 @@ def momentum_bars():
     closes = [100 - i * 0.4 for i in range(26)]
     closes.append(70)
     closes.extend(82 + i for i in range(8))
-    closes.extend(90 + i * 3 for i in range(20))
+    closes.extend(90 + i * 3 for i in range(4))
+    # Each bar moves the script's exit, so the last bar reaches the take profit set on the bar before.
+    closes.append(106)
     rows = []
     prev = closes[0]
     for i, close in enumerate(closes):

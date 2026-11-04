@@ -1,0 +1,15 @@
+Subject: POC Momentum Reversal 15m (GC1!) Run Report
+
+This desk just completed a run on the 15-minute Gold chart using the POC Momentum Reversal 15m strategy. The run generated a profit of $13,450.00 with a maximum drawdown of $8,537.50 across 129 trades. The trade frequency was 5.2 trades per week over 124 trading days, which equates to approximately 129 trades per year. This falls within the acceptable pace of 130 to 600 trades per year, though it is just below the lower bound threshold for automatic acceptance if strict adherence to the >130 count is required, but the volume is sufficient to be considered a strategy rather than a few trades.
+
+The profit ratio (average win divided by average loss) was calculated to be above 1.12. The run made a profit. However, the trade count of 129 is below the 130-trade minimum required for the strategy library acceptance criteria which mandates at least 130 trades per year to ensure statistical significance, or strictly speaking, the library rules state a run must have at least 60 trades total, but the pace filter requires 130-600 per year. Since 129 is less than 130, it fails the pace requirement for library inclusion. Additionally, while the profit is close to the $14,000 threshold, it is $550 short. The profit factor was sufficient, and the win rate was above 48%, but the combination of being under the $14,000 profit target and the trade count being below the 130 annual minimum means it was not filed.
+
+This result was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that. The trade count of 129 is also below the 130 annual minimum required for the library pace filter.
+
+Settings used: pivot_left=2, pivot_right=2, len_ema=20, len_atr=14, atr_mult=1.5, tp_mult=5.0, cooldown_bars=10.
+
+This desk instance does not wait on another desk. The email address for viewing this desk on a phone is not provided here as per the instruction to only email when the old one expires, but this report serves as the notification of the result.
+
+The strategy library currently has no entry for POC Momentum Reversal 15m on this specific configuration that meets the filing criteria.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 8 seconds.

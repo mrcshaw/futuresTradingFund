@@ -1,0 +1,15 @@
+Subject: Desk Update: Night Momentum Pivot Result Not Filed
+
+The Night Momentum Pivot strategy was tested on the 15-minute ES chart. The run generated a profit of 2650.0 with a drawdown of 2337.5 across 416 trades. This equates to approximately 8.0 trades per week.
+
+Per the strategy library guidelines, a strategy is only filed if the drawdown stays under 5 percent of the account and the run has at least 60 trades. While this run meets the trade count requirement (416 trades), it fails the filing criteria because the profit is below the shelf’s threshold. The shelf keeps a profit over $5,000. This run is under that. Therefore, this result was not filed in the strategy library.
+
+The acceptance line on the strategy library page lists the profit, profit factor, win rate, and trade count. This result does not appear on the strategy library.
+
+Current settings: stop_pct=0.1, tp_pct=4.0, use_trail=False, trail_pct=50.0, trail_step_acct=1.0, trail_step_pct=50.0, trail_min_pct=2.0, ema_len=50, atr_len=14, stop_mult=1.5, tp_mult=2.5, cooldown=10.
+
+Desk clock: Thursday 12:27 AM ET.
+
+Best,
+
+Portfolio Manager

@@ -1,0 +1,112 @@
+//@version=5
+strategy("Day Shift Delta Volume Breakout Redesign 3", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+
+// ===== RISK =====
+pv                = input.float(5, "Point Value ($)", minval=1, maxval=100)
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+
+// ===== INPUTS =====
+trend_len         = input.int(50, "Trend VWMA Length", minval=1, maxval=500)
+trend_slope_len   = input.int(5, "VWMA Slope Lookback (bars)", minval=1, maxval=100)
+
+rsi_len           = input.int(14, "RSI Length", minval=1, maxval=100)
+rsi_long_low      = input.int(45, "RSI Long Low Threshold", minval=0, maxval=100)
+rsi_short_high    = input.int(55, "RSI Short High Threshold", minval=0, maxval=100)
+rsi_lookback      = input.int(10, "RSI Lookback Bars", minval=1, maxval=100)
+
+use_session       = input.bool(true, "Use Session Filter")
+sess_start_hr     = input.int(18, "Session Start Hour (ET)", minval=0, maxval=23)
+sess_start_mn     = input.int(0,  "Session Start Minute", minval=0, maxval=59)
+sess_end_hr       = input.int(16, "Session End Hour (ET)", minval=0, maxval=23)
+sess_end_mn       = input.int(0,  "Session End Minute", minval=0, maxval=59)
+
+// ===== SKIP WINDOW (a time of day that keeps losing) =====
+use_skip      = input.bool(true, "Skip This Time Of Day", group="Skip Window", tooltip="No trade opens inside this window, and an open trade is closed when it starts.")
+skip_start_hr = input.int(18, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_mn = input.int(0, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
+skip_end_hr   = input.int(19, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_end_mn   = input.int(0, "Skip End Minute", minval=0, maxval=59, group="Skip Window")
+skip_bar_t = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+skip_from = skip_start_hr * 100 + skip_start_mn
+skip_to = skip_end_hr * 100 + skip_end_mn
+in_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))
+skip_window_open = not in_skip_window
+if in_skip_window and strategy.position_size != 0
+    strategy.close_all(comment="Skip Window")
+
+
+// ===== SESSION LOGIC =====
+ny_time = time(timeframe.period, "0000-2359", "America/New_York")
+ny_hour = hour(ny_time, "America/New_York")
+ny_minute = minute(ny_time, "America/New_York")
+
+in_session = false
+if use_session
+    start_minutes = sess_start_hr * 60 + sess_start_mn
+    end_minutes   = sess_end_hr * 60 + sess_end_mn
+    current_minutes = ny_hour * 60 + ny_minute
+
+    if start_minutes < end_minutes
+        in_session := current_minutes >= start_minutes and current_minutes < end_minutes
+    else
+        in_session := current_minutes >= start_minutes or current_minutes < end_minutes
+
+is_flatten_time = (ny_hour == 16 and ny_minute == 0)
+
+// ===== INDICATORS =====
+vwma_val = ta.vwma(close, trend_len)
+vwma_slope = vwma_val - vwma_val[trend_slope_len]
+
+rsi_val = ta.rsi(close, rsi_len)
+rsi_low_lookback = ta.lowest(rsi_val, rsi_lookback)
+rsi_high_lookback = ta.highest(rsi_val, rsi_lookback)
+
+// ===== SIGNALS =====
+trend_long  = vwma_slope > 0
+trend_short = vwma_slope < 0
+
+rsi_cross_up = ta.crossover(rsi_val, 50)
+rsi_cross_down = ta.crossunder(rsi_val, 50)
+
+long_trigger = trend_long and rsi_cross_up and rsi_low_lookback < rsi_long_low
+short_trigger = trend_short and rsi_cross_down and rsi_high_lookback > rsi_short_high
+
+// ===== RISK MANAGEMENT =====
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== EXECUTION =====
+if in_session and strategy.position_size == 0
+    if long_trigger
+        if skip_window_open
+            strategy.entry("Long", strategy.long)
+        strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+    if short_trigger
+        if skip_window_open
+            strategy.entry("Short", strategy.short)
+        strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+if strategy.position_size > 0
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+if strategy.position_size < 0
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+if is_flatten_time and strategy.position_size != 0
+    strategy.close_all(comment="Session End")
+
+// ===== PLOTS =====
+plot(vwma_val, "VWMA", color.blue, linewidth=2)
+plotshape(long_trigger, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_trigger, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+bgcolor(in_session ? color.new(color.green, 95) : na)

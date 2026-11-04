@@ -1,0 +1,184 @@
+//@version=5
+strategy("ICT Unicorn + POC [Profit] Redesign 3", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== INPUTS =====
+
+profile_lookback  = input.int(120, "Profile Lookback (bars)", minval=20, maxval=500, step=10, group="Profile")
+profile_rows      = input.int(10, "Price Levels (rows)", minval=5, maxval=50, step=5, group="Profile")
+min_delta_pct     = input.float(5.0, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, group="Profile", tooltip="0 = disabled")
+
+vwma_len          = input.int(20, "VWMA Length", minval=1, maxval=200, group="Trend")
+vwma_slope_len    = input.int(5, "VWMA Slope Lookback (bars)", minval=1, maxval=50, group="Trend")
+
+pivot_len         = input.int(5, "Pivot Length", minval=2, maxval=20, group="Entry")
+entry_end_hr      = input.int(11, "Entry End Hour", minval=10, maxval=14, group="Entry")
+entry_end_mn      = input.int(0, "Entry End Minute", minval=0, maxval=59, step=5, group="Entry")
+max_entries_per_day = input.int(2, "Max Entries / Day", minval=1, maxval=5, group="Entry")
+
+
+// ===== SESSION =====
+sess_start_hr = 18
+sess_start_mn = 0
+sess_end_hr   = 16
+sess_end_mn   = 0
+
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t  = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end   = sess_end_hr * 100 + sess_end_mn
+
+in_session = (sess_clock_start > sess_clock_end) ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end)
+
+// ===== TIME LOGIC =====
+is_new_day = ta.change(time("D")) != 0
+bar_time = sess_bar_hr * 100 + sess_bar_mn
+in_entry_window = bar_time < (entry_end_hr * 100 + entry_end_mn)
+
+// ===== VOLUME PROFILE + DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price    = na
+float poc_hi       = na
+float poc_lo       = na
+float poc_delta_pct = na
+int   poc_row      = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if array.size(arr) != rows
+            array.clear(arr)
+            for i = 0 to rows - 1
+                array.push(arr, 0.0)
+        else
+            for i = 0 to rows - 1
+                array.set(arr, i, 0.0)
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+        if span <= 0
+            continue
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                array.set(vol_total, r, array.get(vol_total, r) + per_row)
+                if bar_up
+                    array.set(vol_up, r, array.get(vol_up, r) + per_row)
+                else
+                    array.set(vol_dn, r, array.get(vol_dn, r) + per_row)
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = array.get(vol_total, r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+    poc_price    := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo       := prof_lo + poc_row * step_size
+    poc_hi       := prof_lo + (poc_row + 1) * step_size
+    float poc_up  = array.get(vol_up, poc_row)
+    float poc_dn  = array.get(vol_dn, poc_row)
+    float poc_tot = array.get(vol_total, poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+// ===== TREND & DELTA FILTERS =====
+float vwma_val   = ta.vwma(close, vwma_len)
+float vwma_slope = vwma_val - vwma_val[vwma_slope_len]
+float ema_20     = ta.ema(close, 20)
+
+bool trend_long  = (vwma_slope > 0) and (close > ema_20)
+bool trend_short = (vwma_slope < 0) and (close < ema_20)
+
+bool delta_long_ok  = not na(poc_delta_pct) and poc_delta_pct >= min_delta_pct
+bool delta_short_ok = not na(poc_delta_pct) and poc_delta_pct <= -min_delta_pct
+
+// ===== ENTRY LOGIC =====
+var int day_entries = 0
+if is_new_day
+    day_entries := 0
+
+bool entry_ok = barstate.isconfirmed and in_session and in_entry_window and day_entries < max_entries_per_day and strategy.position_size == 0
+
+float pivot_low_val  = ta.pivotlow(low, pivot_len, pivot_len)
+float pivot_high_val = ta.pivothigh(high, pivot_len, pivot_len)
+
+bool long_entry_sig = false
+bool short_entry_sig = false
+
+// Long Entry: Pullback into POC zone
+if entry_ok and trend_long and delta_long_ok and not na(poc_lo) and not na(poc_hi)
+    bool in_poc_zone = (close >= poc_lo) and (close <= poc_hi)
+    if in_poc_zone and not na(pivot_low_val)
+        bool pivot_in_zone = (pivot_low_val >= poc_lo) and (pivot_low_val <= poc_hi)
+        if pivot_in_zone
+            long_entry_sig := true
+
+// Short Entry: Pullback into POC zone
+if entry_ok and trend_short and delta_short_ok and not na(poc_lo) and not na(poc_hi)
+    bool in_poc_zone = (close >= poc_lo) and (close <= poc_hi)
+    if in_poc_zone and not na(pivot_high_val)
+        bool pivot_in_zone = (pivot_high_val >= poc_lo) and (pivot_high_val <= poc_hi)
+        if pivot_in_zone
+            short_entry_sig := true
+
+// Execute Entries
+if long_entry_sig
+    day_entries += 1
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit)
+
+else if short_entry_sig
+    day_entries += 1
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit)
+
+// ===== SESSION CLOSE =====
+if sess_bar_t >= sess_clock_end or (sess_clock_start > sess_clock_end and sess_bar_t >= sess_clock_start)
+    if strategy.position_size != 0
+        strategy.close_all(comment="Session End")
+
+// ===== PLOTS =====
+plot(vwma_val, "VWMA", color.blue, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", #2962FF, style=plot.style_stepline, linewidth=1)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", #2962FF, style=plot.style_stepline, linewidth=1)
+bgcolor(in_session ? color.new(color.gray, 95) : color.new(color.red, 95))
+plotshape(long_entry_sig, "Long Entry", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_entry_sig, "Short Entry", shape.triangledown, location.abovebar, color.red, size=size.small)

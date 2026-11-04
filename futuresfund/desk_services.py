@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from futuresfund.book import BOOK_LOCK, _account_book, _refresh_paper, account_rows, load, save
-from futuresfund.live_trading import PAPER, PAPER_KRONOS, _handle, _slots
+from futuresfund.live_trading import PAPER, _handle, _slots
 
 
 def _paper_account(name: str) -> bool:
-    return str(name or "") in {PAPER, PAPER_KRONOS}
+    return str(name or "") == PAPER
 
 
 def reset_paper_account() -> str:
@@ -32,12 +32,10 @@ def reset_paper_account() -> str:
             row for row in (book.get("trades") or [])
             if not isinstance(row, dict) or (not _paper_account(row.get("account")) and str(row.get("mode") or "") != PAPER)
         ]
-        size = 50000.0
-        for name in (PAPER, PAPER_KRONOS):
-            state = _account_book(book, name)
-            size = float(state.get("size") or size)
-            state["realized"] = 0.0
-            state["peak"] = size
+        state = _account_book(book, PAPER)
+        size = float(state.get("size") or 50000.0)
+        state["realized"] = 0.0
+        state["peak"] = size
         paper_slots = [slot for slot in _slots(book) if _paper_account(slot.get("account"))]
         for row in cleared:
             wanted = str(row.get("strategy_id") or "")

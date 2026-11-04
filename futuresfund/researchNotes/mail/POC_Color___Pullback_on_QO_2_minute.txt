@@ -1,0 +1,24 @@
+Subject: Desk Update: POC Color + Pullback (GC1!) Run Results
+
+This run of POC Color + Pullback on the 2-minute Gold chart is not filed in the strategy library. The strategy library only saves a run when profit is above $14,000, the profit factor is above 1.1, the win rate is above 48 percent, and the run has at least 60 trades. This run has 31 trades, which is below the required 60.
+
+Here are the facts from this run:
+Strategy: POC Color + Pullback
+Chart: 2-minute Gold (GC1!)
+Profit: $684.00
+Drawdown: $1,505.50
+Trades: 31
+Trades per day: ~0.52 (2.6 per week over 60 trading days)
+Bars: 11,176 (2026-07-21 to 2026-10-12)
+
+The profit ratio (average winning trade divided by average losing trade) was not explicitly provided in the result data, but the profit of $684.00 and drawdown of $1,505.50 indicate a low profit factor relative to the risk taken. Since the trade count is 31, it does not meet the library's minimum of 60 trades. Therefore, it was not filed.
+
+The settings used were: show_vwma=True, show_pivots=True, vwma_len=50, vwma_slope_len=5, min_slope_deg=3.0, atr_len_slope=14, profile_lookback=120, profile_rows=10, use_pivot_filter=True, pivot_left=5, pivot_right=5, pivot_count=3.
+
+This result is not on the strategy library. It was not filed because it had fewer than 60 trades.
+
+No trades are currently open. The desk is clear.
+
+Best,
+
+Portfolio Manager

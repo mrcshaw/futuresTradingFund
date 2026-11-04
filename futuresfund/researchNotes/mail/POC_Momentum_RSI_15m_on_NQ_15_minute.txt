@@ -1,0 +1,3 @@
+Subject: POC Momentum RSI 15m Result: Not Filed
+
+The POC Momentum RSI 15m strategy was tested on the 15-minute Nasdaq (NQ1!) chart. The run generated $1,880.00 in profit with a drawdown of $2,310.00 across 329 trades. The trades per day were 6.35. The acceptance line on the strategy library page requires a profit above $5,000. This result is under that threshold. The strategy is not on the strategy library. It was not filed because the profit is below $5,000.

@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: POC Color + Pullback.
+Chart tested: 2-minute ES (ES1!).
+Profit 2105.0. Drawdown 1940.0. Trades 20.
+Trades a day: 1.0 over 20 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target.
+Settings of this version: show_vwma=True, vwma_len=50, vwma_slope_len=5, min_slope_deg=6.5918, atr_len_slope=69, show_ema=True, use_ema_filter=True, ema_len=125, profile_lookback=180, profile_rows=10, use_pivot_filter=True, pivot_left=15.
+Engine attempts on this chart: 200.

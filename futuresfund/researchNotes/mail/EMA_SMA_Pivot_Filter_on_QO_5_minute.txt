@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: EMA SMA Pivot Filter.
+Chart tested: 5-minute Gold (GC1!).
+Profit 5775.0. Drawdown 16012.5. Trades 60.
+Trades a day: 1.0 over 60 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: yes.
+Inside the trailing drawdown: no.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the drawdown is past the $2,500 trailing drawdown.
+Settings of this version: emaLength=72, smaLength=23, maxStop=63.936, cooldownBars=10, sessionEnd=1600.
+Engine attempts on this chart: 200.

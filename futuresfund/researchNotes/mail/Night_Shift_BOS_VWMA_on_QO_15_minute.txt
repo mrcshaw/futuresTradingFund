@@ -1,0 +1,11 @@
+Subject: Desk Update: Night Shift BOS VWMA (GC1!) Results
+
+The Night Shift BOS VWMA strategy was tested on the 15-minute Gold (GC1!) chart. The run generated a profit of $14,562.50 with a drawdown of $9,000.00 across 253 trades. This equates to 10.2 trades per week over 124 trading days.
+
+The strategy library requires a win rate above 48% to be included. This run’s win rate is 41.11%. Consequently, this result was not filed in the strategy library. The library keeps a win rate above 48 percent. This run's win rate is 41.11%.
+
+The trade count of 253 falls within the required annual range of 130 to 600 trades. However, the win rate failed the library's criteria. The settings used were pivot_left=3, pivot_right=3, len_vwma=28, len_atr=14, stop_mult=1.125, tp_mult=2.5, cooldown_bars=2.
+
+This result was not filed in the strategy library. The library keeps a win rate above 48 percent. This run's win rate is 41.11%.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 7 seconds.

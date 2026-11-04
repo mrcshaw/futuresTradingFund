@@ -1,0 +1,76 @@
+//@version=5
+// Built from: Delta Volume BOS Night Shift (VWMA trend + volume structure), RSI pullback trigger. Indicators: math.sum, ta.rsi, ta.highest, ta.lowest, ta.crossover, ta.crossunder.
+// How this script works
+// The entry is an RSI pullback trigger that opens a long when the session filter is active, close is above the VWMA, RSI recovers above the oversold level, the bar makes a low at or below the recent swing low while closing above its open, and the cooldown has elapsed.
+// It opens a short when the session filter is active, close is below the VWMA, RSI falls below the overbought level, the bar makes a high at or above the recent swing high while closing below its open, and the cooldown has elapsed.
+// Entries are blocked inside the skip window, and any open position is closed when that window starts or when the session ends.
+// The stop is a fixed dollar stop, stop_dollars divided by point value, placed below the long entry or above the short entry, with an additional close if open profit reaches the negative stop amount.
+
+strategy("VWMA RSI Pullback 2m", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+pv = input.float(5, "Point Value ($)")
+stop_dollars = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars = input.int(500, "Take Profit ($)", minval=250)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_session = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0, "Session Start Minute")
+sess_end_hr = input.int(16, "Session End Hour (ET)")
+sess_end_mn = input.int(0, "Session End Minute")
+
+// ===== SKIP WINDOW (a time of day that keeps losing) =====
+use_skip      = input.bool(true, "Skip This Time Of Day", group="Skip Window", tooltip="No trade opens inside this window, and an open trade is closed when it starts.")
+skip_start_hr = input.int(6, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_mn = input.int(30, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
+skip_end_hr   = input.int(8, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_end_mn   = input.int(0, "Skip End Minute", minval=0, maxval=59, group="Skip Window")
+skip_bar_t = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+skip_from = skip_start_hr * 100 + skip_start_mn
+skip_to = skip_end_hr * 100 + skip_end_mn
+in_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))
+skip_window_open = not in_skip_window
+if in_skip_window and strategy.position_size != 0
+    strategy.close_all(comment="Skip Window")
+
+cur_time = hour(time, "America/New_York") * 60 + minute(time, "America/New_York")
+start_time = sess_start_hr * 60 + sess_start_mn
+end_time = sess_end_hr * 60 + sess_end_mn
+in_session = use_session ? (start_time < end_time ? (cur_time >= start_time and cur_time < end_time) : (cur_time >= start_time or cur_time < end_time)) : true
+cooldown_bars = input.int(12, "Cooldown Bars", minval=1, maxval=100)
+var int last_entry_bar = 0
+vwma_len = input.int(20, "VWMA Length", minval=5, maxval=100)
+vol_sum = math.sum(volume, vwma_len)
+price_sum = math.sum(close * volume, vwma_len)
+vwma = vol_sum > 0 ? price_sum / vol_sum : close
+rsi_len = input.int(14, "RSI Length", minval=5, maxval=50)
+rsi_val = ta.rsi(close, rsi_len)
+rsi_os = input.int(35, "RSI Oversold", minval=10, maxval=45)
+rsi_ob = input.int(65, "RSI Overbought", minval=55, maxval=90)
+swing_len = input.int(10, "Swing Length", minval=5, maxval=50)
+recent_high = ta.highest(high, swing_len)
+recent_low = ta.lowest(low, swing_len)
+trend_long = close > vwma
+trend_short = close < vwma
+rsi_long_trig = ta.crossover(rsi_val, rsi_os)
+rsi_short_trig = ta.crossunder(rsi_val, rsi_ob)
+pullback_long = low <= recent_low and close > open
+pullback_short = high >= recent_high and close < open
+cooldown_ok = bar_index - last_entry_bar >= cooldown_bars
+long_sig = in_session and trend_long and rsi_long_trig and pullback_long and cooldown_ok
+short_sig = in_session and trend_short and rsi_short_trig and pullback_short and cooldown_ok
+if long_sig
+    if skip_window_open
+        strategy.entry("Long", strategy.long)
+    strategy.exit("LX", from_entry="Long", stop=long_stop, limit=long_limit)
+    last_entry_bar := bar_index
+if short_sig
+    if skip_window_open
+        strategy.entry("Short", strategy.short)
+    strategy.exit("SX", from_entry="Short", stop=short_stop, limit=short_limit)
+    last_entry_bar := bar_index
+if strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars
+    strategy.close_all(comment="Open P&L > SL Risk")
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Session")

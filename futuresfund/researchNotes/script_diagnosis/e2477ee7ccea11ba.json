@@ -1,0 +1,178 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 750,
+   "net_profit": -3121.5,
+   "max_drawdown": 4637.0,
+   "trades": 119
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -6306.0,
+   "max_drawdown": 6950.5,
+   "trades": 171
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -3646.5,
+   "max_drawdown": 4813.5,
+   "trades": 94
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -7802.0,
+   "max_drawdown": 8235.0,
+   "trades": 132
+  },
+  "min_delta_pct": {
+   "value": 1.25,
+   "net_profit": -7010.5,
+   "max_drawdown": 8479.5,
+   "trades": 143
+  },
+  "ema_len": {
+   "value": 12,
+   "net_profit": -5756.5,
+   "max_drawdown": 7583.5,
+   "trades": 129
+  },
+  "ema_slope_len": {
+   "value": 20,
+   "net_profit": -6364.5,
+   "max_drawdown": 7833.5,
+   "trades": 132
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": -756.0,
+   "max_drawdown": 756.0,
+   "trades": 21
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": -7618.0,
+   "max_drawdown": 8972.5,
+   "trades": 163
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -10715.0,
+   "max_drawdown": 14470.0,
+   "trades": 240
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": -9780.0,
+   "max_drawdown": 11209.5,
+   "trades": 180
+  },
+  "sess_start_mn": {
+   "value": 10,
+   "net_profit": -7021.0,
+   "max_drawdown": 8513.5,
+   "trades": 136
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -7040.0,
+   "max_drawdown": 8509.0,
+   "trades": 140
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "cooldown_bars",
+  "use_breakeven",
+  "be_trigger_dollars"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 750,
+   "tp_dollars": 2500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 37.5,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 10,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_breakeven": true,
+   "be_trigger_dollars": 200.0
+  },
+  "net_profit": -1277.5,
+  "max_drawdown": 1277.5,
+  "trades": 15,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -36.0,
+  "biggest_loser": -773.5,
+  "held_loser": -773.5,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 14,
+    "pnl": -504.0,
+    "favorable": -5.5,
+    "adverse": -30.5
+   },
+   {
+    "exit": "XL",
+    "trades": 1,
+    "pnl": -773.5,
+    "favorable": 82.0,
+    "adverse": -768.0
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "7 MNQ 15m"
+ ],
+ "answer": {
+  "because": "The last run measured 10 trades, 0.0 win rate, 0.0 profit factor, and -445.5 profit, with 7 XS trades losing -84 and 1 XL trade losing -261.5. The miss is that the short exit is wired to long_stop and long_limit, so the short stop and target are reversed.",
+  "script": "//@version=5\nstrategy(\"Delta Volume Breakout\", overlay=true,\n  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,\n  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,\n  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,\n  max_bars_back=5000)\n// ===== RISK =====\npv                = input.float(2, \"Point Value ($)\")\nstop_dollars      = input.int(250, \"Stop ($)\", minval=250, maxval=750)\ntp_dollars        = input.int(500, \"Take Profit ($)\", minval=250)\nuse_trail         = input.bool(false, \"Enable Trailing Stop\")\ntrail_pct         = input.float(50, \"Trail keep (%)\", minval=0, maxval=100)\ntrail_step_amt    = input.int(500, \"Trail: Tighten every ($)\", minval=0, maxval=2000)\ntrail_step_pct    = input.float(50, \"Trail step (%)\", minval=0, maxval=100)\ntrail_min_dollars = input.int(1000, \"Trail: Min Profit ($)\", minval=0, maxval=2000)\nlong_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv\nlong_limit = close + tp_dollars / pv\nshort_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv\nshort_limit = close - tp_dollars / pv\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -stop_dollars\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\n// ===== VOLUME PROFILE =====\nprofile_lookback = input.int(120, \"Profile Lookback (bars)\", minval=20, maxval=2000, step=10)\nprofile_rows     = input.int(10, \"Price Levels (rows)\", minval=5, maxval=100, step=5, tooltip=\"More rows = finer resolution but slower.\")\n\n// ===== DELTA VOLUME =====\nmin_delta_pct = input.float(5, \"Min Delta Imbalance (%)\", minval=0, maxval=80, step=5, tooltip=\"Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.\")\n\n// ===== TREND FILTER =====\nema_len       = input.int(50, \"Trend EMA Length\", minval=1)\nema_slope_len = input.int(5, \"EMA Slope Lookback (bars)\", minval=1)\nmin_slope     = input.float(0, \"Min EMA Slope (pts)\", minval=0.0, tooltip=\"0 = disabled.\")\n\n// ===== ENTRY =====\nconfirm_candles = input.int(3, \"Confirmation Candles\", minval=1, maxval=10, step=1, tooltip=\"Number of prior closes required above/below POC for entry confirmation.\")\ncooldown_bars   = input.int(10, \"Cooldown (bars)\", minval=0, maxval=100, step=1)\n\n// ===== SESSION =====\nuse_session   = input.bool(true, \"Use Session Filter\")\nsess_start_hr = input.int(8, \"Session Start Hour (ET)\")\nsess_start_mn = input.int(0,  \"Session Start Minute\")\nsess_end_hr   = input.int(16,  \"Session End Hour (ET)\")\nsess_end_mn   = input.int(0,  \"Session End Minute\")\n\n\n// ===== BREAKEVEN =====\nuse_breakeven      = input.bool(true, \"Enable Breakeven Stop\", group=\"Breakeven\")\nbe_trigger_dollars = input.float(200, \"BE Trigger ($)\", minval=50, tooltip=\"Move stop to entry + 1 tick after this much unrealized profit.\", group=\"Breakeven\")\n\n// ===== COMPUTED =====\nfloat stop_pts = stop_dollars / pv\nfloat tp_pts   = tp_dollars / pv\nfloat be_trigger_pts = be_trigger_dollars / pv\n\n// ===== SESSION LOGIC =====\nbar_hr = hour(time, \"America/New_York\")\nbar_mn = minute(time, \"America/New_York\")\nin_session = use_session ? (bar_hr > sess_start_hr or (bar_hr == sess_start_hr and bar_mn >= sess_start_mn)) and (bar_hr < sess_end_hr or (bar_hr == sess_end_hr and bar_mn < sess_end_mn)) : true\n\n// ===== VOLUME PROFILE CALCULATIONS =====\n// Simplified POC calculation for performance and clarity\nfloat poc_price = na\nfloat poc_hi = na\nfloat poc_lo = na\nfloat poc_delta_pct = na\n\nif profile_lookback > 0\n    float high_range = high[profile_lookback-1]\n    float low_range = low[profile_lookback-1]\n    for i = 1 to profile_lookback - 1\n        high_range := math.max(high_range, high[i])\n        low_range := math.min(low_range, low[i])\n    \n    if high_range > low_range\n        float range_size = high_range - low_range\n        float row_size = range_size / profile_rows\n        float poc_vol = 0\n        float max_vol = 0\n        float current_poc = na\n        \n        for r = 0 to profile_rows - 1\n            float row_low = low_range + r * row_size\n            float row_high = row_low + row_size\n            \n            float vol_in_row = 0\n            for j = 0 to profile_lookback - 1\n                if close[j] >= row_low and close[j] < row_high\n                    vol_in_row += volume[j]\n            \n            if vol_in_row > max_vol\n                max_vol := vol_in_row\n                current_poc := (row_low + row_high) / 2\n        \n        if not na(current_poc)\n            poc_price := current_poc\n            poc_hi := current_poc + row_size / 2\n            poc_lo := current_poc - row_size / 2\n            \n            // Calculate Delta % at POC\n            float buy_vol = 0\n            float sell_vol = 0\n            for j = 0 to profile_lookback - 1\n                if close[j] >= poc_lo and close[j] <= poc_hi\n                    if close[j] > open[j]\n                        buy_vol += volume[j]\n                    else\n                        sell_vol += volume[j]\n            float total_poc_vol = buy_vol + sell_vol\n            if total_poc_vol > 0\n                poc_delta_pct := math.abs(buy_vol - sell_vol) / total_poc_vol * 100\n\n// ===== TREND CALCULATIONS =====\nema_val = ta.ema(close, ema_len)\nema_slope = ema_val - ema_val[ema_slope_len]\nema_up = ema_slope >= min_slope\nema_dn = ema_slope <= -min_slope\n\n// ===== ENTRY LOGIC =====\n// New Entry: Breakout of POC range in direction of EMA trend and Delta imbalance\nbool long_condition = false\nbool short_condition = false\n\nif in_session and strategy.position_size == 0\n    // Check if cooldown is over\n    bool cooldown_ok = true\n    if cooldown_bars > 0\n        int bars_since_entry = 0\n        for i = 1 to cooldown_bars\n            if strategy.position_size[i] != 0\n                bars_since_entry := i\n                break\n        cooldown_ok = bars_since_entry < cooldown_bars ? false : true\n        \n    if cooldown_ok and not na(poc_price) and poc_delta_pct >= min_delta_pct\n        // Long: Close breaks above POC High, EMA is up, Delta is positive (buy > sell)\n        if close > poc_hi and ema_up and poc_delta_pct > 0\n            // Verify delta direction: Buy volume > Sell volume at POC\n            float buy_vol_check = 0\n            float sell_vol_check = 0\n            for j = 0 to profile_lookback - 1\n                if close[j] >= poc_lo and close[j] <= poc_hi\n                    if close[j] > open[j]\n                        buy_vol_check += volume[j]\n                    else\n                        sell_vol_check += volume[j]\n            if buy_vol_check > sell_vol_check\n                // Check confirm_candles: prior closes above poc_hi\n                bool confirm_ok = true\n                for k = 1 to confirm_candles\n                    if close[k] <= poc_hi\n                        confirm_ok := false\n                        break\n                if confirm_ok\n                    long_condition := true\n                \n        // Short: Close breaks below POC Low, EMA is down, Delta is negative (sell > buy)\n        if close < poc_lo and ema_dn and poc_delta_pct > 0\n            // Verify delta direction: Sell volume > Buy volume at POC\n            float buy_vol_check = 0\n            float sell_vol_check = 0\n            for j = 0 to profile_lookback - 1\n                if close[j] >= poc_lo and close[j] <= poc_hi\n                    if close[j] > open[j]\n                        buy_vol_check += volume[j]\n                    else\n                        sell_vol_check += volume[j]\n            if sell_vol_check > buy_vol_check\n                // Check confirm_candles: prior closes below poc_lo\n                bool confirm_ok = true\n                for k = 1 to confirm_candles\n                    if close[k] >= poc_lo\n                        confirm_ok := false\n                        break\n                if confirm_ok\n                    short_condition := true\n\n// ===== EXECUTION =====\nvar float peak_profit_pts = 0\nvar float current_stop = na\nvar float long_stop_price = na\nvar float short_stop_price = na\nvar float long_limit_price = na\nvar float short_limit_price = na\n\n// desk indicator ta.rsi\n_desk_gate = ta.rsi(close, 14)\n_desk_long = _desk_gate > 50\n_desk_short = _desk_gate < 50\nif long_condition and _desk_long\n    strategy.entry(\"L\", strategy.long)\n    strategy.exit(\"XL\", \"L\", stop=long_stop, limit=long_limit)\n    long_stop_price := close - stop_dollars / pv\n    long_limit_price := close + tp_dollars / pv\n    current_stop := long_stop_price\n    peak_profit_pts := 0\n    \nif short_condition and _desk_short\n    strategy.entry(\"S\", strategy.short)\n    strategy.exit(\"XS\", \"S\", stop=short_stop, limit=short_limit)\n    short_stop_price := close + stop_dollars / pv\n    short_limit_price := close - tp_dollars / pv\n    current_stop := short_stop_price\n    peak_profit_pts := 0\n\n// ===== BREAKEVEN LOGIC =====\nif strategy.position_size > 0\n    float avg = strategy.position_avg_price\n    float profit_now = close - avg\n    if use_breakeven and profit_now >= be_trigger_pts\n        float new_be_stop = avg + 1 / pv // 1 tick above entry\n        if long_stop_price < new_be_stop\n            long_stop_price := new_be_stop\n            current_stop := new_be_stop\n            \nif strategy.position_size < 0\n    float avg = strategy.position_avg_price\n    float profit_now = avg - close\n    if use_breakeven and profit_now >= be_trigger_pts\n        float new_be_stop = avg - 1 / pv // 1 tick below entry\n        if short_stop_price > new_be_stop\n            short_stop_price := new_be_stop\n            current_stop := new_be_stop\n\n// ===== EXIT LOGIC =====\nif strategy.position_size > 0\n    strategy.exit(\"XL\", \"L\", stop=long_stop, limit=long_limit)\nif strategy.position_size < 0\n    strategy.exit(\"XS\", \"S\", stop=short_stop, limit=short_limit)\n\nif strategy.position_size == 0\n    long_stop_price := na\n    short_stop_price := na\n    long_limit_price := na\n    short_limit_price := na\n\nif use_session and strategy.position_size != 0 and (bar_hr > sess_end_hr or (bar_hr == sess_end_hr and bar_mn >= sess_end_mn))\n    strategy.close_all(comment=\"Session End\")\n\n// ===== TRAILING STOP =====\nif use_trail\n    if strategy.position_size > 0\n        float avg        = strategy.position_avg_price\n        float profit_now = high - avg\n        if profit_now > peak_profit_pts\n            peak_profit_pts := profit_now\n        if peak_profit_pts >= trail_min_dollars / pv\n            float peak_dollars = peak_profit_pts * pv\n            int   steps        = math.floor(peak_dollars / trail_step_amt)\n            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)\n            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)\n            if new_stop > long_stop_price\n                long_stop_price := new_stop\n                current_stop := new_stop\n                strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n    else if strategy.position_size < 0\n        float avg        = strategy.position_avg_price\n        float profit_now = avg - low\n        if profit_now > peak_profit_pts\n            peak_profit_pts := profit_now\n        if peak_profit_pts >= trail_min_dollars / pv\n            float peak_dollars = peak_profit_pts * pv\n            int   steps        = math.floor(peak_dollars / trail_step_amt)\n            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)\n            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)\n            if new_stop < short_stop_price\n                short_stop_price := new_stop\n                current_stop := new_stop\n                strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\n// ===== PLOT =====\nplot(ema_val, \"200 EMA\", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)\nplot(not na(poc_price) ? poc_price : na, \"POC\", color.yellow, style=plot.style_stepline, linewidth=1)\nplot(not na(poc_hi) ? poc_hi : na, \"POC High\", #2962FF, style=plot.style_stepline, linewidth=2)\nplot(not na(poc_lo) ? poc_lo : na, \"POC Low\", #2962FF, style=plot.style_stepline, linewidth=2)\nplot(strategy.position_size != 0 ? current_stop : na, \"Stop\", color.fuchsia, style=plot.style_stepline, linewidth=2)\n\nbgcolor(not na(poc_hi) and not na(poc_lo) and close >= poc_lo and close <= poc_hi ? color.new(#2962FF, 90) : na)\n\nplotshape(long_condition, \"Long Signal\", shape.triangleup, location.belowbar, color.lime, size=size.small)\nplotshape(short_condition, \"Short Signal\", shape.triangledown, location.abovebar, color.red, size=size.small)\n\nplot(not na(poc_delta_pct) ? poc_delta_pct : na, \"POC Delta %\", color.orange, display=display.data_window)",
+  "params": null,
+  "settings": {
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "ema_len": 100,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 4,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0
+  }
+ }
+}

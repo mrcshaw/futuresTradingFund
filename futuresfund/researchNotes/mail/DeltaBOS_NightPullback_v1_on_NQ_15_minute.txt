@@ -1,0 +1,11 @@
+Subject: DeltaBOS_NightPullback_v1 Result: Not Filed
+
+The DeltaBOS_NightPullback_v1 strategy was tested on the 15-minute Nasdaq (NQ1!) chart. The run generated a profit of $4,525.00 with a drawdown of $1,630.00 across 130 trades. The profit ratio (average winning trade divided by average losing trade) and trades per day were calculated based on the 23,704 bars from October 1, 2025, through October 2, 2026.
+
+This result was not filed in the strategy library. The acceptance criteria require a profit above $5,000. This run’s profit of $4,525.00 is below that threshold. The library only accepts runs that meet the profit, drawdown, win rate, and trade count requirements simultaneously. Since the profit target was not met, this run is not included in the library.
+
+The desk remains active. I will flatten all open trades at 16:45 New York time. The next meeting is scheduled for 5:00 PM ET Sunday.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Friday 09:31 PM ET

@@ -1,22 +1,30 @@
 //@version=5
+// How this script works
+// The script waits for a pivot high or low to be confirmed, then opens a long or short when the POC delta imbalance supports that direction.
+// It also requires the close to be above the VWMA for longs or below it for shorts, confirmation volume to be elevated, and the Smart Trail trend to match the breakout.
+// The stop is a fixed dollar stop calculated from stop_dollars and point value, with an optional trailing stop that tightens as profit grows.
+
 strategy("Day Shift 9k Smart Trail + POC Delta Combined dual time", overlay=true,
   initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
   commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
   slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
   max_bars_back=5000, max_labels_count=500)
 // ===== RISK =====
-pv                = input.float(20, "Point Value ($)")
-stop_pct          = input.float(0.1, "Stop (% of account)", minval=0.1, maxval=3)
-tp_pct            = input.float(4, "Take Profit (% of account)", minval=0.1, maxval=4)
+pv                = input.float(5, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
 use_trail         = input.bool(false, "Enable Trailing Stop")
-trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
-trail_step_acct   = input.float(1, "Trail: Tighten every % of account")
-trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
-trail_min_pct     = input.float(2, "Trail: Min Profit (% of account)")
-stop_dollars      = strategy.initial_capital * stop_pct / 100
-tp_dollars        = strategy.initial_capital * tp_pct / 100
-trail_step_amt    = strategy.initial_capital * trail_step_acct / 100
-trail_min_dollars = strategy.initial_capital * trail_min_pct / 100
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
 
 // ===== SMART TRAIL SETTINGS =====
 sensitivity = input.int(13, "Smart Trail Sensitivity", minval=1, group="Smart Trail", tooltip="Adjusts the agility of the SuperTrend-style trail.")
@@ -61,6 +69,21 @@ sess_start_hr = input.int(8, "Session Start Hour (ET)")
 sess_start_mn = input.int(0,  "Session Start Minute")
 sess_end_hr   = input.int(16,  "Session End Hour (ET)")
 sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== SKIP WINDOW (a time of day that keeps losing) =====
+use_skip      = input.bool(true, "Skip This Time Of Day", group="Skip Window", tooltip="No trade opens inside this window, and an open trade is closed when it starts.")
+skip_start_hr = input.int(8, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_mn = input.int(0, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
+skip_end_hr   = input.int(9, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_end_mn   = input.int(30, "Skip End Minute", minval=0, maxval=59, group="Skip Window")
+skip_bar_t = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+skip_from = skip_start_hr * 100 + skip_start_mn
+skip_to = skip_end_hr * 100 + skip_end_mn
+in_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))
+skip_window_open = not in_skip_window
+if in_skip_window and strategy.position_size != 0
+    strategy.close_all(comment="Skip Window")
+
 
 
 // ===== REDUCED RISK =====
@@ -306,8 +329,9 @@ if long_sig
     last_trade_bar  := bar_index
     last_dir        := 1
     armed_dir       := 0
-    strategy.entry("Long", strategy.long)
-    strategy.exit("XL", "Long", stop=current_stop, limit=close + tp_pts)
+    if skip_window_open
+        strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
 else if short_sig
     current_stop    := close + stop_pts
     entry_price     := close
@@ -317,8 +341,9 @@ else if short_sig
     last_trade_bar  := bar_index
     last_dir        := -1
     armed_dir       := 0
-    strategy.entry("Short", strategy.short)
-    strategy.exit("XS", "Short", stop=current_stop, limit=close - tp_pts)
+    if skip_window_open
+        strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
 
 // ===== RESET AFTER TRADE — detect stop loss for reversal =====
 if strategy.position_size == 0 and strategy.position_size[1] != 0
@@ -345,14 +370,16 @@ if use_reversal and reversal_pending and no_conflict and strategy.position_size 
         current_stop := close + rev_stop_pts
         entry_price  := close
         last_dir     := -1
-        strategy.entry("RevShort", strategy.short)
-        strategy.exit("XRS", "RevShort", stop=current_stop, limit=close - rev_tp_pts)
+        if skip_window_open
+            strategy.entry("RevShort", strategy.short)
+        strategy.exit("XRS", "RevShort", stop=short_stop, limit=short_limit)
     else if last_dir == -1
         current_stop := close - rev_stop_pts
         entry_price  := close
         last_dir     := 1
-        strategy.entry("RevLong", strategy.long)
-        strategy.exit("XRL", "RevLong", stop=current_stop, limit=close + rev_tp_pts)
+        if skip_window_open
+            strategy.entry("RevLong", strategy.long)
+        strategy.exit("XRL", "RevLong", stop=long_stop, limit=long_limit)
 
 // ===== BREAKEVEN MANAGEMENT =====
 if use_breakeven and strategy.position_size != 0 and not be_active
@@ -361,13 +388,13 @@ if use_breakeven and strategy.position_size != 0 and not be_active
         if unrealized_pts >= be_trigger_pts
             be_active    := true
             current_stop := entry_price + 0.25
-            strategy.exit("XL", "Long", stop=current_stop, limit=entry_price + tp_pts)
+            strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
     else if strategy.position_size < 0
         float unrealized_pts = entry_price - close
         if unrealized_pts >= be_trigger_pts
             be_active    := true
             current_stop := entry_price - 0.25
-            strategy.exit("XS", "Short", stop=current_stop, limit=entry_price - tp_pts)
+            strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
 
 if strategy.position_size == 0
     be_active := false
@@ -386,7 +413,7 @@ if use_trail_stop
             float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
             if new_stop > current_stop
                 current_stop := new_stop
-                strategy.exit("XL", "Long", stop=current_stop, limit=avg + tp_pts)
+                strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
     else if strategy.position_size < 0
         float avg        = strategy.position_avg_price
         float profit_now = avg - low
@@ -399,7 +426,7 @@ if use_trail_stop
             float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
             if new_stop < current_stop
                 current_stop := new_stop
-                strategy.exit("XS", "Short", stop=current_stop, limit=avg - tp_pts)
+                strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
 
 // ===== CRITERIA DISPLAY TABLE =====
 var table crit_table = table.new(position.top_right, 3, 13, bgcolor=color.new(color.black, 70), border_width=1)

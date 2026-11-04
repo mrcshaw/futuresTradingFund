@@ -1,0 +1,8 @@
+Strategy: POC RSI Pivot Breakout v1.
+File: poc_rsi_pivot_breakout_v1_2.pine.
+Chart: 5m NQ1!.
+Profit 67000.0. Drawdown 26660.0. Trades 336.
+Profit ratio 1.545. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.51 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

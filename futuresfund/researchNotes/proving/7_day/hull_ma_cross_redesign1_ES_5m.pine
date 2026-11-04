@@ -1,0 +1,168 @@
+//@version=5
+// How this script works
+// The script builds a rolling volume profile over the lookback period, finds the POC and a POC zone, and measures the POC delta from up and down volume.
+// It arms a long when close is above the POC zone, above the VWMA, and POC delta is at least the delta minimum, and arms a short when close is below the zone, below the VWMA, and POC delta is at most the negative delta minimum.
+// It enters with strategy.entry("Long", strategy.long) when armed_long, a pivot high forms, the bar is in the 1800-1600 New York session, no position is open, and take profit exceeds stop, and enters with strategy.entry("Short", strategy.short) on the matching short conditions.
+// The stop is strategy.exit with long_stop or short_stop, set from stop_dollars divided by point value, with default stop_dollars of 250 and point value of 2.
+// It also closes all positions at 16:00 New York time and can close early if open profit is worse than the stop dollar amount.
+
+strategy("Hull MA Cross Redesign 1", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(700, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(750, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== INPUTS =====
+profile_lookback  = input.int(200, "Profile Lookback", minval=50, maxval=1000)
+profile_rows      = input.int(50, "Profile Rows", minval=10, maxval=200)
+poc_zone_rows     = input.int(2, "POC Zone Rows", minval=0, maxval=10)
+delta_min         = input.int(50, "Delta Min (%)", minval=0, maxval=100)
+vwma_len          = input.int(50, "VWMA Length", minval=10, maxval=200)
+pivot_len         = input.int(3, "Pivot Length", minval=2, maxval=50)
+
+// ===== SESSION =====
+sess_str = "1800-1600"
+tz = "America/New_York"
+in_session = not na(time(timeframe.period, sess_str, tz))
+
+// Flatten at session end (16:00 NY)
+if hour(time, tz) == 16 and minute(time, tz) == 0
+    strategy.close_all(comment="Session End")
+
+// ===== VOLUME PROFILE =====
+// Calculate min/max over lookback
+float min_price = ta.lowest(low, profile_lookback)
+float max_price = ta.highest(high, profile_lookback)
+float bin_size = (max_price - min_price) / profile_rows
+
+// Arrays for up/down volume per bin
+var array<float> up_vol = array.new_float(profile_rows, 0.0)
+var array<float> down_vol = array.new_float(profile_rows, 0.0)
+
+// Reset arrays every bar? No, we need to accumulate over the lookback period.
+// But Pine Script arrays persist. We need to clear them and refill every bar.
+// This is expensive but necessary for a rolling profile.
+array.clear(up_vol)
+array.clear(down_vol)
+for i = 0 to profile_rows - 1
+    array.push(up_vol, 0.0)
+    array.push(down_vol, 0.0)
+
+// Fill arrays
+for i = 0 to profile_lookback - 1
+    float c = close[i]
+    float o = open[i]
+    float v = volume[i]
+    if bin_size > 0
+        int idx = int((c - min_price) / bin_size)
+        if idx < 0
+            idx := 0
+        if idx >= profile_rows
+            idx := profile_rows - 1
+        if c > o
+            float current_up = array.get(up_vol, idx)
+            array.set(up_vol, idx, current_up + v)
+        else
+            float current_down = array.get(down_vol, idx)
+            array.set(down_vol, idx, current_down + v)
+
+// Find POC index
+int poc_idx = 0
+float max_vol = 0.0
+for i = 0 to profile_rows - 1
+    float total_vol = array.get(up_vol, i) + array.get(down_vol, i)
+    if total_vol > max_vol
+        max_vol := total_vol
+        poc_idx := i
+
+// POC Price (center of bin)
+float poc_price = min_price + (poc_idx + 0.5) * bin_size
+float poc_zone_high = poc_price + poc_zone_rows * bin_size
+float poc_zone_low = poc_price - poc_zone_rows * bin_size
+
+// POC Delta
+float poc_up = array.get(up_vol, poc_idx)
+float poc_down = array.get(down_vol, poc_idx)
+float poc_total = poc_up + poc_down
+float poc_delta = poc_total > 0 ? (poc_up - poc_down) / poc_total * 100 : 0.0
+
+// ===== ARMING LOGIC =====
+var bool armed_long = false
+var bool armed_short = false
+var bool reversal_armed = false
+
+// Disarm if close returns inside POC zone
+if close >= poc_zone_low and close <= poc_zone_high
+    armed_long := false
+    armed_short := false
+
+// Arm Long
+if close > poc_zone_high and close > ta.vwma(close, vwma_len) and poc_delta >= delta_min
+    armed_long := true
+
+// Arm Short
+if close < poc_zone_low and close < ta.vwma(close, vwma_len) and poc_delta <= -delta_min
+    armed_short := true
+
+// ===== ENTRY LOGIC =====
+bool pivot_high = not na(ta.pivothigh(high, pivot_len, pivot_len))
+bool pivot_low = not na(ta.pivotlow(low, pivot_len, pivot_len))
+
+bool valid_risk = tp_dollars > stop_dollars
+
+// Long Entry
+if armed_long and pivot_high and in_session and strategy.position_size == 0 and valid_risk
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+    armed_long := false
+    if reversal_armed
+        reversal_armed := false
+
+// Short Entry
+if armed_short and pivot_low and in_session and strategy.position_size == 0 and valid_risk
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+    armed_short := false
+    if reversal_armed
+        reversal_armed := false
+
+// ===== EXIT LOGIC =====
+
+if strategy.position_size > 0
+    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit)
+    // Detect stop out
+    if strategy.closedtrades.size() > 0
+        int last_trade = strategy.closedtrades.size() - 1
+        if strategy.closedtrades.profit(last_trade) < 0 and strategy.closedtrades.reason(last_trade) == "Stop"
+            reversal_armed := true
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit)
+    // Detect stop out
+    if strategy.closedtrades.size() > 0
+        int last_trade = strategy.closedtrades.size() - 1
+        if strategy.closedtrades.profit(last_trade) < 0 and strategy.closedtrades.reason(last_trade) == "Stop"
+            reversal_armed := true
+
+// ===== PLOTS =====
+plot(poc_price, "POC", color=color.red, style=plot.style_linebr)
+plot(poc_zone_high, "POC Zone High", color=color.green, style=plot.style_linebr)
+plot(poc_zone_low, "POC Zone Low", color=color.green, style=plot.style_linebr)
+fill(plot(poc_zone_high, "POC Zone High", color=color.green, style=plot.style_linebr), plot(poc_zone_low, "POC Zone Low", color=color.green, style=plot.style_linebr), color=color.new(color.green, 90), title="POC Zone")
+plotshape(armed_long, "Armed Long", shape.triangleup, location.belowbar, color=color.green, size=size.tiny)
+plotshape(armed_short, "Armed Short", shape.triangledown, location.abovebar, color=color.red, size=size.tiny)

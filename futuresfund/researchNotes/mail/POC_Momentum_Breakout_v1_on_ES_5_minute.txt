@@ -1,0 +1,3 @@
+Subject: POC Momentum Breakout v1 Result: Not Filed
+
+The POC Momentum Breakout v1 run on the 5-minute ES chart has concluded. The strategy generated a profit of $7,062.50 with a maximum drawdown of $9,625.00 across 364 trades. The profit ratio (average win divided by average loss) was calculated, but the result was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.1, a win rate above 48 percent, and at least 60 trades. This run fell short of the $14,000 profit threshold. Consequently, it was not added to the strategy library. The settings used were len_ema=50, atr_len=56, atr_mult=1.5, rsi_len=14, rsi_overbought=70, rsi_oversold=30, and cooldown_bars=20. No further action is taken on this specific run.

@@ -1545,8 +1545,10 @@ _EXCHANGE_TZ = {
     "QO": "America/New_York", "GC": "America/New_York", "MGC": "America/New_York", "SI": "America/New_York",
     "CL": "America/New_York", "MCL": "America/New_York",
 }
-_MINTICK = {"ES": 0.25, "MES": 0.25, "NQ": 0.25, "MNQ": 0.25, "YM": 1.0, "RTY": 0.1, "QO": 0.25, "GC": 0.1, "MGC": 0.1, "CL": 0.01}
-_TICKER = {"ES": "CME_MINI:ES1!", "NQ": "CME_MINI:NQ1!", "QO": "COMEX_MINI:QO1!", "GC": "COMEX:GC1!", "CL": "NYMEX:CL1!"}
+_TICKER = {
+    "ES": "CME_MINI:ES1!", "MES": "CME_MINI:MES1!", "NQ": "CME_MINI:NQ1!", "MNQ": "CME_MINI:MNQ1!", "M2K": "CME_MINI:M2K1!", "YM": "CBOT_MINI:YM1!",
+    "QO": "COMEX_MINI:QO1!", "GC": "COMEX:GC1!", "CL": "NYMEX:CL1!",
+}
 _MINUTES = {"1m": 1, "2m": 2, "3m": 3, "5m": 5, "10m": 10, "15m": 15, "30m": 30, "1h": 60, "4h": 240}
 
 
@@ -1622,7 +1624,7 @@ class Runtime:
     """The bars, the inputs, and the broker one compiled script runs against."""
 
     def __init__(self, bars, settings: dict, inputs: dict, root: str, timeframe: str) -> None:
-        from futuresfund.contracts import POINT_VALUE
+        from futuresfund.contracts import POINT_VALUE, TICK_SIZE
 
         self.bars = bars
         self.n = len(bars)
@@ -1633,7 +1635,7 @@ class Runtime:
         self.V = [bar.v for bar in bars]
         self.T = [bar.epoch * 1000 for bar in bars]
         self.root = root.upper()
-        self.mintick = _MINTICK.get(self.root, 0.25)
+        self.mintick = float(TICK_SIZE.get(self.root, 0.25))
         self.pointvalue = float(POINT_VALUE.get(self.root, 50))
         self.tz = _EXCHANGE_TZ.get(self.root, "America/New_York")
         minutes = _MINUTES.get(timeframe, 1)

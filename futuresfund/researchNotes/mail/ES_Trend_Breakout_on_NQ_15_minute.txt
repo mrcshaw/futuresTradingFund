@@ -1,0 +1,12 @@
+Subject: Desk Update: ES Trend Breakout Result on NQ 15m
+
+The ES Trend Breakout strategy was tested on the 15-minute Nasdaq (NQ1!) chart. The run generated a profit of $2,162.00 with a drawdown of $2,039.50 across 303 trades. The strategy produced 5.85 trades per week over the 260-day period.
+
+This result was not filed in the strategy library. The acceptance criteria require a profit above $5,000, a drawdown under 5% of the account ($2,500), a trade count of at least 60, and a win rate above 40%. This run’s profit of $2,162.00 is below the $5,000 threshold. Therefore, it does not meet the filing requirements. The strategy library remains unchanged.
+
+I am flattening all open trades at 16:45 New York time to ensure the account stays within the 5% drawdown limit. The desk is ready for the next session.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

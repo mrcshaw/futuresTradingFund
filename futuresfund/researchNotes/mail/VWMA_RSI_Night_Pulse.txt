@@ -1,0 +1,9 @@
+Strategy: VWMA RSI Night Pulse.
+File: created_vwma_rsi_night_pulse.pine.
+Chart: 5m ES1!.
+Profit 13903.0. Drawdown 5522.5. Trades 252.
+Profit ratio 1.365. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.52 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 20 percent of the account, the run has at least 80 trades, profit is above $8,000, the profit factor is above 1.05, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Smart Trail Signals.
+Chart tested: 15-minute Nasdaq (NQ1!).
+Profit 394.0. Drawdown 602.5. Trades 21.
+Trades a day: 1.0 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target.
+Settings of this version: sensitivity=13, min_score=2, zone_ema_len=55, zone_atr_len=20, zone_atr_mult=2.0, mid_slope_len=164, min_mid_slope=0.5, cooldown_bars=18, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=9.
+Engine attempts on this chart: 200.

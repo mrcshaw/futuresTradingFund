@@ -1,0 +1,7 @@
+Subject: Desk Update: POC BOS Momentum v1 on Gold (GC1!)
+
+The latest run of POC BOS Momentum v1 on the 5-minute Gold chart has concluded. The strategy generated a profit of $2,312.50 with a maximum drawdown of $975.00 across 35 trades. Over the 70-day testing period, the pace averaged 2.5 trades per week. Projected annually, this equates to approximately 130 trades per year, which sits exactly on the lower bound of the acceptable 130-600 trade range. While the pace is acceptable, the total profit is insufficient for filing. The strategy library requires a profit over $10,000 to accept a run, and this result falls well below that threshold. Consequently, this result was not filed in the strategy library. The settings used were fast_len=3, slow_len=156, sig_len=9, rsi_len=14, atr_len=14, stop_mult=0.5, tp_mult=2.0, cooldown_bars=3, and session_window=1800-1600. This desk continues to monitor other configurations.
+
+Email sent to desk view.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 26 seconds.

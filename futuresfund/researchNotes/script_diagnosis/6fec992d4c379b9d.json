@@ -1,0 +1,120 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -580.0,
+   "max_drawdown": 580.0,
+   "trades": 2
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -330.0,
+   "max_drawdown": 650.0,
+   "trades": 2
+  },
+  "ema_len": {
+   "value": 12,
+   "net_profit": 910.0,
+   "max_drawdown": 1120.0,
+   "trades": 8
+  },
+  "rsi_len": {
+   "value": 7,
+   "net_profit": 1420.0,
+   "max_drawdown": 2270.0,
+   "trades": 12
+  },
+  "rsi_lo": {
+   "value": 20,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "rsi_hi": {
+   "value": 60,
+   "net_profit": -530.0,
+   "max_drawdown": 2060.0,
+   "trades": 6
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -510.0,
+   "max_drawdown": 510.0,
+   "trades": 1
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -520.0,
+   "max_drawdown": 560.0,
+   "trades": 1
+  }
+ },
+ "flat": [
+  "mom_len",
+  "cooldown",
+  "use_session",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "ema_len": 50,
+   "rsi_len": 14,
+   "rsi_lo": 30,
+   "rsi_hi": 70,
+   "mom_len": 5,
+   "cooldown": 8
+  },
+  "net_profit": -1030.0,
+  "max_drawdown": 1070.0,
+  "trades": 2,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -510.0,
+  "biggest_loser": -520.0,
+  "held_loser": -510.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 1,
+    "pnl": -510.0,
+    "favorable": 30.0,
+    "adverse": -510.0
+   },
+   {
+    "exit": "Open P&L > SL Risk",
+    "trades": 1,
+    "pnl": -520.0,
+    "favorable": 270.0,
+    "adverse": -560.0
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m",
+  "NQ 15m",
+  "MNQ 15m",
+  "ES 5m"
+ ],
+ "version": 3
+}

@@ -1,0 +1,9 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v12 on ES 2-min
+
+The Engine4_NewPivotTrend_v12 run on the 2-minute ES chart has finished. The strategy generated a profit of $900.00 with a maximum drawdown of $7,962.50 across 972 trades. Based on the test duration of 177,782 bars from October 1, 2025, through October 2, 2026, the pace is 18.7 trades per week, which annualizes to approximately 972 trades per year.
+
+This pace exceeds the maximum threshold of 600 trades per year. Consequently, the result does not meet the criteria for the strategy library, which requires a pace between 130 and 600 trades annually. The result has not been filed. The settings used were emaFastLen=55, emaSlowLen=200, pivotLen=10, atrLen=14, stopMult=2.3438, targetMult=0.625, and cooldownBars=100. This was run 201 times on this chart, with 200 different results observed.
+
+No changes have been made to the live account. The desk remains on the original configuration.
+
+[Email Sent]

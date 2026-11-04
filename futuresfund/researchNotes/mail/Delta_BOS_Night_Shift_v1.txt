@@ -1,0 +1,9 @@
+Strategy: Delta BOS Night Shift v1.
+File: created_delta_bos_night_shift_v1.pine.
+Chart: 2m NQ1!.
+Profit 54335.0. Drawdown 21600.0. Trades 442.
+Profit ratio 1.35. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.52 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, and the run has at least 60 trades. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

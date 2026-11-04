@@ -1,0 +1,152 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "i_tp",
+  "i_trail_act",
+  "i_trail_pct",
+  "max_stop"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 750,
+   "net_profit": 2623.0,
+   "max_drawdown": 2112.0,
+   "trades": 32
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -1583.5,
+   "max_drawdown": 3627.0,
+   "trades": 36
+  },
+  "gather_min": {
+   "value": 60,
+   "net_profit": 476.0,
+   "max_drawdown": 790.0,
+   "trades": 9
+  },
+  "entry_end_hr": {
+   "value": 10,
+   "net_profit": -1144.5,
+   "max_drawdown": 2245.0,
+   "trades": 12
+  },
+  "entry_end_mn": {
+   "value": 59,
+   "net_profit": -1813.5,
+   "max_drawdown": 3962.0,
+   "trades": 41
+  },
+  "eod_hr": {
+   "value": 4,
+   "net_profit": -2185.0,
+   "max_drawdown": 3770.5,
+   "trades": 35
+  },
+  "i_margin": {
+   "value": 0.25,
+   "net_profit": -1908.5,
+   "max_drawdown": 4057.0,
+   "trades": 36
+  },
+  "max_attempts": {
+   "value": 1,
+   "net_profit": -1431.0,
+   "max_drawdown": 2531.5,
+   "trades": 21
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [
+  "eod_mn",
+  "i_or_min",
+  "i_or_max",
+  "fvg_lookback",
+  "fvg_min_atr",
+  "atr_len",
+  "profile_lookback",
+  "profile_rows",
+  "min_delta_pct",
+  "ema_len",
+  "ema_slope_len",
+  "min_slope",
+  "poc_filter_mode",
+  "use_session",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "gather_min": 15,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "eod_hr": 15,
+   "eod_mn": 45,
+   "i_margin": 1.0,
+   "i_or_min": 0.0,
+   "i_or_max": 9999.0,
+   "max_attempts": 2,
+   "fvg_lookback": 20,
+   "fvg_min_atr": 0.04,
+   "atr_len": 14,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "poc_filter_mode": "Off",
+   "i_tp": 500.0,
+   "i_trail_act": 400.0,
+   "i_trail_pct": 40.0,
+   "max_stop": 9999.0
+  },
+  "net_profit": -1622.5,
+  "max_drawdown": 3771.0,
+  "trades": 35,
+  "win_rate": 31.43,
+  "profit_factor": 0.764,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "SL",
+    "trades": 35,
+    "pnl": -1622.5,
+    "favorable": 235.93,
+    "adverse": -236.57
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "90 GC 5m"
+ ]
+}

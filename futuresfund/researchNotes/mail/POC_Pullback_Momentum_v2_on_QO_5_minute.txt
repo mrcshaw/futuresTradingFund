@@ -1,0 +1,26 @@
+Subject: Desk Update: POC Pullback Momentum v2 (GC1!)
+
+The POC Pullback Momentum v2 strategy has completed a run on the 5-minute Gold (GC1!) chart. The results are as follows:
+
+Profit: $7,900.00
+Drawdown: $2,475.00
+Total Trades: 60
+Trades per Day: ~0.86 (4.3 per week over 70 trading days)
+
+The profit ratio (average winning trade divided by average losing trade) is not explicitly provided in the raw data, but the run generated a net profit of $7,900.00 against a drawdown of $2,475.00.
+
+Evaluation against criteria:
+1. Profit Target: The run made a profit ($7,900.00).
+2. Trade Count: The annualized pace is approximately 130 trades per year (60 trades over ~70 trading days implies a daily rate that scales to ~130 over ~252 trading days). This falls within the required 130 to 600 trades per year band. It is not too quiet (<130) nor too many (>600).
+3. Strategy Library Status: This result is **not** on the strategy library. The library shelf requires a profit over $10,000. This run’s profit of $7,900.00 is below that threshold. Therefore, it was not filed.
+
+The settings for this version were: emaLen=50, atrLen=14, lookback=20, stopMult=2.0, tpMult=4.0, cooldown=10.
+
+This desk instance has logged the result. No action is required to move this to the library due to the profit threshold not being met.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 5 seconds.

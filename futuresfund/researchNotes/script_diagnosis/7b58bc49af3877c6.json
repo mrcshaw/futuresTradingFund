@@ -1,0 +1,117 @@
+{
+ "sessions": 21,
+ "unread": [
+  "sensitivity",
+  "min_score",
+  "pullback_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 958.0,
+   "max_drawdown": 385.5,
+   "trades": 2
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 635.0,
+   "max_drawdown": 436.5,
+   "trades": 5
+  },
+  "ema_len": {
+   "value": 100,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema_slope_len": {
+   "value": 20,
+   "net_profit": -249.0,
+   "max_drawdown": 1279.5,
+   "trades": 9
+  },
+  "min_slope": {
+   "value": 0.05,
+   "net_profit": -1226.0,
+   "max_drawdown": 2920.5,
+   "trades": 26
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_hr": {
+   "value": 23,
+   "net_profit": -281.0,
+   "max_drawdown": 281.0,
+   "trades": 1
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "use_session",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "sensitivity": 13,
+   "min_score": 2,
+   "ema_len": 400,
+   "ema_slope_len": 5,
+   "min_slope": 0.2,
+   "pullback_dollars": 125.0,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0
+  },
+  "net_profit": 677.0,
+  "max_drawdown": 436.5,
+  "trades": 3,
+  "win_rate": 66.67,
+  "profit_factor": 3.409,
+  "biggest_winner": 479.0,
+  "biggest_loser": -281.0,
+  "held_loser": -281.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 2,
+    "pnl": 198.0,
+    "favorable": 394.5,
+    "adverse": -215.5
+   },
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": 479.0,
+    "favorable": 484.5,
+    "adverse": -125.5
+   }
+  ]
+ },
+ "reviewed": [
+  "7 YM 15m"
+ ],
+ "empty_charts": [
+  "ES 15m"
+ ],
+ "version": 3
+}

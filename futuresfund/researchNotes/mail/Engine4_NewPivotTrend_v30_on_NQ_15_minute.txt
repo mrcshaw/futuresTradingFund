@@ -1,0 +1,10 @@
+Subject: Engine4_NewPivotTrend_v30 Result: Nasdaq 15m Study Complete
+
+The Engine4_NewPivotTrend_v30 study on the 15-minute Nasdaq (NQ1!) chart has finished. The run generated $4,325.00 in profit with a maximum drawdown of $18,385.00 across 149 trades. The trade frequency was 2.85 trades per week, which annualizes to approximately 740 trades. This exceeds the 600-trade upper limit for the 130-600 trade annual band, making the pace too high for the preferred selection criteria.
+
+The strategy is not on the library. The result was not filed because the profit of $4,325.00 is below the shelf’s $10,000 minimum threshold. Additionally, the trade count of 149 is below the 130-trade minimum required for the primary objective ranking. The settings used were ema_fast_len=55, ema_slow_len=200, sma_len=25, atr_len=14, stop_mult=3.75, tp_mult=2.048, and cooldown_bars=100. This was run 1 of 82 engine runs on this chart, with 77 different results observed.
+
+Desk address: [Email Address]
+New address will be sent when this one expires.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 4 minutes 32 seconds.

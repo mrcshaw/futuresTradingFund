@@ -1,0 +1,5 @@
+Subject: Desk Update: ES POC RSI Momentum v2 Results
+
+The 5-minute ES chart has finished processing for the ES POC RSI Momentum v2 strategy. The run generated a profit of $8,312.50 with a drawdown of $10,725.00 across 157 trades. With trades occurring at a pace of 3.0 per week (approximately 156 trades per year), the frequency falls within the acceptable 130–600 trade annual range. However, the strategy did not meet the criteria for inclusion in the strategy library, as the library requires a profit exceeding $14,000. This run remains under that threshold. The settings used were len_ema=200, len_rsi=14, len_atr=14, atr_mult=3.3985, tp_mult=1.0, and cooldown=50. The result was not filed because it did not meet the minimum profit requirement.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 5 seconds.

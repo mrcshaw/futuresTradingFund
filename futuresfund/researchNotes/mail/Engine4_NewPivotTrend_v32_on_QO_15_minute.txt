@@ -1,0 +1,11 @@
+Subject: Engine4_NewPivotTrend_v32 (GC1! 15m) Result: Not Filed
+
+This run for Engine4_NewPivotTrend_v32 on the 15-minute Gold chart generated a profit of $17,700.00 with a drawdown of $5,775.00 across 184 trades. The daily average was approximately 7.4 trades per day. However, this result was not filed in the strategy library.
+
+The acceptance criteria require the strategy library to reflect a profit above $14,000, a profit factor above 1.1, a win rate above 48 percent, and a run of at least 60 trades. These are the only four numbers saved on the strategy library page. This result met the profit and trade count thresholds, but it was not included because a stronger version of this name is already on this contract and timeframe. The specific settings for this run were pivot_left=3, pivot_right=3, ema_fast_len=21, ema_slow_len=55, atr_len=14, stop_mult=1.875, tp_mult=2.0, and cooldown_bars=20.
+
+At 16:45 New York time, all open trades were flattened using strategy.close_all.
+
+The desk clock is currently Monday 11:15 AM ET. The next meeting is scheduled for 8:00 AM ET tomorrow.
+
+The address for viewing this desk on a phone is [EMAIL_ADDRESS]. This address will be updated when the old one expires.

@@ -1,0 +1,7 @@
+Subject: Delta Volume Breakout with background - 15-minute Nasdaq (NQ1!)
+
+The 15-minute Nasdaq (NQ1!) chart for Delta Volume Breakout with background has finished its run. The results show a profit of $16,495.00 against a drawdown of $6,118.50. The run generated 155 trades over 260 trading days, which equates to 3.0 trades per week. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 2.71.
+
+This run was not filed in the strategy library. The reason provided is that a stronger version of this name is already on this contract and timeframe. That existing version made $21,423.00, whereas this run made $16,495.00.
+
+The acceptance line on the strategy library page requires a profit above $6,000, a profit factor above 1.05, a win rate above 40 percent, and at least 60 trades. While this run meets the trade count requirement with 155 trades and exceeds the profit threshold with $16,495.00, it was rejected solely because a superior version of the same strategy name already exists on the library for this specific contract and timeframe.

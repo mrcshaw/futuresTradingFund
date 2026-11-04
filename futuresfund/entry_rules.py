@@ -177,7 +177,7 @@ def _expr_names(expr: str) -> set[str] | None:
 
 
 def _write_rule(developer: str, source: str, bars: list) -> bool:
-    from futuresfund.llm import CONTEXT_CAP, _post, model_name
+    from futuresfund.llm import CONTEXT_CAP, _post, _reasons, model_name
     from futuresfund.script_backtest import _values
 
     title = _title(source)
@@ -195,7 +195,14 @@ def _write_rule(developer: str, source: str, bars: list) -> bool:
             },
             {"role": "user", "content": prompt if not error else f"{prompt}\n\nThe last function failed: {error}\nWrite the function again."},
         ]
-        reply = _post(model_name(developer), messages, num_ctx=8192, timeout=180)
+        thinking = _reasons(developer)
+        reply = _post(
+            model_name(developer),
+            messages,
+            num_ctx=8192,
+            timeout=600 if thinking else 180,
+            think=thinking,
+        )
         if reply.startswith("The meeting model could not answer"):
             error = reply
             continue

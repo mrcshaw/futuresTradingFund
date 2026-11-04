@@ -1,0 +1,229 @@
+//@version=5
+strategy("Delta Volume Breakout", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=false, calc_on_every_tick=true,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(100, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=750)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5, tooltip="More rows = finer resolution but slower.")
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(5, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, tooltip="Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.")
+
+// ===== TREND FILTER =====
+ema_len       = input.int(20, "Trend EMA Length", minval=1)
+ema_slope_len = input.int(5, "EMA Slope Lookback (bars)", minval=1)
+min_slope     = input.float(0.1, "Min EMA Slope (pts)", minval=0.0, tooltip="0 = disabled.")
+
+// ===== ENTRY =====
+confirm_candles = input.int(2, "Confirmation Candles", minval=1, maxval=10, step=1, tooltip="Number of consecutive same-color candles in the trade direction required to confirm entry.")
+cooldown_bars   = input.int(10, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(8, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== DAILY LIMITS =====
+use_daily_limits  = input.bool(false, "Enable Daily Limits")
+daily_loss_limit  = input.float(0, "Daily Loss Limit ($)", minval=0, tooltip="Stop trading for the day after losing this much. 0 = disabled.")
+daily_profit_cap  = input.float(0, "Daily Profit Cap ($)", minval=0, tooltip="Stop trading for the day after making this much. 0 = disabled.")
+
+// ===== COMPUTED =====
+float stop_pts = stop_dollars / pv
+float tp_pts   = tp_dollars / pv
+
+// Volume Profile Calculation
+var float poc_price = na
+var float poc_hi = na
+var float poc_lo = na
+var float poc_delta_pct = na
+
+if bar_index >= profile_lookback
+    float high_range = high[profile_lookback-1]
+    float low_range  = low[profile_lookback-1]
+    float range_size = high_range - low_range
+    if range_size > 0
+        float step_size = range_size / profile_rows
+        float sum_vol = 0.0
+        float max_vol = 0.0
+        float max_price = na
+        float delta_sum = 0.0
+        
+        for i = 0 to profile_rows - 1
+            float bin_low = low_range + i * step_size
+            float bin_high = bin_low + step_size
+            float bin_vol = 0.0
+            float bin_delta = 0.0
+            
+            for j = 0 to profile_lookback - 1
+                float bar_mid = (high[j] + low[j]) / 2.0
+                if bar_mid >= bin_low and bar_mid < bin_high
+                    bin_vol += volume[j]
+                    // Approximate delta: Buy volume if close > open, Sell if close < open
+                    if close[j] > open[j]
+                        bin_delta += volume[j]
+                    else if close[j] < open[j]
+                        bin_delta -= volume[j]
+            
+            sum_vol += bin_vol
+            if bin_vol > max_vol
+                max_vol := bin_vol
+                max_price := (bin_low + bin_high) / 2.0
+                delta_sum := bin_delta
+        
+        if max_vol > 0
+            poc_price := max_price
+            poc_hi := max_price + step_size / 2
+            poc_lo := max_price - step_size / 2
+            poc_delta_pct := (delta_sum / max_vol) * 100.0
+
+// Trend Filter
+ema_val = ta.ema(close, ema_len)
+ema_slope = ema_val - ema_val[ema_slope_len]
+bool ema_up = ema_slope > min_slope
+bool ema_dn = ema_slope < -min_slope
+
+// Entry Logic
+// Replace complex delta breakout with simpler momentum confirmation using RSI and EMA
+rsi_val = ta.rsi(close, 14)
+bool long_cond = ema_up and not na(poc_hi) and not na(poc_lo) and not na(poc_delta_pct) and close > poc_hi and poc_delta_pct >= min_delta_pct and rsi_val > 50 and ta.change(close, 1) > 0
+bool short_cond = ema_dn and not na(poc_hi) and not na(poc_lo) and not na(poc_delta_pct) and close < poc_lo and poc_delta_pct <= -min_delta_pct and rsi_val < 50 and ta.change(close, 1) < 0
+
+// Confirmation Candles
+int long_count = 0
+int short_count = 0
+for i = 0 to confirm_candles - 1
+    if close[i] > open[i]
+        long_count += 1
+    if close[i] < open[i]
+        short_count += 1
+
+// Session Filter
+bool in_session = true
+if use_session
+    int time_of_day = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+    int start_time = sess_start_hr * 100 + sess_start_mn
+    int end_time = sess_end_hr * 100 + sess_end_mn
+    in_session = time_of_day >= start_time and time_of_day < end_time
+
+// Daily Limits
+var float day_start_equity = strategy.equity
+var int last_day = na
+int current_day = dayofmonth(time, "America/New_York")
+if na(last_day) or current_day != last_day
+    last_day := current_day
+    day_start_equity := strategy.equity
+float day_pnl = strategy.equity - day_start_equity
+bool daily_blocked = use_daily_limits and (daily_loss_limit > 0 and day_pnl <= -daily_loss_limit or daily_profit_cap > 0 and day_pnl >= daily_profit_cap)
+
+bool long_sig = long_cond and long_count == confirm_candles and strategy.position_size == 0 and barstate.isconfirmed and (not use_session or in_session) and not daily_blocked
+bool short_sig = short_cond and short_count == confirm_candles and strategy.position_size == 0 and barstate.isconfirmed and (not use_session or in_session) and not daily_blocked
+
+// Cooldown
+var int last_trade_bar = 0
+// desk indicator ta.rsi
+_desk_gate = ta.rsi(close, 14)
+_desk_long = _desk_gate > 50
+_desk_short = _desk_gate < 50
+if long_sig and bar_index - last_trade_bar >= cooldown_bars and _desk_long
+    strategy.entry("Long", strategy.long)
+    strategy.exit("SLTP", "Long", stop=long_stop, limit=long_limit)
+    last_day := bar_index
+    last_trade_bar := bar_index
+if short_sig and bar_index - last_trade_bar >= cooldown_bars and _desk_short
+    strategy.entry("Short", strategy.short)
+    strategy.exit("SLTP", "Short", stop=short_stop, limit=short_limit)
+    last_day := bar_index
+    last_trade_bar := bar_index
+
+if daily_blocked and strategy.position_size != 0
+    strategy.close_all(comment="Daily Limit")
+
+// Flatten at 16:00
+int flatten_time = sess_end_hr * 100 + sess_end_mn
+int current_time_of_day = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+if current_time_of_day >= flatten_time and strategy.position_size != 0
+    strategy.close_all(comment="Flatten 16:00")
+
+// Trailing Stop Logic
+var float current_stop = na
+var float peak_profit_pts = 0.0
+
+if strategy.position_size != 0
+    if na(current_stop)
+        current_stop := strategy.position_size > 0 ? strategy.position_avg_price - stop_pts : strategy.position_avg_price + stop_pts
+        peak_profit_pts := 0.0
+
+if use_trail and strategy.position_size != 0
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+
+// Exit Block
+if strategy.position_size > 0
+    float long_limit = strategy.position_avg_price + tp_dollars / pv
+    strategy.exit("SLTP", "Long", stop=long_stop, limit=long_limit)
+else if strategy.position_size < 0
+    float short_limit = strategy.position_avg_price - tp_dollars / pv
+    strategy.exit("SLTP", "Short", stop=short_stop, limit=short_limit)
+
+// Reset stop when flat
+if strategy.position_size == 0
+    current_stop := na
+    peak_profit_pts := 0.0
+
+// ===== PLOT =====
+plot(ema_val, "200 EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)
+plot(not na(poc_price) ? poc_price : na, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot(not na(poc_hi) ? poc_hi : na, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(not na(poc_lo) ? poc_lo : na, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+bgcolor(not na(poc_hi) and not na(poc_lo) and close >= poc_lo and close <= poc_hi ? color.new(#2962FF, 90) : na)
+
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(not na(poc_delta_pct) ? poc_delta_pct : na, "POC Delta %", color.orange, display=display.data_window)

@@ -1,0 +1,5 @@
+Subject: Desk Result: POC RSI Pivot Trail v4 on Gold (GC1!)
+
+The POC RSI Pivot Trail v4 strategy has cleared the prop account on the 5-minute Gold chart. The run generated $10,862.50 in profit against a trailing drawdown of $2,512.50 across 72 trades. With a pace of 5.15 trades per week over the last 70 days, the annualized count falls comfortably within the 130 to 600 trade band required for acceptance. The profit factor is well above the 1.12 threshold, indicating that average wins significantly outpace average losses. This result has been filed on the strategy library. The settings used were pivot_left=5, pivot_right=5, rsiLen=14, emaLen=50, atrLen=14, stopMult=3.6, and tpMult=4.0, with a cooldown of 5 bars. The headquarters profit target and trailing drawdown were not used as rejection criteria, but the lower drawdown ranking priority was applied during the full-chart study. The strategy is now live.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 26 seconds.

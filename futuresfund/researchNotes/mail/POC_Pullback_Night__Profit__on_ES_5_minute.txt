@@ -1,0 +1,21 @@
+Subject: POC Pullback Night [Profit] Strategy Result - ES1!  
+
+Dear Team,  
+
+The POC Pullback Night [Profit] strategy has completed its testing on the 5-minute ES (ES1!) chart. Here are the key results:  
+
+- **Profit:** $3,224.0  
+- **Drawdown:** $1,402.5  
+- **Trades:** 41  
+- **Trades per Day:** 1.95 (over 21 trading days)  
+
+The strategy met all of Headquarters' requirements:  
+- Profit target of $3,000: **Yes**  
+- Trailing drawdown of $2,500: **Yes**  
+- Pace of 1 to 3 trades per day: **Yes**  
+
+As a result, this strategy has been added to the ES strategy library.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

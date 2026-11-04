@@ -1,0 +1,11 @@
+Subject: Recent Strategy Result on 5-Minute ES Chart  
+
+Dear Team,  
+
+I wanted to share the results of the recent test for the "Untitled strategy" on the 5-minute ES (ES1!) chart. The strategy generated a profit of $2,101.00 with a drawdown of $2,081.50 over 34 trades across 21 trading days, averaging approximately 1.62 trades per day.  
+
+While the strategy met the trailing drawdown requirement of $2,500 and maintained a pace of 1 to 3 trades per day, it did not meet the profit target of $3,000. As a result, this result was not filed in the strategy library. The reason for exclusion is that the profit is below the required $3,000 threshold.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

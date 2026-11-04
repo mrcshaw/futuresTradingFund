@@ -1,0 +1,7 @@
+Subject: VWMA RSI Volume Pulse filed for ES
+
+The VWMA RSI Volume Pulse strategy has been filed on the strategy library for the 5-minute ES chart. This run generated a profit of $13,431.00 with a drawdown of $5,086.50. The test covered 204 trades over 71,112 bars, from October 1, 2025, to October 2, 2026. The pace was 3.9 trades per week. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 1.05.
+
+This run meets the four acceptance criteria saved on the strategy library page. The profit is above $8,000. The profit factor is above 1.05. The win rate is above 40 percent. The trade count is at least 80. Because these boxes are turned on at the strategy library page, the strategy is now on the library. It is listed on the not-tested list for ES because it has not been run on the five-year dataset.
+
+The settings for this version are stop_dollars=500, tp_dollars=750, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, vwma_len=20, rsi_len=14. There is one different result on this chart and four engine runs.

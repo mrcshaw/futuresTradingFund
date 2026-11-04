@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: SuperTrend AI Strategy.
+Chart tested: 15-minute ES (ES1!).
+Profit 2903.5. Drawdown 2251.0. Trades 19.
+Trades a day: 0.32 over 60 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; 0.32 trades a day is outside 1 to 3.
+Settings of this version: length=39, minMult=1, maxMult=6, step=0.5, perfAlpha=15.0, maxIter=1000, maxData=10000, stop_dollars=537.4196, tp_dollars=600.0, cooldown_bars=6, use_breakeven=False, be_trigger_dol=150.0.
+Engine attempts on this chart: 200.

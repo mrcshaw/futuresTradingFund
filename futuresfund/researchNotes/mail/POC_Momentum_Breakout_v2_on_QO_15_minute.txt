@@ -1,0 +1,7 @@
+Subject: Desk Result: POC Momentum Breakout v2 on Gold 15m
+
+The latest run on the 15-minute Gold (GC1!) chart using POC Momentum Breakout v2 has concluded. The strategy generated $7,262.50 in profit with a maximum drawdown of $2,062.50 across 65 trades. This result was not filed in the strategy library because the shelf requires a profit over $10,000, and this run fell short.
+
+Regarding the pace, the system calculated 2.7 trades per week over 121 trading days. This translates to approximately 136.5 trades per year, which falls within the required 130 to 600 trades per year range. While the pace is acceptable, the profit target was not met. Consequently, this run does not clear the prop account for live deployment. The settings used were pivot_left=5, pivot_right=5, emaLen=55, atrLen=42, stopMult=2.0, tpMult=10.0, and cooldownLen=20.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 21 seconds.

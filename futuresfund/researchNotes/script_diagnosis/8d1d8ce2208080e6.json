@@ -1,0 +1,119 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "vwma_len": {
+   "value": 80,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "rsi_len": {
+   "value": 5,
+   "net_profit": -550.0,
+   "max_drawdown": 550.0,
+   "trades": 2
+  },
+  "vol_ma_len": {
+   "value": 5,
+   "net_profit": -462.5,
+   "max_drawdown": 550.0,
+   "trades": 2
+  },
+  "rsi_os": {
+   "value": 45,
+   "net_profit": -800.0,
+   "max_drawdown": 800.0,
+   "trades": 3
+  },
+  "rsi_ob": {
+   "value": 80,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 1512.5,
+   "max_drawdown": 975.0,
+   "trades": 10
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 1500.0,
+   "max_drawdown": 975.0,
+   "trades": 9
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 1500.0,
+   "max_drawdown": 975.0,
+   "trades": 9
+  },
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 1940.0,
+   "max_drawdown": 2330.0,
+   "trades": 15
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 1140.0,
+   "max_drawdown": 600.0,
+   "trades": 15
+  },
+  "cooldown_bars": {
+   "value": 4,
+   "net_profit": 3650.0,
+   "max_drawdown": 840.0,
+   "trades": 19
+  }
+ },
+ "flat": [
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 20,
+   "skip_start_mn": 0,
+   "skip_end_hr": 20,
+   "skip_end_mn": 30,
+   "vwma_len": 20,
+   "rsi_len": 28,
+   "vol_ma_len": 20,
+   "rsi_os": 44,
+   "rsi_ob": 65,
+   "cooldown_bars": 12
+  },
+  "net_profit": 3590.0,
+  "max_drawdown": 730.0,
+  "trades": 15,
+  "win_rate": 60.0,
+  "profit_factor": 3.426,
+  "biggest_winner": 830.0,
+  "biggest_loser": -260.0,
+  "held_loser": -260.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 15,
+    "pnl": 3590.0,
+    "favorable": 397.33,
+    "adverse": -182.67
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

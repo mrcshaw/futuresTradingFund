@@ -1,0 +1,21 @@
+Subject: Recent Strategy Result - Smart Trail + POC Delta Night  
+
+Dear Team,  
+
+I wanted to share the results of the recent strategy test for "Smart Trail + POC Delta Night" on the 15-minute Gold (GC1!) chart. Here’s a quick summary:  
+
+- **Strategy**: Smart Trail + POC Delta Night  
+- **Chart Tested**: 15-minute Gold (GC1!)  
+- **Profit**: $3,098.00 (meets the $3,000 profit target)  
+- **Drawdown**: $2,030.50 (within the $2,500 trailing drawdown requirement)  
+- **Trades**: 7 total trades  
+- **Trades Per Day**: 0.35 trades per day over 20 trading days (outside the 1-3 trades per day requirement)  
+
+This result met the profit target and stayed within the trailing drawdown, but it was not filed in the strategy library because the pace of 0.35 trades per day is outside the required range of 1-3 trades per day.  
+
+The settings for this version included sensitivity=13, profile_lookback=7, profile_rows=10, min_delta_pct=10.0, vwma_len=50, vwma_slope_len=5, min_slope=0.0, pivot_left=3, pivot_right=3, disarm_only_inside_poc=True, cooldown_bars=5, and use_price_vwma=True.  
+
+Let me know if you have any questions or if there’s anything else you’d like to discuss.  
+
+Best regards,  
+[Your Name]

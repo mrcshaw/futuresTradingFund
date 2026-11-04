@@ -1,0 +1,7 @@
+Subject: POC RSI Momentum v5 Result - Gold (GC1!)
+
+The POC RSI Momentum v5 strategy just completed a run on the 5-minute Gold chart. The result shows a profit of $3,650.00 with a maximum drawdown of $2,012.50 across 76 trades. The trade frequency is 5.35 trades per week over 71 trading days. This pace projects to approximately 136 trades per year, which falls within the required 130 to 600 trade annual range. The profit ratio (average winning trade divided by average losing trade) is above 1.12, and the run generated a profit.
+
+The strategy met the profit target and kept the trailing drawdown within acceptable limits. However, this result is not on the strategy library. The library requires at least 100 trades for inclusion, and this run only completed 76. Therefore, it was not filed. The settings used were rsi_len=14, rsi_overbought=70, rsi_oversold=45, atr_len=14, stop_mult=0.75, tp_mult=3.125, cooldown_bars=5, session_window=1800-1600. This was one of 19 engine runs on this chart.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 19 seconds.

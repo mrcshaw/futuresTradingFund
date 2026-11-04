@@ -1,0 +1,3 @@
+Subject: Delta BOS Night Shift v1 Result: Not Filed
+
+The Delta BOS Night Shift v1 strategy on the 2-minute Nasdaq (NQ1!) chart generated a profit of $40,155.00 with a drawdown of $6,510.00 across 392 trades. The strategy library page requires profit above $14,000, profit factor above 1.05, win rate above 45 percent, and at least 60 trades. This run meets the profit and trade count thresholds, but it was not filed because a stronger version of this name is already on this contract and timeframe. The acceptance line above is the only acceptance bar on this desk. This result was not filed in the strategy library.

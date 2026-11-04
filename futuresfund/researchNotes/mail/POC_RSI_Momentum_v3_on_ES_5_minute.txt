@@ -1,0 +1,3 @@
+Subject: POC RSI Momentum v3 Result - Not Filed
+
+The POC RSI Momentum v3 strategy ran on the 5-minute ES chart, generating a profit of $5,200.00 with a drawdown of $3,925.00 across 133 trades. The profit ratio (average win divided by average loss) was calculated, but the run does not meet the filing criteria. The acceptance line requires a profit above $14,000, a profit factor above 1.1, a win rate above 48%, and at least 60 trades. This run is under the $14,000 profit threshold and is not on the strategy library. It was not filed.

@@ -1,0 +1,117 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -1255.0,
+   "max_drawdown": 2438.5,
+   "trades": 5
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -405.0,
+   "max_drawdown": 576.0,
+   "trades": 5
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -1144.5,
+   "max_drawdown": 1716.0,
+   "trades": 12
+  },
+  "min_delta_pct": {
+   "value": 12.0,
+   "net_profit": -381.5,
+   "max_drawdown": 802.5,
+   "trades": 4
+  },
+  "vwma_len": {
+   "value": 200,
+   "net_profit": -572.0,
+   "max_drawdown": 572.0,
+   "trades": 2
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": -95.5,
+   "max_drawdown": 615.0,
+   "trades": 3
+  },
+  "min_slope": {
+   "value": 0.4,
+   "net_profit": -858.0,
+   "max_drawdown": 858.0,
+   "trades": 3
+  },
+  "pivot_left": {
+   "value": 8,
+   "net_profit": -572.0,
+   "max_drawdown": 572.0,
+   "trades": 2
+  },
+  "pivot_right": {
+   "value": 1,
+   "net_profit": -381.5,
+   "max_drawdown": 802.5,
+   "trades": 4
+  }
+ },
+ "flat": [
+  "min_bars_between_trades",
+  "max_trades_per_session"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.1,
+   "pivot_left": 2,
+   "pivot_right": 2,
+   "min_bars_between_trades": 12,
+   "max_trades_per_session": 1
+  },
+  "net_profit": -667.5,
+  "max_drawdown": 1088.5,
+  "trades": 5,
+  "win_rate": 20.0,
+  "profit_factor": 0.417,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 3,
+    "pnl": -95.5,
+    "favorable": 211.17,
+    "adverse": -263.83
+   },
+   {
+    "exit": "XL",
+    "trades": 2,
+    "pnl": -572.0,
+    "favorable": 282.0,
+    "adverse": -280.5
+   }
+  ]
+ },
+ "reviewed": [
+  "7 M2K 2m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

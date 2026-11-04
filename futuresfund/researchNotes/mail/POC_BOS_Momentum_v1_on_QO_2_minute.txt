@@ -1,0 +1,11 @@
+Subject: Desk Update: POC BOS Momentum v1 (GC1!) - Not Filed
+
+The latest run of POC BOS Momentum v1 on the 2-minute Gold chart has concluded. The strategy generated a profit of $75.0 with a maximum drawdown of $2,725.0 over 34 trades. The test covered 10,612 bars from July 21, 2026, through October 7, 2026, averaging 3.0 trades per week.
+
+This result does not meet the criteria for the strategy library. The library requires a profit over $10,000, and this run fell significantly short. Additionally, while the pace of 3.0 trades per week is technically within the acceptable band (130–600 trades/year equivalent), the absolute profit is too low to justify filing. Consequently, this result was not filed in the strategy library.
+
+The desk remains responsive. I will email the viewing address when the current one expires.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 04:32 AM ET

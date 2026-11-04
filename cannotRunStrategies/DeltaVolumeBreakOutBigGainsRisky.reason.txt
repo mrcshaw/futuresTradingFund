@@ -1,0 +1,1 @@
+3 repairs did not make it compile. Line 8: Undeclared identifier 'last_trade_bar'. It is declared below, on line 83.

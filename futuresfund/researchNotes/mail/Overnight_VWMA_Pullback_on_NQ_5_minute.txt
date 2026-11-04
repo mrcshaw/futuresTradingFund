@@ -1,0 +1,15 @@
+Subject: Recent Strategy Result - Overnight VWMA Pullback on NQ1!
+
+Dear [Recipient's Name],
+
+I hope this message finds you well. I wanted to provide an update on the recent strategy result for the Overnight VWMA Pullback on the 5-minute Nasdaq (NQ1!) chart.
+
+The strategy generated a profit of $338.00 with a drawdown of $249.50 over 22 trades. The pace of trading averaged approximately 1.05 trades per day over 21 trading days, which aligns with the required range of 1 to 3 trades per day.
+
+However, this result did not meet the headquarters' profit target of $3,000. While the drawdown was within the trailing drawdown limit of $2,500, the profit fell short of the required threshold. As a result, this strategy was not filed in the strategy library. The reason for exclusion is that the profit is under the $3,000 target.
+
+Please let me know if you'd like to discuss this result further or explore any adjustments to the strategy parameters.
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

@@ -1,0 +1,15 @@
+Subject: Desk Result: POC Momentum Breakout v2 (ES 15m)
+
+The latest run on POC Momentum Breakout v2 has completed. The strategy was tested on the 15-minute ES chart (ES1!). The result shows a profit of -2662.5 with a drawdown of 9950.0 across 197 trades. The pace is 3.8 trades per week, which annualizes to approximately 197 trades per year. This falls squarely within the required 130 to 600 trades per year band.
+
+The run did not meet the profit target, as the result is negative. It was not filed in the strategy library. The shelf requires a profit over $10,000, and this run is under that threshold. The settings used were pivot_left=5, pivot_right=5, emaLen=55, atrLen=42, stopMult=1.5, tpMult=10.0, and cooldownLen=20. This was one of 17 different results generated on this chart.
+
+The email address for viewing this desk on a phone is [email_address_placeholder]. This address will expire when the session ends.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Desk Clock: Wednesday 04:46 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 53 seconds.

@@ -1,0 +1,9 @@
+Strategy: Smart Trail + POC Delta Combined.
+File: Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt.
+Chart: 15m MNQ1!.
+Profit 11807.5. Drawdown 2697.0. Trades 140.
+Profit ratio 1.378. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 4.38 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 10 percent of the account, the run has at least 60 trades, profit is above $6,000, the profit factor is above 1.05, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

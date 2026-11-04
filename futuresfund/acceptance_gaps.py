@@ -13,10 +13,9 @@ _SKIP = {
     "strategy_cards.json",
     "creation_sources.json",
     "risk_suggestions.json",
-    "kronos_patterns.json",
     "untested_library.json",
 }
-_ORDER = ("profit", "factor", "drawdown", "trades", "pace", "win_rate", "error")
+_ORDER = ("profit", "factor", "drawdown", "under_drawdown", "growth", "trade_loss", "trades", "pace", "win_rate", "error")
 _REFRESH_SECONDS = 600
 _LOCK = threading.Lock()
 _CACHE = {"payload": None, "loaded": False, "running": False, "started": 0.0}
@@ -42,27 +41,6 @@ def _count(value: int) -> str:
     return f"{int(value):,}"
 
 
-def _survives(row: dict, cap: float) -> bool:
-    """The same drawdown rule as account_survives, using a cap already read from the book."""
-    from futuresfund.objective import PROFIT_CUSHION, RATIO_FLOOR
-
-    if row.get("max_drawdown") is None:
-        return True
-    try:
-        drawdown = float(row["max_drawdown"])
-    except (TypeError, ValueError):
-        return True
-    if drawdown < cap:
-        return True
-    try:
-        profit = float(row.get("net_profit"))
-    except (TypeError, ValueError):
-        return False
-    if profit <= PROFIT_CUSHION or drawdown <= 0:
-        return False
-    return profit / drawdown + 1e-9 >= RATIO_FLOOR
-
-
 def _trials_of(data: dict) -> list:
     instruments = data.get("instruments")
     found: list = []
@@ -86,54 +64,27 @@ def _trials_of(data: dict) -> list:
     return trials if isinstance(trials, list) else []
 
 
-def _misses(row: dict, limits: dict, cap: float) -> dict[str, float | None]:
-    from futuresfund.objective import TRADES_YEAR_MAX, profit_factor_of, trades_per_year, win_rate_percent
+def _misses(row: dict, limits: dict, start: float, loss_cap: float) -> dict[str, float | None]:
+    from futuresfund.objective import acceptance_misses
 
-    if row.get("error") or row.get("fatal"):
-        return {"error": None}
-    missed: dict[str, float | None] = {}
-    if limits.get("use_profit"):
-        try:
-            profit = float(row.get("net_profit"))
-        except (TypeError, ValueError):
-            missed["profit"] = None
-        else:
-            if profit <= float(limits["min_profit"]):
-                missed["profit"] = profit
-    if limits.get("use_factor"):
-        factor = profit_factor_of(row)
-        if factor is None or factor <= float(limits["profit_factor"]):
-            missed["factor"] = factor
-    if limits.get("use_drawdown") and not _survives(row, cap):
-        try:
-            missed["drawdown"] = float(row.get("max_drawdown"))
-        except (TypeError, ValueError):
-            missed["drawdown"] = None
-    if limits.get("use_trades"):
-        try:
-            trades = int(float(row.get("trades") or 0))
-        except (TypeError, ValueError):
-            missed["trades"] = None
-        else:
-            if trades < int(limits["min_trades"]):
-                missed["trades"] = float(trades)
-            yearly = trades_per_year(row)
-            if yearly is not None and yearly > TRADES_YEAR_MAX:
-                missed["pace"] = float(yearly)
-    if limits.get("use_win_rate"):
-        rate = win_rate_percent(row)
-        if rate is None or rate <= float(limits["win_rate"]):
-            missed["win_rate"] = rate
-    return missed
+    return acceptance_misses(row, limits=limits, start=start, loss_cap=loss_cap)
 
 
-def _row(name: str, values: list[float], limits: dict, cap: float, misses: int, trials: int) -> dict:
+def _row(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int) -> dict:
     """One acceptance miss, with the typical result beside the bar."""
     from futuresfund.objective import TRADES_YEAR_MAX
 
     share = f"{_count(misses)} of {_count(trials)}"
     if name == "error":
         return {"reason": "Did not finish", "typical": "—", "acceptance": "A finished result", "compared": "Stopped before a result", "misses": share}
+    if name == "growth":
+        return {
+            "reason": "Profit growing over 7, 30, 90, and 365 days",
+            "typical": "—",
+            "acceptance": "More profit on each longer window",
+            "compared": "A longer window made less",
+            "misses": share,
+        }
     if not values:
         return {"reason": name, "typical": "Not reported", "acceptance": "—", "compared": "No number was reported", "misses": share}
     typical = float(median(values))
@@ -151,15 +102,17 @@ def _row(name: str, values: list[float], limits: dict, cap: float, misses: int, 
         compared = f"{typical / bar:.2f} times the bar" if bar and typical > 0 else "At or below the bar"
         return {"reason": "Profit factor", "typical": _plain(typical), "acceptance": f"Above {_plain(bar)}", "compared": compared, "misses": share}
     if name == "drawdown":
-        pct = float(limits.get("drawdown_pct") or 0)
-        compared = f"{typical / cap:.2f} times the cap" if cap else "Over the cap"
         return {
             "reason": "Drawdown",
             "typical": _money(typical),
-            "acceptance": f"Under {_money(cap)} ({_plain(pct)} percent of the account)",
-            "compared": compared,
+            "acceptance": f"Under 30 percent of the profit once the profit reaches {_money(start)}",
+            "compared": "Over 30 percent of the profit",
             "misses": share,
         }
+    if name == "under_drawdown":
+        return {"reason": "Profit under the drawdown", "typical": f"{_money(typical)} drawdown", "acceptance": "Profit above the drawdown", "compared": "Drawdown at or above the profit", "misses": share}
+    if name == "trade_loss":
+        return {"reason": "The stop on one trade", "typical": _money(typical), "acceptance": "Stop set at no more than 1.5 percent of the account", "compared": "Over the limit", "misses": share}
     if name == "trades":
         bar = float(limits["min_trades"])
         compared = f"{typical / bar:.2f} times that count" if bar else "Under the count"
@@ -190,12 +143,14 @@ def _row(name: str, values: list[float], limits: dict, cap: float, misses: int, 
     }
 
 
-def _line(name: str, values: list[float], limits: dict, cap: float, misses: int, trials: int) -> str:
+def _line(name: str, values: list[float], limits: dict, start: float, misses: int, trials: int) -> str:
     from futuresfund.objective import TRADES_YEAR_MAX
 
     share = f"{_count(misses)} of {_count(trials)} backtests miss it."
     if name == "error":
         return f"The backtest did not finish. {_count(misses)} of {_count(trials)} backtests stopped before a result."
+    if name == "growth":
+        return f"Profit growing over 7, 30, 90, and 365 days. A longer window made less than the shorter one before it. {share}"
     if not values:
         return f"{name}. The result did not report a number. {share}"
     typical = float(median(values))
@@ -210,12 +165,11 @@ def _line(name: str, values: list[float], limits: dict, cap: float, misses: int,
         times = f" That is {typical / bar:.2f} times the bar." if bar and typical > 0 else ""
         return f"Profit factor. The typical miss is {_plain(typical)} versus acceptance above {_plain(bar)}.{times} {share}"
     if name == "drawdown":
-        pct = float(limits.get("drawdown_pct") or 0)
-        times = f" That is {typical / cap:.2f} times the cap." if cap else ""
-        return (
-            f"Drawdown. The typical miss is {_money(typical)} versus acceptance under {_money(cap)} "
-            f"({_plain(pct)} percent of the account).{times} {share}"
-        )
+        return f"Drawdown. The typical miss is {_money(typical)}, over 30 percent of the profit once the profit reaches {_money(start)}. {share}"
+    if name == "under_drawdown":
+        return f"Profit under the drawdown. The typical miss has a drawdown of {_money(typical)}, at or above its profit. {share}"
+    if name == "trade_loss":
+        return f"The stop on one trade. The typical miss was set to risk {_money(typical)}, more than 1.5 percent of the account. {share}"
     if name == "trades":
         bar = float(limits["min_trades"])
         times = f" That is {typical / bar:.2f} times that count." if bar else ""
@@ -237,15 +191,18 @@ def _line(name: str, values: list[float], limits: dict, cap: float, misses: int,
     )
 
 
-def measure(notes: Path, limits: dict, cap: float, limit: int = 3) -> dict:
+def measure(notes: Path, limits: dict, start: float, limit: int = 3) -> dict:
     """The acceptance boxes the finished backtests miss most often."""
+    from futuresfund.objective import account_trade_loss_cap
+
+    loss_cap = account_trade_loss_cap()
     buckets: dict[str, list[float]] = {name: [] for name in _ORDER}
     counts = {name: 0 for name in _ORDER}
     trials = 0
     passed = 0
     if notes.is_dir():
         for path in notes.glob("*.json"):
-            if path.name in _SKIP or path.name.startswith("kronos"):
+            if path.name in _SKIP:
                 continue
             try:
                 if path.stat().st_size > 8_000_000:
@@ -259,7 +216,7 @@ def measure(notes: Path, limits: dict, cap: float, limit: int = 3) -> dict:
                 if not isinstance(row, dict):
                     continue
                 trials += 1
-                missed = _misses(row, limits, cap)
+                missed = _misses(row, limits, start, loss_cap)
                 if not missed:
                     passed += 1
                     continue
@@ -272,11 +229,11 @@ def measure(notes: Path, limits: dict, cap: float, limit: int = 3) -> dict:
         key=lambda name: (-counts[name], _ORDER.index(name) if name in _ORDER else len(_ORDER)),
     )
     lines = [
-        _line(name, buckets.get(name) or [], limits, cap, counts[name], trials)
+        _line(name, buckets.get(name) or [], limits, start, counts[name], trials)
         for name in ranked[:limit]
     ]
     rows = [
-        _row(name, buckets.get(name) or [], limits, cap, counts[name], trials)
+        _row(name, buckets.get(name) or [], limits, start, counts[name], trials)
         for name in ranked[:limit]
     ]
     return {"ready": True, "trials": trials, "passed": passed, "lines": lines, "rows": rows}
@@ -285,10 +242,10 @@ def measure(notes: Path, limits: dict, cap: float, limit: int = 3) -> dict:
 def _refresh() -> None:
     from futuresfund.book import strategy_acceptance
     from futuresfund.learn import NOTES
-    from futuresfund.objective import account_drawdown_cap
+    from futuresfund.objective import drawdown_start
 
     try:
-        payload = measure(NOTES, strategy_acceptance(), account_drawdown_cap())
+        payload = measure(NOTES, strategy_acceptance(), drawdown_start())
         path = _cache_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(".json.tmp")

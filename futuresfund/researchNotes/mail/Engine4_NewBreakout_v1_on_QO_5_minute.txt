@@ -1,0 +1,11 @@
+Subject: Desk Update: Engine4_NewBreakout_v1 Gold Test Results
+
+The Engine4_NewBreakout_v1 strategy was tested on the 5-minute Gold (GC1!) chart, covering the period from July 2, 2026, through October 9, 2026. The test generated a profit of $6,800.00 with a drawdown of $4,400.00 across 109 trades. The trade frequency was 7.55 trades per week over 72 trading days.
+
+This result does not meet the criteria for inclusion in the strategy library. The library requires a profit over $14,000, and this run fell short. Additionally, the trade count of 109 is below the minimum threshold of 130 trades per year, making the sample size insufficient for a viable strategy. The result was not filed.
+
+No action is required at this time.
+
+Desk Manager
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 11 seconds.

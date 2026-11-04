@@ -1,0 +1,5 @@
+Subject: Smart Trail Signals Filed for 15-Minute Gold
+
+The Smart Trail Signals strategy has just cleared the acceptance bar on the 15-minute Gold (GC1!) chart. The run generated a profit of $16,800.00 against a drawdown of $7,292.50 over 190 trades. This pace equates to 3.65 trades per week across the 260 trading days tested. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 1.05.
+
+This run meets the four criteria saved on the strategy library page: the profit is above $6,000, the trade count is at least 60, the profit factor is above 1.05, and the win rate is above 40 percent. Consequently, the strategy is filed on the strategy library. It is currently listed on the not-tested list for Gold because it has not yet been run on the five-year dataset. The specific settings for this version are stop_dollars=750, tp_dollars=1000, use_trail=False, trail_pct=50.0, trail_step_amt=500, trail_step_pct=50.0, trail_min_dollars=1000, sensitivity=13, min_score=1, ema_len=25, ema_slope_len=10, and min_slope=0.1.

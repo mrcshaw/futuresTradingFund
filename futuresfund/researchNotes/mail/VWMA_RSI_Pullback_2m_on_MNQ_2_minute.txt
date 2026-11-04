@@ -1,0 +1,11 @@
+Subject: VWMA RSI Pullback 2m on MNQ1! — Not Filed
+
+To the Desk,
+
+The latest run for VWMA RSI Pullback 2m on the 2-minute Micro Nasdaq (MNQ1!) chart has completed. The strategy generated a profit of $1,184.00 against a drawdown of $8,334.00 over 265 trades. This equates to 5.1 trades per week across 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the application facts, so it cannot be quoted.
+
+This run was not filed in the strategy library. The acceptance criteria on the strategy library page require a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While the trade count of 265 meets the minimum requirement, the profit of $1,184.00 is below the $8,000 threshold. The application facts explicitly state that the library keeps a profit over $8,000 and this run is under that limit. No other reasons are cited for the rejection in the provided facts.
+
+Best regards,
+
+Portfolio Manager

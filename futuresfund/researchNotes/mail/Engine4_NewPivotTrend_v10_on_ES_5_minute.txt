@@ -1,0 +1,13 @@
+Subject: Desk Result: Engine4_NewPivotTrend_v10 on ES (5-min)
+
+The latest run for Engine4_NewPivotTrend_v10 on the 5-minute ES chart has completed. The strategy generated a profit of $7,725.00 with a drawdown of $3,550.00 across 358 trades. The pace was 6.9 trades per week (4 to 7 is average, more than that still counts), which meets the pace requirement of 4 or more trades a week.
+
+This result did not meet the profit target for filing. The strategy library shelf requires a profit over $20,000, and this run is under that threshold. Consequently, this result was not filed in the strategy library.
+
+Settings used: pivot_left=5, pivot_right=5, ema_fast_len=55, ema_slow_len=200, sma_len=25, atr_len=14, stop_mult=1.0, tp_mult=2.0, cooldown_bars=2.
+
+This was one of 10 different results and 10 engine runs on this chart.
+
+The desk is live.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 2 seconds.

@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: EMA SMA Pivot Filter v2.
+Chart tested: 5-minute Nasdaq (NQ1!).
+Profit 2425.0. Drawdown 8260.0. Trades 20.
+Trades a week: 0.1 over 1293 trading days.
+Bars in this test: 354,309 from 2021-10-03 20:00 through 2026-10-02 16:55.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The profit was not filed. The library keeps a profit that comes from 4 or more trades a week. 4 to 7 is the average, and more than that still counts. This run is 0.1 trades a week.
+Settings of this version: ema200_len=158, ema55_len=55, sma_len=33, tp_pips=3164.6108, stop_pips=31.968, cooldown_bars=194, sess_end_mn=32.
+Different results on this chart: 50.
+Engine runs on this chart: 59.

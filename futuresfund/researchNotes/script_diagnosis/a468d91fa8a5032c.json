@@ -1,0 +1,131 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 1244.0,
+   "max_drawdown": 5572.5,
+   "trades": 46
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -2785.5,
+   "max_drawdown": 5508.5,
+   "trades": 68
+  },
+  "trend_len": {
+   "value": 12,
+   "net_profit": 3292.0,
+   "max_drawdown": 2145.0,
+   "trades": 53
+  },
+  "trend_slope_len": {
+   "value": 1,
+   "net_profit": -5202.5,
+   "max_drawdown": 7793.0,
+   "trades": 90
+  },
+  "rsi_len": {
+   "value": 4,
+   "net_profit": -8774.5,
+   "max_drawdown": 11977.0,
+   "trades": 142
+  },
+  "rsi_long_low": {
+   "value": 11,
+   "net_profit": -3339.5,
+   "max_drawdown": 4624.5,
+   "trades": 32
+  },
+  "rsi_short_high": {
+   "value": 14,
+   "net_profit": -5936.0,
+   "max_drawdown": 8924.5,
+   "trades": 76
+  },
+  "rsi_lookback": {
+   "value": 2,
+   "net_profit": -2585.5,
+   "max_drawdown": 3512.5,
+   "trades": 18
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -560.0,
+   "max_drawdown": 2244.5,
+   "trades": 35
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -4837.5,
+   "max_drawdown": 5836.5,
+   "trades": 25
+  },
+  "sess_end_mn": {
+   "value": 59,
+   "net_profit": -4838.0,
+   "max_drawdown": 7205.0,
+   "trades": 58
+  }
+ },
+ "flat": [
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "trend_len": 50,
+   "trend_slope_len": 5,
+   "rsi_len": 14,
+   "rsi_long_low": 45,
+   "rsi_short_high": 55,
+   "rsi_lookback": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 18,
+   "skip_start_mn": 0,
+   "skip_end_hr": 19,
+   "skip_end_mn": 0
+  },
+  "net_profit": -630.0,
+  "max_drawdown": 1479.25,
+  "trades": 20,
+  "win_rate": 60.0,
+  "profit_factor": 0.721,
+  "biggest_winner": 289.0,
+  "biggest_loser": -512.25,
+  "held_loser": -512.25,
+  "exits": [
+   {
+    "exit": "Session End",
+    "trades": 18,
+    "pnl": 394.5,
+    "favorable": 194.78,
+    "adverse": -159.11
+   },
+   {
+    "exit": "XL",
+    "trades": 2,
+    "pnl": -1024.5,
+    "favorable": 112.62,
+    "adverse": -506.75
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

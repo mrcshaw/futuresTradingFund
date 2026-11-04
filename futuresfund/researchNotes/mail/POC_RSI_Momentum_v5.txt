@@ -1,0 +1,8 @@
+Strategy: POC RSI Momentum v5.
+File: poc_rsi_momentum_v5_7.pine.
+Chart: 15m NQ1!.
+Profit 88760.0. Drawdown 47780.0. Trades 250.
+Profit ratio 1.496. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 1.86 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

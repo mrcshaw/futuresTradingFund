@@ -1,0 +1,4 @@
+{
+ "kind": "named_pattern",
+ "text": "Starting from 18:00, record the lowest price and the highest price for the first 4 hours. After that, when the price comes within a range, take a trade in the opposite direction. The range is backtested for the best result. The take profit amount is backtested for the best result as well. It should be one trade per session."
+}

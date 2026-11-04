@@ -1,0 +1,1 @@
+max+profit_slow_grid_es_level_break.txt.txt took no trades and made no profit 20 times in a row.

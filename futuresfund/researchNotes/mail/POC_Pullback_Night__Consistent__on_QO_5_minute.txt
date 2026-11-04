@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: POC Pullback Night [Consistent].
+Chart tested: 5-minute Gold (GC1!).
+Profit 6165.0. Drawdown 1557.5. Trades 10.
+Trades a day: 0.48 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: yes.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because 0.48 trades a day is outside 1 to 3.
+Settings of this version: sess_start_hr=18, sess_end_hr=8, profile_lookback=120, profile_rows=10, min_delta_pct=10.0, ema_len=20, ema_slope_len=5, min_slope=0.0, breakaway_pts=2.0, pullback_margin=2.0, max_attempts=1, cooldown_bars=5.
+Engine attempts on this chart: 200.

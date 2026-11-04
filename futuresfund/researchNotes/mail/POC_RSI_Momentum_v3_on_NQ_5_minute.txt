@@ -1,0 +1,11 @@
+Subject: Desk Update: POC RSI Momentum v3 (NQ1!)
+
+The POC RSI Momentum v3 strategy just completed its run on the 5-minute Nasdaq (NQ1!) chart. The results show a profit of $5,770.00 with a maximum drawdown of $5,000.00 across 133 trades. The profit ratio stands at 1.32, calculated as the average winning trade divided by the average losing trade. The strategy executed approximately 2.55 trades per day over the 260 trading days covered in this test.
+
+This run was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.1, a win rate above 48 percent, and at least 60 trades. This run’s profit of $5,770.00 falls short of the $14,000 threshold, so it was not saved to the library. The settings used were pivot_left=5, pivot_right=5, tp_mult=1.5725, stop_mult=1.5625, atr_len=14, ema_len=200, rsi_len=14, and cooldown_bars=50.
+
+The desk remains open for further analysis or new runs. Please note that all open trades must be closed by 16:45 New York time to protect the account.
+
+Best,
+
+Portfolio Manager

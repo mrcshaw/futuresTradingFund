@@ -1,0 +1,34 @@
+Subject: Recent Trading Result - POC Color + Pullback on 15-minute ES  
+
+Dear Team,  
+
+The POC Color + Pullback strategy was recently tested on the 15-minute ES chart (ES1!). Here are the results:  
+
+- **Profit**: $585.5  
+- **Drawdown**: $666.5  
+- **Trades**: 7  
+- **Trades per Day**: 0.33 (over 21 trading days)  
+
+This result did not meet the headquarters profit target of $3,000. However, the drawdown of $666.5 was within the trailing drawdown requirement of $2,500. Unfortunately, the pace of 0.33 trades per day fell outside the required range of 1 to 3 trades per day.  
+
+As a result, this strategy was not filed in the strategy library. It was excluded because the profit was below the $3,000 target and the trades per day were outside the required range.  
+
+The settings for this version included:  
+- show_vwma=True  
+- show_pivots=True  
+- vwma_len=50  
+- vwma_slope_len=5  
+- min_slope_deg=1.5  
+- atr_len_slope=14  
+- profile_lookback=120  
+- profile_rows=10  
+- use_pivot_filter=True  
+- pivot_left=5  
+- pivot_right=5  
+- pivot_count=3  
+
+Engine attempts on this chart: 200.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

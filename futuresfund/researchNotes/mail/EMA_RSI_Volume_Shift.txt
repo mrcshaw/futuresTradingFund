@@ -1,0 +1,9 @@
+Strategy: EMA RSI Volume Shift.
+File: created_ema_rsi_volume_shift_2.pine.
+Chart: 5m MNQ1!.
+Profit 13125.5. Drawdown 5090.0. Trades 473.
+Profit ratio 1.146. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.58 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 20 percent of the account, the run has at least 80 trades, profit is above $8,000, the profit factor is above 1.05, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

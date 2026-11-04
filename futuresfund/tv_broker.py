@@ -112,6 +112,23 @@ def sharpe_ratio(pnls: list[float], days: float | None = None) -> float | None:
     return round(ratio, 3)
 
 
+def mark_price_jumps(trades: list[dict], bars, point: float, tick: float) -> None:
+    """Record on each losing trade how much of its loss came from price jumping past the exit.
+
+    A stop can only fill at the next price that trades. When a bar opens past the last close
+    against the trade and the exit fills at that open, the jump is in dollars under "jump".
+    """
+    where = {bar.when.strftime("%Y-%m-%d %H:%M"): index for index, bar in enumerate(bars)}
+    for trade in trades:
+        index = where.get(str(trade.get("exit_time") or ""))
+        if not index or trade.get("pnl") is None or float(trade["pnl"]) >= 0 or trade.get("exit_price") is None:
+            continue
+        bar, before = bars[index], bars[index - 1]
+        jump = before.c - bar.o if trade.get("side") == "long" else bar.o - before.c
+        if jump > 0 and abs(float(trade["exit_price"]) - bar.o) <= 2 * tick:
+            trade["jump"] = round(jump * point * abs(float(trade.get("size") or 1)), 2)
+
+
 def tv_metrics(trades: list[dict]) -> dict:
     """The Strategy Tester figures for closed trades.
 
@@ -127,9 +144,11 @@ def tv_metrics(trades: list[dict]) -> dict:
     gross_loss = 0.0
     wins = 0
     pnls: list[float] = []
+    held: list[float] = []
     for trade in closed:
         pnl = float(trade["pnl"])
         pnls.append(pnl)
+        held.append(pnl + float(trade.get("jump") or 0.0))
         adverse = trade.get("adverse")
         if adverse is not None:
             drawdown = max(drawdown, peak - (realized + min(float(adverse), 0.0)))
@@ -159,6 +178,7 @@ def tv_metrics(trades: list[dict]) -> dict:
         "sharpe": sharpe_ratio(pnls),
         "biggest_winner": round(max(pnls), 2) if pnls else None,
         "biggest_loser": round(min(pnls), 2) if pnls else None,
+        "held_loser": round(min(held), 2) if held else None,
     }
 
 

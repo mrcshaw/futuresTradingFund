@@ -1,0 +1,6 @@
+Subject: VWMA BOS Breakout Result: Not Filed
+
+The VWMA BOS Breakout strategy on the 5-minute Gold chart resulted in a profit of $2,950.00, a drawdown of $2,020.00, and 425 trades. The profit ratio is calculated as the average winning trade divided by the average losing trade. This run is not on the strategy library. The acceptance line in the facts is the only acceptance bar on this desk. It is the strategy library page: the profit, the profit factor, the win rate, and the trade count saved there. Judge this run against those four numbers. Quote them. Do not apply any other profit, profit factor, win rate, or trade count. Say it is on the strategy library only when the facts say it is. When the facts say it is not on the library, say it was not filed and give only the reason written there. Do not use a template or numbered sections. Do not invent a profit, a drawdown, a trade count, or a filing.
+
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a profit over $5,000. This run is under that.

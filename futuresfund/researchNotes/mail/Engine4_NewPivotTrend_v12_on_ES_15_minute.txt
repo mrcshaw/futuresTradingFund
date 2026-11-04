@@ -1,0 +1,9 @@
+Subject: Desk Result: Engine4_NewPivotTrend_v12 (ES 15m)
+
+The Engine4_NewPivotTrend_v12 strategy just completed its run on the 15-minute ES chart. The system generated a profit of $19,325.00 with a maximum drawdown of $8,150.00 across 270 trades. The trade frequency averaged 5.2 trades per week over the 260-day backtest period, which meets the minimum requirement of four or more trades per week. The test covered 23,704 bars from October 1, 2025, through October 2, 2026.
+
+This result did not meet the profit target for inclusion in the strategy library, as the shelf requires a profit over $20,000. Consequently, this run was not filed. The settings used were emaFastLen=55, emaSlowLen=200, pivotLen=10, atrLen=14, stopMult=3.0, targetMult=1.5, and cooldownBars=10. This was one of ten runs executed on this chart.
+
+The desk is live. Email sent to viewing address.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 34 seconds.

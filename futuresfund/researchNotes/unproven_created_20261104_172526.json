@@ -1,0 +1,158 @@
+{
+  "moved_at": "2026-11-04 17:25:26",
+  "reason": "No run of this created script cleared the acceptance, so it does not move on to more testing. Its notes stay in researchNotes.",
+  "files": [
+    {
+      "from": "futuresfund\\createdStrategies\\created_5min_smart_trend_reversal.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_5min_smart_trend_reversal.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_delta_vwma_bos_2m.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_delta_vwma_bos_2m.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_delta_vwma_bos_night_v1.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_delta_vwma_bos_night_v1.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_deltavwma_bos_trend_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_deltavwma_bos_trend_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_engine4_nightbos_vwma_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_engine4_nightbos_vwma_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_engine4_nightvwma_bos.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_engine4_nightvwma_bos.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_opening_range_reversal_es_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_opening_range_reversal_es_15m.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_momentum_reversal_15m_6.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_momentum_reversal_15m_6.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_momentum_reversal_5.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_momentum_reversal_5.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_momentum_reversal_6.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_momentum_reversal_6.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_momentum_reversal_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_momentum_reversal_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_momentum_shift_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_momentum_shift_15m.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_poc_rsi_momentum_pullback_5.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_poc_rsi_momentum_pullback_5.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_rsi_momentum_reversal_ema_trend.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_rsi_momentum_reversal_ema_trend.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_vwma_bos_breakout_2min_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_vwma_bos_breakout_2min_2.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_vwma_rsi_pullback_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_vwma_rsi_pullback_15m.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_vwma_rsi_pullback_2m_3.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_vwma_rsi_pullback_2m_3.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_vwma_rsi_volume_pullback_3.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_vwma_rsi_volume_pullback_3.pine"
+    },
+    {
+      "from": "futuresfund\\createdStrategies\\created_vwma_rsi_volume_reversal_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\created_vwma_rsi_volume_reversal_15m.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_5min_smart_trend_reversal.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_5min_smart_trend_reversal.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_delta_vwma_bos_2m.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_delta_vwma_bos_2m.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_delta_vwma_bos_night_v1.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_delta_vwma_bos_night_v1.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_deltavwma_bos_trend_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_deltavwma_bos_trend_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_engine4_nightbos_vwma_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_engine4_nightbos_vwma_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_engine4_nightvwma_bos.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_engine4_nightvwma_bos.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_es_large_move_rejection_v2.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_es_large_move_rejection_v2.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_opening_range_reversal_es_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_opening_range_reversal_es_15m.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_momentum_reversal_15m_6.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_momentum_reversal_15m_6.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_momentum_reversal_5.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_momentum_reversal_5.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_momentum_reversal_6.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_momentum_reversal_6.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_momentum_reversal_v1_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_momentum_reversal_v1_2.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_momentum_shift_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_momentum_shift_15m.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_poc_rsi_momentum_pullback_5.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_poc_rsi_momentum_pullback_5.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_rsi_momentum_reversal_ema_trend.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_rsi_momentum_reversal_ema_trend.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_vwma_bos_breakout_2min_2.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_vwma_bos_breakout_2min_2.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_vwma_rsi_pullback_2m_3.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_vwma_rsi_pullback_2m_3.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_vwma_rsi_volume_pullback_3.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_vwma_rsi_volume_pullback_3.pine"
+    },
+    {
+      "from": "futuresfund\\learningStrategies\\created_vwma_rsi_volume_reversal_15m.pine",
+      "to": "futuresfund\\unprovenStrategies\\fromLearning\\created_vwma_rsi_volume_reversal_15m.pine"
+    }
+  ]
+}

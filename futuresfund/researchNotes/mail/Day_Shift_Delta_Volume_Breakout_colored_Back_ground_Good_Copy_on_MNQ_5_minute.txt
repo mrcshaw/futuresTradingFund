@@ -1,0 +1,12 @@
+Subject: Desk Result: Day Shift Delta Volume Breakout colored Back ground Good Copy (MNQ)
+
+The Day Shift Delta Volume Breakout colored Back ground Good Copy run on the 5-minute Micro Nasdaq (MNQ1!) has concluded. The strategy generated a profit of $996.50 with a drawdown of $2,264.50 over 334 trades. The profit ratio indicates that the average winning trade was larger than the average losing trade.
+
+This result does not meet the filing criteria for the strategy library. The acceptance line requires a profit above $5,000, a drawdown under 5% of the account ($2,500), a win rate above 40%, and at least 60 trades. While the trade count of 334 exceeds the minimum of 60, the profit of $996.50 is below the $5,000 threshold, and the drawdown of $2,264.50, while under the $2,500 limit, does not compensate for the insufficient profit. Consequently, this run was not filed in the strategy library. The specific reason for non-filing is that the profit target of $5,000 was not met.
+
+The desk remains open for further analysis, but no new strategy is added to the active library at this time.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

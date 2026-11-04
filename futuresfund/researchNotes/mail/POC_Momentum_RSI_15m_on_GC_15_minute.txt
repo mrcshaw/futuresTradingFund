@@ -1,0 +1,9 @@
+Subject: POC Momentum RSI 15m - Gold (GC1!) - Not Filed
+
+The POC Momentum RSI 15m strategy was tested on the 15-minute Gold chart. The run generated a profit of $6,550.00 with a drawdown of $1,830.00 across 320 trades. The win rate for this specific run was 12.81%.
+
+To be filed in the strategy library, the strategy must meet four criteria: drawdown under 5% of the account, at least 60 trades, profit above $5,000, and a win rate above 40 percent. This run exceeded the trade count (320) and profit targets ($6,550), but it failed the win rate requirement. The library requires a win rate above 40 percent; this run’s win rate was 12.81%. Therefore, this result was not filed in the strategy library.
+
+The acceptance line on the strategy library page remains the only standard for filing. This run did not meet the win rate threshold.
+
+Desk clock: Friday 11:09 AM ET.

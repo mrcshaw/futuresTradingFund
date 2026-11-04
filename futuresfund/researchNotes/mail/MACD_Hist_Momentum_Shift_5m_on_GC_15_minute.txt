@@ -1,0 +1,5 @@
+Subject: MACD Hist Momentum Shift 5m Result on 15-minute Gold
+
+The run for MACD Hist Momentum Shift 5m on the 15-minute Gold (GC1!) chart has concluded. The test covered 23,768 bars from 2025-09-30 18:00 through 2026-10-02 16:45. The results show a profit of $48,430.00 against a drawdown of $30,481.50. The strategy executed 500 trades, averaging 9.6 trades per week over 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the current data set.
+
+This run was not filed in the strategy library. The specific reason recorded is that a stronger version of this name is already on this contract and timeframe. According to the application, the acceptance line for filing requires the drawdown to stay under 20 percent of the account, the run to have at least 80 trades, profit to be above $8,000, the profit factor to be above 1.05, and the win rate to be above 40 percent. While the trade count of 500 and profit of $48,430.00 meet the minimums for those specific metrics, the filing was rejected based on the existing stronger version on the library.

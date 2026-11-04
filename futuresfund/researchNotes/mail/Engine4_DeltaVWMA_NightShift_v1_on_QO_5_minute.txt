@@ -1,0 +1,3 @@
+Subject: Engine4_DeltaVWMA_NightShift_v1 Result: Not Filed
+
+The run for Engine4_DeltaVWMA_NightShift_v1 on the 5-minute Gold chart has been reviewed. The result shows a profit of $30,862.50, a drawdown of $6,725.00, and 159 trades over 74 trading days. However, this result was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.05, a win rate above 48 percent, and at least 60 trades. This run does not meet the criteria because a stronger version of this name is already on this contract and timeframe. The settings for this version were len_vwma=28, len_atr=14, stop_mult=3.0, tp_mult=5.0, and cooldown_bars=10. There were 3 different results on this chart.

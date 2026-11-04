@@ -441,8 +441,13 @@ def active_strategies(book: dict | None = None) -> list[dict]:
 
 
 def default_active_card() -> dict:
-    path = Path(__file__).resolve().parent / "learnedStrategies" / DEFAULT_ACTIVE_FILE
-    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    """The first card of a new book. The script is the learned copy, or the library copy when research has not filed one."""
+    here = Path(__file__).resolve().parent
+    path = next(
+        (folder / DEFAULT_ACTIVE_FILE for folder in (here / "learnedStrategies", here / "learningLibrary") if (folder / DEFAULT_ACTIVE_FILE).is_file()),
+        None,
+    )
+    text = path.read_text(encoding="utf-8") if path is not None else ""
     return {
         "id": "ema-bb-nq",
         "account": "paper",
@@ -671,7 +676,7 @@ ACCEPTANCE_DEFAULTS = {
     "profit_factor": 1.1,
     "win_rate": 53.0,
     "min_trades": 100,
-    "drawdown_pct": 5.0,
+    "drawdown_pct": 1.5,
     "goal": "min_trades",
     "use_drawdown": True,
     "use_trades": True,
@@ -692,7 +697,7 @@ def _as_flag(value, default: bool) -> bool:
 def strategy_acceptance(book: dict | None = None) -> dict:
     """The acceptance boxes on the strategy library page.
 
-    Drawdown under 5 percent of the account and the trade count are on.
+    Drawdown inside the pro account rule and the trade count are on.
     Profit, the profit factor, and the win rate stay off until their boxes are checked.
     """
     book = book if book is not None else load()
@@ -716,7 +721,7 @@ def strategy_acceptance(book: dict | None = None) -> dict:
             limits[key] = number
     limits["min_trades"] = int(limits["min_trades"])
     if float(limits["drawdown_pct"]) <= 0:
-        limits["drawdown_pct"] = 5.0
+        limits["drawdown_pct"] = 1.5
     effective = acceptance_goal(limits)
     if effective:
         limits["goal"] = effective
@@ -753,7 +758,7 @@ def save_strategy_acceptance(row: dict) -> dict:
     if profit < 0 or factor <= 0 or trades < 1 or rate < 0 or rate > 100:
         raise ValueError("Profit cannot be negative. The profit factor must be above zero. Win rate is from 0 to 100. Trades must be at least 1.")
     try:
-        drawdown_pct = float(row.get("drawdown_pct", 5))
+        drawdown_pct = float(row.get("drawdown_pct", 1.5))
     except (TypeError, ValueError) as exc:
         raise ValueError("The drawdown percent must be a number.") from exc
     if drawdown_pct <= 0 or drawdown_pct > 100:
@@ -842,7 +847,7 @@ def firm_record(view: dict | None = None) -> str:
         "Futures desk record. Chat does not place an order.",
         _rules_line(view),
         "Headquarters shows live P&L, the open trade, the three lowest-drawdown profitable strategies, and the lead script. Click a strategy name to copy its Pine script.",
-        "Strategy library is its own tab. " + acceptance_line() + " A run also needs a profit ratio above 1.12. The profit ratio is the average winning trade divided by the average losing trade. The run has 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still files inside that band when the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not filed. Each name keeps its most profitable run on that contract and timeframe, and another chart stays on its own row. ES, Nasdaq, and gold are separate. Click a row to copy the script.",
+        "Strategy library is its own tab. " + acceptance_line() + " A run also makes more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it. The run has 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still files inside that band when the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not filed. Each name keeps its most profitable run on that contract and timeframe, and another chart stays on its own row. ES, Nasdaq, and gold are separate. Click a row to copy the script.",
         "Two strategies can run at once, including on the same account.",
         "A price alert with id desk-bar records the candle. TradingView does not send a buy or sell.",
         "The floor trader and the quantitative trader run an executing strategy on those candles. The entry, the stop, the take profit, and the exit are the ones in the script.",

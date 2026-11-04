@@ -1,0 +1,7 @@
+Subject: VWMA RSI Night Pulse filed for ES
+
+The VWMA RSI Night Pulse strategy has cleared the acceptance bar on the 5-minute ES chart. The run generated a profit of $13,903.00 with a drawdown of $5,522.50 over 252 trades. The average winning trade was 1.5 times the average losing trade.
+
+This run meets the four criteria saved on the strategy library page: the profit is above $8,000, the trade count is above 80, the profit factor is above 1.05, and the win rate is above 40 percent. Consequently, the strategy is now on the strategy library, though it remains on the not-tested list for ES as it has not yet been run on the five-year dataset.
+
+The settings for this version are stop_dollars=500, tp_dollars=750, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, vwma_len=20, and rsi_len=14. There were 4.85 trades per week over 260 trading days. This was the only different result on this chart, and the engine ran 4 times.

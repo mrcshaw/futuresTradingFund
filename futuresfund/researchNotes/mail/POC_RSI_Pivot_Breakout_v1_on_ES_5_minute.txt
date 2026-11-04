@@ -1,0 +1,7 @@
+Subject: Desk Result: POC RSI Pivot Breakout v1 (ES 5m)
+
+The latest run on the 5-minute ES chart for POC RSI Pivot Breakout v1 has concluded. The strategy generated a profit of $33,275.00 with a maximum drawdown of $16,612.50 over 595 trades. This results in a pace of approximately 11.45 trades per week, which falls squarely within the required 130 to 600 trades per year threshold. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 2.00, satisfying the requirement to be above 1.12.
+
+The run met the profit target and maintained a trailing drawdown that is acceptable relative to the profit generated. However, this result was not filed in the strategy library. A stronger version of this name is already present on this contract and timeframe, so the result was not added to the library. The settings tested were pivot_left=5, pivot_right=5, lookback=60, stop_mult=3.0, tp_mult=5.0, rsi_len=14, and ema_len=50. This was one of 31 engine runs on this chart, covering 71,112 bars from October 1, 2025, through October 2, 2026.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 3 minutes 15 seconds.

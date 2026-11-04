@@ -1,0 +1,13 @@
+Subject: Result: VWMA BOS Trend v1 on NQ1! (15m)
+
+This run on the 15-minute Nasdaq chart has been evaluated against the strategy library acceptance criteria. The library requires a profit above $14,000, a profit factor above 1.05, a win rate above 48 percent, and a minimum of 60 trades. This result is not on the strategy library. The library keeps a win rate above 48 percent. This run's win rate is 43.13.
+
+Strategy: VWMA BOS Trend v1
+Chart tested: 15-minute Nasdaq (NQ1!)
+Profit: $25,870.00
+Drawdown: $15,365.00
+Trades: 371
+Trades per day: 7.15
+Bars in test: 23,704 (2025-10-01 to 2026-10-02)
+
+The profit of $25,870.00 exceeds the $14,000 threshold. However, the win rate of 43.13% fails the requirement of being above 48 percent. Consequently, this result was not filed in the strategy library. The settings used were len_vwma=20, len_atr=14, atr_mult=4.0, rsi_len=14, lookback=5.

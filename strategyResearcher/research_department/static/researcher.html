@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Researcher</title>
+  <link rel="stylesheet" href="/static/styles.css?v=17">
+</head>
+<body data-page="researcher">
+  <a class="back" href="/">Department</a>
+  <button id="run" type="button">Start</button>
+  <header class="page-head">
+    <div>
+      <p class="kicker">Live meeting</p>
+      <h1 id="who">Meeting</h1>
+      <p id="job-state">Waiting for a script</p>
+    </div>
+  </header>
+  <section id="reward" class="reward reward-meeting" aria-label="Reward scales">
+    <h2>Reward scales</h2>
+    <h3 class="scale-name">Win percentage</h3>
+    <p id="reward-note">The goal is the win percentage.</p>
+    <div class="scale" id="win-scale" data-direction="waiting">
+      <div class="scale-track">
+        <div class="scale-fill" id="scale-fill"></div>
+        <div class="scale-goal" id="scale-goal"><span id="scale-goal-label">Goal</span></div>
+        <div class="scale-marker" id="scale-marker" hidden></div>
+      </div>
+      <div class="scale-labels">
+        <span>0%</span>
+        <span>100%</span>
+      </div>
+    </div>
+    <h3 class="scale-name">Profit</h3>
+    <p id="profit-note">The scale starts at $0. The goal is 50% of $500 times the days tested.</p>
+    <div class="scale" id="profit-scale" data-direction="waiting">
+      <div class="scale-track">
+        <div class="scale-fill" id="profit-fill"></div>
+        <div class="scale-goal" id="profit-goal"><span id="profit-goal-label">Goal</span></div>
+        <div class="scale-marker" id="profit-marker" hidden></div>
+      </div>
+      <div class="scale-labels">
+        <span>$0</span>
+        <span id="profit-total-label">Total</span>
+      </div>
+    </div>
+  </section>
+  <div id="thread" class="thread" aria-live="polite"></div>
+  <script src="/static/app.js?v=22"></script>
+</body>
+</html>

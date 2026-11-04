@@ -1,0 +1,9 @@
+Strategy: Delta Volume Breakout with background.
+File: DeltaVolumeBreakOutBigGainsRiskyWithBackground_1792433166.txt.
+Chart: 2m NQ1!.
+Profit 28983.0. Drawdown 12998.5. Trades 417.
+Profit ratio 1.305. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.23 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 12 percent of the account, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

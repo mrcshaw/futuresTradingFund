@@ -588,6 +588,7 @@ button.chart-tab-close {
   .ticker-set { flex-wrap: wrap; }
   .ticker-set[aria-hidden="true"] { display: none; }
 }
+.hood-grid {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -606,6 +607,18 @@ button.chart-tab-close {
     var(--panel);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
 }
+.hood-card .hood-alert {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid #c4554a;
+  border-radius: 8px;
+  background: rgba(196, 85, 74, 0.18);
+  color: #ffd0c8;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.hood-card .hood-state.blocked { color: #ffb4a8; font-weight: 700; }
 .hood-card header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .hood-card h3 { margin: 0; font-size: 13px; }
 .hood-card .hood-state { font-size: 12px; color: var(--muted, #9fb0c3); }
@@ -670,6 +683,14 @@ button.chart-tab-close {
 }
 .hood-skip:not(.hood-restart):active { transform: translateY(1px); }
 .hood-skip:disabled { opacity: 0.45; cursor: default; }
+.hood-run {
+  margin: 0;
+  max-height: 108px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font: 12px/1.4 ui-monospace, Consolas, monospace;
+  color: var(--muted, #9fb0c3);
+}
 .hood-results {
   overflow: auto;
   border: 1px solid color-mix(in srgb, CanvasText 10%, transparent);
@@ -709,6 +730,7 @@ button.chart-tab-close {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.hood-result-open { cursor: pointer; }
 .hood-result-empty { color: var(--muted, #9aa3ad); }
 .hood-gain { color: var(--green, #3dd68c); }
 .hood-loss { color: var(--red, #ff6b6b); }
@@ -816,40 +838,6 @@ button.hold-new.held {
 .chip.working { color: var(--accent-text); background: var(--accent); border-color: transparent; }
 .chip.done { color: var(--green); background: color-mix(in srgb, var(--green) 16%, Canvas); }
 .chip.pending { color: var(--blue); background: color-mix(in srgb, LinkText 16%, Canvas); }
-
-.kronos-progress {
-  flex: 0 0 auto;
-  margin: 12px 22px 0;
-  padding: 12px 14px 10px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-}
-.kronos-progress-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-.kronos-progress-head .kicker { margin: 0; }
-.kronos-progress-head strong {
-  font-size: 28px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-.kronos-track {
-  height: 18px;
-  margin: 8px 0 6px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: color-mix(in srgb, CanvasText 12%, transparent);
-}
-.kronos-track span {
-  display: block;
-  height: 100%;
-  width: 0%;
-  background: var(--green);
-}
-.kronos-progress .role { margin: 0; }
 
 .feed, .book {
   flex: 1;
@@ -1170,4 +1158,37 @@ main.risk-open .feed {
   border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 999px;
   padding: 6px 12px;
+}
+
+#proving-table td small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.proving-pass {
+  background: none;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  color: var(--green);
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 8px;
+}
+
+.proving-now {
+  color: var(--blue);
+}
+
+.proving-fail {
+  color: var(--red);
+}
+
+.proving-stop {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.proving-wait {
+  color: var(--muted);
 }

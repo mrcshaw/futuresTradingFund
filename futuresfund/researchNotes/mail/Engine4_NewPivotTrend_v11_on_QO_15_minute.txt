@@ -1,0 +1,14 @@
+Taken from the application just now.
+Strategy: Engine4_NewPivotTrend_v11.
+Chart tested: 15-minute Gold (GC1!).
+Profit 23237.5. Drawdown 7625.0. Trades 112.
+Trades a week: 4.65 over 121 trading days.
+Bars in this test: 9,495 from 2026-04-16 14:45 through 2026-10-01 11:15.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. It trades at least 4 times a week, and it is not on the shelf yet.
+Settings of this version: emaFastLen=55, emaSlowLen=200, atrLen=25, atrMult=3.0, lookback=5, cooldownBars=10.
+Different results on this chart: 11.
+Engine runs on this chart: 11.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 7 seconds.

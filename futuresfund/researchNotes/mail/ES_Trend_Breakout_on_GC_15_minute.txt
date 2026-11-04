@@ -1,0 +1,8 @@
+Subject: Desk Update: ES Trend Breakout on Gold (GC1!) Not Filed
+
+The latest run for ES Trend Breakout on the 15-minute Gold chart has been reviewed. The strategy tested 268 trades with a profit of $2,830.00 and a drawdown of $2,484.50. The acceptance criteria for filing require a profit above $5,000. This result falls short of that threshold. Consequently, the strategy is not on the strategy library. It was not filed because the profit did not exceed $5,000. The account remains safe with the current drawdown well under the 5% limit, but no new strategy is added to the library at this time. The desk continues to monitor for opportunities that meet the required metrics.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

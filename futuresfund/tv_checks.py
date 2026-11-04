@@ -21,7 +21,12 @@ ET = ZoneInfo("America/New_York")
 _FOLDERS = ("checkScripts", "learningStrategies", "learnedStrategies", "createdStrategies")
 _FRAMES = ((1, "1m"), (2, "2m"), (3, "3m"), (5, "5m"), (15, "15m"), (30, "30m"), (60, "1h"))
 _WIDTH = {"1m": 60, "2m": 120, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
-_ROOTS = (("ES1!", "ES"), ("NQ1!", "NQ"), ("GC1!", "GC"), ("MGC1!", "GC"), ("QO1!", "QO"))
+_ROOTS = (
+    ("ES1!", "ES"), ("NQ1!", "NQ"), ("MNQ1!", "MNQ"), ("MES1!", "MES"), ("M2K1!", "M2K"), ("YM1!", "YM"),
+    ("GC1!", "GC"), ("MGC1!", "GC"), ("QO1!", "QO"),
+)
+# A dated contract in the export name, such as CME_MINI_MNQZ2026: root, month code, four-digit year.
+_CONTRACT = re.compile(r"_([A-Z]{1,4}?)([FGHJKMNQUVXZ])(20\d{2})(?:_|$)")
 
 
 def _trade_csvs(folder: Path) -> list[Path]:
@@ -53,9 +58,10 @@ def check_all() -> list[dict]:
     return [check_export(path) for path in exports()]
 
 
-def check_export(path: Path) -> dict:
+def check_export(path: Path, source: str | None = None, title: str = "") -> dict:
+    """Compare an export with the engine. source is the script when it is not in the strategy folders."""
     from futuresfund.backtrader_engine import _bars_from, compare, load_tv_trades, script_trades
-    from futuresfund.research_bars import research_series
+    from futuresfund.research_bars import contract_series, research_series
     from futuresfund.script_backtest import Unsupported
     from futuresfund.tv_broker import tv_metrics
 
@@ -65,24 +71,40 @@ def check_export(path: Path) -> dict:
     if not tv:
         report["error"] = "The file has no closed trades."
         return report
-    script = _script_for(_title_part(path.stem))
-    if script is None:
-        report["error"] = f"No Pine script in the strategy folders is named like {name}."
-        return report
-    source_path, title = script
-    root = _root_for(path.stem)
+    given = source is not None
+    if not given:
+        script = _script_for(_title_part(path.stem))
+        if script is None:
+            report["error"] = f"No Pine script in the strategy folders is named like {name}."
+            return report
+        source_path, title = script
+        source = source_path.read_text(encoding="utf-8", errors="replace")
+    contract = _contract_for(path.stem)
+    root = contract[0] if contract else _root_for(path.stem)
     timeframe = _timeframe(path)
-    report.update({"title": title, "script": source_path.name, "instrument": root, "timeframe": timeframe})
+    report.update({"title": title, "script": "entered script" if given else source_path.name, "instrument": root, "timeframe": timeframe})
+    if contract:
+        report["contract"] = contract[1]
     if not timeframe:
         report["error"] = "The chart timeframe could not be read from the trade durations."
         return report
-    source = source_path.read_text(encoding="utf-8", errors="replace")
-    series = research_series(root, timeframe, include_live=False)
-    first_epoch, start = _range_start(path, tv)
+    if contract:
+        # A dated contract's chart is that expiration from its first bar, so the
+        # indicators warm up on the same history TradingView loaded.
+        series = contract_series(contract[1], timeframe)
+        if not series:
+            report["error"] = f"The Databento download has no {contract[1]} bars for {name}."
+            return report
+        first_epoch, start = series[0]["t"], _et(series[0]["t"])
+    else:
+        series = research_series(root, timeframe, include_live=False)
+        first_epoch, start = _range_start(path, tv)
     bars = [bar for bar in _bars_from(series) if bar.epoch >= first_epoch]
     end = max(trade["exit_time"] for trade in tv)
     best = None
-    for label, inputs in _candidates(title, root):
+    # A script entered by the owner ran on TradingView exactly as written, whatever point value it says.
+    candidates = [("the script as written", None)] if given else _candidates(title, root)
+    for label, inputs in candidates:
         try:
             trades = script_trades(source, bars, inputs, root, timeframe, as_written=True)
         except Unsupported:
@@ -110,6 +132,8 @@ def check_export(path: Path) -> dict:
         or trade["entry_time"] < comparable
         or trade["entry_time"] > covered_to
         or trade["entry_time"] not in bar_times
+        # A trade still open at the last bar has no exit on this computer to compare.
+        or (trade.get("exit_time") or "") > covered_to
     ]
     on_chart = [trade for trade in window if comparable and comparable <= trade["entry_time"] <= covered_to]
     missed = [trade for trade in tv if _key(trade) not in engine_keys and trade not in outside]
@@ -135,7 +159,7 @@ def check_export(path: Path) -> dict:
         "filled_from_yahoo": [f"{a} to {b}" for a, b in sorted(_borrowed(series, _WIDTH[timeframe], start, end), key=_span_minutes, reverse=True)[:3]],
     })
     if agree_from:
-        later_tv = [trade for trade in tv if trade["entry_time"] >= agree_from]
+        later_tv = [trade for trade in tv if trade["entry_time"] >= agree_from and trade not in outside]
         later_engine = [trade for trade in window if trade["entry_time"] >= agree_from]
         report["identical_from"] = {
             "from": agree_from,
@@ -333,6 +357,17 @@ def _script_for(part: str) -> tuple[Path, str] | None:
                 prefix = (path, title)
                 prefix_len = len(folded)
     return prefix
+
+
+def _contract_for(stem: str) -> tuple[str, str] | None:
+    """MNQ and MNQZ6 from an export of CME_MINI:MNQZ2026. A continuous symbol such as MNQ1! is None."""
+    from futuresfund.contracts import ROOTS
+
+    match = _CONTRACT.search(stem.upper())
+    if not match or match.group(1) not in ROOTS:
+        return None
+    root, month, year = match.groups()
+    return root, f"{root}{month}{year[-1]}"
 
 
 def _root_for(stem: str) -> str:

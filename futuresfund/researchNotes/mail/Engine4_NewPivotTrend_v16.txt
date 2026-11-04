@@ -1,0 +1,7 @@
+Strategy: Engine4_NewPivotTrend_v16.
+File: engine4_newpivottrend_v16_3.pine.
+Chart: 5m NQ1!.
+Profit 148755.0. Drawdown 42190.0. Trades 253.
+Profit is 3.53 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

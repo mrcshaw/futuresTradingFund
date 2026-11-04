@@ -1,0 +1,19 @@
+Subject: Desk Update: Day Shift Delta Volume Breakout colored Back ground Good Copy (GC1!)
+
+The chart has finished processing. Here are the results for the Day Shift Delta Volume Breakout colored Back ground Good Copy strategy on the 2-minute Gold (GC1!) chart.
+
+Profit: $2,057.50
+Drawdown: $2,076.50
+Trades: 30
+Trades per day: ~0.51 (2.55 per week over 59 trading days)
+
+This run did not meet the criteria for inclusion in the strategy library. The library requires at least 100 trades to file a strategy. This run only had 30 trades. Additionally, the trade count of 30 is below the minimum threshold of 130 trades per year required for a viable pace. The run did not meet the profit target of $3,000, nor did it meet the trailing drawdown limit of $2,500 relative to the account size constraints for this specific strategy's acceptance. The profit ratio was not calculated as the run was rejected based on trade count and library filing rules.
+
+The strategy is not on the library. This result was not filed because the trade count (30) was below the required minimum of 100 trades for library inclusion.
+
+The desk remains active. We await the next chart completion.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

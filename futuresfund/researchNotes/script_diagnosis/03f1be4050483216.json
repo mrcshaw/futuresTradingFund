@@ -1,0 +1,112 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 3582.0,
+   "max_drawdown": 1291.5,
+   "trades": 13
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -318.0,
+   "max_drawdown": 1295.0,
+   "trades": 13
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 4358.0,
+   "max_drawdown": 3034.0,
+   "trades": 47
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -927.0,
+   "max_drawdown": 1235.5,
+   "trades": 7
+  },
+  "min_delta_pct": {
+   "value": 2.0,
+   "net_profit": -1412.0,
+   "max_drawdown": 1861.0,
+   "trades": 17
+  },
+  "vwma_len": {
+   "value": 6,
+   "net_profit": -1341.5,
+   "max_drawdown": 2036.0,
+   "trades": 14
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": 240.0,
+   "max_drawdown": 760.5,
+   "trades": 10
+  },
+  "min_slope": {
+   "value": 0.125,
+   "net_profit": -865.0,
+   "max_drawdown": 1286.0,
+   "trades": 15
+  },
+  "pivot_len": {
+   "value": 1,
+   "net_profit": 4499.0,
+   "max_drawdown": 976.0,
+   "trades": 16
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 15,
+   "min_delta_pct": 8.0,
+   "vwma_len": 25,
+   "vwma_slope_len": 5,
+   "min_slope": 0.5,
+   "pivot_len": 2
+  },
+  "net_profit": -305.5,
+  "max_drawdown": 1174.5,
+  "trades": 13,
+  "win_rate": 30.77,
+  "profit_factor": 0.863,
+  "biggest_winner": 501.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 7,
+    "pnl": 335.5,
+    "favorable": 439.14,
+    "adverse": -180.5
+   },
+   {
+    "exit": "XL",
+    "trades": 5,
+    "pnl": -617.5,
+    "favorable": 237.0,
+    "adverse": -258.0
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": -23.5,
+    "favorable": 194.5,
+    "adverse": -105.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true
+}

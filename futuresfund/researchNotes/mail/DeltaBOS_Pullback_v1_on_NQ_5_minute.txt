@@ -1,0 +1,12 @@
+Subject: Desk Update: DeltaBOS_Pullback_v1 Run Results
+
+The latest run for DeltaBOS_Pullback_v1 on the 5-minute Nasdaq (NQ1!) chart has concluded. The strategy generated a profit of $71,740.00 with a maximum drawdown of $15,275.00 across 514 trades. The trades per day averaged 9.9 over the testing period.
+
+However, this result was not filed in the strategy library. The acceptance criteria require a win rate above 48 percent, but this run achieved a win rate of 46.69 percent. While the profit and trade count exceeded the thresholds, the win rate fell short of the required standard. Consequently, the strategy remains unfiled. The settings for this run were len_ema=50, len_atr=14, atr_mult=5.0, tp_mult=5.0, and cooldown=33.
+
+The desk continues to operate within the $50,000 account limits, with a trailing drawdown protection of $2,500. All open positions will be flattened at 16:45 New York time as per protocol.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

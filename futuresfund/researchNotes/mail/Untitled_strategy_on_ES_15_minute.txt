@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Untitled strategy.
+Chart tested: 15-minute ES (ES1!).
+Profit 7037.5. Drawdown 2400.0. Trades 51.
+Trades a day: 2.43 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: yes.
+Inside the trailing drawdown: yes.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It meets the objective, and it is not on the shelf yet.
+Settings of this version: use_session=True, sess_start_hr=0, sess_start_mn=0, sess_end_hr=23, sess_end_mn=59, min_cross_pts=2.0, cooldown_bars=10, max_trades_day=5, atr_len=1, atr_stop=1.5, tp_dollars=500.0, use_trail=False.
+Engine attempts on this chart: 200.

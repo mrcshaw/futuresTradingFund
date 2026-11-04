@@ -1,0 +1,5 @@
+Subject: Desk Update: POC Pullback EMA Trend (GC1! 15m) – Not Filed
+
+The latest run on the 15-minute Gold chart using the POC Pullback EMA Trend strategy has concluded. The results show a profit of $73,112.50 with a maximum drawdown of $10,200.00 across 274 trades. The test covered 9,495 bars from April 16, 2026, through October 1, 2026. With 11.3 trades per week over 121 trading days, the annualized pace is approximately 1,365 trades per year. This exceeds the upper limit of the 130 to 600 trades per year target, making the pace too high. Additionally, the strategy is not on the library. This result was not filed because a stronger version of this name is already on this contract and timeframe. The settings used were pivot_left=5, pivot_right=5, len_ema=20, len_atr=14, len_cooldown=6, stop_mult=4.875, and tp_mult=18.75. There were 91 different results and 104 engine runs on this chart.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 2 minutes 17 seconds.

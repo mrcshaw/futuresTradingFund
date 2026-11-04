@@ -1,0 +1,160 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "pullback_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 3024.5,
+   "max_drawdown": 655.5,
+   "trades": 8
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 787.0,
+   "max_drawdown": 416.5,
+   "trades": 8
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -954.5,
+   "max_drawdown": 2394.0,
+   "trades": 22
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -477.0,
+   "max_drawdown": 988.5,
+   "trades": 7
+  },
+  "min_delta_pct": {
+   "value": 12.0,
+   "net_profit": 95.0,
+   "max_drawdown": 516.5,
+   "trades": 5
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 762.0,
+   "max_drawdown": 802.5,
+   "trades": 8
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": 857.5,
+   "max_drawdown": 516.5,
+   "trades": 5
+  },
+  "min_slope": {
+   "value": 0.5,
+   "net_profit": 955.5,
+   "max_drawdown": 802.5,
+   "trades": 12
+  },
+  "cooldown_bars": {
+   "value": 2,
+   "net_profit": 476.0,
+   "max_drawdown": 572.0,
+   "trades": 9
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 666.5,
+   "max_drawdown": 765.0,
+   "trades": 11
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": 952.5,
+   "max_drawdown": 516.5,
+   "trades": 10
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 476.0,
+   "max_drawdown": 572.0,
+   "trades": 9
+  }
+ },
+ "flat": [
+  "confirm_candles",
+  "use_daily_limits",
+  "daily_loss_limit",
+  "daily_profit_cap",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 3.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 2.0,
+   "confirm_candles": 2,
+   "cooldown_bars": 10,
+   "pullback_dollars": 100.0,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_daily_limits": true,
+   "daily_loss_limit": 1000.0,
+   "daily_profit_cap": 6000.0
+  },
+  "net_profit": 762.0,
+  "max_drawdown": 516.5,
+  "trades": 8,
+  "win_rate": 50.0,
+  "profit_factor": 1.666,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 5,
+    "pnl": 857.5,
+    "favorable": 344.5,
+    "adverse": -205.5
+   },
+   {
+    "exit": "XL",
+    "trades": 3,
+    "pnl": -95.5,
+    "favorable": 290.33,
+    "adverse": -263.83
+   }
+  ]
+ },
+ "reviewed": [
+  "7 ES 15m",
+  "7 MNQ 15m",
+  "7 MNQ 5m",
+  "7 NQ 5m",
+  "90 MNQ 5m",
+  "90 NQ 5m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true,
+ "repairs": 1
+}

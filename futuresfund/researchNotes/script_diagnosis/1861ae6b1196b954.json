@@ -1,0 +1,129 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_step_pct",
+  "trail_pct",
+  "profile_lookback",
+  "profile_rows",
+  "min_delta_pct",
+  "vwma_len",
+  "vwma_slope_len",
+  "min_slope",
+  "pivot_left",
+  "pivot_right",
+  "disarm_only_inside_poc",
+  "cooldown_bars",
+  "use_price_vwma",
+  "vol_ma_len",
+  "use_vol_filter",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 312,
+   "net_profit": 708.0,
+   "max_drawdown": 3778.5,
+   "trades": 47
+  },
+  "tp_dollars": {
+   "value": 438,
+   "net_profit": -1492.0,
+   "max_drawdown": 2650.5,
+   "trades": 47
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 1250,
+   "tp_dollars": 1750,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_step_pct": 50.0,
+   "trail_pct": 50.0,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "pivot_left": 3,
+   "pivot_right": 3,
+   "disarm_only_inside_poc": true,
+   "cooldown_bars": 5,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 45
+  },
+  "net_profit": -2604.5,
+  "max_drawdown": 5442.5,
+  "trades": 47,
+  "win_rate": 29.79,
+  "profit_factor": 0.852,
+  "biggest_winner": 1726.5,
+  "biggest_loser": -786.0,
+  "exits": [
+   {
+    "exit": "Session Close",
+    "trades": 14,
+    "pnl": 1408.5,
+    "favorable": 448.96,
+    "adverse": -288.54
+   },
+   {
+    "exit": "Long Exit",
+    "trades": 11,
+    "pnl": 1404.0,
+    "favorable": 833.14,
+    "adverse": -564.59
+   },
+   {
+    "exit": "Short Exit",
+    "trades": 10,
+    "pnl": -322.5,
+    "favorable": 772.0,
+    "adverse": -650.5
+   },
+   {
+    "exit": "Long",
+    "trades": 7,
+    "pnl": -2777.0,
+    "favorable": 553.43,
+    "adverse": -530.5
+   },
+   {
+    "exit": "Short",
+    "trades": 5,
+    "pnl": -2317.5,
+    "favorable": 582.0,
+    "adverse": -623.0
+   }
+  ]
+ },
+ "reviewed": [
+  "30 M2K 5m",
+  "7 YM 5m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

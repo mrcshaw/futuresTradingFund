@@ -1,0 +1,143 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -2660.0,
+   "max_drawdown": 2660.0,
+   "trades": 10
+  },
+  "tp_dollars": {
+   "value": 312,
+   "net_profit": 76.0,
+   "max_drawdown": 804.0,
+   "trades": 9
+  },
+  "slowLen": {
+   "value": 25,
+   "net_profit": 2793.5,
+   "max_drawdown": 2476.0,
+   "trades": 29
+  },
+  "fastLen": {
+   "value": 2,
+   "net_profit": 2072.5,
+   "max_drawdown": 2176.0,
+   "trades": 15
+  },
+  "rsiLen": {
+   "value": 4,
+   "net_profit": 276.0,
+   "max_drawdown": 1877.5,
+   "trades": 9
+  },
+  "rsiLevel": {
+   "value": 12.5,
+   "net_profit": 1888.5,
+   "max_drawdown": 1877.5,
+   "trades": 9
+  },
+  "regLen": {
+   "value": 5,
+   "net_profit": 1062.0,
+   "max_drawdown": 1877.5,
+   "trades": 8
+  },
+  "maxLoss": {
+   "value": 450.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 2201.0,
+   "max_drawdown": 1877.5,
+   "trades": 9
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 2634.0,
+   "max_drawdown": 1091.5,
+   "trades": 6
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -345.5,
+   "max_drawdown": 1572.0,
+   "trades": 3
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 2163.5,
+   "max_drawdown": 1877.5,
+   "trades": 9
+  }
+ },
+ "flat": [
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 750,
+   "tp_dollars": 1250,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "fastLen": 4,
+   "slowLen": 100,
+   "rsiLen": 14,
+   "rsiLevel": 50.0,
+   "regLen": 20,
+   "maxLoss": 1800.0
+  },
+  "net_profit": 2288.5,
+  "max_drawdown": 1877.5,
+  "trades": 9,
+  "win_rate": 55.56,
+  "profit_factor": 1.936,
+  "biggest_winner": 1226.5,
+  "biggest_loser": -786.0,
+  "held_loser": -786.0,
+  "exits": [
+   {
+    "exit": "Stop",
+    "trades": 5,
+    "pnl": 95.0,
+    "favorable": 577.0,
+    "adverse": -623.0
+   },
+   {
+    "exit": "RSI exit",
+    "trades": 3,
+    "pnl": 2067.0,
+    "favorable": 877.83,
+    "adverse": -305.5
+   },
+   {
+    "exit": "Session",
+    "trades": 1,
+    "pnl": 126.5,
+    "favorable": 357.0,
+    "adverse": -343.0
+   }
+  ]
+ },
+ "reviewed": [
+  "7 NQ 15m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

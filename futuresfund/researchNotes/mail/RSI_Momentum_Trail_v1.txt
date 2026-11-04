@@ -1,0 +1,8 @@
+Strategy: RSI Momentum Trail v1.
+File: rsi_momentum_trail_v1_2.pine.
+Chart: 15m GC1!.
+Profit 15625.0. Drawdown 4075.0. Trades 133.
+Profit ratio 1.769. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 3.83 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

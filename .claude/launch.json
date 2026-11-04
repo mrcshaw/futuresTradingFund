@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "futures-desk",
+      "runtimeExecutable": ".venv-speech/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "futuresfund.server:app", "--host", "127.0.0.1", "--port", "8788", "--timeout-keep-alive", "120"],
+      "port": 8788
+    }
+  ]
+}

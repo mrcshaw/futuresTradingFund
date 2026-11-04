@@ -1,0 +1,7 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v31 Test Results
+
+The latest run for Engine4_NewPivotTrend_v31 on the 15-minute ES chart has concluded. The strategy tested pivot_left=5, pivot_right=5, ema_fast_len=55, ema_slow_len=200, sma_len=25, atr_len=6, stop_mult=2.1573, tp_mult=4.0, and cooldown_bars=10. The test covered 23,704 bars from October 1, 2025, through October 2, 2026, generating 582 trades. This results in a pace of 11.2 trades per week, or 291.2 trades per year, which falls within the required 130 to 600 trades per year band. However, the run resulted in a loss of $3,337.50 with a maximum drawdown of $33,975.00.
+
+This result does not meet the criteria for inclusion in the strategy library. The library shelf requires a profit over $10,000, and this run ended with a negative profit. Consequently, it was not filed. While the trade frequency is acceptable, the financial outcome and the high drawdown relative to the profit target mean this specific instance is not cleared for the prop account. The desk continues to monitor other runs, but this one remains closed and unfiled.
+
+Email sent to desk viewing address.

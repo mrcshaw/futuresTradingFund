@@ -1,0 +1,19 @@
+Subject: POC Pullback Night [Consistent] - Strategy Result  
+
+Hi [Recipient],  
+
+The strategy "POC Pullback Night [Consistent]" was tested on the 5-minute ES (ES1!) chart. Here are the results:  
+
+- **Profit**: $1,494.0  
+- **Drawdown**: $1,115.0  
+- **Trades**: 21  
+- **Trades per Day**: 1.0 (over 21 trading days)  
+
+The strategy met the trailing drawdown requirement of $2,500 and maintained the pace of 1 to 3 trades per day. However, it did not meet the profit target of $3,000.  
+
+As a result, this strategy was not filed in the strategy library. It was left off because the profit is under the $3,000 target.  
+
+Let me know if you have any questions.  
+
+Best regards,  
+[Your Name]

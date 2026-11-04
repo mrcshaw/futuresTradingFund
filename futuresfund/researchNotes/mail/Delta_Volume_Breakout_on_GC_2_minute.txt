@@ -1,0 +1,5 @@
+Subject: Delta Volume Breakout filed for Gold
+
+The 2-minute Gold (GC1!) chart just finished testing the Delta Volume Breakout strategy. This run produced a profit of $29,308.0 with a drawdown of $14,159.5 over 222 trades. The pace was 4.25 trades per week across 260 trading days. The profit ratio, defined as the average winning trade divided by the average losing trade, is 2.07.
+
+This run clears the acceptance line on the strategy library page. The profit of $29,308.0 is above the $6,000 threshold. The trade count of 222 is above the 60-trade minimum. The profit factor is above 1.05, and the win rate is above 40 percent. Because the drawdown of $14,159.5 is under 10 percent of the account and all four boxes on the strategy library page are satisfied, the strategy is filed. It is now on the strategy library for Gold.

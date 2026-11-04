@@ -1,0 +1,9 @@
+Strategy: VWMA BOS Breakout.
+File: created_vwma_bos_breakout.pine.
+Chart: 5m GC1!.
+Profit 23250.0. Drawdown 4730.0. Trades 421.
+Profit ratio 1.253. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 4.92 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 60 trades, profit is above $5,000, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

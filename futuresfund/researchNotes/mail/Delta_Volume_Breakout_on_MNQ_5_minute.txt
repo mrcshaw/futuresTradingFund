@@ -1,0 +1,11 @@
+Subject: Delta Volume Breakout on 5-minute Micro Nasdaq: Filed
+
+To the Desk,
+
+The backtest for Delta Volume Breakout on the 5-minute Micro Nasdaq (MNQ1!) chart has concluded. The run generated a profit of $6,494.0 with a drawdown of $3,494.0 over 144 trades. This equates to 2.75 trades per week across the 260 trading day period. The profit ratio, defined as the average winning trade divided by the average losing trade, is 1.86.
+
+This run meets the filing criteria established on the strategy library page. The profit of $6,494.0 is above the $6,000 threshold, the trade count of 144 exceeds the minimum of 60, the profit factor of 1.86 is above 1.05, and the win rate is above 40 percent. Additionally, the drawdown of $3,494.0 is under 10 percent of the $50,000 account. Consequently, this strategy is filed and appears on the strategy library for Micro Nasdaq.
+
+Best regards,
+
+Portfolio Manager

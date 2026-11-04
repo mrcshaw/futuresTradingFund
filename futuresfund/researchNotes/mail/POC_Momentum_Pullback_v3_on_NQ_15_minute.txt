@@ -1,0 +1,3 @@
+Subject: POC Momentum Pullback v3 - Nasdaq (NQ) Result Not Filed
+
+This run of POC Momentum Pullback v3 on the 15-minute Nasdaq chart generated $2,950 in profit with a drawdown of $1,700 over 194 trades. The strategy library requires profit above $5,000, a win rate above 40%, drawdown under 5% of the account, and at least 60 trades. This result does not meet the profit threshold. It was not filed in the strategy library.

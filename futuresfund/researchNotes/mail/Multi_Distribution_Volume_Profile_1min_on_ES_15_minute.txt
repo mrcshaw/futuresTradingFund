@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Multi-Distribution Volume Profile 1min.
+Chart tested: 15-minute ES (ES1!).
+Profit 422.0. Drawdown 1220.0. Trades 23.
+Trades a day: 1.1 over 21 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target.
+Settings of this version: profile_lookback=28, profile_rows=50, lvn_pct=5.0, gauss_sigma=0.2, cooldown_bars=2, ema_len=433, ema_slope_len=9, min_slope=1.0, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=8.
+Engine attempts on this chart: 200.

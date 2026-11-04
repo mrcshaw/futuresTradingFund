@@ -1,0 +1,9 @@
+Strategy: VWMA Momentum Breakout.
+File: created_vwma_momentum_breakout_11.pine.
+Chart: 15m GC1!.
+Profit 41162.5. Drawdown 6550.0. Trades 278.
+Profit ratio 1.469. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 6.28 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.1, the win rate is above 48 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

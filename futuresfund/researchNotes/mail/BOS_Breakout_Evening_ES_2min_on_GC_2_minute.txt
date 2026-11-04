@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: BOS Breakout Evening ES 2min.
+Chart tested: 2-minute Gold (GC1!).
+Profit -69860.0. Drawdown 84846.5. Trades 1480.
+Trades a week: 5.75 over 1291 trading days.
+Bars in this test: 886,836 from 2021-10-03 20:00 through 2026-10-02 16:58.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. It trades at least 4 times a week, and it is not on the shelf yet.
+Settings of this version: pivot_window=4, backcandles=25, use_ema_filter=False, ema_length=50, ema_trend_window=10, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=8, sess_end_mn=0, stop_dollars=500.0, tp_dollars=1000.0.
+Different results on this chart: 50.
+Engine runs on this chart: 116.

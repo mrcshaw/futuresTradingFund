@@ -1,0 +1,11 @@
+Subject: Desk Update: POC RSI Momentum v9 (GC1!) Result
+
+The POC RSI Momentum v9 strategy has completed its run on the 15-minute Gold (GC1!) chart. The test utilized settings of len_ema=4, len_rsi=14, len_atr=14, stop_mult=4.0, tp_mult=16.0, and cooldown=24, covering 9,496 bars from April 16 through October 7, 2026.
+
+The run generated a profit of $9,487.50 against a trailing drawdown of $9,112.50 across 76 trades. With an average of 3.1 trades per week over 122 trading days, the annualized pace falls below the required threshold of 130 trades a year, making it too quiet to qualify for the library under standard volume criteria. While the profit factor is strong, the trade count does not meet the minimum activity level.
+
+Consequently, this result was not filed in the strategy library. The shelf requires a profit over $10,000, and this run fell short of that target. The results are noted for review but are not active.
+
+Desk clock: Thursday 02:01 AM ET.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 6 seconds.

@@ -1,0 +1,9 @@
+Subject: Desk Result: POC BOS Momentum v1 on ES 15m
+
+The latest run for POC BOS Momentum v1 on the 15-minute ES chart has concluded. The strategy generated a profit of $7,325.00 with a maximum drawdown of $4,737.50 across 170 trades. The test covered 23,704 bars from October 1, 2025, through October 2, 2026.
+
+The trade frequency was 3.25 trades per week, which annualizes to approximately 169 trades. This falls within the required pace of 130 to 600 trades per year. The profit target of $10,000 was not met, and the run was not filed in the strategy library. The result is currently under review against the objective of lower drawdown first, then larger profit, but it does not meet the filing threshold for the shelf.
+
+No meeting is scheduled for this time. The desk remains responsive.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 22 seconds.

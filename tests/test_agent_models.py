@@ -68,8 +68,8 @@ class AgentModelTests(unittest.TestCase):
         from futuresfund.llm import _BASES, _post
 
         self.assertTrue(all(base == MOE_BASE for base in _BASES.values()))
-        self.assertIn("qwen3.8", MOE_BASE)
-        self.assertIn("27b", MOE_BASE)
+        self.assertIn("Qwen3.8", MOE_BASE)
+        self.assertIn("27B", MOE_BASE)
         self.assertEqual(runner_model("desk-portfolio"), runner_model("desk-strategy-developer-15"))
         self.assertIn("qwen38", runner_model("desk-researcher"))
         captured = {}
@@ -96,6 +96,31 @@ class AgentModelTests(unittest.TestCase):
         with patch("urllib.request.urlopen", fake_open):
             _post("desk-researcher", [{"role": "user", "content": "Which result ranks first?"}], think=True)
         self.assertEqual(captured["body"]["think"], "max")
+
+    def test_a_thinking_call_gets_five_minutes(self):
+        from futuresfund.llm import _post
+
+        waits = []
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return json.dumps({"message": {"content": "done"}}).encode()
+
+        def fake_open(request, timeout=0):
+            waits.append(timeout)
+            return Response()
+
+        with patch("urllib.request.urlopen", fake_open):
+            _post("desk-researcher", [{"role": "user", "content": "q"}], think=True)
+            _post("desk-researcher", [{"role": "user", "content": "q"}], think=True, timeout=180)
+            _post("desk-researcher", [{"role": "user", "content": "q"}])
+        self.assertEqual(waits, [300, 300, 120])
 
     def test_the_systems_administrator_chat_uses_thinking(self):
         captured = {}
@@ -124,7 +149,7 @@ class AgentModelTests(unittest.TestCase):
         self.assertIn("their boxes are checked", system)
         self.assertIn("Do not invent a profit", system)
         self.assertIn("larger than the stop", system)
-        self.assertIn("more than 3 percent of the account", system)
+        self.assertIn("more than 1.5 percent of the account", system)
 
     def test_two_desks_do_not_wait_on_each_other(self):
         barrier = threading.Barrier(2)

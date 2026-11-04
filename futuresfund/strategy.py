@@ -333,7 +333,10 @@ def leader_script(strategy_id: str) -> dict | None:
     row = next((item for item in consistent_leaders(3) if item["id"] == strategy_id), None)
     if row is None:
         return None
-    return {"id": row["id"], "title": row["title"], "pine": pine_text(row.get("file") or "")}
+    from futuresfund.library import for_contract
+
+    pine = for_contract(pine_text(row.get("file") or ""), row.get("contract") or row.get("instrument"))
+    return {"id": row["id"], "title": row["title"], "pine": pine}
 
 
 def _score(item: dict | None) -> tuple:
@@ -411,6 +414,8 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
 
 
 def _pine_for(row: dict, filename: str, title: str) -> str:
+    from futuresfund.contracts import POINT_VALUE, root_of
+    from futuresfund.library import for_contract
     from futuresfund.pines import render
 
     runner = str(row.get("runner") or "")
@@ -421,13 +426,18 @@ def _pine_for(row: dict, filename: str, title: str) -> str:
         f"// Headquarters. Tested on the {chart} chart. "
         f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.\n"
     )
+    instrument = row.get("contract") or row.get("instrument") or "ES"
     if runner in {"donchian", "ema_cross", "rsi_revert", "vwap_side", "bollinger", "macd", "poc_pullback"}:
         tuned = _family_params(runner, params)
-        return _version_five(render(runner, tuned, f"{title} {chart}", 50, 50000), banner)
+        try:
+            point = float(POINT_VALUE.get(root_of(str(instrument)), 50))
+        except ValueError:
+            point = 50.0
+        return _version_five(render(runner, tuned, f"{title} {chart}", point, 50000), banner)
     text = _read_pine(filename)
     if not text:
         return ""
-    return _version_five(_apply_inputs(text, params), banner)
+    return _version_five(for_contract(_apply_inputs(text, params), instrument), banner)
 
 
 def _version_five(text: str, banner: str) -> str:
@@ -475,7 +485,8 @@ def _read_pine(filename: str) -> str:
     if name.name and not name.name.startswith("created_"):
         candidates.append(f"created_{name.name}")
         candidates.append(f"created_{stem}.txt")
-    for folder in (root / "learningStrategies", root / "learnedStrategies", root / "createdStrategies"):
+    # draftStrategies and unprovenStrategies come last, so a filed row still finds a script the creation team moved.
+    for folder in (root / "learningStrategies", root / "learnedStrategies", root / "createdStrategies", root / "draftStrategies", root / "unprovenStrategies"):
         for candidate in candidates:
             path = folder / candidate
             if not path.is_file() or path.suffix.lower() not in {".pine", ".txt"}:
@@ -505,15 +516,13 @@ def _apply_inputs(text: str, params: dict) -> str:
 
 
 def _clamp_default(text: str, key: str, value):
-    match = re.search(
-        rf"{re.escape(key)}\s*=\s*input\.(?:int|float|bool)\s*\((.*?)\)",
-        text,
-        re.DOTALL,
-    )
-    if not match or isinstance(value, bool):
+    from futuresfund.pine_report import input_calls
+
+    call = next((item for item in input_calls(text) if item["name"] == key), None)
+    if call is None or isinstance(value, bool):
         return value
-    low = _bound_in(match.group(1), "minval")
-    high = _bound_in(match.group(1), "maxval")
+    low = _bound_in(call["body"], "minval")
+    high = _bound_in(call["body"], "maxval")
     number = float(value)
     if low is not None:
         number = max(float(low), number)
@@ -541,23 +550,35 @@ def _bound_in(body: str, key: str):
 
 
 def _legal_defaults(text: str) -> str:
-    """A pasted script has to be legal in TradingView: the default stays inside min and max."""
-    pattern = re.compile(r"(input\.(?:int|float)\s*\(\s*)(-?\d+(?:\.\d+)?)(\s*,[^)]*)", re.DOTALL)
+    """A pasted script has to be legal in TradingView: the default stays inside min and max.
 
-    def fix(match: re.Match) -> str:
-        number = match.group(2)
-        rest = match.group(3)
-        low = _bound_in(rest, "minval")
-        high = _bound_in(rest, "maxval")
-        value = float(number)
+    The title may contain parentheses, as in Cooldown (bars) or Daily Profit Cap ($).
+    Those parentheses are part of the title. They do not end the input call.
+    """
+    from futuresfund.pine_report import input_calls
+
+    edits = []
+    for call in input_calls(text or ""):
+        if call["kind"] not in {"int", "float"}:
+            continue
+        number = re.match(r"\s*(-?\d+(?:\.\d+)?)", call["body"])
+        if number is None:
+            continue
+        low = _bound_in(call["body"], "minval")
+        high = _bound_in(call["body"], "maxval")
+        value = float(number.group(1))
         if low is not None:
             value = max(float(low), value)
         if high is not None:
             value = min(float(high), value)
-        shown = str(int(value)) if re.fullmatch(r"-?\d+", number) else format(value, ".10g")
-        return match.group(1) + shown + rest
-
-    return pattern.sub(fix, text)
+        shown = str(int(value)) if re.fullmatch(r"-?\d+", number.group(1)) else format(value, ".10g")
+        if shown == number.group(1):
+            continue
+        start = call["number_at"] + number.start(1)
+        edits.append((start, call["number_at"] + number.end(1), shown))
+    for start, end, shown in reversed(edits):
+        text = text[:start] + shown + text[end:]
+    return text
 
 
 def store_strategy(strategy: dict) -> dict:

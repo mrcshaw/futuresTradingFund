@@ -1,0 +1,1 @@
+Day Shift Delta Volume Breakout ES 2min profitable_1793226206_redesign1.pine took 969 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

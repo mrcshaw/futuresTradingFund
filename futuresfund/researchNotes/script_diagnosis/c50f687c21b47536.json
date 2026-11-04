@@ -1,0 +1,117 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -4700.0,
+   "max_drawdown": 4789.5,
+   "trades": 5
+  },
+  "ema55_len": {
+   "value": 10,
+   "net_profit": -8185.0,
+   "max_drawdown": 8454.5,
+   "trades": 5
+  },
+  "sma_len": {
+   "value": 6,
+   "net_profit": -1837.0,
+   "max_drawdown": 2026.5,
+   "trades": 2
+  },
+  "min_slope": {
+   "value": 5.0,
+   "net_profit": -5545.0,
+   "max_drawdown": 5545.0,
+   "trades": 5
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 14508.0,
+   "max_drawdown": 15905.5,
+   "trades": 32
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -2942.0,
+   "max_drawdown": 3031.5,
+   "trades": 2
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -6315.0,
+   "max_drawdown": 6909.5,
+   "trades": 5
+  },
+  "ema55_slope_len": {
+   "value": 2,
+   "net_profit": -998.5,
+   "max_drawdown": 998.5,
+   "trades": 1
+  }
+ },
+ "flat": [
+  "tp_dollars",
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "ema_len",
+  "pivot_left",
+  "pivot_right",
+  "cooldown_bars",
+  "use_breakeven",
+  "be_trigger_dollars",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 700,
+   "tp_dollars": 1250,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "ema_len": 200,
+   "ema55_len": 30,
+   "sma_len": 28,
+   "ema55_slope_len": 10,
+   "min_slope": 1.25,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "cooldown_bars": 5,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": -1634.5,
+  "max_drawdown": 1704.0,
+  "trades": 2,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -811.0,
+  "biggest_loser": -823.5,
+  "held_loser": -823.5,
+  "exits": [
+   {
+    "exit": "Open P&L > SL Risk",
+    "trades": 2,
+    "pnl": -1634.5,
+    "favorable": 44.5,
+    "adverse": -849.25
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

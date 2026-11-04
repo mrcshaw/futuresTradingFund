@@ -211,9 +211,9 @@ ROSTER = [
         "id": "developer_2",
         "name": "5 min chart developer",
         "team": "Technology & Operations",
-        "role": "Runs the 5-minute chart on engine 2, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
+        "role": "Runs the 5-minute chart on engines 2 and 5, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
         "responsibilities": [
-            "Runs the 5-minute chart on engine 2",
+            "Runs the 5-minute chart on engines 2 and 5",
             "Looks for the profit target inside the trailing drawdown, with the lowest drawdown",
             "Adds a script's entry rule when that rule is missing",
         ],
@@ -224,9 +224,9 @@ ROSTER = [
         "id": "developer_15",
         "name": "15 min chart developer",
         "team": "Technology & Operations",
-        "role": "Runs the 15-minute chart on engine 3, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
+        "role": "Runs the 15-minute chart on engines 3 and 6, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
         "responsibilities": [
-            "Runs the 15-minute chart on engine 3",
+            "Runs the 15-minute chart on engines 3 and 6",
             "Looks for the profit target inside the trailing drawdown, with the lowest drawdown",
             "Adds a script's entry rule when that rule is missing",
         ],
@@ -271,6 +271,17 @@ CHART_DESKS = (
     {"timeframe": "15m", "label": "15-minute", "developer": "15 min chart developer", "strategy_developer": "15 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 3},
 )
 
+# A second process for the 5-minute and 15-minute developers, so those charts backtest two scripts at once.
+EXTRA_CHART_ENGINES = (
+    {"timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer", "strategy_developer": "5 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 5},
+    {"timeframe": "15m", "label": "15-minute", "developer": "15 min chart developer", "strategy_developer": "15 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 6},
+)
+
+
+def chart_engine(engine_id: int) -> dict | None:
+    """The chart desk that owns this engine number, including the second 5-minute and 15-minute engines."""
+    return next((item for item in (*CHART_DESKS, *EXTRA_CHART_ENGINES) if item["engine"] == int(engine_id)), None)
+
 
 def chart_desk(timeframe: str) -> dict:
     """The researcher and developer who own this chart."""
@@ -296,8 +307,8 @@ TASKS = {
     "Risk Manager": "Checking drawdown against the account",
     "Trading Analyst": "Reading the script before the backtest, then confirming the fill",
     "2min chart developer": "Adding the entry rule, then running the 2-minute chart on engine 1",
-    "5 min chart developer": "Adding the entry rule, then running the 5-minute chart on engine 2",
-    "15 min chart developer": "Adding the entry rule, then running the 15-minute chart on engine 3",
+    "5 min chart developer": "Adding the entry rule, then running the 5-minute chart on engines 2 and 5",
+    "15 min chart developer": "Adding the entry rule, then running the 15-minute chart on engines 3 and 6",
     "Systems Administrator": "Serving desk requests and keeping the error journal",
     "Compliance & Operations": "Enforcing the prop-account rules",
 }

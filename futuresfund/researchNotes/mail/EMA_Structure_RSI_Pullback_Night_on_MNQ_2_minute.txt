@@ -1,0 +1,7 @@
+Subject: EMA Structure RSI Pullback Night on 2-minute Micro Nasdaq — Not Filed
+
+The EMA Structure RSI Pullback Night strategy just completed a run on the 2-minute Micro Nasdaq (MNQ1!) chart. The results show a profit of $11,195.50 against a drawdown of $3,847.00. The run generated 260 trades over 260 trading days, averaging 5.0 trades per week. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not explicitly provided in the application data, but the raw profit and drawdown figures are recorded.
+
+This run was not filed in the strategy library. The reason provided by the application is that a stronger version of this strategy name is already on this contract and timeframe.
+
+For reference, the acceptance criteria on the strategy library page require a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While this run met the profit and trade count thresholds, it was rejected due to the presence of a superior existing version, not because it failed the numerical boxes. The specific profit factor and win rate for this run are not listed in the provided facts, so I cannot quote them against the library standards. The filing decision rests solely on the application’s stated reason: a stronger version already exists.

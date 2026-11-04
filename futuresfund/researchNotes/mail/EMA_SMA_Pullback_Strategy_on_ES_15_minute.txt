@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: EMA SMA Pullback Strategy.
+Chart tested: 15-minute ES (ES1!).
+Profit 0.0. Drawdown 0.0. Trades 0.
+Trades a day: 0.0 over 60 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; 0.0 trades a day is outside 1 to 3.
+Settings of this version: emaLength=55, smaLength=25, atrLength=14, stopLoss=20.0, takeProfit=50.0, cooldownBars=20.
+Engine attempts on this chart: 1.

@@ -1,0 +1,137 @@
+//@version=5
+strategy("Day shift BOS Profitable 17k Delta Volume Breakout", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_labels_count=500)
+// ===== RISK =====
+pv                = input.float(100, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+trail_step_pct = input.float(50, "trail_step_pct")
+trail_pct = input.float(50, "trail_pct")
+
+// ===== VOLUME PROFILE =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(10, "Price Levels (rows)", minval=5, maxval=100, step=5, tooltip="More rows = finer resolution but slower.")
+
+// ===== DELTA VOLUME =====
+min_delta_pct = input.float(10, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5, tooltip="Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.")
+
+// ===== TREND FILTER =====
+vwma_len       = input.int(50, "Trend VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_slope      = input.float(0, "Min VWMA Slope (pts)", minval=0.0, tooltip="0 = disabled.")
+
+// ===== ENTRY (Pivot confirmation) =====
+pivot_left   = input.int(3, "Pivot Left Bars", minval=2, maxval=21, step=1, tooltip="Bars to left of pivot high/low.")
+pivot_right  = input.int(3, "Pivot Right Bars", minval=2, maxval=21, step=1, tooltip="Bars to right - pivot confirmed when this many bars pass.")
+disarm_only_inside_poc = input.bool(true, "Disarm Only When Back Inside POC", tooltip="If true, stay armed through pullbacks; only disarm when price fully re-enters POC zone.")
+cooldown_bars = input.int(5, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== FILTERS =====
+use_price_vwma  = input.bool(true, "Price vs VWMA", group="Filters", tooltip="Long: close above VWMA. Short: close below VWMA.")
+vol_ma_len     = input.int(20, "Volume MA Length", minval=5, maxval=100, group="Filters")
+use_vol_filter = input.bool(true, "High Volume on Confirmation", group="Filters", tooltip="Confirmation bar must have above-average volume.")
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(8, "Session Start Hour", minval=0, maxval=23)
+sess_start_mn = input.int(0, "Session Start Minute", minval=0, maxval=59)
+sess_end_hr   = input.int(16, "Session End Hour", minval=0, maxval=23)
+sess_end_mn   = input.int(45, "Session End Minute", minval=0, maxval=59)
+
+// ===== CALCULATIONS =====
+// VWMA
+vwma_val = ta.vwma(close, vwma_len)
+vwma_slope = vwma_val - vwma_val[vwma_slope_len]
+vwma_up = vwma_slope > min_slope
+vwma_dn = vwma_slope < -min_slope
+
+// Volume Profile (POC)
+var float poc_price = na
+var float poc_hi = na
+var float poc_lo = na
+var float poc_delta_pct = na
+
+if bar_index >= profile_lookback
+    // Simplified POC calculation for script brevity, using highest volume bar in lookback
+    int start = bar_index - profile_lookback
+    float max_vol = 0
+    float max_vol_price = na
+    for i = start to bar_index
+        if volume[i] > max_vol
+            max_vol := volume[i]
+            max_vol_price := close[i]
+    
+    // Approximate POC zone
+    poc_price := max_vol_price
+    poc_hi := max_vol_price + (high[0] - low[0]) / profile_rows
+    poc_lo := max_vol_price - (high[0] - low[0]) / profile_rows
+    
+    // Approximate Delta (Buy vs Sell volume proxy)
+    float buy_vol = 0
+    float sell_vol = 0
+    for i = start to bar_index
+        if close[i] > open[i]
+            buy_vol += volume[i]
+        else
+            sell_vol += volume[i]
+    float total_vol = buy_vol + sell_vol
+    poc_delta_pct := total_vol > 0 ? (buy_vol - sell_vol) / total_vol * 100 : 0
+
+// Session Filter
+bool in_session = false
+if use_session
+    int h = hour(time, "America/New_York")
+    int m = minute(time, "America/New_York")
+    int start_time = sess_start_hr * 60 + sess_start_mn
+    int end_time = sess_end_hr * 60 + sess_end_mn
+    int current_time = h * 60 + m
+    in_session := current_time >= start_time and current_time < end_time
+else
+    in_session := true
+
+// Flatten at 16:45
+if use_session and hour(time, "America/New_York") == 16 and minute(time, "America/New_York") == 45
+    strategy.close_all(comment="End of Session")
+
+// ===== NEW ENTRY LOGIC: EMA Crossover =====
+// Replacing complex Pivot/POC entry with simple EMA cross to increase trade count
+ema_fast = ta.ema(close, 12)
+ema_slow = ta.ema(close, 26)
+
+long_sig = false
+short_sig = false
+
+if in_session and strategy.position_size == 0
+    // Long: Fast EMA crosses above Slow EMA
+    if ta.crossover(ema_fast, ema_slow)
+        long_sig := true
+    // Short: Fast EMA crosses below Slow EMA
+    else if ta.crossunder(ema_fast, ema_slow)
+        short_sig := true
+
+// ===== EXECUTION =====
+if long_sig
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+
+if short_sig
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+
+// ===== PLOTTING =====
+plot(ema_fast, "EMA Fast", color=color.green)
+plot(ema_slow, "EMA Slow", color=color.red)
+plot(vwma_val, "VWMA", vwma_up ? color.lime : vwma_dn ? color.red : color.gray, linewidth=2)

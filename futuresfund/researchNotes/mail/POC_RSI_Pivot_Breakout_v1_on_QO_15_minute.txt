@@ -1,0 +1,13 @@
+Subject: Desk Update: POC RSI Pivot Breakout v1 (GC1!)
+
+The 15-minute Gold chart has finished its run. The strategy tested was POC RSI Pivot Breakout v1. The account posted a profit of $2,187.50 against a maximum drawdown of $4,950.00 across 78 trades. The pace was 3.2 trades per week over 122 trading days.
+
+This result does not meet the criteria for inclusion in the strategy library. The library requires a profit over $10,000, and this run fell under that threshold. Consequently, the result was not filed.
+
+The trade count of 78 is below the required annual range of 130 to 600 trades. While the pace is 3.2 trades per week, it does not satisfy the alternative condition for lower trade counts (which requires profit and drawdown near $50,000 and $22,000, respectively). Therefore, this run is considered too quiet to be actionable at this time.
+
+No new email address is being generated for this desk as no rule was cleared for live deployment.
+
+Desk Clock: Wednesday 12:21 PM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 40 seconds.

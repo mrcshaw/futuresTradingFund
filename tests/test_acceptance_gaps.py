@@ -26,8 +26,9 @@ def _row(**values):
         "net_profit": 9000.0,
         "profit_factor": 2.0,
         "max_drawdown": 1000.0,
-        "trades": 100,
+        "trades": 160,
         "win_rate": 50.0,
+        "profit_ratio": 1.3,
         "days": 260,
     }
     row.update(values)
@@ -40,14 +41,14 @@ class AcceptanceGapTests(unittest.TestCase):
             notes = Path(folder)
             payload = {
                 "trials": [
-                    *[_row(net_profit=100.0) for _ in range(6)],
+                    *[_row(net_profit=100.0, max_drawdown=50.0) for _ in range(6)],
                     *[_row(profit_factor=0.5) for _ in range(4)],
                     *[_row(max_drawdown=20000.0) for _ in range(3)],
                     _row(),
                 ]
             }
             (notes / "sample.json").write_text(json.dumps(payload), encoding="utf-8")
-            report = measure(notes, LIMITS, 10_000.0)
+            report = measure(notes, LIMITS, 2_500.0)
 
         self.assertEqual(report["trials"], 14)
         self.assertEqual(report["passed"], 1)
@@ -56,7 +57,7 @@ class AcceptanceGapTests(unittest.TestCase):
             [
                 "Profit. The typical miss made $100 versus acceptance above $8,000. That is $7,900 under the line. 6 of 14 backtests miss it.",
                 "Profit factor. The typical miss is 0.5 versus acceptance above 1.05. That is 0.48 times the bar. 4 of 14 backtests miss it.",
-                "Drawdown. The typical miss is $20,000 versus acceptance under $10,000 (20 percent of the account). That is 2.00 times the cap. 3 of 14 backtests miss it.",
+                "Drawdown. The typical miss is $20,000, over 30 percent of the profit once the profit reaches $2,500. 3 of 14 backtests miss it.",
             ],
         )
         self.assertEqual(
@@ -64,7 +65,7 @@ class AcceptanceGapTests(unittest.TestCase):
             [
                 {"reason": "Profit", "typical": "$100", "acceptance": "Above $8,000", "compared": "$7,900 under the line", "misses": "6 of 14"},
                 {"reason": "Profit factor", "typical": "0.5", "acceptance": "Above 1.05", "compared": "0.48 times the bar", "misses": "4 of 14"},
-                {"reason": "Drawdown", "typical": "$20,000", "acceptance": "Under $10,000 (20 percent of the account)", "compared": "2.00 times the cap", "misses": "3 of 14"},
+                {"reason": "Drawdown", "typical": "$20,000", "acceptance": "Under 30 percent of the profit once the profit reaches $2,500", "compared": "Over 30 percent of the profit", "misses": "3 of 14"},
             ],
         )
 
@@ -77,7 +78,7 @@ class AcceptanceGapTests(unittest.TestCase):
         self.assertIn("function renderGaps(report)", js)
         self.assertIn("renderGaps(lab.acceptance_report)", js)
         self.assertIn("Compared with the bar", js)
-        self.assertIn("app.js?v=148", html)
+        self.assertIn("app.js?v=161", html)
 
     def test_asking_the_portfolio_manager_publishes_the_table(self):
         from futuresfund.desk_chat import answer

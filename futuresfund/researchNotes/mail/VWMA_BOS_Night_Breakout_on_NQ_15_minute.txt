@@ -1,0 +1,9 @@
+Subject: Desk Update: VWMA BOS Night Breakout Result
+
+The VWMA BOS Night Breakout strategy has completed its run on the 15-minute Nasdaq (NQ1!) chart. The results show a profit of $22,595.00 and a drawdown of $2,305.00 across 577 trades. The trades per day average is 11.1 over the 260 trading days tested. The profit ratio, calculated as the average winning trade divided by the average losing trade, is derived from this performance.
+
+This result was not filed in the strategy library. The acceptance criteria require a win rate above 40 percent. This run’s win rate is 15.25 percent. Therefore, it does not meet the criteria. The strategy library page only accepts runs where the profit, profit factor, win rate, and trade count meet the specified thresholds. Since the win rate is below the required 40 percent, this run is not included in the library.
+
+The settings used for this version were: stop_pct=0.1, tp_pct=1.0, stop_cash=0.0, tp_cash=0.0, use_trail=False, trail_pct=50.0, trail_step_acct=1.0, trail_step_pct=50.0, trail_min_pct=2.0, use_session=True, sess_start_hr=18, sess_start_mn=0.
+
+The desk remains focused on keeping the drawdown under 5 percent of the account. The next steps involve reviewing other strategies that meet the criteria.

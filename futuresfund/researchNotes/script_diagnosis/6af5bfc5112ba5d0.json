@@ -1,0 +1,127 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 226.5,
+   "max_drawdown": 18.0,
+   "trades": 1
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -286.5,
+   "max_drawdown": 1573.0,
+   "trades": 9
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "min_delta_pct": {
+   "value": 20.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "ema_len": {
+   "value": 5,
+   "net_profit": 190.5,
+   "max_drawdown": 286.0,
+   "trades": 2
+  },
+  "ema_slope_len": {
+   "value": 1,
+   "net_profit": 190.5,
+   "max_drawdown": 286.0,
+   "trades": 2
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": 190.0,
+   "max_drawdown": 802.5,
+   "trades": 10
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -381.5,
+   "max_drawdown": 572.0,
+   "trades": 4
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": 190.5,
+   "max_drawdown": 286.0,
+   "trades": 2
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -95.5,
+   "max_drawdown": 354.0,
+   "trades": 3
+  }
+ },
+ "flat": [
+  "stop_dollars",
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "min_slope",
+  "cooldown_bars",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "ema_len": 20,
+   "ema_slope_len": 5,
+   "min_slope": 0.1,
+   "confirm_candles": 3,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0
+  },
+  "net_profit": 476.5,
+  "max_drawdown": 68.0,
+  "trades": 1,
+  "win_rate": 100.0,
+  "profit_factor": null,
+  "biggest_winner": 476.5,
+  "biggest_loser": 476.5,
+  "held_loser": 476.5,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": 476.5,
+    "favorable": 482.0,
+    "adverse": -68.0
+   }
+  ]
+ },
+ "reviewed": [
+  "30 ES 15m",
+  "7 GC 5m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

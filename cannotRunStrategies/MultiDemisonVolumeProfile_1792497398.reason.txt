@@ -1,0 +1,1 @@
+MultiDemisonVolumeProfile_1792497398.txt took 902 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

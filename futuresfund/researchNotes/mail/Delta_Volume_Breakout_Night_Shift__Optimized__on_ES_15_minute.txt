@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: Delta Volume Breakout Night Shift [Optimized].
+Chart tested: 15-minute ES (ES1!).
+Profit -6383.5. Drawdown 6639.0. Trades 86.
+Trades a week: 1.65 over 260 trading days.
+Bars in this test: 23,704 from 2025-10-01 18:00 through 2026-10-02 16:45.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The profit was not filed. The library keeps a profit that comes from 4 or more trades a week. 4 to 7 is the average, and more than that still counts. This run is 1.65 trades a week.
+Settings of this version: profile_lookback=80, profile_rows=10, min_delta_pct=18.0, ema_len=4, ema_slope_len=5, min_slope=0.0, require_price_vs_ema=True, cooldown_bars=30, max_trades_session=1, use_session=True, sess_start_hr=18, sess_start_mn=0.
+Different results on this chart: 200.
+Engine runs on this chart: 540.

@@ -1,0 +1,1 @@
+created_ema_trend_rsi_vol_reversal.pine had no profit after 20 attempts. It was scrapped. The researcher who wrote it will create a new script.

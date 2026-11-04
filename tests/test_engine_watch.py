@@ -152,6 +152,9 @@ class EngineWatchTests(unittest.TestCase):
 
         self.assertTrue(_reasons("Systems Administrator"))
         self.assertTrue(_reasons("Creation tester"))
+        self.assertTrue(_reasons("2min chart developer"))
+        self.assertTrue(_reasons("5 min chart developer"))
+        self.assertTrue(_reasons("15 min chart developer"))
 
     def test_hold_keeps_engine_4_on_the_learning_folder(self):
         from pathlib import Path
@@ -204,6 +207,37 @@ class EngineWatchTests(unittest.TestCase):
             run_creation_engine(self.board, None)
         study.assert_called_once()
         develop.assert_not_called()
+
+    def test_an_empty_queue_puts_engine_4_on_the_learning_folder(self):
+        from unittest import mock
+
+        from futuresfund.strategy_team import run_creation_engine
+
+        waits = {"left": 1}
+
+        def wait(board, pause):
+            waits["left"] -= 1
+            return waits["left"] >= 0
+
+        with mock.patch("futuresfund.learn.engine4_should_study_learning", return_value=False),              mock.patch("futuresfund.learn.study_learning_on_engine_4", return_value="studied") as study,              mock.patch("futuresfund.learn._wait", side_effect=wait),              mock.patch("futuresfund.strategy_team.develop_one", return_value="waiting") as develop:
+            run_creation_engine(self.board, None)
+        develop.assert_called_once()
+        study.assert_called_once()
+
+    def test_a_queued_script_goes_ahead_of_the_learning_folder_on_engine_4(self):
+        from unittest import mock
+
+        from futuresfund.strategy_team import run_creation_engine
+
+        waits = {"left": 1}
+
+        def wait(board, pause):
+            waits["left"] -= 1
+            return waits["left"] >= 0
+
+        with mock.patch("futuresfund.learn.engine4_should_study_learning", return_value=False),              mock.patch("futuresfund.learn.study_learning_on_engine_4", return_value="none") as study,              mock.patch("futuresfund.learn._wait", side_effect=wait),              mock.patch("futuresfund.strategy_team.develop_one", return_value="developed"):
+            run_creation_engine(self.board, None)
+        study.assert_not_called()
 
     def test_clear_idle_engine_leaves_a_held_lock_alone(self):
         from futuresfund import backtrader_engine as engines
@@ -323,11 +357,16 @@ class EngineWatchTests(unittest.TestCase):
                 held = learn.restock_learning()
             self.assertEqual(held, [])
             self.assertTrue((created / "created_band.pine").is_file())
+            limits = mock.patch("futuresfund.book.strategy_acceptance", return_value={'min_profit': 6000.0, 'profit_factor': 1.1, 'win_rate': 40.0, 'min_trades': 100, 'drawdown_pct': 2.0, 'goal': 'win_rate', 'use_drawdown': True, 'use_trades': True, 'use_profit': True, 'use_factor': True, 'use_win_rate': True})
             (notes / "created_band.json").write_text(
                 '{"best": {"net_profit": 400, "trades": 8, "max_drawdown": 100}}',
                 encoding="utf-8",
             )
-            with mock.patch.object(learn, "LEARNING", learning), mock.patch.object(learn, "CREATED", created), mock.patch.object(learn, "NOTES", notes):
+            with limits, mock.patch.object(learn, "LEARNING", learning), mock.patch.object(learn, "CREATED", created), mock.patch.object(learn, "NOTES", notes):
+                # A profit is not enough. A created script moves on only after one run cleared the acceptance.
+                self.assertEqual(learn.restock_learning(), [])
+            (notes / "created_band.json").write_text(__import__("json").dumps({"best": {'net_profit': 9000, 'max_drawdown': 1000, 'trades': 200, 'days': 260, 'win_rate': 50.0, 'profit_factor': 1.5, 'biggest_loser': -400, 'stop_dollars': 500, 'spans': {'7': {'net_profit': 300, 'trades': 5, 'biggest_loser': -100}, '30': {'net_profit': 1200, 'trades': 20, 'biggest_loser': -100}, '90': {'net_profit': 3000, 'trades': 60, 'biggest_loser': -100}, '365': {'net_profit': 9000, 'trades': 200, 'biggest_loser': -100}}}}), encoding="utf-8")
+            with limits, mock.patch.object(learn, "LEARNING", learning), mock.patch.object(learn, "CREATED", created), mock.patch.object(learn, "NOTES", notes):
                 moved = learn.restock_learning()
                 again = learn.restock_learning()
             self.assertEqual(moved, ["created_band.pine"])
@@ -426,6 +465,8 @@ class EngineWatchTests(unittest.TestCase):
 
         self.assertTrue(engine_issue_asked("why isn't engine 3 running"))
         self.assertTrue(engine_issue_asked("why isn't engine 23 running?"))
+        self.assertTrue(engine_issue_asked("what wrong with engine 4"))
+        self.assertTrue(engine_issue_asked("what's wrong with engine 4?"))
         self.assertEqual(_engine_ids("why isn't engine 23 running?"), [2, 3])
         self.board.agent_tasks["15 min chart developer"] = (
             "The 15-minute chart has finished the learning folder and createdStrategies. "

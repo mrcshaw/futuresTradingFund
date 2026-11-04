@@ -1,0 +1,16 @@
+Subject: Desk Update: VWAP Pivot Reversal v1 (NQ1!) – Not Filed
+
+The latest run for VWAP Pivot Reversal v1 on the 5-minute Nasdaq (NQ1!) chart has concluded. The strategy generated a profit of $4,750.00 with a drawdown of $1,800.00 across 272 trades. This results in a profit ratio where the average winning trade exceeds the average losing trade. The strategy executed approximately 5.25 trades per day over the 260-day backtest period covering 71,112 bars.
+
+Regarding filing status, this result is not on the strategy library. The acceptance criteria require the profit to be above $5,000.00. This run’s profit of $4,750.00 falls short of that threshold. Therefore, it was not filed.
+
+The strategy notes indicate that previous versions of VWAP Pivot Reversal v1 have been filed with higher profits (e.g., $21,150.00 and $17,500.00), but this specific run did not meet the filing criteria. The settings used were stop_pct=0.1, tp_pct=1.0, stop_cash=100.0, tp_cash=0.0, use_trail=False, and session trading enabled from 18:00.
+
+As per protocol, all open trades will be flattened at 16:45 New York time to protect the account. The drawdown remains well under the 5% limit, but the profit target was not met. No further action is required for filing at this time.
+
+Desk clock: Friday 11:24 AM ET.
+
+Best,
+
+Portfolio Manager
+Qwen3.6 35B-A3B Instance

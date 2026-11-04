@@ -1,0 +1,124 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": -3141.0,
+   "max_drawdown": 3141.0,
+   "trades": 6
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -330.5,
+   "max_drawdown": 1224.5,
+   "trades": 13
+  },
+  "profile_lookback": {
+   "value": 25,
+   "net_profit": -3104.0,
+   "max_drawdown": 3104.0,
+   "trades": 14
+  },
+  "poc_zone_pct": {
+   "value": 2.5,
+   "net_profit": -2856.0,
+   "max_drawdown": 3209.5,
+   "trades": 21
+  },
+  "delta_min_pct": {
+   "value": 40.0,
+   "net_profit": -916.0,
+   "max_drawdown": 916.0,
+   "trades": 6
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 264.0,
+   "max_drawdown": 1992.0,
+   "trades": 26
+  },
+  "pivot_len": {
+   "value": 1,
+   "net_profit": -763.0,
+   "max_drawdown": 1380.0,
+   "trades": 8
+  },
+  "use_reversal": {
+   "value": true,
+   "net_profit": -2035.0,
+   "max_drawdown": 2035.0,
+   "trades": 10
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -1202.0,
+   "max_drawdown": 1405.0,
+   "trades": 7
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -98.5,
+   "max_drawdown": 118.0,
+   "trades": 1
+  }
+ },
+ "flat": [
+  "use_session",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "profile_lookback": 100,
+   "poc_zone_pct": 10.0,
+   "delta_min_pct": 10.0,
+   "vwma_len": 50,
+   "pivot_len": 5,
+   "use_reversal": false
+  },
+  "net_profit": -1475.5,
+  "max_drawdown": 1475.5,
+  "trades": 8,
+  "win_rate": 12.5,
+  "profit_factor": 0.244,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 8,
+    "pnl": -1475.5,
+    "favorable": 299.19,
+    "adverse": -243.0
+   }
+  ]
+ },
+ "reviewed": [
+  "7 ES 5m",
+  "7 NQ 2m"
+ ],
+ "empty_charts": [],
+ "version": 3
+}

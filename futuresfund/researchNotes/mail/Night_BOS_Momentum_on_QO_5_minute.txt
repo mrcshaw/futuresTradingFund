@@ -1,0 +1,3 @@
+Subject: Night BOS Momentum Result - Not Filed
+
+The Night BOS Momentum strategy was tested on the 5-minute Gold (GC1!) chart. The run generated a profit of $12,850.00 with a drawdown of $4,262.50 across 108 trades. The pace was 7.5 trades per week over 72 trading days, which falls below the required minimum of 130 trades per year. Consequently, this result was not filed in the strategy library. The library requires a profit above $14,000, a profit factor above 1.1, a win rate above 48%, and at least 60 trades. This run did not meet the trade count requirement for the annual pace and did not meet the profit threshold for filing. The settings used were vol_len=20, stop_mult=3.0, tp_mult=3.01, and cooldown_bars=10.

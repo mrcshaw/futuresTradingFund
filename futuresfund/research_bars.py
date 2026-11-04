@@ -14,7 +14,29 @@ when every minute of it is there. Yahoo is not used.
 
 from __future__ import annotations
 
+import threading
+
 _WIDTH = {"1m": 60, "2m": 120, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
+# A Databento series is folded once and kept until a download or an export changes.
+# Every study used to fold five years of minutes again, several seconds of the desk's
+# own thread each time, while six charts did the same.
+_SERIES: dict[tuple, tuple] = {}
+_BUILD = threading.Lock()
+
+
+def _sources(root: str, timeframe: str) -> tuple:
+    """The files a Databento series is built from, with their sizes and times."""
+    from futuresfund.charts import chart_exports
+    from futuresfund.historical_bars import cache_path, outright_files
+
+    stamp = []
+    for path in (*outright_files(root), cache_path(root), *chart_exports(root).get(timeframe, [])):
+        try:
+            info = path.stat()
+        except OSError:
+            continue
+        stamp.append((str(path), info.st_mtime_ns, info.st_size))
+    return tuple(stamp)
 
 
 def research_series(root: str, timeframe: str, *, include_live: bool = True) -> list[dict]:
@@ -22,24 +44,44 @@ def research_series(root: str, timeframe: str, *, include_live: bool = True) -> 
 
     include_live adds the alert candles after a TradingView export. A Strategy
     Tester comparison leaves them out, because those minutes are not the chart
-    the backtest ran on.
+    the backtest ran on. The bar dicts are shared between callers; the list is a copy.
     """
     width = _WIDTH.get(timeframe)
     if width is None:
         return []
-    historical = _historical(root)
-    if historical:
-        folded = historical if width == 60 else _fold(historical, width, partial=True)
-        source = {epoch: "databento" for epoch in folded}
-        # A TradingView export is the chart the Strategy Tester used. Where it
-        # covers a bar, that price replaces the front-month series.
-        for epoch, row in _export(root, timeframe, width).items():
-            folded[epoch] = row
-            source[epoch] = "tradingview"
-        return [
-            {"t": epoch, "o": row[0], "h": row[1], "l": row[2], "c": row[3], "v": row[4], "source": source[epoch]}
-            for epoch, row in sorted(folded.items())
-        ]
+    key = (str(root or "").upper(), timeframe)
+    stamp = _sources(root, timeframe)
+    kept = _SERIES.get(key)
+    if kept is not None and kept[0] == stamp:
+        return list(kept[1])
+    with _BUILD:
+        kept = _SERIES.get(key)
+        if kept is not None and kept[0] == stamp:
+            return list(kept[1])
+        historical = _historical(root)
+        if historical:
+            rows = _databento_series(root, timeframe, width, historical)
+            _SERIES[key] = (_sources(root, timeframe), rows)
+            return list(rows)
+    return _export_series(root, timeframe, width, include_live)
+
+
+def _databento_series(root: str, timeframe: str, width: int, historical: dict[int, tuple]) -> list[dict]:
+    folded = dict(historical) if width == 60 else _fold(historical, width, partial=True)
+    source = {epoch: "databento" for epoch in folded}
+    # A TradingView export is the chart the Strategy Tester used. Where it
+    # covers a bar, that price replaces the front-month series.
+    for epoch, row in _export(root, timeframe, width).items():
+        folded[epoch] = row
+        source[epoch] = "tradingview"
+    return [
+        {"t": epoch, "o": row[0], "h": row[1], "l": row[2], "c": row[3], "v": row[4], "source": source[epoch]}
+        for epoch, row in sorted(folded.items())
+    ]
+
+
+def _export_series(root: str, timeframe: str, width: int, include_live: bool) -> list[dict]:
+    """Without a Databento download: the TradingView exports, filled from 1-minute candles."""
     minutes = _export(root, "1m", 60)
     if include_live:
         for epoch, row in _live(root).items():
@@ -54,6 +96,21 @@ def research_series(root: str, timeframe: str, *, include_live: bool = True) -> 
     return [
         {"t": epoch, "o": row[0], "h": row[1], "l": row[2], "c": row[3], "v": row[4], "source": source[epoch]}
         for epoch, row in sorted(bars.items())
+    ]
+
+
+def contract_series(symbol: str, timeframe: str) -> list[dict]:
+    """Bars for one expiration, such as MNQZ6, oldest first, in the same shape as research_series."""
+    from futuresfund.historical_bars import load_outright
+
+    width = _WIDTH.get(timeframe)
+    minutes = load_outright(symbol) if width else None
+    if not minutes:
+        return []
+    folded = _fold(minutes, width, partial=True)
+    return [
+        {"t": epoch, "o": row[0], "h": row[1], "l": row[2], "c": row[3], "v": row[4], "source": "databento"}
+        for epoch, row in sorted(folded.items())
     ]
 
 

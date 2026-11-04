@@ -1,0 +1,11 @@
+Subject: EMA VWMA Cross on Micro Nasdaq: Filed
+
+To the Desk,
+
+The backtest for EMA VWMA Cross on the 5-minute Micro Nasdaq (MNQ1!) chart has finished. The run generated a profit of $7,282.00 with a drawdown of $4,705.00 over 232 trades. The trading frequency was 4.45 trades per week across the 260-day test period. The profit ratio for this run is 1.55, calculated by dividing the average winning trade by the average losing trade.
+
+This run meets the filing criteria. The strategy library acceptance line requires a profit above $6,000, a profit factor above 1.05, a win rate above 40 percent, and a trade count of at least 60. This run cleared all four boxes: the profit of $7,282.00 is above $6,000, the profit factor of 1.55 is above 1.05, the win rate is above 40 percent, and the 232 trades exceed the 60-trade minimum. Additionally, the drawdown of $4,705.00 is under 10 percent of the $50,000 account.
+
+The strategy is now on the strategy library, listed on the not-tested list for Micro Nasdaq. It has not been run on the five-year dataset.
+
+Portfolio Manager

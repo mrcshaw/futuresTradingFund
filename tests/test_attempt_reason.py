@@ -77,15 +77,23 @@ class ReplyTests(unittest.TestCase):
         self.assertIsNone(parse_reasoned_reply("BECAUSE: Not in the library.\nINDICATOR: ta.madeup 10", {"length": 20}, {}, script=script))
 
     def test_the_scale_says_whether_the_last_change_moved_closer(self):
+        from futuresfund import book as bookmod
         from futuresfund.attempt_reason import _brief
 
         earlier = {"net_profit": 100.0, "max_drawdown": 50.0, "trades": 20, "win_rate": 50.0, "profit_factor": 1.2, "params": {"length": 20}}
         later = {"net_profit": -100.0, "max_drawdown": 80.0, "trades": 20, "win_rate": 30.0, "profit_factor": 0.8, "params": {"length": 14}}
-        text = _brief("strategy(\"Sample\")", [earlier, later], {"length": 14})
-        self.assertIn("left the scale flat", text)
+        # The win rate is the scale goal in this book, whatever boxes the owner's book has checked.
+        with tempfile.TemporaryDirectory() as tmp, patch.object(bookmod, "BOOK_PATH", Path(tmp) / "book.json"):
+            bookmod.save_strategy_acceptance({
+                "min_profit": 14000, "profit_factor": 1.1, "win_rate": 48, "min_trades": 60, "goal": "win_rate",
+                "use_drawdown": True, "use_trades": True, "use_factor": True, "use_win_rate": True,
+            })
+            text = _brief("strategy(\"Sample\")", [earlier, later], {"length": 14})
+            first = _brief("strategy(\"Sample\")", [earlier], {"length": 20})
+        # The win rate fell from 50 to 30 and the profit factor from 1.2 to 0.8.
+        self.assertIn("moved farther from the goal", text)
         self.assertIn("ta.ema", text)
         self.assertIn("Never write GOLD", text)
-        first = _brief("strategy(\"Sample\")", [earlier], {"length": 20})
         self.assertIn("has not moved yet", first)
 
 
@@ -139,3 +147,93 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(calls[1]["stop_dollars"], 500.0)
         self.assertEqual(calls[1]["length"], 10)
         self.assertTrue(any("stop rises through" in item["text"] for item in board.snapshot()["messages"]))
+
+
+class ContextWindowTests(unittest.TestCase):
+    def test_every_request_uses_the_loaded_window_so_the_model_is_not_reloaded(self):
+        import json
+
+        from futuresfund.llm import CONTEXT_CAP, _post
+
+        sent = []
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return json.dumps({"message": {"content": "ok"}}).encode()
+
+        def fake_open(request, timeout=0):
+            sent.append(json.loads(request.data.decode())["options"]["num_ctx"])
+            return Response()
+
+        with patch("urllib.request.urlopen", fake_open):
+            for room in (4096, 8192, 12288, CONTEXT_CAP):
+                _post("desk-researcher", [{"role": "user", "content": "ok?"}], num_ctx=room)
+        self.assertEqual(sent, [CONTEXT_CAP] * 4)
+
+    def test_the_decision_uses_the_thinking_pass(self):
+        from futuresfund import attempt_reason, llm
+
+        captured = {}
+
+        def fake_parts(model, messages, **kwargs):
+            captured.update(kwargs)
+            return {"content": "BECAUSE: x\nSETTING: length = 12", "thinking": "", "done": "stop"}
+
+        with patch.object(llm, "_request_parts", fake_parts):
+            attempt_reason._ask("brief")
+        self.assertTrue(captured["think"])
+
+
+class DescriptionThreadTests(unittest.TestCase):
+    """The Trading Analyst's description does not hold the chart's first backtest."""
+
+    def test_the_backtest_does_not_wait_for_the_description(self):
+        import threading
+        import time
+
+        from futuresfund.learn import describe_later
+
+        release = threading.Event()
+
+        def slow(text, board=None):
+            release.wait(5)
+            return "// How this script works: described\n" + text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "sample.pine"
+            script.write_text('//@version=5\nstrategy("Sample")\n', encoding="utf-8")
+            with patch("futuresfund.script_brief.prepare_description", slow):
+                started = time.monotonic()
+                thread = describe_later(None, script, script.read_text(encoding="utf-8"))
+                self.assertLess(time.monotonic() - started, 0.5)
+                self.assertIsNone(describe_later(None, script, script.read_text(encoding="utf-8")))
+                release.set()
+                thread.join(5)
+            self.assertTrue(script.read_text(encoding="utf-8").startswith("// How this script works"))
+
+    def test_a_file_that_changed_keeps_its_new_text(self):
+        import threading
+
+        from futuresfund.learn import describe_later
+
+        release = threading.Event()
+
+        def slow(text, board=None):
+            release.wait(5)
+            return "// How this script works: described\n" + text
+
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "sample.pine"
+            script.write_text('//@version=5\nstrategy("Sample")\n', encoding="utf-8")
+            with patch("futuresfund.script_brief.prepare_description", slow):
+                thread = describe_later(None, script, script.read_text(encoding="utf-8"))
+                script.write_text('//@version=5\nstrategy("Repaired")\n', encoding="utf-8")
+                release.set()
+                thread.join(5)
+            self.assertEqual(script.read_text(encoding="utf-8"), '//@version=5\nstrategy("Repaired")\n')

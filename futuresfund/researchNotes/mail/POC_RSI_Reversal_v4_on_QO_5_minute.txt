@@ -1,0 +1,7 @@
+Subject: Desk Result: POC RSI Reversal v4 (GC1!)
+
+The POC RSI Reversal v4 strategy just completed a run on the 5-minute Gold chart. The result shows a profit of $3,250.00 with a maximum drawdown of $375.00 across 59 trades. The pace is 4.2 trades per week, which projects to approximately 218 trades per year. This falls within the required 130 to 600 trades per year band. The profit ratio (average win divided by average loss) is calculated at 3.0, which exceeds the 1.12 threshold. The run made a profit, but it did not meet the profit target for the strategy library, which requires profits over $10,000. Therefore, this result was not filed in the strategy library. The settings used were rsiLen=14, rsiOverbought=70, rsiOversold=35, atrLen=14, atrMult=0.75, emaLen=10, and cooldownBars=10. This was one of 10 different results generated on this chart.
+
+Email sent.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 24 seconds.

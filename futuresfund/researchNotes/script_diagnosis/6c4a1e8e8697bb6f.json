@@ -1,0 +1,209 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 625.0,
+   "max_drawdown": 6525.0,
+   "trades": 70
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -2250.0,
+   "max_drawdown": 3562.5,
+   "trades": 83
+  },
+  "profile_lookback": {
+   "value": 12,
+   "net_profit": 2787.5,
+   "max_drawdown": 3087.5,
+   "trades": 108
+  },
+  "poc_zone_rows": {
+   "value": 0,
+   "net_profit": -3950.0,
+   "max_drawdown": 6637.5,
+   "trades": 117
+  },
+  "pivot_left": {
+   "value": 1,
+   "net_profit": 3212.5,
+   "max_drawdown": 3600.0,
+   "trades": 154
+  },
+  "pivot_right": {
+   "value": 1,
+   "net_profit": 212.5,
+   "max_drawdown": 7162.5,
+   "trades": 99
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -2762.5,
+   "max_drawdown": 4962.5,
+   "trades": 87
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 662.5,
+   "max_drawdown": 2037.5,
+   "trades": 45
+  },
+  "sess_start_mn": {
+   "value": 59,
+   "net_profit": -2675.0,
+   "max_drawdown": 4712.5,
+   "trades": 77
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -775.0,
+   "max_drawdown": 2125.0,
+   "trades": 37
+  },
+  "sess_end_mn": {
+   "value": 59,
+   "net_profit": -3287.5,
+   "max_drawdown": 5350.0,
+   "trades": 87
+  },
+  "use_skip": {
+   "value": false,
+   "net_profit": -3000.0,
+   "max_drawdown": 6162.5,
+   "trades": 87
+  },
+  "skip_start_hr": {
+   "value": 3,
+   "net_profit": -1975.0,
+   "max_drawdown": 2937.5,
+   "trades": 36
+  },
+  "skip_start_mn": {
+   "value": 8,
+   "net_profit": -2387.5,
+   "max_drawdown": 4712.5,
+   "trades": 80
+  },
+  "skip_end_hr": {
+   "value": 4,
+   "net_profit": 1787.5,
+   "max_drawdown": 1562.5,
+   "trades": 39
+  },
+  "skip_end_mn": {
+   "value": 59,
+   "net_profit": -1937.5,
+   "max_drawdown": 4500.0,
+   "trades": 78
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 13,
+   "skip_start_mn": 30,
+   "skip_end_hr": 15,
+   "skip_end_mn": 30,
+   "profile_lookback": 50,
+   "poc_zone_rows": 1,
+   "pivot_left": 5,
+   "pivot_right": 5
+  },
+  "net_profit": -2325.0,
+  "max_drawdown": 4650.0,
+  "trades": 81,
+  "win_rate": 33.33,
+  "profit_factor": 0.808,
+  "biggest_winner": 1462.5,
+  "biggest_loser": -262.5,
+  "held_loser": -262.5,
+  "exits": [
+   {
+    "exit": "ExitLong",
+    "trades": 30,
+    "pnl": -2950.0,
+    "favorable": 295.42,
+    "adverse": -226.25
+   },
+   {
+    "exit": "ExitShort",
+    "trades": 28,
+    "pnl": -600.0,
+    "favorable": 284.38,
+    "adverse": -225.0
+   },
+   {
+    "exit": "Session End",
+    "trades": 19,
+    "pnl": 512.5,
+    "favorable": 126.97,
+    "adverse": -96.05
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 3,
+    "pnl": 600.0,
+    "favorable": 400.0,
+    "adverse": -133.33
+   },
+   {
+    "exit": "Out of Session",
+    "trades": 1,
+    "pnl": 112.5,
+    "favorable": 325.0,
+    "adverse": -112.5
+   }
+  ]
+ },
+ "reviewed": [
+  "90 ES 15m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "answer": {
+  "because": "The best 90-day attempt is only $362.5 at PF 1.023 and 44.29% win rate, and the script still declares five trailing inputs that no trade reads, so delete those dead inputs before more settings.",
+  "script": "//@version=5\nstrategy(\"POC RSI Momentum Pullback Redesign 2\", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)\n// ===== RISK =====\npv                = input.float(50, \"Point Value ($)\")\nstop_dollars      = input.int(250, \"Stop ($)\", minval=250, maxval=700)\ntp_dollars        = input.int(500, \"Take Profit ($)\", minval=250)\nlong_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv\nlong_limit = close + tp_dollars / pv\nshort_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv\nshort_limit = close - tp_dollars / pv\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -stop_dollars\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\n\n// Ensure TP > Stop\nif tp_dollars <= stop_dollars\n    tp_dollars := stop_dollars + 1\n\n// Define Stop/Limit Prices\n\n// ===== SESSION =====\nuse_session   = input.bool(true, \"Use Session Filter\")\nsess_start_hr = input.int(18, \"Session Start Hour (ET)\", minval=0, maxval=23)\nsess_start_mn = input.int(0,  \"Session Start Minute\", minval=0, maxval=59)\nsess_end_hr   = input.int(16,  \"Session End Hour (ET)\", minval=0, maxval=23)\nsess_end_mn   = input.int(0,  \"Session End Minute\", minval=0, maxval=59)\n\n// ===== SKIP WINDOW =====\nuse_skip      = input.bool(true, \"Skip This Time Of Day\", group=\"Skip Window\")\nskip_start_hr = input.int(13, \"Skip Start Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_start_mn = input.int(30, \"Skip Start Minute\", minval=0, maxval=59, group=\"Skip Window\")\nskip_end_hr   = input.int(15, \"Skip End Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_end_mn   = input.int(30, \"Skip End Minute\", minval=0, maxval=59, group=\"Skip Window\")\n\n// ===== STRATEGY INPUTS =====\nprofile_lookback = input.int(50, \"Profile Lookback\", minval=10, maxval=200)\npoc_zone_rows    = input.int(1, \"POC Zone Rows\", minval=0, maxval=10)\npivot_left       = input.int(5, \"Pivot Left\", minval=1, maxval=20)\npivot_right      = input.int(5, \"Pivot Right\", minval=1, maxval=20)\n\n// ===== CALCULATIONS =====\n\n// 1. Session Logic\nsess_bar_hr = hour(time, \"America/New_York\")\nsess_bar_mn = minute(time, \"America/New_York\")\nsess_bar_t = sess_bar_hr * 100 + sess_bar_mn\nsess_clock_start = sess_start_hr * 100 + sess_start_mn\nsess_clock_end = sess_end_hr * 100 + sess_end_mn\n\nin_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))\n\n// 2. Skip Window Logic\nskip_bar_t = hour(time, \"America/New_York\") * 100 + minute(time, \"America/New_York\")\nskip_from = skip_start_hr * 100 + skip_start_mn\nskip_to = skip_end_hr * 100 + skip_end_mn\nin_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))\nskip_window_open = not in_skip_window\n\n// 3. Trend Filter\nvwma_20 = ta.vwma(close, 20)\n\n// 4. Volume Profile Calculation\nnum_bins = 100\nvar float poc_price = na\nvar float poc_net_delta_pct = 0.0\nvar float poc_zone_high = na\nvar float poc_zone_low = na\n\nif barstate.isconfirmed\n    float min_p = ta.lowest(low, profile_lookback)\n    float max_p = ta.highest(high, profile_lookback)\n    \n    if not na(min_p) and not na(max_p) and max_p > min_p\n        float bin_size = (max_p - min_p) / num_bins\n        if bin_size == 0\n            bin_size := 0.01\n            \n        array<float> vol_bins = array.new_float(num_bins, 0.0)\n        array<float> up_bins = array.new_float(num_bins, 0.0)\n        array<float> down_bins = array.new_float(num_bins, 0.0)\n        \n        for i = 1 to profile_lookback\n            float o = open[i]\n            float h = high[i]\n            float l = low[i]\n            float c = close[i]\n            float v = volume[i]\n            \n            if v > 0\n                float up_vol = 0.0\n                float down_vol = 0.0\n                \n                if c > o\n                    up_vol := v\n                else if c < o\n                    down_vol := v\n                else\n                    up_vol := v / 2.0\n                    down_vol := v / 2.0\n                    \n                int start_bin = math.max(0, math.floor((l - min_p) / bin_size))\n                int end_bin = math.min(num_bins - 1, math.floor((h - min_p) / bin_size))\n                \n                int num_bins_touched = end_bin - start_bin + 1\n                if num_bins_touched > 0\n                    float vol_per_bin = v / num_bins_touched\n                    float up_per_bin = up_vol / num_bins_touched\n                    float down_per_bin = down_vol / num_bins_touched\n                    \n                    for b = start_bin to end_bin\n                        array.set(vol_bins, b, array.get(vol_bins, b) + vol_per_bin)\n                        array.set(up_bins, b, array.get(up_bins, b) + up_per_bin)\n                        array.set(down_bins, b, array.get(down_bins, b) + down_per_bin)\n                        \n        int poc_bin_index = 0\n        float max_vol = 0.0\n        for b = 0 to num_bins - 1\n            float bv = array.get(vol_bins, b)\n            if bv > max_vol\n                max_vol := bv\n                poc_bin_index := b\n                \n        poc_price := min_p + (poc_bin_index + 0.5) * bin_size\n        \n        float poc_up = array.get(up_bins, poc_bin_index)\n        float poc_down = array.get(down_bins, poc_bin_index)\n        float poc_total = array.get(vol_bins, poc_bin_index)\n        \n        if poc_total > 0\n            poc_net_delta_pct := (poc_up - poc_down) / poc_total * 100.0\n        else\n            poc_net_delta_pct := 0.0\n            \n        float zone_distance = poc_zone_rows * bin_size\n        poc_zone_high := poc_price + zone_distance\n        poc_zone_low := poc_price - zone_distance\n\n// 5. Pivot Logic\npivotLow = ta.pivotlow(low, pivot_left, pivot_right)\npivotHigh = ta.pivothigh(high, pivot_left, pivot_right)\n\n// 6. Arming Logic\nvar bool armed_long = false\nvar bool armed_short = false\nvar bool opposite_flag = false\n\nif not na(poc_zone_high) and not na(poc_zone_low)\n    if close >= poc_zone_low and close <= poc_zone_high\n        armed_long := false\n        armed_short := false\n\n    if close > poc_zone_high and close > vwma_20 and poc_net_delta_pct > 0\n        armed_long := true\n    if close < poc_zone_low and close < vwma_20 and poc_net_delta_pct < 0\n        armed_short := true\n\n// 7. Entry Logic\nbool long_entry_signal = false\nbool short_entry_signal = false\n\nif in_session and skip_window_open and strategy.position_size == 0\n    if opposite_flag\n        if armed_short and not na(pivotHigh) and close < poc_zone_low\n            short_entry_signal := true\n            opposite_flag := false\n        else if armed_long and not na(pivotLow) and close > poc_zone_high\n            long_entry_signal := true\n            opposite_flag := false\n    else\n        if armed_long and not na(pivotLow) and close > poc_zone_high\n            long_entry_signal := true\n        if armed_short and not na(pivotHigh) and close < poc_zone_low\n            short_entry_signal := true\n\nif long_entry_signal\n    strategy.entry(\"Long\", strategy.long)\n    strategy.exit(\"ExitLong\", \"Long\", stop=long_stop, limit=long_limit)\n    \nif short_entry_signal\n    strategy.entry(\"Short\", strategy.short)\n    strategy.exit(\"ExitShort\", \"Short\", stop=short_stop, limit=short_limit)\n\n// 8. Exit Logic & Opposite Flag\nif strategy.position_size > 0\n    strategy.exit(\"ExitLong\", \"Long\", stop=long_stop, limit=long_limit)\nif strategy.position_size < 0\n    strategy.exit(\"ExitShort\", \"Short\", stop=short_stop, limit=short_limit)\n\nif strategy.position_size == 0\n    if strategy.position_size[1] > 0\n        if low <= strategy.position_avg_price[1] - stop_dollars / pv\n            opposite_flag := true\n    if strategy.position_size[1] < 0\n        if high >= strategy.position_avg_price[1] + stop_dollars / pv\n            opposite_flag := true\n\n// 9. Session End Flatten\nif in_session and sess_bar_t >= sess_clock_end\n    strategy.close_all(comment=\"Session End\")\n\n// 10. Skip Window Flatten\nif in_skip_window and strategy.position_size != 0\n    strategy.close_all(comment=\"Skip Window\")\n\n// 11. Out of Session Flatten\nif not in_session and strategy.position_size != 0\n    strategy.close_all(comment=\"Out of Session\")\n\n// ===== PLOTS =====\nplot(poc_price, \"POC\", color=color.purple, linewidth=2)\nplot(poc_zone_high, \"POC Zone High\", color=color.green, style=plot.style_circles)\nplot(poc_zone_low, \"POC Zone Low\", color=color.red, style=plot.style_circles)\nplot(vwma_20, \"VWMA 20\", color=color.blue)\n\nbgcolor(in_skip_window ? color.new(color.red, 90) : na)\nbgcolor(not in_session ? color.new(color.gray, 90) : na)\n\nplotshape(long_entry_signal, title=\"Long Entry\", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)\nplotshape(short_entry_signal, title=\"Short Entry\", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)",
+  "params": null,
+  "settings": {
+   "stop_dollars": 700,
+   "tp_dollars": 750,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 9,
+   "skip_start_mn": 0,
+   "skip_end_hr": 10,
+   "skip_end_mn": 30,
+   "profile_lookback": 50,
+   "poc_zone_rows": 1,
+   "pivot_left": 20,
+   "pivot_right": 20
+  }
+ }
+}

@@ -1,0 +1,162 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 1550.0,
+   "max_drawdown": 2510.5,
+   "trades": 25
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 192.0,
+   "max_drawdown": 1883.0,
+   "trades": 28
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -955.0,
+   "max_drawdown": 2208.0,
+   "trades": 30
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -2670.0,
+   "max_drawdown": 3111.0,
+   "trades": 20
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 1904.5,
+   "max_drawdown": 1759.5,
+   "trades": 28
+  },
+  "vwma_slope_len": {
+   "value": 1,
+   "net_profit": -96.5,
+   "max_drawdown": 2639.0,
+   "trades": 19
+  },
+  "min_slope": {
+   "value": 0.125,
+   "net_profit": 1142.0,
+   "max_drawdown": 2617.0,
+   "trades": 28
+  },
+  "min_delta_pct": {
+   "value": 0.75,
+   "net_profit": 94.0,
+   "max_drawdown": 1859.0,
+   "trades": 21
+  },
+  "pivot_len": {
+   "value": 1,
+   "net_profit": 4764.0,
+   "max_drawdown": 1013.5,
+   "trades": 26
+  },
+  "arm_expire_bars": {
+   "value": 5,
+   "net_profit": 1142.5,
+   "max_drawdown": 2157.5,
+   "trades": 20
+  },
+  "cooldown_bars": {
+   "value": 2,
+   "net_profit": 2476.0,
+   "max_drawdown": 2331.5,
+   "trades": 34
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 20,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.5,
+   "min_delta_pct": 3.0,
+   "pivot_len": 2,
+   "arm_expire_bars": 20,
+   "cooldown_bars": 10
+  },
+  "net_profit": 1523.5,
+  "max_drawdown": 2045.0,
+  "trades": 24,
+  "win_rate": 45.83,
+  "profit_factor": 1.41,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 21,
+    "pnl": 2381.5,
+    "favorable": 307.6,
+    "adverse": -179.31
+   },
+   {
+    "exit": "XL",
+    "trades": 3,
+    "pnl": -858.0,
+    "favorable": 332.0,
+    "adverse": -280.5
+   }
+  ]
+ },
+ "reviewed": [
+  "30 GC 5m",
+  "7 ES 2m",
+  "90 YM 5m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "answer": {
+  "because": "The best 90-day run missed the win rate line (38.33) and the drawdown rule (8921.5), and the measured sensitivity shows pivot_len 1 cuts the 21-session drawdown to 1013.5 while raising profit to 4764.0.",
+  "script": null,
+  "params": {
+   "stop_dollars": 700,
+   "tp_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 20,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.5,
+   "min_delta_pct": 3.0,
+   "pivot_len": 1,
+   "arm_expire_bars": 20,
+   "cooldown_bars": 10
+  },
+  "settings": {
+   "stop_dollars": 700,
+   "tp_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 20,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.5,
+   "min_delta_pct": 3.0,
+   "pivot_len": 2,
+   "arm_expire_bars": 20,
+   "cooldown_bars": 10
+  }
+ }
+}

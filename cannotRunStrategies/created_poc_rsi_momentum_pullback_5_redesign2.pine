@@ -1,0 +1,225 @@
+//@version=5
+strategy("POC RSI Momentum Pullback Redesign 2", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+
+// Ensure TP > Stop
+if tp_dollars <= stop_dollars
+    tp_dollars := stop_dollars + 1
+
+// Define Stop/Limit Prices
+
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)", minval=0, maxval=23)
+sess_start_mn = input.int(0,  "Session Start Minute", minval=0, maxval=59)
+sess_end_hr   = input.int(16,  "Session End Hour (ET)", minval=0, maxval=23)
+sess_end_mn   = input.int(0,  "Session End Minute", minval=0, maxval=59)
+
+// ===== SKIP WINDOW =====
+use_skip      = input.bool(true, "Skip This Time Of Day", group="Skip Window")
+skip_start_hr = input.int(13, "Skip Start Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_start_mn = input.int(30, "Skip Start Minute", minval=0, maxval=59, group="Skip Window")
+skip_end_hr   = input.int(15, "Skip End Hour (ET)", minval=0, maxval=23, group="Skip Window")
+skip_end_mn   = input.int(30, "Skip End Minute", minval=0, maxval=59, group="Skip Window")
+
+// ===== STRATEGY INPUTS =====
+profile_lookback = input.int(50, "Profile Lookback", minval=10, maxval=200)
+poc_zone_rows    = input.int(1, "POC Zone Rows", minval=0, maxval=10)
+pivot_left       = input.int(5, "Pivot Left", minval=1, maxval=20)
+pivot_right      = input.int(5, "Pivot Right", minval=1, maxval=20)
+
+// ===== CALCULATIONS =====
+
+// 1. Session Logic
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+
+// 2. Skip Window Logic
+skip_bar_t = hour(time, "America/New_York") * 100 + minute(time, "America/New_York")
+skip_from = skip_start_hr * 100 + skip_start_mn
+skip_to = skip_end_hr * 100 + skip_end_mn
+in_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))
+skip_window_open = not in_skip_window
+
+// 3. Trend Filter
+vwma_20 = ta.vwma(close, 20)
+
+// 4. Volume Profile Calculation
+num_bins = 100
+var float poc_price = na
+var float poc_net_delta_pct = 0.0
+var float poc_zone_high = na
+var float poc_zone_low = na
+
+if barstate.isconfirmed
+    float min_p = ta.lowest(low, profile_lookback)
+    float max_p = ta.highest(high, profile_lookback)
+    
+    if not na(min_p) and not na(max_p) and max_p > min_p
+        float bin_size = (max_p - min_p) / num_bins
+        if bin_size == 0
+            bin_size := 0.01
+            
+        array<float> vol_bins = array.new_float(num_bins, 0.0)
+        array<float> up_bins = array.new_float(num_bins, 0.0)
+        array<float> down_bins = array.new_float(num_bins, 0.0)
+        
+        for i = 1 to profile_lookback
+            float o = open[i]
+            float h = high[i]
+            float l = low[i]
+            float c = close[i]
+            float v = volume[i]
+            
+            if v > 0
+                float up_vol = 0.0
+                float down_vol = 0.0
+                
+                if c > o
+                    up_vol := v
+                else if c < o
+                    down_vol := v
+                else
+                    up_vol := v / 2.0
+                    down_vol := v / 2.0
+                    
+                int start_bin = math.max(0, math.floor((l - min_p) / bin_size))
+                int end_bin = math.min(num_bins - 1, math.floor((h - min_p) / bin_size))
+                
+                int num_bins_touched = end_bin - start_bin + 1
+                if num_bins_touched > 0
+                    float vol_per_bin = v / num_bins_touched
+                    float up_per_bin = up_vol / num_bins_touched
+                    float down_per_bin = down_vol / num_bins_touched
+                    
+                    for b = start_bin to end_bin
+                        array.set(vol_bins, b, array.get(vol_bins, b) + vol_per_bin)
+                        array.set(up_bins, b, array.get(up_bins, b) + up_per_bin)
+                        array.set(down_bins, b, array.get(down_bins, b) + down_per_bin)
+                        
+        int poc_bin_index = 0
+        float max_vol = 0.0
+        for b = 0 to num_bins - 1
+            float bv = array.get(vol_bins, b)
+            if bv > max_vol
+                max_vol := bv
+                poc_bin_index := b
+                
+        poc_price := min_p + (poc_bin_index + 0.5) * bin_size
+        
+        float poc_up = array.get(up_bins, poc_bin_index)
+        float poc_down = array.get(down_bins, poc_bin_index)
+        float poc_total = array.get(vol_bins, poc_bin_index)
+        
+        if poc_total > 0
+            poc_net_delta_pct := (poc_up - poc_down) / poc_total * 100.0
+        else
+            poc_net_delta_pct := 0.0
+            
+        float zone_distance = poc_zone_rows * bin_size
+        poc_zone_high := poc_price + zone_distance
+        poc_zone_low := poc_price - zone_distance
+
+// 5. Pivot Logic
+pivotLow = ta.pivotlow(low, pivot_left, pivot_right)
+pivotHigh = ta.pivothigh(high, pivot_left, pivot_right)
+
+// 6. Arming Logic
+var bool armed_long = false
+var bool armed_short = false
+var bool opposite_flag = false
+
+if not na(poc_zone_high) and not na(poc_zone_low)
+    if close >= poc_zone_low and close <= poc_zone_high
+        armed_long := false
+        armed_short := false
+
+    if close > poc_zone_high and close > vwma_20 and poc_net_delta_pct > 0
+        armed_long := true
+    if close < poc_zone_low and close < vwma_20 and poc_net_delta_pct < 0
+        armed_short := true
+
+// 7. Entry Logic
+bool long_entry_signal = false
+bool short_entry_signal = false
+
+if in_session and skip_window_open and strategy.position_size == 0
+    if opposite_flag
+        if armed_short and not na(pivotHigh) and close < poc_zone_low
+            short_entry_signal := true
+            opposite_flag := false
+        else if armed_long and not na(pivotLow) and close > poc_zone_high
+            long_entry_signal := true
+            opposite_flag := false
+    else
+        if armed_long and not na(pivotLow) and close > poc_zone_high
+            long_entry_signal := true
+        if armed_short and not na(pivotHigh) and close < poc_zone_low
+            short_entry_signal := true
+
+if long_entry_signal
+    strategy.entry("Long", strategy.long)
+    strategy.exit("ExitLong", "Long", stop=long_stop, limit=long_limit)
+    
+if short_entry_signal
+    strategy.entry("Short", strategy.short)
+    strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_limit)
+
+// 8. Exit Logic & Opposite Flag
+if strategy.position_size > 0
+    strategy.exit("ExitLong", "Long", stop=long_stop, limit=long_limit)
+if strategy.position_size < 0
+    strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_limit)
+
+if strategy.position_size == 0
+    if strategy.position_size[1] > 0
+        if low <= strategy.position_avg_price[1] - stop_dollars / pv
+            opposite_flag := true
+    if strategy.position_size[1] < 0
+        if high >= strategy.position_avg_price[1] + stop_dollars / pv
+            opposite_flag := true
+
+// 9. Session End Flatten
+if in_session and sess_bar_t >= sess_clock_end
+    strategy.close_all(comment="Session End")
+
+// 10. Skip Window Flatten
+if in_skip_window and strategy.position_size != 0
+    strategy.close_all(comment="Skip Window")
+
+// 11. Out of Session Flatten
+if not in_session and strategy.position_size != 0
+    strategy.close_all(comment="Out of Session")
+
+// ===== PLOTS =====
+plot(poc_price, "POC", color=color.purple, linewidth=2)
+plot(poc_zone_high, "POC Zone High", color=color.green, style=plot.style_circles)
+plot(poc_zone_low, "POC Zone Low", color=color.red, style=plot.style_circles)
+plot(vwma_20, "VWMA 20", color=color.blue)
+
+bgcolor(in_skip_window ? color.new(color.red, 90) : na)
+bgcolor(not in_session ? color.new(color.gray, 90) : na)
+
+plotshape(long_entry_signal, title="Long Entry", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(short_entry_signal, title="Short Entry", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)

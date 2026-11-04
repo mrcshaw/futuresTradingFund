@@ -1,0 +1,2484 @@
+{
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine|ES|5m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+    "root": "ES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:08:49",
+    "reason": "The search ended before this stage had a result."
+  },
+  "ICT Unicorn + ORB ES 5min 22k.txt|ES|15m": {
+    "file": "ICT Unicorn + ORB ES 5min 22k.txt",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:08:02"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine|MES|5m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:48:34",
+    "reason": "It cannot be run. Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine took no trades and made no profit 20 times in a row."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine|MES|2m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign3.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:48:40",
+    "reason": "The search ended before this stage had a result."
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine|MES|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:43:03"
+  },
+  "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine|MES|5m": {
+    "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:46:09",
+    "reason": "The search ended before this stage had a result."
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine|MES|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:44:33"
+  },
+  "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine|MES|2m": {
+    "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_1793240269_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:46:30",
+    "reason": "The search ended before this stage had a result."
+  },
+  "hull_ma_cross_redesign1.pine|MES|15m": {
+    "file": "hull_ma_cross_redesign1.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:45:14"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MES|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:29:40"
+  },
+  "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine|MES|15m": {
+    "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:49:23"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:48:31"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:49:17",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt|MES|15m": {
+    "file": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:49:30"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:50:53",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine|ES|2m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
+    "root": "ES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:51:20",
+    "reason": "It was skipped on this chart."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign2.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:51:26",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine|ES|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:51:33",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine|ES|5m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
+    "root": "ES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:51:34",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|MES|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:40:49"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:52:05"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:52:24",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign1.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:57:01",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt|MES|15m": {
+    "file": "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:52:30"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign1.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:56:39",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign3.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign3.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:56:05",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign3.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy_redesign3.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:56:20",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt|MES|15m": {
+    "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:55:36"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:00:21",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt|MES|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:58:42"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 15:59:05",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign1.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:00:05",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign1.pine|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:01:21",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day Shift Delta Volume Breakout ES 2min profitable.txt|MES|15m": {
+    "file": "Day Shift Delta Volume Breakout ES 2min profitable.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 15:59:36"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt|MES|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:00:32"
+  },
+  "Day Shift Delta Volume Breakout ES 2min profitable_1793226206_redesign1.pine|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout ES 2min profitable_1793226206_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:00:08",
+    "reason": "It was skipped on this chart."
+  },
+  "DeltaVolumeBreakOutBigGainsRiskyWithBackground.txt|MES|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRiskyWithBackground.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:01:41"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine|MES|5m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:05:36",
+    "reason": "The search ended before this stage had a result."
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine|MES|5m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:05:21"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine|MES|2m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:06:07",
+    "reason": "The search ended before this stage had a result."
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt|M2K|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt",
+    "root": "M2K",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:02:18"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine|MES|2m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign2.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:30:57"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt|YM|15m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt",
+    "root": "YM",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:36:06"
+  },
+  "hull_ma_cross_redesign1.pine|MES|5m": {
+    "file": "hull_ma_cross_redesign1.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:09:12"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine|GC|2m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917_redesign3.pine",
+    "root": "GC",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:08:32",
+    "reason": "It was skipped on this chart."
+  },
+  "hull_ma_cross_redesign1.pine|MES|2m": {
+    "file": "hull_ma_cross_redesign1.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:11:13",
+    "reason": "The search ended before this stage had a result."
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|ES|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:58:40"
+  },
+  "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine|MES|5m": {
+    "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:12:49",
+    "reason": "It cannot be run. Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign2.pine took no trades and made no profit 20 times in a row."
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|GC|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "GC",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 17:23:38"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|ES|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "ES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 17:25:31",
+    "reason": "Research stopped or the desk restarted before this stage finished."
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|ES|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "ES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:28:32"
+  },
+  "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt|MES|5m": {
+    "file": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:19:51"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|NQ|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "NQ",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:28:11"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|GC|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "GC",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:36:00"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|MES|5m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "testing",
+    "updated": "2026-11-04 18:00:13"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MNQ|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MNQ",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:31:58"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|M2K|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "M2K",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:56:20"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|YM|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "YM",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:30:51"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|ES|5m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "ES",
+    "timeframe": "5m",
+    "passed": {
+      "7": {
+        "net_profit": 1317.0,
+        "max_drawdown": 866.5,
+        "trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 2.82,
+        "biggest_loser": -723.5,
+        "held_loser": -723.5,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": 1317.0,
+            "trades": 3,
+            "biggest_loser": -723.5,
+            "held_loser": -723.5
+          },
+          "30": {
+            "net_profit": 1317.0,
+            "trades": 3,
+            "biggest_loser": -723.5,
+            "held_loser": -723.5
+          },
+          "90": {
+            "net_profit": 1317.0,
+            "trades": 3,
+            "biggest_loser": -723.5,
+            "held_loser": -723.5
+          },
+          "365": {
+            "net_profit": 1317.0,
+            "trades": 3,
+            "biggest_loser": -723.5,
+            "held_loser": -723.5
+          }
+        },
+        "params": {
+          "pv": 50.0,
+          "stop_dollars": 700,
+          "tp_dollars": 1500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 15.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 150.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "7_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_ES_5m.pine",
+        "at": "2026-11-04 17:55:03"
+      }
+    },
+    "stage": 30,
+    "status": "failed",
+    "updated": "2026-11-04 17:59:58"
+  },
+  "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt|MES|2m": {
+    "file": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit.txt",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 16:36:32",
+    "reason": "The search ended before this stage had a result."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|ES|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:33:45"
+  },
+  "ICT Unicorn + ORB ES 5min 22k.txt|GC|15m": {
+    "file": "ICT Unicorn + ORB ES 5min 22k.txt",
+    "root": "GC",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 16:39:42"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|ES|2m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "ES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 17:25:31",
+    "reason": "Research stopped or the desk restarted before this stage finished."
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|NQ|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "NQ",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 17:25:31",
+    "reason": "Research stopped or the desk restarted before this stage finished."
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|GC|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "GC",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 17:25:31",
+    "reason": "Research stopped or the desk restarted before this stage finished."
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|ES|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 365,
+    "status": "stopped",
+    "updated": "2026-11-04 17:25:31",
+    "reason": "Research stopped or the desk restarted before this stage finished."
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|NQ|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "NQ",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:29:57"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|NQ|5m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "NQ",
+    "timeframe": "5m",
+    "passed": {
+      "7": {
+        "net_profit": 1405.0,
+        "max_drawdown": 676.5,
+        "trades": 5,
+        "win_rate": 60.0,
+        "profit_factor": 2.348,
+        "biggest_loser": -521.0,
+        "held_loser": -521.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 1405.0,
+            "trades": 5,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          },
+          "30": {
+            "net_profit": 1405.0,
+            "trades": 5,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          },
+          "90": {
+            "net_profit": 1405.0,
+            "trades": 5,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          },
+          "365": {
+            "net_profit": 1405.0,
+            "trades": 5,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 150.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "7_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_NQ_5m.pine",
+        "at": "2026-11-04 17:27:37"
+      },
+      "30": {
+        "net_profit": 1036.0,
+        "max_drawdown": 2743.5,
+        "trades": 19,
+        "win_rate": 52.63,
+        "profit_factor": 1.16,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": 2670.0,
+            "trades": 5,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "30": {
+            "net_profit": 1036.0,
+            "trades": 19,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 1036.0,
+            "trades": 19,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 1036.0,
+            "trades": 19,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 700,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 150.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "30_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_NQ_5m.pine",
+        "at": "2026-11-04 17:28:10"
+      }
+    },
+    "stage": 90,
+    "status": "failed",
+    "updated": "2026-11-04 17:52:54"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MES|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:30:08"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MES|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:32:01"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|M2K|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "M2K",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:31:41"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|YM|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "YM",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:33:03"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|M2K|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "M2K",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:36:05"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|ES|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "ES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:35:22"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|NQ|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "NQ",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:38:19"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|NQ|2m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "NQ",
+    "timeframe": "2m",
+    "passed": {
+      "7": {
+        "net_profit": 441.0,
+        "max_drawdown": 1171.5,
+        "trades": 4,
+        "win_rate": 50.0,
+        "profit_factor": 1.306,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": 441.0,
+            "trades": 4,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "30": {
+            "net_profit": 441.0,
+            "trades": 4,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 441.0,
+            "trades": 4,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 441.0,
+            "trades": 4,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 700,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 150.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "7_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_NQ_2m.pine",
+        "at": "2026-11-04 17:35:58"
+      },
+      "30": {
+        "net_profit": 2052.0,
+        "max_drawdown": 3310.5,
+        "trades": 28,
+        "win_rate": 46.43,
+        "profit_factor": 1.203,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": -1001.0,
+            "trades": 6,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "30": {
+            "net_profit": 2052.0,
+            "trades": 28,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 2052.0,
+            "trades": 28,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 2052.0,
+            "trades": 28,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 700,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 14,
+          "skip_start_mn": 0,
+          "skip_end_hr": 16,
+          "skip_end_mn": 0,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 281.25,
+          "rev_on_any_loss": false
+        },
+        "pine": "30_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_NQ_2m.pine",
+        "at": "2026-11-04 17:43:46"
+      }
+    },
+    "stage": 90,
+    "status": "testing",
+    "updated": "2026-11-04 17:43:46"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|NQ|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "NQ",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:36:32"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MNQ|5m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MNQ",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:37:09"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|YM|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "YM",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:37:52"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|MES|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:40:27"
+  },
+  "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt|MES|5m": {
+    "file": "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {
+      "7": {
+        "net_profit": 173.0,
+        "max_drawdown": 208.25,
+        "trades": 12,
+        "win_rate": 41.67,
+        "profit_factor": 1.506,
+        "biggest_loser": -121.0,
+        "held_loser": -121.0,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 173.0,
+            "trades": 12,
+            "biggest_loser": -121.0,
+            "held_loser": -121.0
+          },
+          "30": {
+            "net_profit": 173.0,
+            "trades": 12,
+            "biggest_loser": -121.0,
+            "held_loser": -121.0
+          },
+          "90": {
+            "net_profit": 173.0,
+            "trades": 12,
+            "biggest_loser": -121.0,
+            "held_loser": -121.0
+          },
+          "365": {
+            "net_profit": 173.0,
+            "trades": 12,
+            "biggest_loser": -121.0,
+            "held_loser": -121.0
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 45,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 11,
+          "skip_end_mn": 0
+        },
+        "pine": "7_day/Day_shift_BOS_Profitable_23k_Delta_Volume_Breakout_ES_2min_reversals_1793237755_MES_5m.pine",
+        "at": "2026-11-04 17:38:04"
+      }
+    },
+    "stage": 30,
+    "status": "failed",
+    "updated": "2026-11-04 17:42:38"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|GC|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "GC",
+    "timeframe": "2m",
+    "passed": {
+      "7": {
+        "net_profit": 927.0,
+        "max_drawdown": 531.0,
+        "trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 2.746,
+        "biggest_loser": -531.0,
+        "held_loser": -531.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 927.0,
+            "trades": 3,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "30": {
+            "net_profit": 927.0,
+            "trades": 3,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "90": {
+            "net_profit": 927.0,
+            "trades": 3,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "365": {
+            "net_profit": 927.0,
+            "trades": 3,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          }
+        },
+        "params": {
+          "use_skip": true,
+          "skip_start_hr": 5,
+          "skip_start_mn": 30,
+          "skip_end_hr": 7,
+          "skip_end_mn": 0,
+          "pv": 100.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_pct": 50.0,
+          "trail_step_amt": 500,
+          "trail_step_pct": 50.0,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "vwma_len": 20,
+          "vwma_slope_len": 5,
+          "pivot_len": 2,
+          "entry_end_hr": 14,
+          "entry_end_mn": 0,
+          "max_entries_per_day": 2
+        },
+        "pine": "7_day/ICT_Unicorn_POC_Profit_ES_5min_redesign3_GC_2m.pine",
+        "at": "2026-11-04 17:42:39"
+      }
+    },
+    "stage": 30,
+    "status": "failed",
+    "updated": "2026-11-04 17:49:54"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|M2K|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "M2K",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:44:04"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|M2K|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "M2K",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:43:55"
+  },
+  "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt|MES|5m": {
+    "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:45:58"
+  },
+  "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt|YM|15m": {
+    "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+    "root": "YM",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 1736.0,
+        "max_drawdown": 490.5,
+        "trades": 4,
+        "win_rate": 75.0,
+        "profit_factor": 4.725,
+        "biggest_loser": -466.0,
+        "held_loser": -466.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 1736.0,
+            "trades": 4,
+            "biggest_loser": -466.0,
+            "held_loser": -466.0
+          },
+          "30": {
+            "net_profit": 1736.0,
+            "trades": 4,
+            "biggest_loser": -466.0,
+            "held_loser": -466.0
+          },
+          "90": {
+            "net_profit": 1736.0,
+            "trades": 4,
+            "biggest_loser": -466.0,
+            "held_loser": -466.0
+          },
+          "365": {
+            "net_profit": 1736.0,
+            "trades": 4,
+            "biggest_loser": -466.0,
+            "held_loser": -466.0
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 600.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "7_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_YM_15m.pine",
+        "at": "2026-11-04 17:44:49"
+      },
+      "30": {
+        "net_profit": 2109.0,
+        "max_drawdown": 2270.5,
+        "trades": 16,
+        "win_rate": 43.75,
+        "profit_factor": 1.591,
+        "biggest_loser": -521.0,
+        "held_loser": -521.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 1795.0,
+            "trades": 5,
+            "biggest_loser": -466.0,
+            "held_loser": -466.0
+          },
+          "30": {
+            "net_profit": 2109.0,
+            "trades": 16,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          },
+          "90": {
+            "net_profit": 2109.0,
+            "trades": 16,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          },
+          "365": {
+            "net_profit": 2109.0,
+            "trades": 16,
+            "biggest_loser": -521.0,
+            "held_loser": -521.0
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 600.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "30_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_YM_15m.pine",
+        "at": "2026-11-04 17:44:53"
+      },
+      "90": {
+        "net_profit": 1984.0,
+        "max_drawdown": 3306.5,
+        "trades": 41,
+        "win_rate": 43.9,
+        "profit_factor": 1.189,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": -356.0,
+            "trades": 6,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "30": {
+            "net_profit": 1574.0,
+            "trades": 16,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 1984.0,
+            "trades": 41,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 1984.0,
+            "trades": 41,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 700,
+          "tp_dollars": 1000,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "trail_step_pct": 50.0,
+          "trail_pct": 50.0,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.0,
+          "pivot_left": 3,
+          "pivot_right": 3,
+          "disarm_only_inside_poc": true,
+          "cooldown_bars": 5,
+          "use_price_vwma": true,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 8,
+          "skip_start_mn": 0,
+          "skip_end_hr": 9,
+          "skip_end_mn": 30,
+          "use_reduced_risk": true,
+          "reduced_start_hr": 12,
+          "reduced_start_mn": 0,
+          "reduced_end_hr": 16,
+          "reduced_end_mn": 0,
+          "reduced_stop_dollars": 500.0,
+          "reduced_tp_dollars": 450.0,
+          "use_breakeven": true,
+          "be_trigger_dollars": 600.0,
+          "rev_on_any_loss": false
+        },
+        "pine": "90_day/Day_shift_BOS_Profitable_16k_Delta_Volume_Breakout_safe_dual_time_split_1793237253_YM_15m.pine",
+        "at": "2026-11-04 17:45:14"
+      }
+    },
+    "stage": 365,
+    "status": "testing",
+    "updated": "2026-11-04 17:45:14"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|YM|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "YM",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:44:51"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|GC|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "GC",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 792.0,
+        "max_drawdown": 516.5,
+        "trades": 8,
+        "win_rate": 50.0,
+        "profit_factor": 1.705,
+        "biggest_loser": -281.0,
+        "held_loser": -281.0,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 792.0,
+            "trades": 8,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "30": {
+            "net_profit": 792.0,
+            "trades": 8,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "90": {
+            "net_profit": 792.0,
+            "trades": 8,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "365": {
+            "net_profit": 792.0,
+            "trades": 8,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          }
+        },
+        "params": {
+          "pv": 100.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_pct": 50.0,
+          "trail_step_amt": 500,
+          "trail_step_pct": 50.0,
+          "trail_min_dollars": 1000,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "gather_min": 15,
+          "entry_end_hr": 11,
+          "entry_end_mn": 0,
+          "eod_hr": 15,
+          "eod_mn": 45,
+          "i_margin": 1.0,
+          "i_or_min": 0.0,
+          "i_or_max": 50.0,
+          "max_attempts": 2,
+          "fvg_lookback": 20,
+          "fvg_min_atr": 0.04,
+          "atr_len": 14,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "ema_len": 50,
+          "ema_slope_len": 5,
+          "min_slope": 0.0,
+          "poc_filter_mode": "Off"
+        },
+        "pine": "7_day/ICT_Unicorn_POC_Profit_ES_5min_Consistent_safe_15k_one_year_GC_15m.pine",
+        "at": "2026-11-04 17:45:01"
+      },
+      "30": {
+        "net_profit": 2139.0,
+        "max_drawdown": 2732.5,
+        "trades": 31,
+        "win_rate": 41.94,
+        "profit_factor": 1.224,
+        "biggest_loser": -531.0,
+        "held_loser": -531.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 2263.0,
+            "trades": 7,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "30": {
+            "net_profit": 2139.0,
+            "trades": 31,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "90": {
+            "net_profit": 2139.0,
+            "trades": 31,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "365": {
+            "net_profit": 2139.0,
+            "trades": 31,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          }
+        },
+        "params": {
+          "pv": 100.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "use_trail": false,
+          "trail_pct": 50.0,
+          "trail_step_amt": 500,
+          "trail_step_pct": 50.0,
+          "trail_min_dollars": 1000,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "gather_min": 15,
+          "entry_end_hr": 11,
+          "entry_end_mn": 0,
+          "eod_hr": 15,
+          "eod_mn": 45,
+          "i_margin": 1.0,
+          "i_or_min": 0.0,
+          "i_or_max": 50.0,
+          "max_attempts": 2,
+          "fvg_lookback": 20,
+          "fvg_min_atr": 0.04,
+          "atr_len": 14,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 5.0,
+          "ema_len": 50,
+          "ema_slope_len": 5,
+          "min_slope": 0.0,
+          "poc_filter_mode": "Off"
+        },
+        "pine": "30_day/ICT_Unicorn_POC_Profit_ES_5min_Consistent_safe_15k_one_year_GC_15m.pine",
+        "at": "2026-11-04 17:45:10"
+      }
+    },
+    "stage": 90,
+    "status": "failed",
+    "updated": "2026-11-04 17:51:12"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {
+      "7": {
+        "net_profit": 153.75,
+        "max_drawdown": 130.5,
+        "trades": 5,
+        "win_rate": 60.0,
+        "profit_factor": 2.122,
+        "biggest_loser": -103.5,
+        "held_loser": -103.5,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 153.75,
+            "trades": 5,
+            "biggest_loser": -103.5,
+            "held_loser": -103.5
+          },
+          "30": {
+            "net_profit": 153.75,
+            "trades": 5,
+            "biggest_loser": -103.5,
+            "held_loser": -103.5
+          },
+          "90": {
+            "net_profit": 153.75,
+            "trades": 5,
+            "biggest_loser": -103.5,
+            "held_loser": -103.5
+          },
+          "365": {
+            "net_profit": 153.75,
+            "trades": 5,
+            "biggest_loser": -103.5,
+            "held_loser": -103.5
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_pct": 50.0,
+          "trail_step_amt": 500,
+          "trail_step_pct": 50.0,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 3.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.1,
+          "confirm_candles": 1,
+          "cooldown_bars": 10,
+          "pullback_dollars": 100.0,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 10,
+          "skip_start_mn": 30,
+          "skip_end_hr": 12,
+          "skip_end_mn": 30,
+          "use_daily_limits": true,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 6000.0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_Good_Copy_MES_5m.pine",
+        "at": "2026-11-04 17:47:45"
+      }
+    },
+    "stage": 30,
+    "status": "failed",
+    "updated": "2026-11-04 17:58:05"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine|MNQ|2m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+    "root": "MNQ",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:51:30"
+  },
+  "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt|MNQ|15m": {
+    "file": "ICT Unicorn + POC [Profit] ES 5min Consistent safe 15k one year.txt",
+    "root": "MNQ",
+    "timeframe": "15m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:51:55"
+  },
+  "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt|MES|2m": {
+    "file": "Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1793237755.txt",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:53:52"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|GC|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "GC",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 323.0,
+        "max_drawdown": 697.5,
+        "trades": 7,
+        "win_rate": 42.86,
+        "profit_factor": 1.29,
+        "biggest_loser": -281.0,
+        "held_loser": -281.0,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 323.0,
+            "trades": 7,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "30": {
+            "net_profit": 323.0,
+            "trades": 7,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "90": {
+            "net_profit": 323.0,
+            "trades": 7,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          },
+          "365": {
+            "net_profit": 323.0,
+            "trades": 7,
+            "biggest_loser": -281.0,
+            "held_loser": -281.0
+          }
+        },
+        "params": {
+          "pv": 100.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 28,
+          "rsi_long_low": 45,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_GC_15m.pine",
+        "at": "2026-11-04 17:52:38"
+      },
+      "30": {
+        "net_profit": 1584.0,
+        "max_drawdown": 2602.5,
+        "trades": 26,
+        "win_rate": 42.31,
+        "profit_factor": 1.201,
+        "biggest_loser": -531.0,
+        "held_loser": -531.0,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": -1796.0,
+            "trades": 6,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "30": {
+            "net_profit": 1584.0,
+            "trades": 26,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "90": {
+            "net_profit": 1584.0,
+            "trades": 26,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          },
+          "365": {
+            "net_profit": 1584.0,
+            "trades": 26,
+            "biggest_loser": -531.0,
+            "held_loser": -531.0
+          }
+        },
+        "params": {
+          "pv": 100.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 63,
+          "rsi_long_low": 90,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 10,
+          "skip_start_mn": 0,
+          "skip_end_hr": 11,
+          "skip_end_mn": 30
+        },
+        "pine": "30_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_GC_15m.pine",
+        "at": "2026-11-04 17:53:38"
+      }
+    },
+    "stage": 90,
+    "status": "failed",
+    "updated": "2026-11-04 17:54:37"
+  },
+  "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt|MES|2m": {
+    "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:58:49"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|NQ|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "NQ",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 1232.0,
+        "max_drawdown": 2107.5,
+        "trades": 8,
+        "win_rate": 50.0,
+        "profit_factor": 1.429,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": 1232.0,
+            "trades": 8,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "30": {
+            "net_profit": 1232.0,
+            "trades": 8,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 1232.0,
+            "trades": 8,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 1232.0,
+            "trades": 8,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 700,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 100,
+          "rsi_long_low": 90,
+          "rsi_short_high": 27,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_NQ_15m.pine",
+        "at": "2026-11-04 17:56:28"
+      },
+      "30": {
+        "net_profit": 2297.0,
+        "max_drawdown": 3446.5,
+        "trades": 23,
+        "win_rate": 56.52,
+        "profit_factor": 1.32,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "spans": {
+          "7": {
+            "net_profit": 3408.0,
+            "trades": 7,
+            "biggest_loser": -716.0,
+            "held_loser": -716.0
+          },
+          "30": {
+            "net_profit": 2297.0,
+            "trades": 23,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "90": {
+            "net_profit": 2297.0,
+            "trades": 23,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          },
+          "365": {
+            "net_profit": 2297.0,
+            "trades": 23,
+            "biggest_loser": -721.0,
+            "held_loser": -721.0
+          }
+        },
+        "params": {
+          "pv": 20.0,
+          "stop_dollars": 700,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 100,
+          "rsi_long_low": 90,
+          "rsi_short_high": 27,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 0,
+          "skip_start_mn": 0,
+          "skip_end_hr": 2,
+          "skip_end_mn": 0
+        },
+        "pine": "30_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_NQ_15m.pine",
+        "at": "2026-11-04 17:57:20"
+      }
+    },
+    "stage": 90,
+    "status": "failed",
+    "updated": "2026-11-04 17:58:23"
+  },
+  "Day Shift Delta Volume Breakout ES 2min profitable.txt|MES|5m": {
+    "file": "Day Shift Delta Volume Breakout ES 2min profitable.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "failed",
+    "updated": "2026-11-04 17:58:47"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|MNQ|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "MNQ",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 810.5,
+        "max_drawdown": 834.0,
+        "trades": 4,
+        "win_rate": 50.0,
+        "profit_factor": 2.436,
+        "biggest_loser": -511.5,
+        "held_loser": -511.5,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 810.5,
+            "trades": 4,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "30": {
+            "net_profit": 810.5,
+            "trades": 4,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "90": {
+            "net_profit": 810.5,
+            "trades": 4,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "365": {
+            "net_profit": 810.5,
+            "trades": 4,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          }
+        },
+        "params": {
+          "pv": 2.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 14,
+          "rsi_long_low": 45,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_MNQ_15m.pine",
+        "at": "2026-11-04 17:58:33"
+      },
+      "30": {
+        "net_profit": 643.5,
+        "max_drawdown": 2892.5,
+        "trades": 19,
+        "win_rate": 47.37,
+        "profit_factor": 1.215,
+        "biggest_loser": -511.5,
+        "held_loser": -511.5,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 1911.5,
+            "trades": 4,
+            "biggest_loser": -55.5,
+            "held_loser": -55.5
+          },
+          "30": {
+            "net_profit": 643.5,
+            "trades": 19,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "90": {
+            "net_profit": 643.5,
+            "trades": 19,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "365": {
+            "net_profit": 643.5,
+            "trades": 19,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          }
+        },
+        "params": {
+          "pv": 2.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 14,
+          "rsi_long_low": 90,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "30_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_MNQ_15m.pine",
+        "at": "2026-11-04 17:59:02"
+      },
+      "90": {
+        "net_profit": 1683.5,
+        "max_drawdown": 5452.5,
+        "trades": 74,
+        "win_rate": 48.65,
+        "profit_factor": 1.125,
+        "biggest_loser": -511.5,
+        "held_loser": -511.5,
+        "stop_dollars": 500.0,
+        "spans": {
+          "7": {
+            "net_profit": 2941.0,
+            "trades": 5,
+            "biggest_loser": 138.5,
+            "held_loser": 138.5
+          },
+          "30": {
+            "net_profit": -158.5,
+            "trades": 26,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "90": {
+            "net_profit": 1683.5,
+            "trades": 74,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          },
+          "365": {
+            "net_profit": 1683.5,
+            "trades": 74,
+            "biggest_loser": -511.5,
+            "held_loser": -511.5
+          }
+        },
+        "params": {
+          "pv": 2.0,
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 7,
+          "rsi_long_low": 45,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "90_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_MNQ_15m.pine",
+        "at": "2026-11-04 17:59:25"
+      }
+    },
+    "stage": 365,
+    "status": "failed",
+    "updated": "2026-11-04 17:59:52"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt|MES|2m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground Good Copy.txt",
+    "root": "MES",
+    "timeframe": "2m",
+    "passed": {
+      "7": {
+        "net_profit": 178.5,
+        "max_drawdown": 176.25,
+        "trades": 4,
+        "win_rate": 75.0,
+        "profit_factor": 2.746,
+        "biggest_loser": -102.25,
+        "held_loser": -102.25,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 178.5,
+            "trades": 4,
+            "biggest_loser": -102.25,
+            "held_loser": -102.25
+          },
+          "30": {
+            "net_profit": 178.5,
+            "trades": 4,
+            "biggest_loser": -102.25,
+            "held_loser": -102.25
+          },
+          "90": {
+            "net_profit": 178.5,
+            "trades": 4,
+            "biggest_loser": -102.25,
+            "held_loser": -102.25
+          },
+          "365": {
+            "net_profit": 178.5,
+            "trades": 4,
+            "biggest_loser": -102.25,
+            "held_loser": -102.25
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_pct": 50.0,
+          "trail_step_amt": 500,
+          "trail_step_pct": 50.0,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 3.0,
+          "vwma_len": 50,
+          "vwma_slope_len": 5,
+          "min_slope": 0.1,
+          "confirm_candles": 4,
+          "cooldown_bars": 10,
+          "pullback_dollars": 100.0,
+          "use_session": true,
+          "sess_start_hr": 8,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 10,
+          "skip_start_mn": 30,
+          "skip_end_hr": 12,
+          "skip_end_mn": 30,
+          "use_daily_limits": true,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 6000.0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_Good_Copy_MES_2m.pine",
+        "at": "2026-11-04 18:01:14"
+      }
+    },
+    "stage": 30,
+    "status": "testing",
+    "updated": "2026-11-04 18:01:14"
+  },
+  "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt|MES|5m": {
+    "file": "DeltaVolumeBreakOutBigGainsRisky_1792479917.txt",
+    "root": "MES",
+    "timeframe": "5m",
+    "passed": {},
+    "stage": 7,
+    "status": "testing",
+    "updated": "2026-11-04 17:58:59"
+  },
+  "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine|MES|15m": {
+    "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
+    "root": "MES",
+    "timeframe": "15m",
+    "passed": {
+      "7": {
+        "net_profit": 258.25,
+        "max_drawdown": 281.5,
+        "trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 1.985,
+        "biggest_loser": -262.25,
+        "held_loser": -262.25,
+        "stop_dollars": 250.0,
+        "spans": {
+          "7": {
+            "net_profit": 258.25,
+            "trades": 3,
+            "biggest_loser": -262.25,
+            "held_loser": -262.25
+          },
+          "30": {
+            "net_profit": 258.25,
+            "trades": 3,
+            "biggest_loser": -262.25,
+            "held_loser": -262.25
+          },
+          "90": {
+            "net_profit": 258.25,
+            "trades": 3,
+            "biggest_loser": -262.25,
+            "held_loser": -262.25
+          },
+          "365": {
+            "net_profit": 258.25,
+            "trades": 3,
+            "biggest_loser": -262.25,
+            "held_loser": -262.25
+          }
+        },
+        "params": {
+          "pv": 5.0,
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "trend_len": 50,
+          "trend_slope_len": 5,
+          "rsi_len": 21,
+          "rsi_long_low": 22,
+          "rsi_short_high": 55,
+          "rsi_lookback": 10,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0,
+          "use_skip": true,
+          "skip_start_hr": 18,
+          "skip_start_mn": 0,
+          "skip_end_hr": 19,
+          "skip_end_mn": 0
+        },
+        "pine": "7_day/Day_Shift_Delta_Volume_Breakout_colored_Back_ground_bos_no_trail_3-4_1793226204_redesign3_MES_15m.pine",
+        "at": "2026-11-04 18:01:03"
+      }
+    },
+    "stage": 30,
+    "status": "testing",
+    "updated": "2026-11-04 18:01:03"
+  }
+}

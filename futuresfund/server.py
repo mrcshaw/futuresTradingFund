@@ -96,9 +96,6 @@ def lab_report():
     from futuresfund.backtrader_engine import engine_status
 
     report["engines"] = engine_status()
-    from futuresfund.kronos_replay import kronos_report
-
-    report["kronos"] = kronos_report()
     from futuresfund.acceptance_gaps import gaps_report
 
     report["gaps"] = gaps_report()
@@ -257,22 +254,6 @@ def execution_start(card_id: str):
     return _execution("Handing an active strategy to a trader", work)
 
 
-class KronosPaper(BaseModel):
-    contract: str
-    timeframe: str
-
-
-@app.post("/api/kronos-paper/start")
-def kronos_paper_start(body: KronosPaper):
-    from futuresfund.live_trading import executing_view, start_kronos
-
-    def work():
-        slot = start_kronos(board, body.contract, body.timeframe)
-        return {"executing": executing_view(), "trader": slot["trader"], "note": slot.get("note") or ""}
-
-    return _execution("Handing Kronos signals to a paper trader", work)
-
-
 @app.post("/api/execution/{card_id}/stop")
 def execution_stop(card_id: str):
     from futuresfund.live_trading import executing_view, stop
@@ -326,7 +307,7 @@ class StrategyAcceptance(BaseModel):
     profit_factor: float
     win_rate: float
     min_trades: int
-    drawdown_pct: float = 5
+    drawdown_pct: float = 1.5
     goal: str | None = None
     use_drawdown: bool = True
     use_trades: bool = True
@@ -383,20 +364,11 @@ def account_rules(body: AccountRules):
 @app.get("/api/chart")
 def chart(contract: str = "ES1!", timeframe: str = "5m", limit: int = 160):
     from futuresfund.chart_view import chart_payload
-    from futuresfund.kronos_replay import enable_live
 
-    enable_live()
     try:
         return chart_payload(contract, timeframe, limit)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@app.get("/api/kronos-training")
-def kronos_training():
-    from futuresfund.kronos_feed import progress
-
-    return progress()
 
 
 class ResearchGuide(BaseModel):
@@ -571,6 +543,80 @@ def indicator_one(indicator_id: str):
     return get_crew(board).application("Opening an indicator", work)
 
 
+class GoldenEntry(BaseModel):
+    idea: str
+    pine: str
+    export_name: str
+    export_text: str
+
+
+@app.get("/api/golden")
+def golden_list():
+    from futuresfund.golden import CONFIRM_SHARE, confirmed, rows
+
+    data = rows()
+    for row in data["rows"]:
+        row["confirmed"] = confirmed(row)
+    return {**data, "confirm_share": CONFIRM_SHARE}
+
+
+@app.post("/api/golden")
+def golden_enter(body: GoldenEntry):
+    from futuresfund.golden import enter
+
+    if len(body.export_text) > 8_000_000:
+        raise HTTPException(status_code=400, detail="The export is larger than 8 MB.")
+    try:
+        return enter(body.pine, body.export_name, body.export_text, body.idea)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/golden/{key}/activate")
+def golden_activate(key: str):
+    from futuresfund.golden import make_active
+
+    if not make_active(key):
+        raise HTTPException(status_code=404, detail="That golden strategy is not on the list.")
+    return {"ok": True}
+
+
+@app.delete("/api/golden/{key}")
+def golden_remove(key: str):
+    from futuresfund.golden import remove
+
+    if not remove(key):
+        raise HTTPException(status_code=404, detail="That golden strategy is not on the list.")
+    return {"ok": True}
+
+
+@app.get("/api/proving")
+def proving_list():
+    from futuresfund.proving import STAGES, rows
+
+    return {"stages": list(STAGES), "rows": rows()}
+
+
+@app.get("/api/proving/script")
+def proving_script(id: str, days: int):
+    from futuresfund.proving import passed_script
+
+    row = passed_script(id, days)
+    if row is None:
+        raise HTTPException(status_code=404, detail="That stage has no saved script.")
+    return row
+
+
+@app.get("/api/engines/results/{run}/script")
+def engine_result_script(run: int):
+    from futuresfund.backtrader_engine import engine_result_script as result_script
+
+    row = result_script(run)
+    if row is None:
+        raise HTTPException(status_code=404, detail="That result has left the engine's list. Open a newer one.")
+    return row
+
+
 @app.get("/api/leaders/{strategy_id}")
 def leader(strategy_id: str):
     from futuresfund.strategy import leader_script
@@ -682,11 +728,16 @@ def release_new_scripts():
     return get_crew(board).application("Taking new scripts", lambda: release_chart_research(board))
 
 
+# Research that was running before a restart starts again on its own. A stop is kept.
+_RESEARCH_ON = Path.home() / ".futuresfund" / "research_on"
+
+
 @app.post("/api/runs/stop")
 def stop_run():
     from futuresfund.crew import get_crew
     from futuresfund.learn import end_research
 
+    _RESEARCH_ON.unlink(missing_ok=True)
     return get_crew(board).application("Stopping the researchers", lambda: end_research(board))
 
 
@@ -695,6 +746,8 @@ def start_run():
     from futuresfund.crew import get_crew
     from futuresfund.learn import begin_research
 
+    _RESEARCH_ON.parent.mkdir(parents=True, exist_ok=True)
+    _RESEARCH_ON.touch()
     return get_crew(board).application("Starting the researchers", lambda: begin_research(board))
 
 
@@ -1014,9 +1067,6 @@ def _startup():
         board.set_hold_new(True)
     start_engines()
     get_crew(board)
-    from futuresfund.kronos_feed import start_kronos_feed
-
-    start_kronos_feed(board)
     threading.Thread(target=scheduler, args=(board,), daemon=True, name="futures-scheduler").start()
     from futuresfund.ninjatrader import start_listener
 
@@ -1037,6 +1087,12 @@ def _startup():
             chart_progress()
         except Exception:
             traceback.print_exc()
+
+        if _RESEARCH_ON.exists():
+            try:
+                start_run()
+            except Exception:
+                traceback.print_exc()
 
         try:
             from futuresfund.tunnel import supervise
@@ -1082,7 +1138,7 @@ def _startup():
         )
         board.post(
             "System",
-            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own thread. Each PineTS engine has its own process: engine 1 is the 2-minute chart, engine 2 is the 5-minute chart, and engine 3 is the 15-minute chart. Engine 4 is the creation engine. The strategy developers write new scripts from scratch the whole time research is running, and engine 4 develops them. A new library strategy is learned before the next script. The systems administrator serves the library and the other desk requests.",
+            "Processing is stopped. Press Start to run the Pine scripts. Each agent has their own thread. Each PineTS engine has its own process: engine 1 is the 2-minute chart, engines 2 and 5 are the 5-minute chart, and engines 3 and 6 are the 15-minute chart. Engine 4 is the creation engine. The strategy developers write new scripts from scratch the whole time research is running, and engine 4 develops them. A new library strategy is learned before the next script. The systems administrator serves the library and the other desk requests.",
             kind="system",
             channel="headquarters",
         )

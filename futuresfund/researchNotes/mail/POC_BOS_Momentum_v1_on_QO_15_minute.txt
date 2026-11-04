@@ -1,0 +1,14 @@
+Taken from the application just now.
+Strategy: POC BOS Momentum v1.
+Chart tested: 15-minute Gold (GC1!).
+Profit 11950.0. Drawdown 6950.0. Trades 103.
+Trades a week: 4.25 over 121 trading days.
+Bars in this test: 9,495 from 2026-04-16 14:45 through 2026-10-01 11:15.
+On this full chart a profit counts at 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still counts when that count stays inside the band and the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: yes.
+This result is on the Gold strategy library.
+Settings of this version: fast_len=12, slow_len=1, sig_len=9, rsi_len=14, atr_len=14, stop_mult=1.5, tp_mult=8.0, cooldown_bars=3, session_window=1800-1600.
+Different results on this chart: 30.
+Engine runs on this chart: 30.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 29 seconds.

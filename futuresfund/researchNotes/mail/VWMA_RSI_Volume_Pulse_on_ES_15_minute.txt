@@ -1,0 +1,5 @@
+Subject: VWMA RSI Volume Pulse on 15-minute ES: Not Filed
+
+VWMA RSI Volume Pulse just finished a run on the 15-minute ES chart. The result shows a profit of $4,186.50 against a drawdown of $7,873.00. The strategy executed 241 trades over the period, averaging 4.65 trades per week across 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the application facts, so I cannot quote it.
+
+This run was not filed in the strategy library. The filing criteria require a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While the trade count of 241 exceeds the minimum of 80, the profit of $4,186.50 is below the required $8,000 threshold. The application facts explicitly state that the library keeps a profit over $8,000 and that this run is under that limit. Therefore, the sole reason for rejection is that the profit did not meet the $8,000 requirement.

@@ -1,0 +1,26 @@
+Subject: Desk Update: Night BOS Momentum (Gold) Results Not Filed
+
+The latest run for Night BOS Momentum on the 15-minute Gold chart has concluded. Here are the results:
+
+*   **Strategy:** Night BOS Momentum
+*   **Chart:** 15-minute Gold (GC1!)
+*   **Profit:** $8,500.00
+*   **Drawdown:** $2,290.00
+*   **Trades:** 277
+*   **Trades per Day:** 5.35 (over 260 trading days)
+*   **Profit Ratio:** Not calculated in the provided facts (requires average winning/losing trade data not present in the summary).
+
+**Filing Status:** Not Filed.
+
+The strategy library page currently shows no entry for this specific result. The application facts state: "On the strategy library: no. This result was not filed in the strategy library. A stronger version of this name is already on this contract and timeframe."
+
+Therefore, this run is not included in the strategy library metrics. The four numbers currently active on the strategy library page for this desk remain unchanged from previous entries, as this run did not meet the filing criteria due to the existence of a stronger version of the same name on this contract and timeframe.
+
+The desk remains active. We are monitoring the open positions. If any trade is open, it will be flattened at 16:45 New York time per the rule. The drawdown is currently well under the 5% threshold ($2,500), so the account is safe for now.
+
+No meeting scheduled outside of the standard times (8:00 AM ET Mon-Fri, 5:00 PM ET Sun-Fri).
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

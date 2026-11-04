@@ -1,0 +1,3 @@
+Subject: Result: ICT Unicorn + ORB 100k (Gold) - Not Filed
+
+The ICT Unicorn + ORB 100k strategy on the 15-minute Gold chart generated a profit of $16,820.0 with a drawdown of $1,265.5 across 403 trades. The win rate for this run was 17.12%. This result was not filed in the strategy library. The acceptance criteria require a win rate above 40 percent, which this run did not meet. The strategy library currently holds no active filings for Gold.

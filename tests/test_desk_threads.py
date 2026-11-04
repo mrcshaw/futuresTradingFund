@@ -108,7 +108,7 @@ class EngineProcessTests(unittest.TestCase):
     def test_the_engine_process_matches_a_local_run(self):
         from futuresfund.backtrader_engine import execute_script
 
-        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "learningStrategies" / "outside_bar_reversal.pine").read_text(encoding="utf-8")
+        source = (Path(__file__).resolve().parents[1] / "futuresfund" / "checkScripts" / "ema_structure_rsi_pullback_night_nmq.pine").read_text(encoding="utf-8")
         bars = []
         price = 100.0
         for index in range(80):

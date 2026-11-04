@@ -1,0 +1,3272 @@
+{
+  "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253_redesign2.pine",
+  "title": "Day shift BOS Profitable 17k Delta Volume Breakout Redesign 2",
+  "attempts": 6,
+  "best": {
+    "params": {
+      "stop_dollars": 500,
+      "tp_dollars": 750,
+      "profile_lookback": 120,
+      "profile_rows": 10,
+      "min_delta_pct": 10.0,
+      "vwma_len": 50,
+      "vol_ma_len": 20,
+      "use_vol_filter": true,
+      "use_session": true,
+      "sess_start_hr": 18,
+      "sess_start_mn": 0,
+      "sess_end_hr": 16,
+      "sess_end_mn": 0
+    },
+    "net_profit": -2153.0,
+    "max_drawdown": 8631.0,
+    "trades": 173,
+    "win_rate": 41.62,
+    "sharpe": -0.265,
+    "profit_factor": 0.959,
+    "profit_ratio": 1.345,
+    "biggest_winner": 751.5,
+    "biggest_loser": -536.0,
+    "held_loser": -536.0,
+    "stop_dollars": 500.0,
+    "days": 260,
+    "bars": 23704,
+    "tested_from": "2025-10-29 18:00",
+    "tested_through": "2026-10-30 16:45",
+    "trades_per_day": 0.67,
+    "error": null,
+    "runner": "pinets",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "15m",
+    "frames": [
+      {
+        "timeframe": "15m",
+        "net_profit": -2153.0,
+        "max_drawdown": 8631.0,
+        "trades": 173,
+        "passed": false
+      }
+    ],
+    "blocked": false,
+    "stopped": false,
+    "fatal": false,
+    "engine": "pinets",
+    "instrument": "ES",
+    "contract": "ES1!",
+    "spans": {
+      "7": {
+        "net_profit": -881.5,
+        "trades": 4,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0
+      },
+      "30": {
+        "net_profit": 713.5,
+        "trades": 9,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0
+      },
+      "90": {
+        "net_profit": -1760.5,
+        "trades": 43,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0
+      },
+      "365": {
+        "net_profit": -1617.0,
+        "trades": 172,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0
+      }
+    },
+    "exits": [
+      {
+        "exit": "XS",
+        "trades": 85,
+        "pnl": -5135.0,
+        "favorable": 429.06,
+        "adverse": -415.06
+      },
+      {
+        "exit": "XL",
+        "trades": 79,
+        "pnl": 3106.0,
+        "favorable": 450.04,
+        "adverse": -374.96
+      },
+      {
+        "exit": "Session Close",
+        "trades": 9,
+        "pnl": -124.0,
+        "favorable": 268.11,
+        "adverse": -241.61
+      }
+    ],
+    "clock": {
+      "00:00": [
+        2,
+        190.5
+      ],
+      "01:00": [
+        5,
+        1107.5
+      ],
+      "01:30": [
+        7,
+        -1227.0
+      ],
+      "02:00": [
+        9,
+        226.0
+      ],
+      "02:30": [
+        3,
+        -345.5
+      ],
+      "03:00": [
+        7,
+        -2489.5
+      ],
+      "03:30": [
+        3,
+        917.0
+      ],
+      "04:00": [
+        7,
+        35.5
+      ],
+      "04:30": [
+        4,
+        1643.5
+      ],
+      "05:00": [
+        1,
+        726.5
+      ],
+      "05:30": [
+        2,
+        190.5
+      ],
+      "06:00": [
+        3,
+        -345.5
+      ],
+      "06:30": [
+        2,
+        1453.0
+      ],
+      "07:00": [
+        5,
+        2370.0
+      ],
+      "07:30": [
+        3,
+        -1608.0
+      ],
+      "08:00": [
+        9,
+        -3561.5
+      ],
+      "08:30": [
+        6,
+        571.5
+      ],
+      "09:00": [
+        4,
+        -881.5
+      ],
+      "09:30": [
+        9,
+        -1036.5
+      ],
+      "10:00": [
+        10,
+        -310.0
+      ],
+      "10:30": [
+        11,
+        2941.5
+      ],
+      "11:00": [
+        7,
+        -1689.5
+      ],
+      "11:30": [
+        6,
+        596.5
+      ],
+      "12:00": [
+        6,
+        -1953.5
+      ],
+      "12:30": [
+        2,
+        -1072.0
+      ],
+      "13:00": [
+        2,
+        190.5
+      ],
+      "14:00": [
+        2,
+        1453.0
+      ],
+      "14:30": [
+        7,
+        -1877.0
+      ],
+      "15:00": [
+        4,
+        -881.5
+      ],
+      "15:30": [
+        10,
+        -810.0
+      ],
+      "18:00": [
+        1,
+        -536.0
+      ],
+      "21:00": [
+        1,
+        726.5
+      ],
+      "21:30": [
+        2,
+        -1072.0
+      ],
+      "22:00": [
+        4,
+        1643.5
+      ],
+      "22:30": [
+        4,
+        1643.5
+      ],
+      "23:00": [
+        3,
+        917.0
+      ]
+    },
+    "passed": false,
+    "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+    "impact": "That change did not move the result toward the goal. Profit moved 3748. Drawdown moved 1763. The next run leaves That change and changes another setting.",
+    "take_profit": 750
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                          $1,794.25      $1,707.00      127      no\nseveral settings                                    $685.75      $1,865.50      123      no\nseveral settings                                    $442.00      $1,865.50      123      no\nseveral settings                                    $939.25      $1,865.50      122      no\nseveral settings                                    $936.75      $1,865.50      122      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                          $1,794.25      $1,707.00      127      no\n\nMost profitable change\nOriginal                                          $1,794.25      $1,707.00      127      no\n\nA change that made money\nOriginal                                          $1,794.25      $1,707.00      127      no\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses min_delta_pct=10.0, profile_lookback=120, profile_rows=10, sess_end_hr=16, sess_end_mn=0, sess_start_hr=18, sess_start_mn=0, stop_dollars=250. Attempts recorded: 5.",
+  "trials": [
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "profile_lookback": 120,
+        "profile_rows": 10,
+        "min_delta_pct": 10.0,
+        "vwma_len": 50,
+        "vol_ma_len": 20,
+        "use_vol_filter": true,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_end_hr": 16,
+        "sess_end_mn": 0
+      },
+      "net_profit": -31470.5,
+      "max_drawdown": 41504.5,
+      "trades": 628,
+      "win_rate": 22.29,
+      "sharpe": -2.536,
+      "profit_factor": 0.764,
+      "profit_ratio": 2.663,
+      "biggest_winner": 3576.5,
+      "biggest_loser": -723.5,
+      "held_loser": -286.0,
+      "stop_dollars": 250.0,
+      "days": 260,
+      "bars": 71112,
+      "tested_from": "2025-10-29 18:00",
+      "tested_through": "2026-10-30 16:55",
+      "trades_per_day": 2.42,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "5m",
+      "frames": [
+        {
+          "timeframe": "5m",
+          "net_profit": -31470.5,
+          "max_drawdown": 41504.5,
+          "trades": 628,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "ES",
+      "contract": "ES1!",
+      "spans": {
+        "7": {
+          "net_profit": 2333.5,
+          "trades": 14,
+          "biggest_loser": -286.0,
+          "held_loser": -286.0
+        },
+        "30": {
+          "net_profit": -2059.5,
+          "trades": 52,
+          "biggest_loser": -286.0,
+          "held_loser": -286.0
+        },
+        "90": {
+          "net_profit": -11542.5,
+          "trades": 155,
+          "biggest_loser": -286.0,
+          "held_loser": -286.0
+        },
+        "365": {
+          "net_profit": -32137.5,
+          "trades": 625,
+          "biggest_loser": -723.5,
+          "held_loser": -286.0
+        }
+      },
+      "exits": [
+        {
+          "exit": "XS",
+          "trades": 345,
+          "pnl": -23082.5,
+          "favorable": 350.37,
+          "adverse": -242.2
+        },
+        {
+          "exit": "XL",
+          "trades": 237,
+          "pnl": -24132.0,
+          "favorable": 293.87,
+          "adverse": -244.95
+        },
+        {
+          "exit": "Session Close",
+          "trades": 18,
+          "pnl": 8152.0,
+          "favorable": 863.25,
+          "adverse": -120.08
+        },
+        {
+          "exit": "Short",
+          "trades": 17,
+          "pnl": 3800.5,
+          "favorable": 633.47,
+          "adverse": -147.41
+        },
+        {
+          "exit": "Long",
+          "trades": 11,
+          "pnl": 3791.5,
+          "favorable": 942.23,
+          "adverse": -100.95
+        }
+      ],
+      "clock": {
+        "00:00": [
+          7,
+          -802.0
+        ],
+        "00:30": [
+          3,
+          454.5
+        ],
+        "01:00": [
+          2,
+          -47.0
+        ],
+        "01:30": [
+          4,
+          -319.0
+        ],
+        "02:00": [
+          3,
+          242.0
+        ],
+        "02:30": [
+          5,
+          195.0
+        ],
+        "03:00": [
+          24,
+          2248.5
+        ],
+        "03:30": [
+          12,
+          380.5
+        ],
+        "04:00": [
+          16,
+          -3276.0
+        ],
+        "04:30": [
+          10,
+          1352.5
+        ],
+        "05:00": [
+          9,
+          -249.0
+        ],
+        "05:30": [
+          12,
+          1143.0
+        ],
+        "06:00": [
+          14,
+          -179.0
+        ],
+        "06:30": [
+          16,
+          -4388.5
+        ],
+        "07:00": [
+          19,
+          703.5
+        ],
+        "07:30": [
+          19,
+          866.0
+        ],
+        "08:00": [
+          26,
+          -3911.0
+        ],
+        "08:30": [
+          22,
+          -1967.0
+        ],
+        "09:00": [
+          29,
+          -2756.5
+        ],
+        "09:30": [
+          61,
+          -2983.5
+        ],
+        "10:00": [
+          61,
+          -1996.0
+        ],
+        "10:30": [
+          16,
+          -1038.5
+        ],
+        "11:00": [
+          16,
+          -2588.5
+        ],
+        "11:30": [
+          16,
+          -3726.0
+        ],
+        "12:00": [
+          10,
+          -1835.0
+        ],
+        "12:30": [
+          16,
+          1486.5
+        ],
+        "13:00": [
+          20,
+          -895.0
+        ],
+        "13:30": [
+          8,
+          -1488.0
+        ],
+        "14:00": [
+          20,
+          -345.0
+        ],
+        "14:30": [
+          18,
+          -1448.0
+        ],
+        "15:00": [
+          11,
+          429.0
+        ],
+        "15:30": [
+          14,
+          -1179.0
+        ],
+        "18:00": [
+          1,
+          -286.0
+        ],
+        "18:30": [
+          3,
+          -70.5
+        ],
+        "19:00": [
+          12,
+          693.0
+        ],
+        "19:30": [
+          24,
+          261.0
+        ],
+        "20:00": [
+          13,
+          844.5
+        ],
+        "20:30": [
+          5,
+          -617.5
+        ],
+        "21:00": [
+          8,
+          -1375.5
+        ],
+        "21:30": [
+          6,
+          671.5
+        ],
+        "22:00": [
+          7,
+          -1377.0
+        ],
+        "22:30": [
+          4,
+          -1094.0
+        ],
+        "23:00": [
+          5,
+          -930.0
+        ],
+        "23:30": [
+          1,
+          -273.5
+        ]
+      },
+      "passed": false,
+      "change": "Starting settings",
+      "impact": "Starting measurement. The next run changes one variable from here.",
+      "take_profit": 500
+    }
+  ],
+  "instruments": {
+    "ES": {
+      "attempts": 6,
+      "best": {
+        "params": {
+          "stop_dollars": 500,
+          "tp_dollars": 750,
+          "profile_lookback": 120,
+          "profile_rows": 10,
+          "min_delta_pct": 10.0,
+          "vwma_len": 50,
+          "vol_ma_len": 20,
+          "use_vol_filter": true,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 16,
+          "sess_end_mn": 0
+        },
+        "net_profit": -2153.0,
+        "max_drawdown": 8631.0,
+        "trades": 173,
+        "win_rate": 41.62,
+        "sharpe": -0.265,
+        "profit_factor": 0.959,
+        "profit_ratio": 1.345,
+        "biggest_winner": 751.5,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0,
+        "stop_dollars": 500.0,
+        "days": 260,
+        "bars": 23704,
+        "tested_from": "2025-10-29 18:00",
+        "tested_through": "2026-10-30 16:45",
+        "trades_per_day": 0.67,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "15m",
+        "frames": [
+          {
+            "timeframe": "15m",
+            "net_profit": -2153.0,
+            "max_drawdown": 8631.0,
+            "trades": 173,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "ES",
+        "contract": "ES1!",
+        "spans": {
+          "7": {
+            "net_profit": -881.5,
+            "trades": 4,
+            "biggest_loser": -536.0,
+            "held_loser": -536.0
+          },
+          "30": {
+            "net_profit": 713.5,
+            "trades": 9,
+            "biggest_loser": -536.0,
+            "held_loser": -536.0
+          },
+          "90": {
+            "net_profit": -1760.5,
+            "trades": 43,
+            "biggest_loser": -536.0,
+            "held_loser": -536.0
+          },
+          "365": {
+            "net_profit": -1617.0,
+            "trades": 172,
+            "biggest_loser": -536.0,
+            "held_loser": -536.0
+          }
+        },
+        "exits": [
+          {
+            "exit": "XS",
+            "trades": 85,
+            "pnl": -5135.0,
+            "favorable": 429.06,
+            "adverse": -415.06
+          },
+          {
+            "exit": "XL",
+            "trades": 79,
+            "pnl": 3106.0,
+            "favorable": 450.04,
+            "adverse": -374.96
+          },
+          {
+            "exit": "Session Close",
+            "trades": 9,
+            "pnl": -124.0,
+            "favorable": 268.11,
+            "adverse": -241.61
+          }
+        ],
+        "clock": {
+          "00:00": [
+            2,
+            190.5
+          ],
+          "01:00": [
+            5,
+            1107.5
+          ],
+          "01:30": [
+            7,
+            -1227.0
+          ],
+          "02:00": [
+            9,
+            226.0
+          ],
+          "02:30": [
+            3,
+            -345.5
+          ],
+          "03:00": [
+            7,
+            -2489.5
+          ],
+          "03:30": [
+            3,
+            917.0
+          ],
+          "04:00": [
+            7,
+            35.5
+          ],
+          "04:30": [
+            4,
+            1643.5
+          ],
+          "05:00": [
+            1,
+            726.5
+          ],
+          "05:30": [
+            2,
+            190.5
+          ],
+          "06:00": [
+            3,
+            -345.5
+          ],
+          "06:30": [
+            2,
+            1453.0
+          ],
+          "07:00": [
+            5,
+            2370.0
+          ],
+          "07:30": [
+            3,
+            -1608.0
+          ],
+          "08:00": [
+            9,
+            -3561.5
+          ],
+          "08:30": [
+            6,
+            571.5
+          ],
+          "09:00": [
+            4,
+            -881.5
+          ],
+          "09:30": [
+            9,
+            -1036.5
+          ],
+          "10:00": [
+            10,
+            -310.0
+          ],
+          "10:30": [
+            11,
+            2941.5
+          ],
+          "11:00": [
+            7,
+            -1689.5
+          ],
+          "11:30": [
+            6,
+            596.5
+          ],
+          "12:00": [
+            6,
+            -1953.5
+          ],
+          "12:30": [
+            2,
+            -1072.0
+          ],
+          "13:00": [
+            2,
+            190.5
+          ],
+          "14:00": [
+            2,
+            1453.0
+          ],
+          "14:30": [
+            7,
+            -1877.0
+          ],
+          "15:00": [
+            4,
+            -881.5
+          ],
+          "15:30": [
+            10,
+            -810.0
+          ],
+          "18:00": [
+            1,
+            -536.0
+          ],
+          "21:00": [
+            1,
+            726.5
+          ],
+          "21:30": [
+            2,
+            -1072.0
+          ],
+          "22:00": [
+            4,
+            1643.5
+          ],
+          "22:30": [
+            4,
+            1643.5
+          ],
+          "23:00": [
+            3,
+            917.0
+          ]
+        },
+        "passed": false,
+        "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+        "impact": "That change did not move the result toward the goal. Profit moved 3748. Drawdown moved 1763. The next run leaves That change and changes another setting.",
+        "take_profit": 750
+      },
+      "charts": {
+        "15m": {
+          "attempts": 5,
+          "best": {
+            "params": {
+              "stop_dollars": 500,
+              "tp_dollars": 750,
+              "profile_lookback": 120,
+              "profile_rows": 10,
+              "min_delta_pct": 10.0,
+              "vwma_len": 50,
+              "vol_ma_len": 20,
+              "use_vol_filter": true,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_start_mn": 0,
+              "sess_end_hr": 16,
+              "sess_end_mn": 0
+            },
+            "net_profit": -2153.0,
+            "max_drawdown": 8631.0,
+            "trades": 173,
+            "win_rate": 41.62,
+            "sharpe": -0.265,
+            "profit_factor": 0.959,
+            "profit_ratio": 1.345,
+            "biggest_winner": 751.5,
+            "biggest_loser": -536.0,
+            "held_loser": -536.0,
+            "stop_dollars": 500.0,
+            "days": 260,
+            "bars": 23704,
+            "tested_from": "2025-10-29 18:00",
+            "tested_through": "2026-10-30 16:45",
+            "trades_per_day": 0.67,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "15m",
+            "frames": [
+              {
+                "timeframe": "15m",
+                "net_profit": -2153.0,
+                "max_drawdown": 8631.0,
+                "trades": 173,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "ES",
+            "contract": "ES1!",
+            "spans": {
+              "7": {
+                "net_profit": -881.5,
+                "trades": 4,
+                "biggest_loser": -536.0,
+                "held_loser": -536.0
+              },
+              "30": {
+                "net_profit": 713.5,
+                "trades": 9,
+                "biggest_loser": -536.0,
+                "held_loser": -536.0
+              },
+              "90": {
+                "net_profit": -1760.5,
+                "trades": 43,
+                "biggest_loser": -536.0,
+                "held_loser": -536.0
+              },
+              "365": {
+                "net_profit": -1617.0,
+                "trades": 172,
+                "biggest_loser": -536.0,
+                "held_loser": -536.0
+              }
+            },
+            "exits": [
+              {
+                "exit": "XS",
+                "trades": 85,
+                "pnl": -5135.0,
+                "favorable": 429.06,
+                "adverse": -415.06
+              },
+              {
+                "exit": "XL",
+                "trades": 79,
+                "pnl": 3106.0,
+                "favorable": 450.04,
+                "adverse": -374.96
+              },
+              {
+                "exit": "Session Close",
+                "trades": 9,
+                "pnl": -124.0,
+                "favorable": 268.11,
+                "adverse": -241.61
+              }
+            ],
+            "clock": {
+              "00:00": [
+                2,
+                190.5
+              ],
+              "01:00": [
+                5,
+                1107.5
+              ],
+              "01:30": [
+                7,
+                -1227.0
+              ],
+              "02:00": [
+                9,
+                226.0
+              ],
+              "02:30": [
+                3,
+                -345.5
+              ],
+              "03:00": [
+                7,
+                -2489.5
+              ],
+              "03:30": [
+                3,
+                917.0
+              ],
+              "04:00": [
+                7,
+                35.5
+              ],
+              "04:30": [
+                4,
+                1643.5
+              ],
+              "05:00": [
+                1,
+                726.5
+              ],
+              "05:30": [
+                2,
+                190.5
+              ],
+              "06:00": [
+                3,
+                -345.5
+              ],
+              "06:30": [
+                2,
+                1453.0
+              ],
+              "07:00": [
+                5,
+                2370.0
+              ],
+              "07:30": [
+                3,
+                -1608.0
+              ],
+              "08:00": [
+                9,
+                -3561.5
+              ],
+              "08:30": [
+                6,
+                571.5
+              ],
+              "09:00": [
+                4,
+                -881.5
+              ],
+              "09:30": [
+                9,
+                -1036.5
+              ],
+              "10:00": [
+                10,
+                -310.0
+              ],
+              "10:30": [
+                11,
+                2941.5
+              ],
+              "11:00": [
+                7,
+                -1689.5
+              ],
+              "11:30": [
+                6,
+                596.5
+              ],
+              "12:00": [
+                6,
+                -1953.5
+              ],
+              "12:30": [
+                2,
+                -1072.0
+              ],
+              "13:00": [
+                2,
+                190.5
+              ],
+              "14:00": [
+                2,
+                1453.0
+              ],
+              "14:30": [
+                7,
+                -1877.0
+              ],
+              "15:00": [
+                4,
+                -881.5
+              ],
+              "15:30": [
+                10,
+                -810.0
+              ],
+              "18:00": [
+                1,
+                -536.0
+              ],
+              "21:00": [
+                1,
+                726.5
+              ],
+              "21:30": [
+                2,
+                -1072.0
+              ],
+              "22:00": [
+                4,
+                1643.5
+              ],
+              "22:30": [
+                4,
+                1643.5
+              ],
+              "23:00": [
+                3,
+                917.0
+              ]
+            },
+            "passed": false,
+            "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+            "impact": "That change did not move the result toward the goal. Profit moved 3748. Drawdown moved 1763. The next run leaves That change and changes another setting.",
+            "take_profit": 750
+          },
+          "quantitative_researcher": "",
+          "indicator_researcher": "",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": -5900.5,
+              "max_drawdown": 6868.0,
+              "trades": 183,
+              "win_rate": 33.33,
+              "sharpe": -1.204,
+              "profit_factor": 0.828,
+              "profit_ratio": 1.656,
+              "biggest_winner": 626.5,
+              "biggest_loser": -286.0,
+              "held_loser": -286.0,
+              "stop_dollars": 250.0,
+              "days": 260,
+              "bars": 23704,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:45",
+              "trades_per_day": 0.7,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -5900.5,
+                  "max_drawdown": 6868.0,
+                  "trades": 183,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": -381.5,
+                  "trades": 4,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "30": {
+                  "net_profit": 476.0,
+                  "trades": 9,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "90": {
+                  "net_profit": -771.5,
+                  "trades": 44,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "365": {
+                  "net_profit": -5614.5,
+                  "trades": 182,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 91,
+                  "pnl": -3001.0,
+                  "favorable": 260.98,
+                  "adverse": -225.69
+                },
+                {
+                  "exit": "XL",
+                  "trades": 86,
+                  "pnl": -2483.5,
+                  "favorable": 276.91,
+                  "adverse": -231.66
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 6,
+                  "pnl": -416.0,
+                  "favorable": 175.75,
+                  "adverse": -186.75
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  2,
+                  190.5
+                ],
+                "01:00": [
+                  5,
+                  -1430.0
+                ],
+                "01:30": [
+                  6,
+                  -953.5
+                ],
+                "02:00": [
+                  9,
+                  -286.5
+                ],
+                "02:30": [
+                  4,
+                  -1144.0
+                ],
+                "03:00": [
+                  8,
+                  -1525.5
+                ],
+                "03:30": [
+                  4,
+                  381.0
+                ],
+                "04:00": [
+                  6,
+                  -191.0
+                ],
+                "04:30": [
+                  4,
+                  381.0
+                ],
+                "05:00": [
+                  1,
+                  -286.0
+                ],
+                "05:30": [
+                  2,
+                  190.5
+                ],
+                "06:00": [
+                  3,
+                  -95.5
+                ],
+                "06:30": [
+                  2,
+                  953.0
+                ],
+                "07:00": [
+                  7,
+                  285.5
+                ],
+                "07:30": [
+                  3,
+                  -858.0
+                ],
+                "08:00": [
+                  7,
+                  285.5
+                ],
+                "08:30": [
+                  7,
+                  285.5
+                ],
+                "09:00": [
+                  5,
+                  -1430.0
+                ],
+                "09:30": [
+                  11,
+                  -2383.5
+                ],
+                "10:00": [
+                  12,
+                  1143.0
+                ],
+                "10:30": [
+                  13,
+                  -668.0
+                ],
+                "11:00": [
+                  6,
+                  -953.5
+                ],
+                "11:30": [
+                  8,
+                  -0.5
+                ],
+                "12:00": [
+                  4,
+                  -1144.0
+                ],
+                "12:30": [
+                  4,
+                  1293.5
+                ],
+                "13:00": [
+                  2,
+                  190.5
+                ],
+                "14:00": [
+                  2,
+                  953.0
+                ],
+                "14:30": [
+                  7,
+                  -2002.0
+                ],
+                "15:00": [
+                  4,
+                  -381.5
+                ],
+                "15:30": [
+                  11,
+                  -321.0
+                ],
+                "21:00": [
+                  1,
+                  476.5
+                ],
+                "21:30": [
+                  2,
+                  -572.0
+                ],
+                "22:00": [
+                  4,
+                  1143.5
+                ],
+                "22:30": [
+                  4,
+                  1906.0
+                ],
+                "23:00": [
+                  3,
+                  667.0
+                ]
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500
+            },
+            {
+              "params": {
+                "stop_dollars": 500,
+                "tp_dollars": 750,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": -2153.0,
+              "max_drawdown": 8631.0,
+              "trades": 173,
+              "win_rate": 41.62,
+              "sharpe": -0.265,
+              "profit_factor": 0.959,
+              "profit_ratio": 1.345,
+              "biggest_winner": 751.5,
+              "biggest_loser": -536.0,
+              "held_loser": -536.0,
+              "stop_dollars": 500.0,
+              "days": 260,
+              "bars": 23704,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:45",
+              "trades_per_day": 0.67,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -2153.0,
+                  "max_drawdown": 8631.0,
+                  "trades": 173,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": -881.5,
+                  "trades": 4,
+                  "biggest_loser": -536.0,
+                  "held_loser": -536.0
+                },
+                "30": {
+                  "net_profit": 713.5,
+                  "trades": 9,
+                  "biggest_loser": -536.0,
+                  "held_loser": -536.0
+                },
+                "90": {
+                  "net_profit": -1760.5,
+                  "trades": 43,
+                  "biggest_loser": -536.0,
+                  "held_loser": -536.0
+                },
+                "365": {
+                  "net_profit": -1617.0,
+                  "trades": 172,
+                  "biggest_loser": -536.0,
+                  "held_loser": -536.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 85,
+                  "pnl": -5135.0,
+                  "favorable": 429.06,
+                  "adverse": -415.06
+                },
+                {
+                  "exit": "XL",
+                  "trades": 79,
+                  "pnl": 3106.0,
+                  "favorable": 450.04,
+                  "adverse": -374.96
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 9,
+                  "pnl": -124.0,
+                  "favorable": 268.11,
+                  "adverse": -241.61
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  2,
+                  190.5
+                ],
+                "01:00": [
+                  5,
+                  1107.5
+                ],
+                "01:30": [
+                  7,
+                  -1227.0
+                ],
+                "02:00": [
+                  9,
+                  226.0
+                ],
+                "02:30": [
+                  3,
+                  -345.5
+                ],
+                "03:00": [
+                  7,
+                  -2489.5
+                ],
+                "03:30": [
+                  3,
+                  917.0
+                ],
+                "04:00": [
+                  7,
+                  35.5
+                ],
+                "04:30": [
+                  4,
+                  1643.5
+                ],
+                "05:00": [
+                  1,
+                  726.5
+                ],
+                "05:30": [
+                  2,
+                  190.5
+                ],
+                "06:00": [
+                  3,
+                  -345.5
+                ],
+                "06:30": [
+                  2,
+                  1453.0
+                ],
+                "07:00": [
+                  5,
+                  2370.0
+                ],
+                "07:30": [
+                  3,
+                  -1608.0
+                ],
+                "08:00": [
+                  9,
+                  -3561.5
+                ],
+                "08:30": [
+                  6,
+                  571.5
+                ],
+                "09:00": [
+                  4,
+                  -881.5
+                ],
+                "09:30": [
+                  9,
+                  -1036.5
+                ],
+                "10:00": [
+                  10,
+                  -310.0
+                ],
+                "10:30": [
+                  11,
+                  2941.5
+                ],
+                "11:00": [
+                  7,
+                  -1689.5
+                ],
+                "11:30": [
+                  6,
+                  596.5
+                ],
+                "12:00": [
+                  6,
+                  -1953.5
+                ],
+                "12:30": [
+                  2,
+                  -1072.0
+                ],
+                "13:00": [
+                  2,
+                  190.5
+                ],
+                "14:00": [
+                  2,
+                  1453.0
+                ],
+                "14:30": [
+                  7,
+                  -1877.0
+                ],
+                "15:00": [
+                  4,
+                  -881.5
+                ],
+                "15:30": [
+                  10,
+                  -810.0
+                ],
+                "18:00": [
+                  1,
+                  -536.0
+                ],
+                "21:00": [
+                  1,
+                  726.5
+                ],
+                "21:30": [
+                  2,
+                  -1072.0
+                ],
+                "22:00": [
+                  4,
+                  1643.5
+                ],
+                "22:30": [
+                  4,
+                  1643.5
+                ],
+                "23:00": [
+                  3,
+                  917.0
+                ]
+              },
+              "passed": false,
+              "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+              "impact": "That change did not move the result toward the goal. Profit moved 3748. Drawdown moved 1763. The next run leaves That change and changes another setting.",
+              "take_profit": 750
+            },
+            {
+              "params": {
+                "stop_dollars": 700,
+                "tp_dollars": 750,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": 2586.5,
+              "max_drawdown": 10937.0,
+              "trades": 166,
+              "win_rate": 51.2,
+              "sharpe": 0.279,
+              "profit_factor": 1.046,
+              "profit_ratio": 0.997,
+              "biggest_winner": 751.5,
+              "biggest_loser": -736.0,
+              "held_loser": -736.0,
+              "stop_dollars": 700.0,
+              "days": 260,
+              "bars": 23704,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:45",
+              "trades_per_day": 0.64,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 2586.5,
+                  "max_drawdown": 10937.0,
+                  "trades": 166,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": 717.0,
+                  "trades": 3,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "30": {
+                  "net_profit": 2112.0,
+                  "trades": 8,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "90": {
+                  "net_profit": 1121.0,
+                  "trades": 39,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "365": {
+                  "net_profit": 3322.5,
+                  "trades": 165,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 79,
+                  "pnl": -5469.0,
+                  "favorable": 493.71,
+                  "adverse": -514.84
+                },
+                {
+                  "exit": "XL",
+                  "trades": 74,
+                  "pnl": 8423.5,
+                  "favorable": 521.53,
+                  "adverse": -467.49
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 13,
+                  "pnl": -368.0,
+                  "favorable": 366.62,
+                  "adverse": -387.23
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  2,
+                  -9.5
+                ],
+                "00:30": [
+                  1,
+                  -736.0
+                ],
+                "01:00": [
+                  5,
+                  707.5
+                ],
+                "01:30": [
+                  7,
+                  -764.5
+                ],
+                "02:00": [
+                  10,
+                  1415.0
+                ],
+                "02:30": [
+                  2,
+                  -1472.0
+                ],
+                "03:00": [
+                  6,
+                  -1491.0
+                ],
+                "03:30": [
+                  3,
+                  717.0
+                ],
+                "04:00": [
+                  6,
+                  2896.5
+                ],
+                "04:30": [
+                  4,
+                  2906.0
+                ],
+                "05:00": [
+                  1,
+                  726.5
+                ],
+                "05:30": [
+                  1,
+                  -736.0
+                ],
+                "06:00": [
+                  1,
+                  -736.0
+                ],
+                "06:30": [
+                  2,
+                  1453.0
+                ],
+                "07:00": [
+                  3,
+                  2179.5
+                ],
+                "07:30": [
+                  2,
+                  -1472.0
+                ],
+                "08:00": [
+                  10,
+                  -2972.5
+                ],
+                "08:30": [
+                  6,
+                  1434.0
+                ],
+                "09:00": [
+                  4,
+                  -1481.5
+                ],
+                "09:30": [
+                  10,
+                  -1510.0
+                ],
+                "10:00": [
+                  10,
+                  -1510.0
+                ],
+                "10:30": [
+                  11,
+                  2141.5
+                ],
+                "11:00": [
+                  7,
+                  -2689.5
+                ],
+                "11:30": [
+                  6,
+                  -3.5
+                ],
+                "12:00": [
+                  6,
+                  -553.5
+                ],
+                "12:30": [
+                  3,
+                  -745.5
+                ],
+                "13:00": [
+                  2,
+                  -9.5
+                ],
+                "14:00": [
+                  2,
+                  1453.0
+                ],
+                "14:30": [
+                  7,
+                  -689.5
+                ],
+                "15:00": [
+                  4,
+                  -1481.5
+                ],
+                "15:30": [
+                  8,
+                  -163.0
+                ],
+                "18:00": [
+                  1,
+                  726.5
+                ],
+                "21:00": [
+                  1,
+                  726.5
+                ],
+                "21:30": [
+                  2,
+                  -9.5
+                ],
+                "22:00": [
+                  3,
+                  2179.5
+                ],
+                "22:30": [
+                  4,
+                  1443.5
+                ],
+                "23:00": [
+                  3,
+                  717.0
+                ]
+              },
+              "source_sha": "3dad5089aff9a24c",
+              "passed": false,
+              "change": "stop_dollars 500 to 700",
+              "impact": "stop_dollars 500 to 700 moved away from the goal. Profit moved 4740. Drawdown moved 2306. The next run reverses this direction.",
+              "take_profit": 750
+            },
+            {
+              "params": {
+                "stop_dollars": 700,
+                "tp_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": 5735.0,
+              "max_drawdown": 7434.0,
+              "trades": 165,
+              "win_rate": 46.06,
+              "sharpe": 0.54,
+              "profit_factor": 1.093,
+              "profit_ratio": 1.28,
+              "biggest_winner": 976.5,
+              "biggest_loser": -736.0,
+              "held_loser": -736.0,
+              "stop_dollars": 700.0,
+              "days": 260,
+              "bars": 23704,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:45",
+              "trades_per_day": 0.63,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 5735.0,
+                  "max_drawdown": 7434.0,
+                  "trades": 165,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": 1217.0,
+                  "trades": 3,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "30": {
+                  "net_profit": 3362.0,
+                  "trades": 8,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "90": {
+                  "net_profit": 1621.0,
+                  "trades": 39,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "365": {
+                  "net_profit": 6471.0,
+                  "trades": 164,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 79,
+                  "pnl": -3344.0,
+                  "favorable": 602.09,
+                  "adverse": -540.15
+                },
+                {
+                  "exit": "XL",
+                  "trades": 68,
+                  "pnl": 6464.5,
+                  "favorable": 629.61,
+                  "adverse": -507.52
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 16,
+                  "pnl": 2086.5,
+                  "favorable": 499.97,
+                  "adverse": -377.38
+                },
+                {
+                  "exit": "Short",
+                  "trades": 2,
+                  "pnl": 528.0,
+                  "favorable": 638.25,
+                  "adverse": -368.0
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  2,
+                  240.5
+                ],
+                "00:30": [
+                  1,
+                  -736.0
+                ],
+                "01:00": [
+                  5,
+                  1457.5
+                ],
+                "01:30": [
+                  7,
+                  -2152.0
+                ],
+                "02:00": [
+                  10,
+                  2915.0
+                ],
+                "02:30": [
+                  2,
+                  -1472.0
+                ],
+                "03:00": [
+                  6,
+                  -991.0
+                ],
+                "03:30": [
+                  3,
+                  1217.0
+                ],
+                "04:00": [
+                  6,
+                  721.5
+                ],
+                "04:30": [
+                  4,
+                  2193.5
+                ],
+                "05:00": [
+                  1,
+                  976.5
+                ],
+                "05:30": [
+                  1,
+                  -736.0
+                ],
+                "06:00": [
+                  1,
+                  -736.0
+                ],
+                "06:30": [
+                  2,
+                  1953.0
+                ],
+                "07:00": [
+                  3,
+                  1217.0
+                ],
+                "07:30": [
+                  2,
+                  240.5
+                ],
+                "08:00": [
+                  8,
+                  -2463.0
+                ],
+                "08:30": [
+                  7,
+                  -1727.0
+                ],
+                "09:00": [
+                  4,
+                  -1231.5
+                ],
+                "09:30": [
+                  12,
+                  -607.0
+                ],
+                "10:00": [
+                  10,
+                  -510.0
+                ],
+                "10:30": [
+                  12,
+                  3430.5
+                ],
+                "11:00": [
+                  7,
+                  -2527.0
+                ],
+                "11:30": [
+                  6,
+                  721.5
+                ],
+                "12:00": [
+                  5,
+                  682.5
+                ],
+                "12:30": [
+                  2,
+                  -1472.0
+                ],
+                "13:00": [
+                  2,
+                  240.5
+                ],
+                "14:00": [
+                  2,
+                  1953.0
+                ],
+                "14:30": [
+                  7,
+                  -677.0
+                ],
+                "15:00": [
+                  4,
+                  -1844.0
+                ],
+                "15:30": [
+                  7,
+                  348.0
+                ],
+                "18:00": [
+                  1,
+                  -736.0
+                ],
+                "21:00": [
+                  1,
+                  976.5
+                ],
+                "21:30": [
+                  2,
+                  240.5
+                ],
+                "22:00": [
+                  3,
+                  2929.5
+                ],
+                "22:30": [
+                  4,
+                  2193.5
+                ],
+                "23:00": [
+                  3,
+                  -495.5
+                ]
+              },
+              "source_sha": "3dad5089aff9a24c",
+              "passed": false,
+              "change": "tp_dollars 750 to 1000",
+              "impact": "tp_dollars 750 to 1000 moved toward the goal. Profit moved 3148. Drawdown moved -3503. The next run moves tp_dollars further in this direction.",
+              "take_profit": 1000
+            },
+            {
+              "params": {
+                "stop_dollars": 700,
+                "tp_dollars": 1250,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": 3.5,
+              "max_drawdown": 10238.5,
+              "trades": 169,
+              "win_rate": 39.64,
+              "sharpe": 0.0,
+              "profit_factor": 1.0,
+              "profit_ratio": 1.522,
+              "biggest_winner": 1226.5,
+              "biggest_loser": -736.0,
+              "held_loser": -736.0,
+              "stop_dollars": 700.0,
+              "days": 260,
+              "bars": 23704,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:45",
+              "trades_per_day": 0.65,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 3.5,
+                  "max_drawdown": 10238.5,
+                  "trades": 169,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": 1717.0,
+                  "trades": 3,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "30": {
+                  "net_profit": 265.0,
+                  "trades": 10,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "90": {
+                  "net_profit": -1949.5,
+                  "trades": 42,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                },
+                "365": {
+                  "net_profit": 739.5,
+                  "trades": 168,
+                  "biggest_loser": -736.0,
+                  "held_loser": -736.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 78,
+                  "pnl": -6383.0,
+                  "favorable": 671.58,
+                  "adverse": -580.18
+                },
+                {
+                  "exit": "XL",
+                  "trades": 64,
+                  "pnl": 1958.5,
+                  "favorable": 708.17,
+                  "adverse": -571.32
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 25,
+                  "pnl": 3900.0,
+                  "favorable": 637.5,
+                  "adverse": -376.0
+                },
+                {
+                  "exit": "Short",
+                  "trades": 2,
+                  "pnl": 528.0,
+                  "favorable": 638.25,
+                  "adverse": -368.0
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  2,
+                  490.5
+                ],
+                "00:30": [
+                  1,
+                  -736.0
+                ],
+                "01:00": [
+                  5,
+                  2207.5
+                ],
+                "01:30": [
+                  7,
+                  -1902.0
+                ],
+                "02:00": [
+                  10,
+                  2452.5
+                ],
+                "02:30": [
+                  2,
+                  -1472.0
+                ],
+                "03:00": [
+                  6,
+                  -491.0
+                ],
+                "03:30": [
+                  3,
+                  1717.0
+                ],
+                "04:00": [
+                  6,
+                  -491.0
+                ],
+                "04:30": [
+                  3,
+                  2592.0
+                ],
+                "05:00": [
+                  1,
+                  1226.5
+                ],
+                "05:30": [
+                  1,
+                  -736.0
+                ],
+                "06:00": [
+                  1,
+                  -736.0
+                ],
+                "06:30": [
+                  3,
+                  117.0
+                ],
+                "07:00": [
+                  3,
+                  1717.0
+                ],
+                "07:30": [
+                  1,
+                  -736.0
+                ],
+                "08:00": [
+                  9,
+                  -2699.0
+                ],
+                "08:30": [
+                  6,
+                  -2453.5
+                ],
+                "09:00": [
+                  4,
+                  -981.5
+                ],
+                "09:30": [
+                  12,
+                  -107.0
+                ],
+                "10:00": [
+                  10,
+                  490.0
+                ],
+                "10:30": [
+                  10,
+                  3052.5
+                ],
+                "11:00": [
+                  7,
+                  -1227.0
+                ],
+                "11:30": [
+                  6,
+                  -1203.5
+                ],
+                "12:00": [
+                  7,
+                  -164.5
+                ],
+                "12:30": [
+                  2,
+                  -1472.0
+                ],
+                "13:00": [
+                  2,
+                  490.5
+                ],
+                "13:30": [
+                  1,
+                  -423.5
+                ],
+                "14:00": [
+                  2,
+                  2453.0
+                ],
+                "14:30": [
+                  7,
+                  -677.0
+                ],
+                "15:00": [
+                  4,
+                  -1844.0
+                ],
+                "15:30": [
+                  8,
+                  324.5
+                ],
+                "18:00": [
+                  1,
+                  -736.0
+                ],
+                "21:00": [
+                  1,
+                  1226.5
+                ],
+                "21:30": [
+                  3,
+                  -245.5
+                ],
+                "22:00": [
+                  5,
+                  2207.5
+                ],
+                "22:30": [
+                  4,
+                  981.0
+                ],
+                "23:00": [
+                  3,
+                  -2208.0
+                ]
+              },
+              "source_sha": "3dad5089aff9a24c",
+              "passed": false,
+              "change": "tp_dollars 1000 to 1250",
+              "impact": "tp_dollars 1000 to 1250 moved away from the goal. Profit moved -5732. Drawdown moved 2804. The next run reverses this direction.",
+              "take_profit": 1250
+            }
+          ],
+          "error": "",
+          "blocked": false
+        },
+        "5m": {
+          "attempts": 1,
+          "best": {
+            "params": {
+              "stop_dollars": 250,
+              "tp_dollars": 500,
+              "profile_lookback": 120,
+              "profile_rows": 10,
+              "min_delta_pct": 10.0,
+              "vwma_len": 50,
+              "vol_ma_len": 20,
+              "use_vol_filter": true,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_end_hr": 16,
+              "sess_end_mn": 0
+            },
+            "net_profit": -31470.5,
+            "max_drawdown": 41504.5,
+            "trades": 628,
+            "win_rate": 22.29,
+            "sharpe": -2.536,
+            "profit_factor": 0.764,
+            "profit_ratio": 2.663,
+            "biggest_winner": 3576.5,
+            "biggest_loser": -723.5,
+            "held_loser": -286.0,
+            "stop_dollars": 250.0,
+            "days": 260,
+            "bars": 71112,
+            "tested_from": "2025-10-29 18:00",
+            "tested_through": "2026-10-30 16:55",
+            "trades_per_day": 2.42,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "5m",
+            "frames": [
+              {
+                "timeframe": "5m",
+                "net_profit": -31470.5,
+                "max_drawdown": 41504.5,
+                "trades": 628,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "ES",
+            "contract": "ES1!",
+            "spans": {
+              "7": {
+                "net_profit": 2333.5,
+                "trades": 14,
+                "biggest_loser": -286.0,
+                "held_loser": -286.0
+              },
+              "30": {
+                "net_profit": -2059.5,
+                "trades": 52,
+                "biggest_loser": -286.0,
+                "held_loser": -286.0
+              },
+              "90": {
+                "net_profit": -11542.5,
+                "trades": 155,
+                "biggest_loser": -286.0,
+                "held_loser": -286.0
+              },
+              "365": {
+                "net_profit": -32137.5,
+                "trades": 625,
+                "biggest_loser": -723.5,
+                "held_loser": -286.0
+              }
+            },
+            "exits": [
+              {
+                "exit": "XS",
+                "trades": 345,
+                "pnl": -23082.5,
+                "favorable": 350.37,
+                "adverse": -242.2
+              },
+              {
+                "exit": "XL",
+                "trades": 237,
+                "pnl": -24132.0,
+                "favorable": 293.87,
+                "adverse": -244.95
+              },
+              {
+                "exit": "Session Close",
+                "trades": 18,
+                "pnl": 8152.0,
+                "favorable": 863.25,
+                "adverse": -120.08
+              },
+              {
+                "exit": "Short",
+                "trades": 17,
+                "pnl": 3800.5,
+                "favorable": 633.47,
+                "adverse": -147.41
+              },
+              {
+                "exit": "Long",
+                "trades": 11,
+                "pnl": 3791.5,
+                "favorable": 942.23,
+                "adverse": -100.95
+              }
+            ],
+            "clock": {
+              "00:00": [
+                7,
+                -802.0
+              ],
+              "00:30": [
+                3,
+                454.5
+              ],
+              "01:00": [
+                2,
+                -47.0
+              ],
+              "01:30": [
+                4,
+                -319.0
+              ],
+              "02:00": [
+                3,
+                242.0
+              ],
+              "02:30": [
+                5,
+                195.0
+              ],
+              "03:00": [
+                24,
+                2248.5
+              ],
+              "03:30": [
+                12,
+                380.5
+              ],
+              "04:00": [
+                16,
+                -3276.0
+              ],
+              "04:30": [
+                10,
+                1352.5
+              ],
+              "05:00": [
+                9,
+                -249.0
+              ],
+              "05:30": [
+                12,
+                1143.0
+              ],
+              "06:00": [
+                14,
+                -179.0
+              ],
+              "06:30": [
+                16,
+                -4388.5
+              ],
+              "07:00": [
+                19,
+                703.5
+              ],
+              "07:30": [
+                19,
+                866.0
+              ],
+              "08:00": [
+                26,
+                -3911.0
+              ],
+              "08:30": [
+                22,
+                -1967.0
+              ],
+              "09:00": [
+                29,
+                -2756.5
+              ],
+              "09:30": [
+                61,
+                -2983.5
+              ],
+              "10:00": [
+                61,
+                -1996.0
+              ],
+              "10:30": [
+                16,
+                -1038.5
+              ],
+              "11:00": [
+                16,
+                -2588.5
+              ],
+              "11:30": [
+                16,
+                -3726.0
+              ],
+              "12:00": [
+                10,
+                -1835.0
+              ],
+              "12:30": [
+                16,
+                1486.5
+              ],
+              "13:00": [
+                20,
+                -895.0
+              ],
+              "13:30": [
+                8,
+                -1488.0
+              ],
+              "14:00": [
+                20,
+                -345.0
+              ],
+              "14:30": [
+                18,
+                -1448.0
+              ],
+              "15:00": [
+                11,
+                429.0
+              ],
+              "15:30": [
+                14,
+                -1179.0
+              ],
+              "18:00": [
+                1,
+                -286.0
+              ],
+              "18:30": [
+                3,
+                -70.5
+              ],
+              "19:00": [
+                12,
+                693.0
+              ],
+              "19:30": [
+                24,
+                261.0
+              ],
+              "20:00": [
+                13,
+                844.5
+              ],
+              "20:30": [
+                5,
+                -617.5
+              ],
+              "21:00": [
+                8,
+                -1375.5
+              ],
+              "21:30": [
+                6,
+                671.5
+              ],
+              "22:00": [
+                7,
+                -1377.0
+              ],
+              "22:30": [
+                4,
+                -1094.0
+              ],
+              "23:00": [
+                5,
+                -930.0
+              ],
+              "23:30": [
+                1,
+                -273.5
+              ]
+            },
+            "passed": false,
+            "change": "Starting settings",
+            "impact": "Starting measurement. The next run changes one variable from here.",
+            "take_profit": 500
+          },
+          "quantitative_researcher": "",
+          "indicator_researcher": "",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "profile_lookback": 120,
+                "profile_rows": 10,
+                "min_delta_pct": 10.0,
+                "vwma_len": 50,
+                "vol_ma_len": 20,
+                "use_vol_filter": true,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_end_hr": 16,
+                "sess_end_mn": 0
+              },
+              "net_profit": -31470.5,
+              "max_drawdown": 41504.5,
+              "trades": 628,
+              "win_rate": 22.29,
+              "sharpe": -2.536,
+              "profit_factor": 0.764,
+              "profit_ratio": 2.663,
+              "biggest_winner": 3576.5,
+              "biggest_loser": -723.5,
+              "held_loser": -286.0,
+              "stop_dollars": 250.0,
+              "days": 260,
+              "bars": 71112,
+              "tested_from": "2025-10-29 18:00",
+              "tested_through": "2026-10-30 16:55",
+              "trades_per_day": 2.42,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "5m",
+              "frames": [
+                {
+                  "timeframe": "5m",
+                  "net_profit": -31470.5,
+                  "max_drawdown": 41504.5,
+                  "trades": 628,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": 2333.5,
+                  "trades": 14,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "30": {
+                  "net_profit": -2059.5,
+                  "trades": 52,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "90": {
+                  "net_profit": -11542.5,
+                  "trades": 155,
+                  "biggest_loser": -286.0,
+                  "held_loser": -286.0
+                },
+                "365": {
+                  "net_profit": -32137.5,
+                  "trades": 625,
+                  "biggest_loser": -723.5,
+                  "held_loser": -286.0
+                }
+              },
+              "exits": [
+                {
+                  "exit": "XS",
+                  "trades": 345,
+                  "pnl": -23082.5,
+                  "favorable": 350.37,
+                  "adverse": -242.2
+                },
+                {
+                  "exit": "XL",
+                  "trades": 237,
+                  "pnl": -24132.0,
+                  "favorable": 293.87,
+                  "adverse": -244.95
+                },
+                {
+                  "exit": "Session Close",
+                  "trades": 18,
+                  "pnl": 8152.0,
+                  "favorable": 863.25,
+                  "adverse": -120.08
+                },
+                {
+                  "exit": "Short",
+                  "trades": 17,
+                  "pnl": 3800.5,
+                  "favorable": 633.47,
+                  "adverse": -147.41
+                },
+                {
+                  "exit": "Long",
+                  "trades": 11,
+                  "pnl": 3791.5,
+                  "favorable": 942.23,
+                  "adverse": -100.95
+                }
+              ],
+              "clock": {
+                "00:00": [
+                  7,
+                  -802.0
+                ],
+                "00:30": [
+                  3,
+                  454.5
+                ],
+                "01:00": [
+                  2,
+                  -47.0
+                ],
+                "01:30": [
+                  4,
+                  -319.0
+                ],
+                "02:00": [
+                  3,
+                  242.0
+                ],
+                "02:30": [
+                  5,
+                  195.0
+                ],
+                "03:00": [
+                  24,
+                  2248.5
+                ],
+                "03:30": [
+                  12,
+                  380.5
+                ],
+                "04:00": [
+                  16,
+                  -3276.0
+                ],
+                "04:30": [
+                  10,
+                  1352.5
+                ],
+                "05:00": [
+                  9,
+                  -249.0
+                ],
+                "05:30": [
+                  12,
+                  1143.0
+                ],
+                "06:00": [
+                  14,
+                  -179.0
+                ],
+                "06:30": [
+                  16,
+                  -4388.5
+                ],
+                "07:00": [
+                  19,
+                  703.5
+                ],
+                "07:30": [
+                  19,
+                  866.0
+                ],
+                "08:00": [
+                  26,
+                  -3911.0
+                ],
+                "08:30": [
+                  22,
+                  -1967.0
+                ],
+                "09:00": [
+                  29,
+                  -2756.5
+                ],
+                "09:30": [
+                  61,
+                  -2983.5
+                ],
+                "10:00": [
+                  61,
+                  -1996.0
+                ],
+                "10:30": [
+                  16,
+                  -1038.5
+                ],
+                "11:00": [
+                  16,
+                  -2588.5
+                ],
+                "11:30": [
+                  16,
+                  -3726.0
+                ],
+                "12:00": [
+                  10,
+                  -1835.0
+                ],
+                "12:30": [
+                  16,
+                  1486.5
+                ],
+                "13:00": [
+                  20,
+                  -895.0
+                ],
+                "13:30": [
+                  8,
+                  -1488.0
+                ],
+                "14:00": [
+                  20,
+                  -345.0
+                ],
+                "14:30": [
+                  18,
+                  -1448.0
+                ],
+                "15:00": [
+                  11,
+                  429.0
+                ],
+                "15:30": [
+                  14,
+                  -1179.0
+                ],
+                "18:00": [
+                  1,
+                  -286.0
+                ],
+                "18:30": [
+                  3,
+                  -70.5
+                ],
+                "19:00": [
+                  12,
+                  693.0
+                ],
+                "19:30": [
+                  24,
+                  261.0
+                ],
+                "20:00": [
+                  13,
+                  844.5
+                ],
+                "20:30": [
+                  5,
+                  -617.5
+                ],
+                "21:00": [
+                  8,
+                  -1375.5
+                ],
+                "21:30": [
+                  6,
+                  671.5
+                ],
+                "22:00": [
+                  7,
+                  -1377.0
+                ],
+                "22:30": [
+                  4,
+                  -1094.0
+                ],
+                "23:00": [
+                  5,
+                  -930.0
+                ],
+                "23:30": [
+                  1,
+                  -273.5
+                ]
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500
+            }
+          ],
+          "error": "",
+          "blocked": false
+        }
+      },
+      "profitable": [],
+      "quantitative_researcher": "",
+      "indicator_researcher": "",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "profile_lookback": 120,
+            "profile_rows": 10,
+            "min_delta_pct": 10.0,
+            "vwma_len": 50,
+            "vol_ma_len": 20,
+            "use_vol_filter": true,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_end_hr": 16,
+            "sess_end_mn": 0
+          },
+          "net_profit": -31470.5,
+          "max_drawdown": 41504.5,
+          "trades": 628,
+          "win_rate": 22.29,
+          "sharpe": -2.536,
+          "profit_factor": 0.764,
+          "profit_ratio": 2.663,
+          "biggest_winner": 3576.5,
+          "biggest_loser": -723.5,
+          "held_loser": -286.0,
+          "stop_dollars": 250.0,
+          "days": 260,
+          "bars": 71112,
+          "tested_from": "2025-10-29 18:00",
+          "tested_through": "2026-10-30 16:55",
+          "trades_per_day": 2.42,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "5m",
+          "frames": [
+            {
+              "timeframe": "5m",
+              "net_profit": -31470.5,
+              "max_drawdown": 41504.5,
+              "trades": 628,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "ES",
+          "contract": "ES1!",
+          "spans": {
+            "7": {
+              "net_profit": 2333.5,
+              "trades": 14,
+              "biggest_loser": -286.0,
+              "held_loser": -286.0
+            },
+            "30": {
+              "net_profit": -2059.5,
+              "trades": 52,
+              "biggest_loser": -286.0,
+              "held_loser": -286.0
+            },
+            "90": {
+              "net_profit": -11542.5,
+              "trades": 155,
+              "biggest_loser": -286.0,
+              "held_loser": -286.0
+            },
+            "365": {
+              "net_profit": -32137.5,
+              "trades": 625,
+              "biggest_loser": -723.5,
+              "held_loser": -286.0
+            }
+          },
+          "exits": [
+            {
+              "exit": "XS",
+              "trades": 345,
+              "pnl": -23082.5,
+              "favorable": 350.37,
+              "adverse": -242.2
+            },
+            {
+              "exit": "XL",
+              "trades": 237,
+              "pnl": -24132.0,
+              "favorable": 293.87,
+              "adverse": -244.95
+            },
+            {
+              "exit": "Session Close",
+              "trades": 18,
+              "pnl": 8152.0,
+              "favorable": 863.25,
+              "adverse": -120.08
+            },
+            {
+              "exit": "Short",
+              "trades": 17,
+              "pnl": 3800.5,
+              "favorable": 633.47,
+              "adverse": -147.41
+            },
+            {
+              "exit": "Long",
+              "trades": 11,
+              "pnl": 3791.5,
+              "favorable": 942.23,
+              "adverse": -100.95
+            }
+          ],
+          "clock": {
+            "00:00": [
+              7,
+              -802.0
+            ],
+            "00:30": [
+              3,
+              454.5
+            ],
+            "01:00": [
+              2,
+              -47.0
+            ],
+            "01:30": [
+              4,
+              -319.0
+            ],
+            "02:00": [
+              3,
+              242.0
+            ],
+            "02:30": [
+              5,
+              195.0
+            ],
+            "03:00": [
+              24,
+              2248.5
+            ],
+            "03:30": [
+              12,
+              380.5
+            ],
+            "04:00": [
+              16,
+              -3276.0
+            ],
+            "04:30": [
+              10,
+              1352.5
+            ],
+            "05:00": [
+              9,
+              -249.0
+            ],
+            "05:30": [
+              12,
+              1143.0
+            ],
+            "06:00": [
+              14,
+              -179.0
+            ],
+            "06:30": [
+              16,
+              -4388.5
+            ],
+            "07:00": [
+              19,
+              703.5
+            ],
+            "07:30": [
+              19,
+              866.0
+            ],
+            "08:00": [
+              26,
+              -3911.0
+            ],
+            "08:30": [
+              22,
+              -1967.0
+            ],
+            "09:00": [
+              29,
+              -2756.5
+            ],
+            "09:30": [
+              61,
+              -2983.5
+            ],
+            "10:00": [
+              61,
+              -1996.0
+            ],
+            "10:30": [
+              16,
+              -1038.5
+            ],
+            "11:00": [
+              16,
+              -2588.5
+            ],
+            "11:30": [
+              16,
+              -3726.0
+            ],
+            "12:00": [
+              10,
+              -1835.0
+            ],
+            "12:30": [
+              16,
+              1486.5
+            ],
+            "13:00": [
+              20,
+              -895.0
+            ],
+            "13:30": [
+              8,
+              -1488.0
+            ],
+            "14:00": [
+              20,
+              -345.0
+            ],
+            "14:30": [
+              18,
+              -1448.0
+            ],
+            "15:00": [
+              11,
+              429.0
+            ],
+            "15:30": [
+              14,
+              -1179.0
+            ],
+            "18:00": [
+              1,
+              -286.0
+            ],
+            "18:30": [
+              3,
+              -70.5
+            ],
+            "19:00": [
+              12,
+              693.0
+            ],
+            "19:30": [
+              24,
+              261.0
+            ],
+            "20:00": [
+              13,
+              844.5
+            ],
+            "20:30": [
+              5,
+              -617.5
+            ],
+            "21:00": [
+              8,
+              -1375.5
+            ],
+            "21:30": [
+              6,
+              671.5
+            ],
+            "22:00": [
+              7,
+              -1377.0
+            ],
+            "22:30": [
+              4,
+              -1094.0
+            ],
+            "23:00": [
+              5,
+              -930.0
+            ],
+            "23:30": [
+              1,
+              -273.5
+            ]
+          },
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500
+        }
+      ]
+    }
+  }
+}

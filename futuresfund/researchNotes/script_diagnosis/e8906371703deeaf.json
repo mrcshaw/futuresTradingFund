@@ -1,0 +1,137 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 300.0,
+   "max_drawdown": 700.0,
+   "trades": 3
+  },
+  "vwma_len": {
+   "value": 5,
+   "net_profit": -1850.0,
+   "max_drawdown": 1850.0,
+   "trades": 14
+  },
+  "rsi_len": {
+   "value": 5,
+   "net_profit": 462.5,
+   "max_drawdown": 1450.0,
+   "trades": 16
+  },
+  "rsi_os": {
+   "value": 10,
+   "net_profit": -500.0,
+   "max_drawdown": 500.0,
+   "trades": 2
+  },
+  "rsi_ob": {
+   "value": 55,
+   "net_profit": -1012.5,
+   "max_drawdown": 1012.5,
+   "trades": 4
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -487.5,
+   "max_drawdown": 487.5,
+   "trades": 2
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -262.5,
+   "max_drawdown": 262.5,
+   "trades": 1
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -775.0,
+   "max_drawdown": 1137.5,
+   "trades": 5
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -750.0,
+   "max_drawdown": 1362.5,
+   "trades": 6
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -750.0,
+   "max_drawdown": 1362.5,
+   "trades": 6
+  }
+ },
+ "flat": [
+  "cooldown_bars",
+  "swing_len",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "cooldown_bars": 12,
+   "vwma_len": 20,
+   "rsi_len": 7,
+   "rsi_os": 35,
+   "rsi_ob": 65,
+   "swing_len": 10
+  },
+  "net_profit": -525.0,
+  "max_drawdown": 1137.5,
+  "trades": 5,
+  "win_rate": 20.0,
+  "profit_factor": 0.481,
+  "biggest_winner": 487.5,
+  "biggest_loser": -262.5,
+  "held_loser": -262.5,
+  "exits": [
+   {
+    "exit": "SX",
+    "trades": 3,
+    "pnl": -762.5,
+    "favorable": 95.83,
+    "adverse": -254.17
+   },
+   {
+    "exit": "LX",
+    "trades": 2,
+    "pnl": 237.5,
+    "favorable": 356.25,
+    "adverse": -187.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "30 GC 5m",
+  "7 ES 5m"
+ ],
+ "answer": {
+  "because": "The 7-day best has only 2 trades, and swing_len is dead because the current-bar swing test is always true, so the volume-structure filter is not doing what the description says.",
+  "script": "//@version=5\n// Built from: Delta Volume BOS Night Shift (VWMA trend + volume structure), RSI pullback trigger. Indicators: math.sum, ta.rsi, ta.highest, ta.lowest, ta.crossover, ta.crossunder.\nstrategy(\"VWMA RSI Pullback 2m\", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000)\npv = input.float(50, \"Point Value ($)\")\nstop_dollars = input.int(250, \"Stop ($)\", minval=250, maxval=700)\ntp_dollars = input.int(500, \"Take Profit ($)\", minval=250)\nlong_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv\nlong_limit = close + tp_dollars / pv\nshort_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv\nshort_limit = close - tp_dollars / pv\nuse_session = input.bool(true, \"Use Session Filter\")\nsess_start_hr = input.int(18, \"Session Start Hour (ET)\")\nsess_start_mn = input.int(0, \"Session Start Minute\")\nsess_end_hr = input.int(16, \"Session End Hour (ET)\")\nsess_end_mn = input.int(0, \"Session End Minute\")\ncur_time = hour(time, \"America/New_York\") * 60 + minute(time, \"America/New_York\")\nstart_time = sess_start_hr * 60 + sess_start_mn\nend_time = sess_end_hr * 60 + sess_end_mn\nin_session = use_session ? (start_time < end_time ? (cur_time >= start_time and cur_time < end_time) : (cur_time >= start_time or cur_time < end_time)) : true\ncooldown_bars = input.int(12, \"Cooldown Bars\", minval=1, maxval=100)\nvar int last_entry_bar = 0\nvwma_len = input.int(20, \"VWMA Length\", minval=5, maxval=100)\nvol_sum = math.sum(volume, vwma_len)\nprice_sum = math.sum(close * volume, vwma_len)\nvwma = vol_sum > 0 ? price_sum / vol_sum : close\nrsi_len = input.int(14, \"RSI Length\", minval=5, maxval=50)\nrsi_val = ta.rsi(close, rsi_len)\nrsi_os = input.int(35, \"RSI Oversold\", minval=10, maxval=45)\nrsi_ob = input.int(65, \"RSI Overbought\", minval=55, maxval=90)\nswing_len = input.int(10, \"Swing Length\", minval=5, maxval=50)\nrecent_high = ta.highest(high[1], swing_len)\nrecent_low = ta.lowest(low[1], swing_len)\ntrend_long = close > vwma\ntrend_short = close < vwma\nrsi_long_trig = ta.crossover(rsi_val, rsi_os)\nrsi_short_trig = ta.crossunder(rsi_val, rsi_ob)\npullback_long = low <= recent_low and close > open\npullback_short = high >= recent_high and close < open\ncooldown_ok = bar_index - last_entry_bar >= cooldown_bars\nlong_sig = in_session and trend_long and rsi_long_trig and pullback_long and cooldown_ok\nshort_sig = in_session and trend_short and rsi_short_trig and pullback_short and cooldown_ok\nif long_sig\n    strategy.entry(\"Long\", strategy.long)\n    strategy.exit(\"LX\", from_entry=\"Long\", stop=long_stop, limit=long_limit)\n    last_entry_bar := bar_index\nif short_sig\n    strategy.entry(\"Short\", strategy.short)\n    strategy.exit(\"SX\", from_entry=\"Short\", stop=short_stop, limit=short_limit)\n    last_entry_bar := bar_index\nif strategy.position_size != 0 and not na(stop_dollars) and strategy.openprofit <= -stop_dollars\n    strategy.close_all(comment=\"Open P&L > SL Risk\")\nif not in_session and strategy.position_size != 0\n    strategy.close_all(comment=\"Session\")",
+  "params": null,
+  "settings": {
+   "stop_dollars": 500,
+   "tp_dollars": 3000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "vwma_len": 20,
+   "rsi_len": 7,
+   "rsi_os": 35,
+   "rsi_ob": 65
+  }
+ }
+}

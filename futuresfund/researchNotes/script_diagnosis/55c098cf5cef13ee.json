@@ -1,0 +1,115 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 750,
+   "net_profit": -750.0,
+   "max_drawdown": 750.0,
+   "trades": 1
+  },
+  "rsi_len": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "rsi_oversold": {
+   "value": 10,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_len": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "rsi_overbought": {
+   "value": 50,
+   "net_profit": 2350.0,
+   "max_drawdown": 2375.0,
+   "trades": 70
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -500.0,
+   "max_drawdown": 500.0,
+   "trades": 2
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -25.0,
+   "max_drawdown": 250.0,
+   "trades": 2
+  }
+ },
+ "flat": [
+  "tp_dollars",
+  "atr_len",
+  "sess_start_hr",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "atr_len": 14,
+   "rsi_len": 14,
+   "rsi_overbought": 70,
+   "rsi_oversold": 30,
+   "pivot_len": 10
+  },
+  "net_profit": -137.5,
+  "max_drawdown": 250.0,
+  "trades": 2,
+  "win_rate": 50.0,
+  "profit_factor": 0.45,
+  "biggest_winner": 112.5,
+  "biggest_loser": -250.0,
+  "held_loser": -250.0,
+  "exits": [
+   {
+    "exit": "Session",
+    "trades": 1,
+    "pnl": 112.5,
+    "favorable": 175.0,
+    "adverse": -12.5
+   },
+   {
+    "exit": "ExitShort",
+    "trades": 1,
+    "pnl": -250.0,
+    "favorable": 150.0,
+    "adverse": -250.0
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

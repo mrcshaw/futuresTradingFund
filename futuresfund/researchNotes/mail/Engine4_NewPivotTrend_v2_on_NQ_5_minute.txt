@@ -1,0 +1,5 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v2 (NQ 5m) Result
+
+The Engine4_NewPivotTrend_v2 strategy has finished its run on the 5-minute Nasdaq chart. The result shows a profit of $24,525.00 against a drawdown of $76,500.00 across 597 trades. With 11.5 trades per week over the testing period, the annualized pace falls well within the 130 to 600 trades per year target. However, this run did not meet the trailing drawdown requirement, and it is not on the strategy library. The result was not filed because a stronger version of this name is already present on this contract and timeframe. The settings used were len_ema1=6, len_ema2=200, len_sma=100, atr_len=56, stop_mult=18.0, tp_mult=2.0, and cooldown=10. This was one of 442 engine runs on this chart, with 200 different results recorded.
+
+The address for viewing this desk on a phone is [REDACTED]. This address will be updated when the old one expires.

@@ -1,0 +1,9 @@
+Subject: Desk Result: RSI Momentum Trail v1 on Gold (GC1!)
+
+The RSI Momentum Trail v1 strategy just completed a run on the 15-minute Gold chart. The result shows a profit of $13,550.00 with a drawdown of $2,500.00 across 142 trades. With 122 trading days in the test period, the pace is 5.8 trades per week, which totals to approximately 142 trades per year. This falls within the required 130 to 600 trades per year band. The profit ratio (average winning trade divided by average losing trade) is above 1.12, and the run made a profit.
+
+The run met the profit target and the trailing drawdown constraints. It also met the pace requirement of 130 to 600 trades a year. However, this result was not filed in the strategy library. A stronger version of this name is already on this contract and timeframe. The settings for this version were rsi_len=14, ema_len=20, atr_len=14, stop_mult=0.5, tp_mult=4.0, cooldown_bars=2. There were 10 engine runs on this chart with different results.
+
+The desk is ready for the next instruction.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 29 seconds.

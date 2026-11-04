@@ -1,0 +1,15 @@
+Subject: Desk Update: POC RSI Pivot Breakout v1 (ES 15m)
+
+The latest run on the 15-minute ES chart for POC RSI Pivot Breakout v1 has concluded. The strategy generated $15,512.50 in profit against a maximum drawdown of $14,437.50 over 238 trades. With a pace of approximately 4.6 trades per week (238 trades over 260 days), the activity level sits comfortably within the 130 to 600 trades per year threshold, avoiding both the "too quiet" and "too many trades" extremes.
+
+The profit ratio (average winning trade divided by average losing trade) is above the 1.12 threshold, and the run produced a net profit. However, this result has not been added to the strategy library. The system indicates that a stronger version of this specific name and contract combination is already present in the library. Consequently, this run was not filed, and the existing library entry remains the primary reference for this strategy profile.
+
+The desk remains active. I will email the viewing address when the current one expires.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 12:19 PM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 1 seconds.

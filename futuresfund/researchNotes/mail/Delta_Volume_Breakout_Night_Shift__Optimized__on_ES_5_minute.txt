@@ -1,0 +1,14 @@
+Taken from the application just now.
+Strategy: Delta Volume Breakout Night Shift [Optimized].
+Chart tested: 5-minute ES (ES1!).
+Profit 1276.0. Drawdown 5641.5. Trades 134.
+Trades a week: 2.6 over 260 trading days.
+Bars in this test: 71,112 from 2025-10-01 18:00 through 2026-10-02 16:55.
+On this full chart a profit counts at 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still counts when that count stays inside the band and the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The shelf keeps a profit over $10,000. This run is under that.
+Settings of this version: profile_lookback=80, profile_rows=10, min_delta_pct=18.0, ema_len=25, ema_slope_len=5, min_slope=0.0, require_price_vs_ema=True, cooldown_bars=30, max_trades_session=1, use_session=True, sess_start_hr=18, sess_start_mn=0.
+Different results on this chart: 23.
+Engine runs on this chart: 43.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 22 minutes 28 seconds.

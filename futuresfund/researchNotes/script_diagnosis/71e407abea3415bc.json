@@ -1,0 +1,63 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "len_vwma",
+  "len_atr",
+  "atr_mult"
+ ],
+ "moved": {},
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "len_vwma": 28,
+   "len_atr": 28,
+   "atr_mult": 3.0,
+   "cooldown_bars": 20
+  },
+  "net_profit": 0.0,
+  "max_drawdown": 0.0,
+  "trades": 0,
+  "win_rate": null,
+  "profit_factor": null,
+  "biggest_winner": null,
+  "biggest_loser": null,
+  "held_loser": null,
+  "exits": []
+ },
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m",
+  "NQ 15m",
+  "MNQ 15m",
+  "M2K 15m",
+  "YM 15m",
+  "ES 5m",
+  "GC 5m",
+  "NQ 5m",
+  "MNQ 5m",
+  "M2K 5m",
+  "YM 5m"
+ ],
+ "version": 3
+}

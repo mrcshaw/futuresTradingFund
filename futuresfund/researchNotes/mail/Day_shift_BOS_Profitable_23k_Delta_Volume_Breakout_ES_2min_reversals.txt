@@ -1,0 +1,9 @@
+Strategy: Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals.
+File: Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals_1792216193.txt.
+Chart: 15m GC1!.
+Profit 15606.0. Drawdown 9999.5. Trades 204.
+Profit ratio 1.264. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 1.56 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 10 percent of the account, the run has at least 60 trades, profit is above $6,000, the profit factor is above 1.05, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

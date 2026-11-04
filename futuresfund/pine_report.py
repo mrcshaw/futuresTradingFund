@@ -5,11 +5,65 @@ from __future__ import annotations
 import re
 
 _STRATEGY = re.compile(r"strategy\s*\((.*?)\)", re.DOTALL)
-_INPUT = re.compile(
-    r"(?P<name>[A-Za-z_]\w*)\s*=\s*input\.(?P<kind>int|float|bool|string)\s*\((?P<body>.*?)\)",
-    re.DOTALL,
+_INPUT_OPEN = re.compile(
+    r"(?P<name>[A-Za-z_]\w*)\s*=\s*input\.(?P<kind>int|float|bool|string)\s*\("
 )
 _NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def input_calls(text: str) -> list[dict]:
+    """Each input call. A parenthesis inside the title, such as Cooldown (bars), stays inside the call."""
+    found = []
+    for match in _INPUT_OPEN.finditer(text or ""):
+        close = _call_end(text, match.end() - 1)
+        if close is None:
+            continue
+        found.append({
+            "name": match.group("name"),
+            "kind": match.group("kind"),
+            "body": text[match.end():close],
+            "number_at": match.end(),
+            "close": close,
+        })
+    return found
+
+
+def _call_end(text: str, open_at: int) -> int | None:
+    """Index of the closing parenthesis. Quotes and nested calls do not close it early."""
+    depth = 0
+    quote = ""
+    i = open_at
+    while i < len(text):
+        ch = text[i]
+        if quote:
+            if ch == "\\" and quote == '"':
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+            i += 1
+            continue
+        if ch in "\"'":
+            quote = ch
+        elif ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
+def _input_label(kind: str, raw: str) -> str:
+    """The title of an input. A string input's first quoted text is its default, so its title is the next one."""
+    named = re.search(r"""\btitle\s*=\s*(["'])(.*?)\1""", raw)
+    if named:
+        return named.group(2)
+    if kind != "string":
+        return _quoted(raw)
+    found = re.findall(r"""(["'])(.*?)\1""", raw)
+    return found[1][1] if len(found) > 1 else ""
 
 
 def pine_facts(text: str) -> dict:
@@ -19,15 +73,15 @@ def pine_facts(text: str) -> dict:
     header_text = header.group(1) if header else ""
     title = _quoted(header_text) or "Untitled strategy"
     inputs = []
-    for match in _INPUT.finditer(body):
-        raw = match.group("body")
+    for call in input_calls(body):
+        raw = call["body"]
         inputs.append({
-            "name": match.group("name"),
-            "kind": match.group("kind"),
-            "default": _first_value(match.group("kind"), raw),
+            "name": call["name"],
+            "kind": call["kind"],
+            "default": _first_value(call["kind"], raw),
             "min": _bound(raw, "minval"),
             "max": _bound(raw, "maxval"),
-            "label": _quoted(raw) or match.group("name"),
+            "label": _input_label(call["kind"], raw) or call["name"],
             "options": _options(raw),
         })
     named = {item["name"]: item["default"] for item in inputs}

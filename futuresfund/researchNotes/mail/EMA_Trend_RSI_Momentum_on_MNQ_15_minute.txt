@@ -1,0 +1,29 @@
+Subject: Desk Update: EMA Trend RSI Momentum on Micro Nasdaq
+
+To the Prop Account Team,
+
+We have completed a new evaluation of the EMA Trend RSI Momentum strategy on the 15-minute Micro Nasdaq (MNQ1!) chart. The run generated a profit of $4,610.50 against a drawdown of $6,485.00. Over the test period, which spanned 23,612 bars from October 15, 2025, to October 15, 2026, the strategy executed 246 trades. This pace equates to approximately 4.75 trades per week across 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 0.71.
+
+This run was not filed in the strategy library. The reason recorded in the application is that the library requires a profit over $8,000, and this run is under that threshold.
+
+The strategy library page defines the acceptance criteria for filing. The boxes turned on for this desk are:
+1. Profit above $8,000.
+2. Profit factor above 1.05.
+3. Win rate above 40 percent.
+4. Trade count of at least 80.
+
+Judging this run against these four specific numbers:
+- The profit of $4,610.50 is below the required $8,000.
+- The trade count of 246 is above the required 80.
+- The facts provided do not state the profit factor or the win rate for this specific run, so we cannot confirm if those boxes were met, but the failure to meet the profit requirement is sufficient to prevent filing.
+
+The settings for this version were: stop_dollars=1000, tp_dollars=1250, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_fast_len=20, ema_slow_len=50.
+
+There are 5 different results and 8 engine runs recorded for this chart.
+
+Please note that the desk clock is currently Sunday 05:20 PM ET. The next meeting is scheduled for 5:00 PM ET Sunday, while the futures market is closed. We will continue to monitor the open trade and ensure all positions are flattened by 16:45 New York time to prevent liquidation.
+
+Regards,
+
+Portfolio Manager
+Desk Instance: Qwen3.8 27B

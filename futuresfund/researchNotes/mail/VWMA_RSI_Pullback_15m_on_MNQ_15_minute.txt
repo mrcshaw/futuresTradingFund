@@ -1,0 +1,14 @@
+Subject: VWMA RSI Pullback 15m Result on MNQ1!
+
+To the Desk,
+
+The latest test for VWMA RSI Pullback 15m on the 15-minute Micro Nasdaq (MNQ1!) chart has concluded. The run generated a profit of $6,522.50 against a drawdown of $6,681.00 over 210 trades. With 4.05 trades per week across 260 trading days, the activity level is consistent with the strategy's design. The profit ratio, calculated as the average winning trade divided by the average losing trade, is not provided in the current data set, so it cannot be quoted here.
+
+This run was not filed in the strategy library. The acceptance line on the strategy library page requires a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. While this run meets the trade count requirement with 210 trades, it fails the profit requirement as $6,522.50 is under the $8,000 threshold. The specific values for profit factor and win rate are not provided in the facts, but the failure to meet the profit criterion alone prevents filing. The strategy library only accepts runs that clear all four boxes: profit, profit factor, win rate, and trade count. Since the profit is below the required $8,000, this result remains unfiled.
+
+The settings for this version are stop_dollars=1250, tp_dollars=1500, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_slow_len=200, ema_fast_len=20. There are 7 different results on this chart and 10 engine runs recorded.
+
+Please note that the desk clock is Sunday 08:52 PM ET. No open trades are currently active, and all positions are flat ahead of the Monday 9:30 AM ET open. The next meeting is scheduled for Monday 8:00 AM ET.
+
+Regards,
+Portfolio Manager

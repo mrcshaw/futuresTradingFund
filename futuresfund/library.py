@@ -2,14 +2,11 @@
 
 A script keeps one row per contract and timeframe: the highest profit among runs at the library pace.
 130 to 600 trades a year is the rewarded count. More than 600 trades a year is too many and is not filed.
-Three a week still files when that count stays inside the band and the profit factor is 3 or more,
-or when the profit and drawdown are near $50,000 and $22,000.
-Two trades is not filed.
-The trailing-drawdown cap and a steadier run with less profit are not part of the shelf.
+Whether a result passes is objective.acceptance_misses, for this shelf and the waiting list alike.
 A run near $50,000 profit and $22,000 drawdown stays even when a later run made more
 profit with a worse ratio. Among those near runs, the higher profit stays.
 The most profitable shelf shows a run only after it is profitable on the full
-five-year dataset: profit over $20,000, no single trade loses more than $1,500,
+five-year dataset: profit over $20,000, no single trade loses more than $750,
 and one version of each strategy name on each contract and timeframe. A one-year
 research run stays on the waiting list until that longer test. A two-year table
 is a later shelf and is not this one.
@@ -28,7 +25,7 @@ _STAND_INS = {"donchian", "ema_cross", "rsi_revert", "vwap_side", "bollinger", "
 # Library rows measured on an older engine are measured again when this changes.
 LIBRARY_ENGINE = "pinets-1"
 OBJECTIVE_TAG = "shelf-most-profitable"   # how the shelf is folded and sorted; see objective.py (objective.stamp adds the headquarters figures)
-_RESEARCH_ROOT = {"ES1!": "ES", "NQ1!": "NQ", "MNQ1!": "MNQ", "GC1!": "GC"}
+_RESEARCH_ROOT = {"ES1!": "ES", "NQ1!": "NQ", "MNQ1!": "MNQ", "MES1!": "MES", "GC1!": "GC", "M2K1!": "M2K", "YM1!": "YM"}
 _NOTES = Path(__file__).resolve().parent / "researchNotes"
 _CACHE: dict = {"stamp": None, "rows": [], "index_mtime": None}
 _INDEX_LOCK = threading.Lock()
@@ -36,6 +33,9 @@ _INDEX_LOCK = threading.Lock()
 # Checked before the ES default. A study that names no contract was run on the ES chart.
 _NAMED = (
     ("MNQ1!", "Micro Nasdaq", ("mnq",)),
+    ("MES1!", "Micro S&P", ("mes",)),
+    ("M2K1!", "Micro Russell", ("m2k",)),
+    ("YM1!", "Dow", ("ym",)),
     ("GC1!", "Gold", ("gold", "mgc", "gc", "qo")),
     ("NQ1!", "Nasdaq", ("nq", "nasdaq")),
     ("CL1!", "Crude", ("crude", "cl")),
@@ -45,13 +45,27 @@ _DEFAULT = ("ES1!", "ES")
 
 
 def _with_point_value(source: str, point: float) -> str:
-    """Dollar stops use this contract's point value. Nasdaq is 20, not the 50 written for ES."""
+    """Dollar stops use this contract's point value. Nasdaq is 20, not the 50 written for ES.
+
+    Every contract is rewritten, ES too: a script written for MNQ says 2, and ES is 50.
+    """
     return re.sub(
         r"((?:pv|point_value|pointvalue)\s*=\s*input\.float\(\s*)[-0-9.]+",
         lambda match: f"{match.group(1)}{point:g}",
         source or "",
         flags=re.IGNORECASE,
     )
+
+
+def for_contract(source: str, instrument: str | None) -> str:
+    """The script with the point value of the contract it is opened for. Gold is 100, MNQ is 2, MES is 5."""
+    from futuresfund.contracts import POINT_VALUE, root_of
+
+    try:
+        root = root_of(str(instrument or "ES"))
+    except ValueError:
+        root = "ES"
+    return _with_point_value(source, float(POINT_VALUE.get(root, 50)))
 
 
 def contract_of(title: str, filename: str = "", explicit: str | None = None) -> tuple[str, str]:
@@ -113,8 +127,15 @@ def search_library(contract: str | None = None, query: str = "") -> dict:
         "contract": chosen,
         "contracts": _shelves(),
         "strategies": _matching(_rows(), chosen, needle),
-        "untested": _matching(_untested_rows(), chosen, needle),
+        "untested": _matching(_with_verdict(_untested_rows()), chosen, needle),
     }
+
+
+def _with_verdict(rows: list[dict]) -> list[dict]:
+    """A row filed before the one check stays on the list, and says what it fails."""
+    from futuresfund.objective import acceptance_summary
+
+    return [{**row, "fails": "" if row.get("kind") == "Added" else acceptance_summary(row)} for row in rows]
 
 
 def _matching(rows: list[dict], chosen: str, needle: str) -> list[dict]:
@@ -229,10 +250,10 @@ def _untested_token(row: dict) -> tuple:
 
 
 def _accepted_untested(row: dict) -> bool:
-    """A new one-year run clears the numbers saved on the strategy library page right now."""
+    """A new one-year run passes acceptance right now."""
     if row.get("kind") == "Added":
         return measured_on_one_year(row)
-    return measured_on_one_year(row) and library_ready(row) and _trade_loss_ok(row)
+    return measured_on_one_year(row) and library_ready(row)
 
 
 def waiting_rows(rows: list[dict]) -> list[dict]:
@@ -262,34 +283,18 @@ def _merge_untested(untested: list[dict], shelf: list[dict]) -> list[dict]:
     return waiting_rows(waiting)
 
 
-def record_untested(entry: dict, *, opening_profit: bool = False) -> bool:
+def record_untested(entry: dict) -> bool:
     """File a one-year run that has not been tested on the five-year download.
 
-    The waiting list uses the one-year sample and the numbers on the strategy library
-    page: profit, profit factor, win rate, and trade count. One trade down
-    more than $1,500 is not filed. It does not wait for the five-year account gates.
-    A repeat of the same result is not filed again. A later run with less profit
-    does not replace it.
-
-    An opening result is filed when it clears the profit number on the strategy library
-    page, stays under the drawdown line, and no single trade loses more than $1,500.
+    It is filed when it passes acceptance. A repeat of the same result is not filed
+    again. A later run with less profit does not replace a run that also passes.
     """
     if not measured_on_one_year(entry):
         return False
     stored = _stamp_untested(entry)
     if not _has_script(stored):
         return False
-    if opening_profit:
-        from futuresfund.book import strategy_acceptance
-
-        limits = strategy_acceptance()
-        try:
-            profit = float(stored.get("net_profit"))
-        except (TypeError, ValueError):
-            return False
-        if profit <= 0 or not limits.get("use_profit") or profit <= float(limits.get("min_profit") or 0) or not _trade_loss_ok(stored) or not _account_survives(stored):
-            return False
-    elif not _accepted_untested(stored):
+    if not _accepted_untested(stored):
         return False
     with _INDEX_LOCK:
         rows = _load_untested()
@@ -312,9 +317,11 @@ def library_script(strategy_id: str, contract: str | None = None) -> dict | None
     from futuresfund.contracts import POINT_VALUE, root_of
     from futuresfund.strategy import _apply_inputs, pine_text
 
-    pine = pine_text(filename)
+    # The exact script this row's numbers came from. The file can have been rewritten since.
+    pine = _measured_script((row or {}).get("source_sha")) or pine_text(filename)
     params = (row or {}).get("params") if isinstance((row or {}).get("params"), dict) else {}
     if pine and params:
+        params = _dollars_as_percent(pine, params)
         try:
             pine = _apply_inputs(pine, params)
         except (TypeError, ValueError, re.error):
@@ -328,11 +335,37 @@ def library_script(strategy_id: str, contract: str | None = None) -> dict | None
             root = root_of(contract_name)
         except ValueError:
             root = "ES"
-    point = float(POINT_VALUE.get(root, 50))
-    if point != 50:
-        pine = _with_point_value(pine, point)
+    pine = _with_point_value(pine, float(POINT_VALUE.get(root, 50)))
     title = str((row or {}).get("title") or _strategy_title(pine) or filename)
     return {"id": strategy_id, "title": title, "pine": pine}
+
+
+def _measured_script(name) -> str:
+    if not name:
+        return ""
+    try:
+        return (_NOTES / "script_versions" / f"{name}.pine").read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _dollars_as_percent(source: str, params: dict) -> dict:
+    """A row filed while the stop and target were dollar inputs, opened on a script that now
+    takes them as a percent of the account. The copy keeps the stop and target that were tested.
+    """
+    match = re.search(r"\binitial_capital\s*=\s*(\d+(?:\.\d+)?)", source or "")
+    capital = float(match.group(1)) if match else 50000.0
+    converted = dict(params)
+    for dollars, percent in (("stop_dollars", "stop_pct"), ("tp_dollars", "tp_pct")):
+        if dollars not in params or percent in params or capital <= 0:
+            continue
+        if re.search(rf"\b{dollars}\s*=\s*input\.", source or "") or not re.search(rf"\b{percent}\s*=\s*input\.", source or ""):
+            continue
+        try:
+            converted[percent] = round(float(params[dollars]) / capital * 100.0, 4)
+        except (TypeError, ValueError):
+            continue
+    return converted
 
 
 def _cached_row(strategy_id: str, contract: str | None) -> dict | None:
@@ -408,6 +441,9 @@ def _shelves() -> list[dict]:
         "GC1!": {"contract": "GC1!", "label": "Gold", "count": 0, "untested": 0},
         "NQ1!": {"contract": "NQ1!", "label": "Nasdaq", "count": 0, "untested": 0},
         "MNQ1!": {"contract": "MNQ1!", "label": "Micro Nasdaq", "count": 0, "untested": 0},
+        "MES1!": {"contract": "MES1!", "label": "Micro S&P", "count": 0, "untested": 0},
+        "M2K1!": {"contract": "M2K1!", "label": "Micro Russell", "count": 0, "untested": 0},
+        "YM1!": {"contract": "YM1!", "label": "Dow", "count": 0, "untested": 0},
     }
     for row in _rows():
         slot = counts.setdefault(
@@ -424,7 +460,7 @@ def _shelves() -> list[dict]:
             {"contract": contract, "label": row.get("contract_label") or contract, "count": 0, "untested": 0},
         )
         slot["untested"] = int(slot.get("untested") or 0) + 1
-    ordered = [counts.pop("ES1!"), counts.pop("GC1!"), counts.pop("NQ1!"), counts.pop("MNQ1!")]
+    ordered = [counts.pop(name) for name in ("ES1!", "GC1!", "NQ1!", "MNQ1!", "MES1!", "M2K1!", "YM1!")]
     ordered.extend(counts.values())
     return ordered
 
@@ -459,9 +495,14 @@ def _write_untested(rows: list[dict]) -> None:
 
 
 def _has_script(row: dict) -> bool:
-    """A table row stays only when its Pine file can be read."""
+    """A table row stays while its script can be read: the saved version it ran, or its Pine file.
+
+    A script set aside during a rerun leaves its folder, and that must not take a strategy off the library.
+    """
     from futuresfund.strategy import pine_text
 
+    if _measured_script(row.get("source_sha")):
+        return True
     filename = str(row.get("file") or "").strip()
     if filename and pine_text(filename):
         return True
@@ -581,7 +622,6 @@ def recheck_library(slot: int = 3) -> dict:
     """
     from futuresfund.backtrader_engine import run_script
     from futuresfund.learn import _with_contract_point
-    from futuresfund.objective import library_pace
     from futuresfund.research_bars import research_series
     from futuresfund.strategy import pine_text
 
@@ -614,14 +654,10 @@ def recheck_library(slot: int = 3) -> dict:
         updated = dict(row)
         for field in (
             "net_profit", "max_drawdown", "trades", "win_rate", "profit_factor", "profit_ratio",
-            "sharpe", "biggest_winner", "biggest_loser", "tested_from", "days", "trades_per_day",
+            "sharpe", "biggest_winner", "biggest_loser", "held_loser", "stop_dollars", "tested_from", "days", "trades_per_day",
         ):
             updated[field] = measured.get(field)
-        try:
-            profit = float(updated.get("net_profit"))
-        except (TypeError, ValueError):
-            profit = 0.0
-        if profit > 0 and library_pace(updated):
+        if library_ready(updated):
             kept.append(updated)
         else:
             dropped.append(updated)
@@ -673,7 +709,7 @@ def _library_rows(rows: list[dict]) -> list[dict]:
                 profit = float(item.get("net_profit"))
             except (TypeError, ValueError):
                 continue
-            if library_ready(item) and _clears_ratio(item) and _trade_loss_ok(item) and _account_survives(item):
+            if library_ready(item):
                 profitable.append(item)
         if not profitable:
             continue
@@ -696,47 +732,10 @@ LIBRARY_MIN_TRADES = 100
 
 
 def library_ready(row: dict | None) -> bool:
-    """A result is filed when it clears the acceptance boxes that are turned on.
+    """Whether this result passes. The check itself is objective.acceptance_misses."""
+    from futuresfund.objective import passes_acceptance
 
-    Drawdown under the saved percent of the account and the trade count are on
-    unless those boxes are unchecked. Once profit is above $3,000, that drawdown
-    cap lifts and the profit has to be at least 1.5 times the drawdown. Profit,
-    the profit factor, and the win rate count only when their boxes are checked.
-    More than 600 trades a year stays off while the trade box is on.
-    """
-    from futuresfund.book import strategy_acceptance
-    from futuresfund.objective import TRADES_YEAR_MAX, account_survives, profit_factor_of, trades_per_year, win_rate_percent
-
-    if not isinstance(row, dict) or row.get("error") or row.get("fatal"):
-        return False
-    limits = strategy_acceptance()
-    if limits.get("use_drawdown") and not account_survives(row):
-        return False
-    if limits.get("use_trades"):
-        try:
-            trades = int(float(row.get("trades") or 0))
-        except (TypeError, ValueError):
-            return False
-        if trades < int(limits["min_trades"]):
-            return False
-        yearly = trades_per_year(row)
-        if yearly is not None and yearly > TRADES_YEAR_MAX:
-            return False
-    if limits.get("use_profit"):
-        try:
-            if float(row.get("net_profit")) <= float(limits["min_profit"]):
-                return False
-        except (TypeError, ValueError):
-            return False
-    if limits.get("use_factor"):
-        factor = profit_factor_of(row)
-        if factor is None or factor <= float(limits["profit_factor"]):
-            return False
-    if limits.get("use_win_rate"):
-        rate = win_rate_percent(row)
-        if rate is None or rate <= float(limits["win_rate"]):
-            return False
-    return True
+    return passes_acceptance(row)
 
 
 def strategy_family(row: dict) -> str:
@@ -747,27 +746,6 @@ def strategy_family(row: dict) -> str:
     name = re.sub(r"^engine4[_\s-]*", "", name)
     name = re.sub(r"(?:[_\s-]*v\d+)\b", "", name)
     return re.sub(r"[^a-z0-9]+", "", name)
-
-
-def _clears_ratio(row: dict) -> bool:
-    """Average winner more than 1.12 times the average loser."""
-    from futuresfund.objective import clears_profit_ratio
-
-    return clears_profit_ratio(row)
-
-
-def _trade_loss_ok(row: dict) -> bool:
-    """A strategy with one trade down more than $1,500 is not included."""
-    from futuresfund.objective import trade_loss_ok
-
-    return trade_loss_ok(row)
-
-
-def _account_survives(row: dict) -> bool:
-    """Under $3,000 profit, drawdown stays under 5 percent. Above that, profit must be at least 1.5 times the drawdown."""
-    from futuresfund.objective import account_survives
-
-    return account_survives(row)
 
 
 def _in_year_band(row: dict) -> bool:
@@ -800,20 +778,25 @@ def shelf_rows(rows: list[dict]) -> list[dict]:
             profit = float(row.get("net_profit"))
         except (TypeError, ValueError):
             continue
-        if library_ready(row) and _clears_ratio(row) and _trade_loss_ok(row) and _account_survives(row):
+        if library_ready(row):
             rich.append(row)
     shown = _pick_best(rich) + added
     return sorted(shown, key=lambda item: float(item.get("net_profit") or 0), reverse=True)
 
 
 def _pick_best(rows: list[dict]) -> list[dict]:
-    """One row per strategy name, contract, and timeframe. Higher profit wins a tie on drawdown."""
+    """One row per strategy name, contract, and timeframe. A run that passes beats one that fails, then higher profit, then lower drawdown."""
     best: dict[tuple, dict] = {}
     for row in rows:
         key = _shelf_key(row)
         current = best.get(key)
         if current is None:
             best[key] = row
+            continue
+        passes, current_passes = library_ready(row), library_ready(current)
+        if passes != current_passes:
+            if passes:
+                best[key] = row
             continue
         profit = float(row["net_profit"])
         current_profit = float(current["net_profit"])
@@ -1007,6 +990,8 @@ def _measured_row(data: dict, best: dict, path: Path) -> dict | None:
         "profit_ratio": measured.get("profit_ratio") if measured.get("profit_ratio") is not None else best.get("profit_ratio"),
         "biggest_winner": measured.get("biggest_winner"),
         "biggest_loser": measured.get("biggest_loser"),
+        "held_loser": measured.get("held_loser"),
+        "stop_dollars": measured.get("stop_dollars"),
     }
 
 
@@ -1034,6 +1019,8 @@ def _best_run(best: dict) -> dict | None:
         "profit_ratio": source.get("profit_ratio", best.get("profit_ratio")),
         "biggest_winner": source.get("biggest_winner", best.get("biggest_winner")),
         "biggest_loser": source.get("biggest_loser", best.get("biggest_loser")),
+        "held_loser": source.get("held_loser", best.get("held_loser")),
+        "stop_dollars": source.get("stop_dollars", best.get("stop_dollars")),
     }
 
 
@@ -1046,7 +1033,6 @@ _NOTE_SKIP = {
     "strategy_cards.json",
     "creation_sources.json",
     "risk_suggestions.json",
-    "kronos_patterns.json",
     "untested_library.json",
 }
 
@@ -1082,7 +1068,7 @@ def _passed_entry(data: dict, path: Path, row: dict) -> dict | None:
         return None
     from futuresfund.objective import consistent_spans, too_many_to_save
 
-    if too_many_to_save(row) or not library_ready(row) or not _trade_loss_ok(row):
+    if too_many_to_save(row) or not library_ready(row):
         return None
     filename = str(data.get("file") or f"{path.stem}.pine")
     created = Path(__file__).resolve().parent / "createdStrategies" / filename
@@ -1123,9 +1109,12 @@ def _passed_entry(data: dict, path: Path, row: dict) -> dict | None:
         "profit_ratio": row.get("profit_ratio"),
         "biggest_winner": row.get("biggest_winner"),
         "biggest_loser": row.get("biggest_loser"),
+        "held_loser": row.get("held_loser"),
+        "stop_dollars": row.get("stop_dollars"),
         "days": row.get("days"),
         "trades_per_day": row.get("trades_per_day"),
         "params": params,
+        "source_sha": row.get("source_sha"),
         "engine": "pinets",
         "runner": "pinets",
     }
@@ -1146,7 +1135,7 @@ def recover_passed() -> dict:
     found: dict[tuple, dict] = {}
     if _NOTES.is_dir():
         for path in _NOTES.glob("*.json"):
-            if path.name in _NOTE_SKIP or path.name.startswith("kronos"):
+            if path.name in _NOTE_SKIP:
                 continue
             try:
                 if path.stat().st_size > 8_000_000:

@@ -1,0 +1,9 @@
+Subject: ICT Unicorn + ORB 100k Result - Not Filed
+
+The ICT Unicorn + ORB 100k strategy was tested on the 15-minute Nasdaq (NQ1!) chart. The run generated $18,911.00 in profit with a maximum drawdown of $1,410.50 across 418 trades. The win rate for this specific run was 17.7%.
+
+This result is not on the strategy library. The acceptance line requires a win rate above 40 percent. This run's win rate is 17.7 percent. Therefore, it was not filed.
+
+The desk remains at $50,000. No trades are held overnight. The next check is at the open.
+
+Desk instance active.

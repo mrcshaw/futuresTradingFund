@@ -236,7 +236,7 @@ def abilities() -> list[str]:
 
     return [
         "Answer what is executing, what is on the active strategy list, and the trading mode.",
-        f"State the research objective: {goal_line()} The take profit is larger than the stop, and no trade is down more than $1,500.",
+        f"State the research objective: {goal_line()} The take profit is larger than the stop, and no trade is down more than $750.",
         "Say what the strategy creation team is trained on and how each created script did.",
         "Say whether reports are being emailed, to whom, and when the last one went out; send the fund report on request.",
         "Give the web address and the TradingView alert address. A new address is emailed through the desk mail service whenever it changes.",

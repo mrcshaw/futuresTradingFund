@@ -39,17 +39,17 @@ class ResearchRuleTests(unittest.TestCase):
         self.assertGreater(after["tp_dollars"], 150.0)
         self.assertEqual(focus_keys(before, after), ["stop_dollars"])
 
-    def test_the_dollar_stop_stays_under_1500_and_the_target_under_2000(self):
+    def test_the_dollar_stop_stays_under_700_and_the_target_has_no_maximum(self):
         from futuresfund.learn import _clamp_plan
         from futuresfund.research_rules import hold_reward
 
         held = hold_reward({"stop_dollars": 2200, "tp_dollars": 5000})
-        self.assertEqual(held["stop_dollars"], 1500)
-        self.assertEqual(held["tp_dollars"], 2000)
+        self.assertEqual(held["stop_dollars"], 700)
+        self.assertEqual(held["tp_dollars"], 5000)
         self.assertGreater(held["tp_dollars"], held["stop_dollars"])
         clamped = _clamp_plan({"stop_dollars": 1800.0, "tp_dollars": 4000.0, "length": 10}, {})
-        self.assertEqual(clamped["stop_dollars"], 1500.0)
-        self.assertEqual(clamped["tp_dollars"], 2000.0)
+        self.assertEqual(clamped["stop_dollars"], 700.0)
+        self.assertEqual(clamped["tp_dollars"], 4000.0)
         self.assertEqual(clamped["length"], 10)
 
     def test_a_library_profit_keeps_the_opening_and_a_smaller_profit_walks_the_exits_up(self):
@@ -71,12 +71,12 @@ class ResearchRuleTests(unittest.TestCase):
             }])
             capped = next_plan(origin, [
                 {"params": dict(origin), "net_profit": -400, "max_drawdown": 200, "trades": 10},
-                {"params": {"stop_pct": 3.0, "tp_pct": 1.0, "length": 10}, "net_profit": -300, "max_drawdown": 200, "trades": 10},
+                {"params": {"stop_pct": 1.5, "tp_pct": 1.0, "length": 10}, "net_profit": -300, "max_drawdown": 200, "trades": 10},
             ])
             best = next_plan(origin, [
                 {"params": dict(origin), "net_profit": -400, "max_drawdown": 200, "trades": 10},
-                {"params": {"stop_pct": 3.0, "tp_pct": 1.0, "length": 10}, "net_profit": -50, "max_drawdown": 200, "trades": 10},
-                {"params": {"stop_pct": 3.0, "tp_pct": 4.0, "length": 10}, "net_profit": -300, "max_drawdown": 200, "trades": 10},
+                {"params": {"stop_pct": 1.4, "tp_pct": 1.0, "length": 10}, "net_profit": -50, "max_drawdown": 200, "trades": 10},
+                {"params": {"stop_pct": 1.4, "tp_pct": 20.0, "length": 10}, "net_profit": -300, "max_drawdown": 200, "trades": 10},
             ])
             dollars = next_plan(
                 {"stop_dollars": 50.0, "tp_dollars": 500.0, "length": 10},
@@ -90,9 +90,9 @@ class ResearchRuleTests(unittest.TestCase):
         self.assertEqual(losing["stop_pct"], 0.5)
         self.assertEqual(losing["tp_pct"], 1.0)
         self.assertEqual(losing["length"], 10)
-        self.assertEqual(capped["stop_pct"], 3.0)
-        self.assertEqual(capped["tp_pct"], 3.5)
-        self.assertEqual(best["stop_pct"], 3.0)
+        self.assertEqual(capped["stop_pct"], 1.4)
+        self.assertEqual(capped["tp_pct"], 2.0)
+        self.assertEqual(best["stop_pct"], 1.4)
         self.assertEqual(best["tp_pct"], 1.0)
         self.assertNotEqual(best["length"], 10)
         self.assertEqual(dollars["stop_dollars"], 250.0)
@@ -108,14 +108,14 @@ class ResearchRuleTests(unittest.TestCase):
         landed = _raise_stop_hundred({"stop_dollars": 250.0, "tp_dollars": 500.0}, "stop_dollars", set(), 50000)
         self.assertEqual(landed["stop_dollars"], 500.0)
         self.assertEqual(landed["tp_dollars"], 750.0)
-        topped = _raise_stop_hundred({"stop_dollars": 1250.0, "tp_dollars": 1500.0}, "stop_dollars", set(), 50000)
-        self.assertEqual(topped["stop_dollars"], 1500.0)
-        self.assertEqual(topped["tp_dollars"], 1750.0)
+        topped = _raise_stop_hundred({"stop_dollars": 500.0, "tp_dollars": 750.0}, "stop_dollars", set(), 50000)
+        self.assertEqual(topped["stop_dollars"], 700.0)
+        self.assertEqual(topped["tp_dollars"], 750.0)
         from futuresfund.learn import _raise_target_hundred
 
-        target = _raise_target_hundred({"stop_dollars": 1500.0, "tp_dollars": 1750.0}, "tp_dollars", set(), 50000)
-        self.assertEqual(target["stop_dollars"], 1500.0)
-        self.assertEqual(target["tp_dollars"], 2000.0)
+        target = _raise_target_hundred({"stop_dollars": 700.0, "tp_dollars": 2000.0}, "tp_dollars", set(), 50000)
+        self.assertEqual(target["stop_dollars"], 700.0)
+        self.assertEqual(target["tp_dollars"], 2500.0)
         seen = []
 
         def execute(params):
@@ -123,11 +123,23 @@ class ResearchRuleTests(unittest.TestCase):
             return {"net_profit": -float(params["stop_dollars"]), "max_drawdown": 200.0, "trades": 8, "days": 20}
 
         _search({"stop_dollars": 1000, "tp_dollars": 1500, "length": 20}, execute, 50000, 6, None, None, None, extras=False)
-        self.assertEqual(seen, [250, 500, 750, 1000, 1250, 1500])
+        self.assertEqual(seen[:3], [250, 500, 700])
+        self.assertTrue(all(value == 700 for value in seen[3:]))
 
     def test_a_daily_limit_is_a_normal_input_and_a_gain_keeps_it(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from futuresfund import book as bookmod
         from futuresfund.learn import _search
 
+        # An empty book holds the default acceptance boxes, so the desk's saved scale goal does not change the steps.
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        patcher = mock.patch.object(bookmod, "BOOK_PATH", Path(folder.name) / "book.json")
+        patcher.start()
+        self.addCleanup(patcher.stop)
         seen = []
 
         def execute(params):
@@ -164,9 +176,8 @@ class ResearchRuleTests(unittest.TestCase):
 
         text = research_guidelines()
         self.assertIn("larger than the stop", text)
-        self.assertIn("under 5 percent of the account", text)
-        self.assertIn("3.6 percent", text)
-        self.assertIn("$1,500", text)
-        self.assertIn("$2,000", text)
+        self.assertIn("30 percent of the profit", text)
+        self.assertIn("$750", text)
+        self.assertIn("no maximum", text)
         self.assertIn("No ATR stop.", text)
         self.assertNotIn("300,000", text)

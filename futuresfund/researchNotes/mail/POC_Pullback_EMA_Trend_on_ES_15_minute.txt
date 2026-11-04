@@ -1,0 +1,5 @@
+Subject: Desk Result: POC Pullback EMA Trend (ES 15m)
+
+The POC Pullback EMA Trend strategy just finished its run on the 15-minute ES chart. The result is $10,975.00 profit with a drawdown of $6,225.00 across 418 trades. The pace is 8.05 trades per week, which annualizes to roughly 2,090 trades per year. This exceeds the 600-trade upper limit for the preferred pace band, so it is too many trades for the target criteria. The strategy is not on the library. This result was not filed because a stronger version of this name is already on this contract and timeframe. The settings for this run were pivot_left=5, pivot_right=5, len_ema=20, len_atr=7, len_cooldown=50, stop_mult=2.0, tp_mult=0.5.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 3 minutes 34 seconds.

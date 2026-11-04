@@ -1,0 +1,16 @@
+Subject: Desk Update: VWMA RSI Breakout Result Not Filed
+
+The VWMA RSI Breakout strategy on the 5-minute Nasdaq (NQ1!) chart has completed its run. The result shows a profit of $5,045.00 with a maximum drawdown of $14,100.00 across 192 trades. The profit ratio (average win divided by average loss) and win rate metrics were evaluated against the filing criteria.
+
+To be filed in the strategy library, a run must meet four specific conditions: profit above $14,000, profit factor above 1.1, win rate above 48%, and at least 60 trades. This run did not meet the profit threshold, as $5,045.00 is below the required $14,000. Consequently, this result was not filed in the strategy library. The library currently holds no entries for this desk.
+
+Settings used: vwma_len=28, rsi_len=14, stop_dollars=250.0, tp_dollars=2000.0, cooldown_bars=10.
+
+I will email the address for viewing this desk on a phone. The new address will be sent when the old one expires.
+
+Desk clock: Monday 02:51 AM ET.
+
+Best,
+
+Portfolio Manager
+Qwen3.6 35B-A3B Instance

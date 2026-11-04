@@ -1,0 +1,114 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "move_points"
+ ],
+ "moved": {
+  "impulse_minutes": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 6
+  },
+  "move_minutes": {
+   "value": 15,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 12
+  },
+  "retest_points": {
+   "value": 1,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "cooldown_bars": {
+   "value": 1,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 6
+  },
+  "daily_profit_cap": {
+   "value": 500,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 4
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 2
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 4
+  }
+ },
+ "flat": [
+  "stop_dollars",
+  "tp_dollars",
+  "impulse_ticks",
+  "daily_loss_cap",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 20.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "impulse_ticks": 250,
+   "impulse_minutes": 15,
+   "move_minutes": 45,
+   "move_points": 10,
+   "retest_points": 3,
+   "cooldown_bars": 5,
+   "daily_profit_cap": 1000,
+   "daily_loss_cap": 750
+  },
+  "net_profit": 0.0,
+  "max_drawdown": 0.0,
+  "trades": 5,
+  "win_rate": 0.0,
+  "profit_factor": null,
+  "biggest_winner": 0.0,
+  "biggest_loser": 0.0,
+  "held_loser": 0.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 5,
+    "pnl": 0.0,
+    "favorable": 0.0,
+    "adverse": 0.0
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m"
+ ],
+ "version": 3
+}

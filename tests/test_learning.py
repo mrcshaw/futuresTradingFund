@@ -7,6 +7,23 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+# A one-year run that clears every acceptance box in ACCEPTANCE_LIMITS. A created script moves on only after one of these.
+ACCEPTANCE_LIMITS = {'min_profit': 6000.0, 'profit_factor': 1.1, 'win_rate': 40.0, 'min_trades': 100, 'drawdown_pct': 2.0, 'goal': 'win_rate', 'use_drawdown': True, 'use_trades': True, 'use_profit': True, 'use_factor': True, 'use_win_rate': True}
+PASSING_RUN = {'net_profit': 9000, 'max_drawdown': 1000, 'trades': 200, 'days': 260, 'win_rate': 50.0, 'profit_factor': 1.5, 'biggest_loser': -400, 'stop_dollars': 500, 'spans': {'7': {'net_profit': 300, 'trades': 5, 'biggest_loser': -100}, '30': {'net_profit': 1200, 'trades': 20, 'biggest_loser': -100}, '90': {'net_profit': 3000, 'trades': 60, 'biggest_loser': -100}, '365': {'net_profit': 9000, 'trades': 200, 'biggest_loser': -100}}}
+
+
+def _default_book(test):
+    """An empty book holds the default acceptance boxes, so the desk's saved boxes do not change the answer."""
+    from unittest import mock
+
+    from futuresfund import book as bookmod
+
+    folder = TemporaryDirectory()
+    test.addCleanup(folder.cleanup)
+    patcher = mock.patch.object(bookmod, "BOOK_PATH", Path(folder.name) / "book.json")
+    patcher.start()
+    test.addCleanup(patcher.stop)
+
 
 class CandidateTests(unittest.TestCase):
     def test_adjustments_keep_the_original_and_stop_at_two_hundred(self):
@@ -74,6 +91,7 @@ class CandidateTests(unittest.TestCase):
     def test_a_steadier_change_continues_the_same_variable(self):
         from futuresfund.learn import next_plan
 
+        _default_book(self)
         trials = [
             {"params": {"length": 10, "zone": 1.5}, "net_profit": 10, "max_drawdown": 20, "trades": 4},
             {"params": {"length": 14, "zone": 1.5}, "net_profit": 40, "max_drawdown": 18, "trades": 4},
@@ -85,6 +103,7 @@ class CandidateTests(unittest.TestCase):
     def test_a_profit_gain_with_a_higher_drawdown_changes_a_different_input(self):
         from futuresfund.learn import next_plan
 
+        _default_book(self)
         trials = [
             {"params": {"length": 10, "stop_pts": 20}, "net_profit": 100, "max_drawdown": 50, "trades": 20},
             {"params": {"length": 14, "stop_pts": 20}, "net_profit": 180, "max_drawdown": 90, "trades": 20},
@@ -96,6 +115,7 @@ class CandidateTests(unittest.TestCase):
     def test_a_step_away_from_the_goal_reverses_that_input(self):
         from futuresfund.learn import next_plan
 
+        _default_book(self)
         trials = [
             {"params": {"length": 10, "stop_pts": 20}, "net_profit": 1000, "max_drawdown": 200, "trades": 20},
             {"params": {"length": 14, "stop_pts": 20}, "net_profit": 970, "max_drawdown": 200, "trades": 20},
@@ -226,14 +246,15 @@ class CandidateTests(unittest.TestCase):
 
         origin = {"stop_dollars": 500.0, "length": 10}
         first_row = {"params": dict(origin), "net_profit": -149580.0, "max_drawdown": 185091.0, "trades": 5640, "days": 260}
-        wider_row = {"params": {"stop_dollars": 1000.0, "length": 10}, "net_profit": -120000.0, "max_drawdown": 160000.0, "trades": 5400, "days": 260}
+        wider_row = {"params": {"stop_dollars": 700.0, "length": 10}, "net_profit": -120000.0, "max_drawdown": 160000.0, "trades": 5400, "days": 260}
         first = next_plan(origin, [first_row])
-        self.assertEqual(first["stop_dollars"], 750.0)
+        self.assertEqual(first["stop_dollars"], 700.0)
         self.assertEqual(first["length"], 10)
         self.assertEqual(scale_move(first_row, wider_row, 50000), "closer")
         further = next_plan(origin, [first_row, wider_row])
-        self.assertGreater(further["stop_dollars"], 1000.0)
-        self.assertEqual(further["length"], 10)
+        # The stop is at its $700 cap and this script has no target, so an indicator moves next.
+        self.assertEqual(further["stop_dollars"], 700.0)
+        self.assertNotEqual(further["length"], 10)
 
     def test_a_wider_stop_that_loses_more_than_1800_on_one_trade_is_reversed(self):
         from futuresfund.learn import next_plan
@@ -242,12 +263,12 @@ class CandidateTests(unittest.TestCase):
         plan = next_plan(origin, [
             {
                 "params": {"stop_mult": 3.125, "length": 10},
-                "net_profit": 77480.0, "max_drawdown": 22845.0, "trades": 148, "days": 260,
+                "net_profit": 77480.0, "max_drawdown": 22845.0, "trades": 208, "days": 260,
                 "biggest_loser": -8195.0,
             },
             {
                 "params": {"stop_mult": 3.75, "length": 10},
-                "net_profit": 89430.0, "max_drawdown": 29725.0, "trades": 148, "days": 260,
+                "net_profit": 89430.0, "max_drawdown": 29725.0, "trades": 208, "days": 260,
                 "biggest_loser": -10235.0,
             },
         ])
@@ -282,8 +303,8 @@ class CandidateTests(unittest.TestCase):
             {"params": worse, "net_profit": -140000.0, "max_drawdown": 160000.0, "trades": 5000, "days": 260},
         ])
         # The ladder still measures the next rung. The best pair is kept when the indicators start.
-        self.assertEqual(plan["stop_dollars"], 1000.0)
-        self.assertEqual(plan["tp_dollars"], 2000.0)
+        self.assertEqual(plan["stop_dollars"], 700.0)
+        self.assertEqual(plan["tp_dollars"], 5000.0)
         self.assertEqual(plan["length"], 10)
 
     def test_a_flat_stop_moves_to_the_target_then_the_script_then_back(self):
@@ -291,18 +312,18 @@ class CandidateTests(unittest.TestCase):
 
         origin = {"stop_dollars": 500.0, "tp_dollars": 3000.0, "length": 10}
         same = {"net_profit": -50000.0, "max_drawdown": 60000.0, "trades": 4000, "days": 260}
-        held = {"stop_dollars": 1000.0, "tp_dollars": 6000.0, "length": 10}
+        held = {"stop_dollars": 700.0, "tp_dollars": 6000.0, "length": 10}
         rows = [
             {"params": dict(origin), **same},
             {"params": dict(held), **same},
         ]
         flat_stop = next_plan(origin, rows)
-        self.assertEqual(flat_stop["stop_dollars"], 1250.0)
-        self.assertEqual(flat_stop["tp_dollars"], 2000.0)
+        self.assertEqual(flat_stop["stop_dollars"], 700.0)
+        self.assertEqual(flat_stop["tp_dollars"], 7500.0)
         self.assertEqual(flat_stop["length"], 10)
         capped = next_plan(origin, rows + [{"params": dict(flat_stop), **same}])
-        self.assertEqual(capped["stop_dollars"], 1500.0)
-        self.assertEqual(capped["tp_dollars"], 2000.0)
+        self.assertEqual(capped["stop_dollars"], 700.0)
+        self.assertEqual(capped["tp_dollars"], 10000.0)
         self.assertEqual(capped["length"], 10)
 
     def test_a_flat_profit_takes_a_step_twice_as_large(self):
@@ -322,7 +343,7 @@ class CandidateTests(unittest.TestCase):
         plan = next_plan(origin, [{
             "params": dict(origin), "net_profit": 3500.0, "max_drawdown": 20827.0, "trades": 810, "days": 1291,
         }])
-        self.assertEqual(plan["stop_dollars"], 1000.0)
+        self.assertEqual(plan["stop_dollars"], 700.0)
         self.assertEqual(plan["cooldown_bars"], 3)
 
     def test_a_fixed_pivot_length_becomes_an_input(self):
@@ -362,8 +383,8 @@ class CandidateTests(unittest.TestCase):
     def test_a_drawdown_above_twenty_percent_of_the_account_does_not_pass(self):
         from futuresfund.learn import _passed
 
-        crossed = {"net_profit": 4000, "max_drawdown": 35000.01, "trades": 4, "stop_reason": ""}
-        inside = {"net_profit": 4000, "max_drawdown": 35000, "trades": 4, "stop_reason": "Trailing DD breached", "breached": True}
+        crossed = {"net_profit": 4000, "max_drawdown": 1200.01, "trades": 4, "stop_reason": ""}
+        inside = {"net_profit": 4000, "max_drawdown": 1200, "trades": 4, "stop_reason": "Trailing DD breached", "breached": True}
         short = {"net_profit": 500, "max_drawdown": 400, "trades": 4, "stop_reason": ""}
         kept = {"net_profit": 3000, "max_drawdown": 800, "trades": 4, "stop_reason": "Profit target reached"}
         self.assertFalse(_passed(crossed, 50000))
@@ -473,6 +494,7 @@ class ReportShapeTests(unittest.TestCase):
         from futuresfund.learn import _result_facts
         from futuresfund.mailer import write_result
 
+        _default_book(self)
         best = {
             "net_profit": 744.0,
             "max_drawdown": 5626.0,
@@ -490,7 +512,7 @@ class ReportShapeTests(unittest.TestCase):
         self.assertIn("not used to accept or reject a run", facts)
         self.assertIn("Trades a week: 16.9", facts)
         self.assertIn("strategy library page", facts)
-        self.assertIn("went lower than $2,500", facts)
+        self.assertIn("The drawdown of 5626.0 is not less than the profit of 744.0", facts)
         self.assertNotIn("Meets the profit target", facts)
         self.assertNotIn("Filed in the", facts)
         self.assertNotIn("1. The bet", facts)
@@ -606,7 +628,7 @@ class FirmRatioMailTests(unittest.TestCase):
             "runner": "backtrader",
             "net_profit": 50000.0,
             "max_drawdown": 2000.0,
-            "trades": 150,
+            "trades": 170,
             "days": 260,
             "win_rate": 65,
             "profit_factor": 1.4,
@@ -658,7 +680,10 @@ class FirmRatioMailTests(unittest.TestCase):
 
             filed.clear()
             sent.clear()
-            _offer_library(board, {"title": "Low Ratio"}, Path("low_ratio.pine"), dict(row, profit_ratio=1.12))
+            shrinking = {"7": {"net_profit": 900.0, "trades": 4}, "30": {"net_profit": 600.0, "trades": 14},
+                         "90": {"net_profit": 4000.0, "trades": 40}, "365": {"net_profit": 50000.0, "trades": 170}}
+            _offer_library(board, {"title": "Shrinking"}, Path("shrinking.pine"), dict(row, spans=shrinking))
+            self.assertEqual(filed, [])
             self.assertEqual(sent, [])
 
 
@@ -698,7 +723,9 @@ class RatioLibraryTests(unittest.TestCase):
             "futuresfund.learn.NOTES", Path(tmp)
         ), mock.patch("futuresfund.library.record_profitable", lambda entry: True), mock.patch(
             "futuresfund.mailer.send_report", fake_send
-        ), mock.patch("futuresfund.crew.get_crew", lambda _board: Immediate()):
+        ), mock.patch("futuresfund.crew.get_crew", lambda _board: Immediate()), mock.patch(
+            "futuresfund.strategy.pine_text", return_value='strategy("Delta Volume BOS Day Shift")\n'
+        ):
             board = Board()
             crowded = dict(measured, trades=1335)
             _offer_library(board, {"title": "Delta Volume BOS Day Shift"}, Path("delta_volume_bos_day.pine"), crowded)
@@ -741,7 +768,7 @@ class RatioLibraryTests(unittest.TestCase):
             )
             self.assertEqual(len(library.search_library("GC1!")["untested"]), 1)
 
-    def test_a_one_year_shelf_run_waits_even_when_the_ratio_is_under_1_5(self):
+    def test_a_one_year_run_past_the_drawdown_rule_is_not_filed(self):
         from unittest import mock
 
         from futuresfund import library
@@ -772,20 +799,10 @@ class RatioLibraryTests(unittest.TestCase):
             "futuresfund.learn.NOTES", Path(tmp)
         ), mock.patch("futuresfund.library.record_profitable", lambda entry: True), mock.patch(
             "futuresfund.mailer.send_report", fake_send
-        ):
+        ), mock.patch("futuresfund.strategy.pine_text", return_value='strategy("Pivot Trend")\n'):
             _offer_library(Board(), {"title": "Pivot Trend"}, Path("pivot_trend.pine"), row)
-            listed = library.search_library("NQ1!")["untested"]
-            self.assertEqual(len(listed), 1)
-            self.assertEqual(listed[0]["net_profit"], 300000.0)
-            self.assertEqual(listed[0]["trades"], 400)
-            self.assertEqual(listed[0]["kind"], "Not tested on the full dataset")
-            self.assertFalse(listed[0]["full_dataset"])
-            self.assertEqual(listed[0]["window"], "one year")
+            self.assertEqual(library.search_library("NQ1!")["untested"], [])
             self.assertEqual(sent, [])
-
-            long_span = dict(row, days=1291, net_profit=88000.0)
-            _offer_library(Board(), {"title": "Already Long"}, Path("already_long.pine"), long_span)
-            self.assertEqual(len(library.search_library("NQ1!")["untested"]), 1)
 
     def test_a_one_year_62_percent_run_waits_and_stays_off_the_profitable_shelf(self):
         from unittest import mock
@@ -813,12 +830,14 @@ class RatioLibraryTests(unittest.TestCase):
         }
         with TemporaryDirectory() as tmp, mock.patch.object(library, "_NOTES", Path(tmp)), mock.patch(
             "futuresfund.learn.NOTES", Path(tmp)
-        ), mock.patch("futuresfund.mailer.send_report", lambda *args, **kwargs: {"sent": False}):
+        ), mock.patch("futuresfund.mailer.send_report", lambda *args, **kwargs: {"sent": False}), mock.patch(
+            "futuresfund.strategy.pine_text", return_value='strategy("POC RSI Momentum v20")\n'
+        ):
             _offer_library(Board(), {"title": "POC RSI Momentum v20"}, Path("poc_rsi_momentum_v20.pine"), row)
             self.assertEqual(library.search_library("NQ1!")["untested"], [])
             self.assertEqual(library.search_library("NQ1!")["strategies"], [])
 
-            held = dict(row, biggest_loser=-1500.0)
+            held = dict(row, biggest_loser=-700.0, max_drawdown=15000.0, profit_ratio=1.2)
             _offer_library(Board(), {"title": "POC RSI Momentum v20"}, Path("poc_rsi_momentum_v20.pine"), held)
             listed = library.search_library("NQ1!")["untested"]
             self.assertEqual(len(listed), 1)
@@ -827,7 +846,7 @@ class RatioLibraryTests(unittest.TestCase):
             self.assertEqual(listed[0]["kind"], "Not tested on the full dataset")
             self.assertEqual(library.search_library("NQ1!")["strategies"], [])
 
-            full = dict(row, days=1300, max_drawdown=2000.0, profit_ratio=1.2, biggest_loser=-400.0)
+            full = dict(row, days=1300, trades=850, max_drawdown=2000.0, profit_ratio=1.2, biggest_loser=-400.0)
             _offer_library(Board(), {"title": "POC RSI Momentum v20"}, Path("poc_rsi_momentum_v20.pine"), full)
             strategies = library.search_library("NQ1!")["strategies"]
             self.assertEqual(len(strategies), 1)
@@ -850,11 +869,11 @@ class RatioLibraryTests(unittest.TestCase):
             "runner": "backtrader",
             "net_profit": 15000.0,
             "max_drawdown": 800.0,
-            "trades": 80,
+            "trades": 170,
             "days": 260,
             "win_rate": 50.0,
             "profit_factor": 1.3,
-            "profit_ratio": 0.8,
+            "profit_ratio": 1.3,
             "biggest_loser": -400.0,
             "instrument": "ES",
             "timeframe": "15m",
@@ -863,7 +882,9 @@ class RatioLibraryTests(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp, mock.patch.object(library, "_NOTES", Path(tmp)), mock.patch(
                 "futuresfund.learn.NOTES", Path(tmp)
-            ), mock.patch("futuresfund.library.record_profitable", lambda entry: False):
+            ), mock.patch("futuresfund.library.record_profitable", lambda entry: False), mock.patch(
+                "futuresfund.strategy.pine_text", return_value='strategy("Kept Run")\n'
+            ):
                 bookmod.BOOK_PATH = Path(tmp) / "book.json"
                 save_strategy_acceptance({
                     "min_profit": 14000, "profit_factor": 1.1, "win_rate": 48, "min_trades": 60,
@@ -876,7 +897,7 @@ class RatioLibraryTests(unittest.TestCase):
                 })
                 listed = library.search_library("ES1!")["untested"]
                 self.assertEqual([item["title"] for item in listed], ["Kept Run"])
-                _offer_library(Board(), {"title": "Too Late"}, Path("too_late.pine"), dict(row, net_profit=18000.0, trades=90))
+                _offer_library(Board(), {"title": "Too Late"}, Path("too_late.pine"), dict(row, net_profit=18000.0, trades=180))
                 self.assertEqual([item["title"] for item in library.search_library("ES1!")["untested"]], ["Kept Run"])
         finally:
             bookmod.BOOK_PATH = original
@@ -929,7 +950,7 @@ class QueueTests(unittest.TestCase):
             covered = {
                 "instruments": {
                     name: {"attempts": 1, "trials": [{"trades": 10, "net_profit": 1, "max_drawdown": 1}]}
-                    for name in ("ES", "QO", "NQ")
+                    for name in learn.research_instruments()
                 }
             }
             (notes / "ema_done.json").write_text(json.dumps(covered), encoding="utf-8")
@@ -1152,11 +1173,17 @@ class QueueTests(unittest.TestCase):
                 empty.mkdir()
                 self.assertEqual(learn.queue(empty), [])
                 self.assertEqual(learn.queue(), [])
-                (notes / "created_bos.json").write_text(
-                    '{"best": {"net_profit": 900, "trades": 10, "max_drawdown": 200}}',
-                    encoding="utf-8",
-                )
-                self.assertEqual([path.name for path in learn.queue()], ["created_bos.pine"])
+                from unittest import mock
+
+                with mock.patch("futuresfund.book.strategy_acceptance", return_value=dict(ACCEPTANCE_LIMITS)):
+                    # A profit is not enough: a created script moves on only after one run cleared the acceptance.
+                    (notes / "created_bos.json").write_text(
+                        '{"best": {"net_profit": 900, "trades": 10, "max_drawdown": 200}}',
+                        encoding="utf-8",
+                    )
+                    self.assertEqual(learn.queue(), [])
+                    (notes / "created_bos.json").write_text(__import__("json").dumps({"best": PASSING_RUN}), encoding="utf-8")
+                    self.assertEqual([path.name for path in learn.queue()], ["created_bos.pine"])
                 (learning / "kept.pine").write_text('strategy("Kept")\n', encoding="utf-8")
                 self.assertEqual([path.name for path in learn.queue()], ["kept.pine"])
                 self.assertEqual(learn.queue(learning), [learning / "kept.pine"])
@@ -1189,14 +1216,19 @@ class QueueTests(unittest.TestCase):
             previous = (learn.LEARNING, learn.CREATED, learn.NOTES)
             learn.LEARNING, learn.CREATED, learn.NOTES = learning, created, notes
             try:
-                with mock.patch("futuresfund.learn.research_instruments", lambda: ["ES"]):
+                with mock.patch("futuresfund.learn.research_instruments", lambda: ["ES"]), \
+                        mock.patch("futuresfund.book.strategy_acceptance", return_value=dict(ACCEPTANCE_LIMITS)):
                     self.assertEqual(learn.jobs_for_chart("5m"), [])
+                    passed = {"attempts": 1, "best": PASSING_RUN, "trials": [PASSING_RUN]}
                     (notes / "created_next.json").write_text(
-                        '{"instruments": {"NQ": {"best": {"net_profit": 700, "trades": 9, "max_drawdown": 150}, "charts": {"2m": {"attempts": 1, "best": {"net_profit": 700, "trades": 9}, "trials": [{"trades": 9, "net_profit": 700}]}}}}}',
+                        __import__("json").dumps({"instruments": {"NQ": {"best": PASSING_RUN, "charts": {"2m": passed}}}}),
                         encoding="utf-8",
                     )
                     self.assertEqual([path.name for path in learn.jobs_for_chart("5m")], ["created_next.pine"])
                     self.assertEqual([path.name for path in learn.jobs_for_chart("2m")], ["kept.pine"])
+                    # A learning script held out of the run, such as one that does not compile, hands the chart to createdStrategies.
+                    held = {(str(learning / "kept.pine"), "2m")}
+                    self.assertEqual([path.name for path in learn.jobs_for_chart("2m", held=held)], ["created_next.pine"])
                     self.assertFalse(learn.chart_needs_a_script("5m"))
                     counts = {row["timeframe"]: row for row in learn.chart_folder_counts()}
                     self.assertEqual(counts["5m"]["learning_done"], 1)

@@ -1,0 +1,14 @@
+Taken from the application just now.
+Strategy: EMA BB Mean Reversion.
+Chart tested: 15-minute ES (ES1!).
+Profit 4595.5. Drawdown 4330.0. Trades 297.
+Trades a week: 5.7 over 260 trading days.
+Bars in this test: 23,704 from 2025-10-01 18:00 through 2026-10-02 16:45.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. It trades at least 4 times a week, and it is not on the shelf yet.
+Settings of this version: ema_slow=55, ema_fast=15, ema_backcandles=5, bb_length=37, bb_std=1.5, atr_length=18, sl_atr_mult=1.6875, tp_sl_ratio=1.25, cooldown_bars=3, use_session=True, sess_start_hr=18, sess_start_mn=0.
+Different results on this chart: 38.
+Engine runs on this chart: 39.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 1 minutes 47 seconds.

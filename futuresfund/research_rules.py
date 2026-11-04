@@ -5,9 +5,8 @@ Those inputs then change like any other input: the search can turn them on and
 move the amounts, and a change that raises profit stays for the following runs.
 The take profit stays larger than the stop: a stop of 100 keeps the take
 profit above 100. A larger target is still tried. A stop entered as a percent
-of the account is not larger than 3 percent, and the take profit is not larger
-than 4 percent. A leftover dollar stop is not larger than $1,500 and a leftover
-dollar take profit is not larger than $2,000.
+of the account is not larger than 1.4 percent. A leftover dollar stop is not
+larger than $700. There is no maximum on the take profit.
 """
 
 from __future__ import annotations
@@ -19,9 +18,9 @@ _TARGET_DOLLARS = ("tp_dollars", "take_profit", "tp_dollar", "target_dollars")
 _TARGET_PCT = ("tp_pct",)
 _TARGET_POINTS = ("take_profit_points", "tp_pts", "tp_points")
 EXIT_DOLLAR_STEP = 50.0
-# The stop is measured on these dollars. The take profit uses the same steps and continues to $2,000.
-STOP_LADDER = (250.0, 500.0, 750.0, 1000.0, 1250.0, 1500.0)
-TARGET_LADDER = (250.0, 500.0, 750.0, 1000.0, 1250.0, 1500.0, 1750.0, 2000.0)
+# The stop is measured on these dollars. The take profit has no maximum, so its steps run on until the search stops gaining.
+STOP_LADDER = (250.0, 500.0, 700.0)
+TARGET_LADDER = (250.0, 500.0, 750.0, 1000.0, 1250.0, 1500.0, 1750.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0, 7500.0, 10000.0)
 STOP_CHECKPOINTS = STOP_LADDER
 
 
@@ -130,14 +129,14 @@ def next_rung(name: str, current, account_size: float = 50_000.0):
 
 
 def stop_checkpoints(name: str, account_size: float = 50_000.0) -> list[float]:
-    """Dollar stops the search measures: $250, $500, $750, $1,000, $1,250, and $1,500."""
+    """Dollar stops the search measures: $250, $500, and $700."""
     if _exit_kind(name) != "stop":
         return []
     return exit_ladder(name, account_size)
 
 
 def opening_stop_value(name: str, value, account_size: float = 50_000.0):
-    """A $1,000 template stop starts at $250. A $1,500 template target starts at $500."""
+    """A template stop at the $700 cap or above starts at $250. A $1,500 template target starts at $500."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return value
     compact = (name or "").lower().replace("_", "")
@@ -150,7 +149,7 @@ def opening_stop_value(name: str, value, account_size: float = 50_000.0):
         nxt = 500.0
     elif target and percent and number >= 3:
         nxt = 1.0
-    elif not target and number >= (2.0 if percent else 1000.0) and stop_checkpoints(name, account_size):
+    elif not target and number >= (1.4 if percent else 700.0) and stop_checkpoints(name, account_size):
         nxt = stop_checkpoints(name, account_size)[0]
     else:
         return value
@@ -191,9 +190,9 @@ def exit_cap(name: str) -> float | None:
 
 
 def _cap_dollars(params: dict) -> dict:
-    """A percent stop stays at or under 3 percent of the account. A percent take profit stays at or under 4 percent.
+    """A percent stop stays at or under 1.4 percent of the account. A leftover dollar stop stays at or under $700.
 
-    A leftover dollar stop stays at or under $1,500. A leftover dollar take profit stays at or under $2,000.
+    The take profit has no maximum.
     """
     from futuresfund.risk_style import STOP_CAP, STOP_PCT_CAP, TP_CAP, TP_PCT_CAP
 
@@ -295,16 +294,18 @@ def risk_problems(source: str) -> list[str]:
 
 
 def _float_inputs(source: str) -> dict[str, tuple[float, float | None, float | None]]:
-    import re
+    from futuresfund.pine_report import input_calls
 
     found = {}
-    pattern = re.compile(
-        r"([A-Za-z_]\w*)\s*=\s*input\.(?:float|int)\s*\(\s*(-?\d+(?:\.\d+)?)\s*,([^)\n]*)\)",
-        re.IGNORECASE,
-    )
-    for match in pattern.finditer(source or ""):
-        rest = match.group(3)
-        found[match.group(1)] = (float(match.group(2)), _bound(rest, "minval"), _bound(rest, "maxval"))
+    for call in input_calls(source or ""):
+        if call["kind"] not in {"int", "float"}:
+            continue
+        piece = (call["body"] or "").split(",")[0].strip()
+        try:
+            default = float(piece)
+        except ValueError:
+            continue
+        found[call["name"]] = (default, _bound(call["body"], "minval"), _bound(call["body"], "maxval"))
     return found
 
 

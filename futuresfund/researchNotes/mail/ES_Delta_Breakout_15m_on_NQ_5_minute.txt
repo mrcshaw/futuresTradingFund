@@ -1,0 +1,21 @@
+Subject: Desk Update: ES Delta Breakout 15m Results on Nasdaq (NQ1!)
+
+The latest run for **ES Delta Breakout 15m** on the **5-minute Nasdaq (NQ1!)** chart has concluded. Here are the details:
+
+*   **Profit:** $3,005.00
+*   **Drawdown:** $8,810.00
+*   **Trades:** 543
+*   **Trades Per Day:** ~2.09 (10.45 per week over 260 days)
+*   **Profit Ratio:** Not calculated (Drawdown exceeded $2,500, violating the mandatory risk constraint before profit target was met)
+
+**Analysis:**
+This result **did not meet** the criteria for inclusion in the strategy library or for live deployment.
+
+1.  **Drawdown Breach:** The trailing drawdown of $8,810.00 far exceeds the $2,500 limit. Any run with drawdown greater than $2,500 before reaching the $3,000 profit target is excluded from consideration.
+2.  **Library Status:** This result is **not** on the strategy library. The library requires a profit over $14,000 and adherence to drawdown limits. This run was under the profit threshold and over the drawdown threshold.
+3.  **Trade Frequency:** At ~2 trades per day, this is below the minimum threshold of 130 trades per year (approx. 0.5 trades per day). This is considered too quiet to be a viable strategy.
+
+**Conclusion:**
+This run is **not filed**. It failed the drawdown constraint, did not meet the profit target, and falls below the minimum trade frequency. The strategy remains unchanged on the library. No action is taken on this desk.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 7 minutes 35 seconds.

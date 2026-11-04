@@ -1,0 +1,110 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 1525.0,
+   "max_drawdown": 2862.5,
+   "trades": 17
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -250.0,
+   "max_drawdown": 750.0,
+   "trades": 17
+  },
+  "ema_len": {
+   "value": 5,
+   "net_profit": -1000.0,
+   "max_drawdown": 3037.5,
+   "trades": 40
+  },
+  "vwma_len": {
+   "value": 36,
+   "net_profit": -325.0,
+   "max_drawdown": 3012.5,
+   "trades": 56
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -2812.5,
+   "max_drawdown": 3812.5,
+   "trades": 18
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -2812.5,
+   "max_drawdown": 3812.5,
+   "trades": 18
+  },
+  "sess_start_mn": {
+   "value": 10,
+   "net_profit": -1000.0,
+   "max_drawdown": 2000.0,
+   "trades": 16
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 750.0,
+   "max_drawdown": 675.0,
+   "trades": 6
+  }
+ },
+ "flat": [
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "ema_len": 21,
+   "vwma_len": 144
+  },
+  "net_profit": -500.0,
+  "max_drawdown": 1500.0,
+  "trades": 17,
+  "win_rate": 29.41,
+  "profit_factor": 0.833,
+  "biggest_winner": 500.0,
+  "biggest_loser": -250.0,
+  "held_loser": -250.0,
+  "exits": [
+   {
+    "exit": "Long exit",
+    "trades": 9,
+    "pnl": 0.0,
+    "favorable": 255.56,
+    "adverse": -197.22
+   },
+   {
+    "exit": "Short exit",
+    "trades": 8,
+    "pnl": -500.0,
+    "favorable": 284.38,
+    "adverse": -220.31
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

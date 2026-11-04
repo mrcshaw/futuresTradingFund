@@ -1,0 +1,5 @@
+Subject: Desk Update: POC RSI Momentum v3 (GC1!)
+
+The POC RSI Momentum v3 strategy just completed a run on the 2-minute Gold chart. The results show a profit of $3,800.00 against a drawdown of $9,987.50 across 65 trades. With 5.7 trades per week over 57 trading days, the annualized pace falls well within the 130 to 600 trade target. However, this run does not meet the criteria for inclusion in the strategy library because the profit is under the $10,000 threshold. It was not filed. The settings used were pivot_left=5, pivot_right=5, rsiLen=14, emaLen=6, atrLen=7, stopMult=11.5508, tpMult=29.8024, and cooldownBars=10.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 7 minutes 35 seconds.

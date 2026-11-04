@@ -1,0 +1,9 @@
+Strategy: Engine4_NewBreakout_v1.
+File: created_engine4_newbreakout_v1.pine.
+Chart: 15m NQ1!.
+Profit 5990.0. Drawdown 2490.0. Trades 231.
+Profit ratio 30.891. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.41 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, and the run has at least 60 trades. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

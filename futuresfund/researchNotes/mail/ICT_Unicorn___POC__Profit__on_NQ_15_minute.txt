@@ -1,0 +1,12 @@
+Subject: Desk Update: ICT Unicorn + POC [Profit] Run Results
+
+The ICT Unicorn + POC [Profit] strategy has finished its run on the 15-minute Nasdaq (NQ1!) chart. The engine processed 23,704 bars from October 1, 2025, through October 2, 2026. The run generated a profit of $18,377.00 with a maximum drawdown of $1,430.50 across 418 trades. The win rate for this specific execution was 17.46%.
+
+Per the strategy library guidelines, a strategy is only filed if the drawdown stays under 5% of the account, the run has at least 60 trades, profit is above $5,000, and the win rate is above 40 percent. The acceptance line on the strategy library page requires these four conditions to be met. This run’s win rate of 17.46% fails the requirement for a win rate above 40 percent. Therefore, this result was not filed in the strategy library. The library keeps a win rate above 40 percent. This run's win rate is 17.46.
+
+The strategy notes indicate that settings were adjusted with stop_pct=0.1, tp_pct=1.0, stop_cash=0.0, tp_cash=0.0, use_trail=False, trail_pct=50.0, trail_step_acct=1.0, trail_step_pct=50.0, trail_min_pct=2.0, use_session=True, sess_start_hr=18, sess_start_mn=0. The desk clock is Saturday 03:05 AM ET. No meeting is scheduled. I will flatten any open trades at 16:45 New York time. The goal remains to keep the drawdown under 5 percent of the account.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

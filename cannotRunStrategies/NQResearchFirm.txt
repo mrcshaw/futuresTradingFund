@@ -1,0 +1,89 @@
+//@version=5
+// How this script works
+// The script is a 2-minute NQ strategy that uses a fixed 1-contract size.
+// Its entry is a VWMA cross: it opens when the VWMA crosses above or below the price.
+// Longs require the VWMA to cross above the close, while shorts require the VWMA to cross below the close.
+// The stop is a fixed dollar stop, and the code also exits if open profit reaches that negative dollar amount.
+// A session filter can restrict trading to the configured 18:00 to 16:00 New York window when enabled.
+
+strategy("2min NQ VWMA Cross", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_boxes_count=500)
+// ===== RISK =====
+pv                = input.float(20, "Point Value ($)")
+stop_dollars      = input.int(1500, "Stop ($)", minval=250, maxval=1500)
+tp_dollars        = input.int(2000, "Take Profit ($)", minval=250, maxval=2000)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+
+long_stop = close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// ===== TREND FILTER =====
+vwma_len       = input.int(89, "Trend VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_slope      = input.float(2, "Min VWMA Slope (pts)", minval=0.0, tooltip="0 = disabled.")
+
+// ===== ENTRY =====
+confirm_candles = input.int(8, "Confirmation Candles", minval=1, maxval=10, step=1, tooltip="Unused in this version, kept for compatibility.")
+cooldown_bars   = input.int(2, "Cooldown (bars)", minval=0, maxval=100, step=1)
+pullback_dollars = input.float(40.0, "Pullback ($)", minval=0.0, maxval=1000.0, step=5.0, tooltip="Unused in this version, kept for compatibility.")
+use_session     = input.bool(true, "Use Session Filter")
+sess_start_hr   = input.int(18, "Session Start Hour", minval=0, maxval=23)
+sess_start_mn   = input.int(0, "Session Start Minute", minval=0, maxval=59)
+sess_end_hr     = input.int(16, "Session End Hour", minval=0, maxval=23)
+sess_end_mn     = input.int(0, "Session End Minute", minval=0, maxval=59)
+use_daily_limits = input.bool(false, "Use Daily Limits")
+daily_loss_limit = input.float(0.0, "Daily Loss Limit ($)", minval=0.0, maxval=100000.0)
+daily_profit_cap = input.float(0.0, "Daily Profit Cap ($)", minval=0.0, maxval=100000.0)
+
+// Calculations
+vwma_val = ta.vwma(close, vwma_len)
+vwma_prev = vwma_val[1]
+close_prev = close[1]
+
+// Cross Up: VWMA was below close, now above
+cross_up = vwma_prev <= close_prev and vwma_val > close
+// Cross Down: VWMA was above close, now below
+cross_down = vwma_prev >= close_prev and vwma_val < close
+
+// Session Filter
+in_session = true
+if use_session
+    in_session = time("18:00", "16:00", "America/New_York")
+
+// Cooldown
+var int last_trade_bar = 0
+can_trade = bar_index - last_trade_bar > cooldown_bars
+
+// Entry Logic
+long_sig = cross_up and in_session and can_trade and strategy.position_size == 0
+short_sig = cross_down and in_session and can_trade and strategy.position_size == 0
+
+if long_sig
+    strategy.entry("Long", strategy.long)
+    last_trade_bar := bar_index
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
+
+if short_sig
+    strategy.entry("Short", strategy.short)
+    last_trade_bar := bar_index
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
+
+// Flatten at 16:45 New York
+if time("16:45", "16:45", "America/New_York")
+    strategy.close_all(comment="Flatten EOD")
+
+// Plots
+plot(vwma_val, "VWMA", color=color.blue, linewidth=2)
+plotshape(long_sig, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)

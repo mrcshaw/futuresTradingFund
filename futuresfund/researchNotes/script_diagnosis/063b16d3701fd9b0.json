@@ -1,0 +1,121 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 147.5,
+   "max_drawdown": 77.5,
+   "trades": 1
+  },
+  "min_delta_pct": {
+   "value": 20.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "vwma_len": {
+   "value": 80,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_len": {
+   "value": 2,
+   "net_profit": 71.0,
+   "max_drawdown": 69.0,
+   "trades": 2
+  },
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 227.0,
+   "max_drawdown": 731.0,
+   "trades": 3
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -333.0,
+   "max_drawdown": 396.5,
+   "trades": 3
+  },
+  "vwma_slope_len": {
+   "value": 20,
+   "net_profit": -281.0,
+   "max_drawdown": 281.0,
+   "trades": 1
+  },
+  "entry_end_hr": {
+   "value": 14,
+   "net_profit": -447.0,
+   "max_drawdown": 843.0,
+   "trades": 7
+  },
+  "entry_end_mn": {
+   "value": 59,
+   "net_profit": 115.0,
+   "max_drawdown": 536.5,
+   "trades": 5
+  }
+ },
+ "flat": [
+  "max_entries_per_day"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "use_skip": true,
+   "skip_start_hr": 5,
+   "skip_start_mn": 30,
+   "skip_end_hr": 7,
+   "skip_end_mn": 0,
+   "pv": 100.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 0.5469,
+   "vwma_len": 20,
+   "vwma_slope_len": 5,
+   "pivot_len": 2,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "max_entries_per_day": 2
+  },
+  "net_profit": -83.0,
+  "max_drawdown": 396.5,
+  "trades": 3,
+  "win_rate": 33.33,
+  "profit_factor": 0.852,
+  "biggest_winner": 479.0,
+  "biggest_loser": -281.0,
+  "held_loser": -281.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 3,
+    "pnl": -83.0,
+    "favorable": 191.17,
+    "adverse": -222.17
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

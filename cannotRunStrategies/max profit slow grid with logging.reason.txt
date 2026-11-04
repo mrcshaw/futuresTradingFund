@@ -1,0 +1,1 @@
+max profit slow grid with logging.txt took no trades and made no profit 20 times in a row.

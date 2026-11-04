@@ -1,0 +1,224 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 1000,
+   "net_profit": 1098.0,
+   "max_drawdown": 1559.5,
+   "trades": 7
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 471.5,
+   "max_drawdown": 329.0,
+   "trades": 6
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 2851.0,
+   "max_drawdown": 858.0,
+   "trades": 9
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 1848.0,
+   "max_drawdown": 572.0,
+   "trades": 7
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": 1774.5,
+   "max_drawdown": 341.5,
+   "trades": 8
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 1279.5,
+   "max_drawdown": 286.0,
+   "trades": 3
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_right": {
+   "value": 2,
+   "net_profit": -1822.5,
+   "max_drawdown": 2404.5,
+   "trades": 10
+  },
+  "disarm_only_inside_poc": {
+   "value": false,
+   "net_profit": 2007.5,
+   "max_drawdown": 329.0,
+   "trades": 5
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": 1991.5,
+   "max_drawdown": 752.5,
+   "trades": 11
+  },
+  "vol_ma_len": {
+   "value": 5,
+   "net_profit": 707.5,
+   "max_drawdown": 391.5,
+   "trades": 5
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": 1352.5,
+   "max_drawdown": 624.5,
+   "trades": 10
+  }
+ },
+ "flat": [
+  "reduced_stop_dollars",
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "vwma_slope_len",
+  "pivot_left",
+  "cooldown_bars",
+  "use_reduced_risk",
+  "reduced_start_hr",
+  "reduced_start_mn",
+  "reduced_end_hr",
+  "reduced_end_mn",
+  "reduced_tp_dollars",
+  "use_breakeven",
+  "be_trigger_dollars"
+ ],
+ "untested": [
+  "rev_on_any_loss",
+  "use_session",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "pivot_left": 3,
+   "pivot_right": 3,
+   "disarm_only_inside_poc": true,
+   "cooldown_bars": 5,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_reduced_risk": true,
+   "reduced_start_hr": 12,
+   "reduced_start_mn": 0,
+   "reduced_end_hr": 16,
+   "reduced_end_mn": 0,
+   "reduced_stop_dollars": 500.0,
+   "reduced_tp_dollars": 450.0,
+   "use_breakeven": true,
+   "be_trigger_dollars": 150.0,
+   "rev_on_any_loss": false
+  },
+  "net_profit": 1721.5,
+  "max_drawdown": 329.0,
+  "trades": 6,
+  "win_rate": 66.67,
+  "profit_factor": 4.01,
+  "biggest_winner": 1101.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 3,
+    "pnl": 654.5,
+    "favorable": 352.83,
+    "adverse": -172.17
+   },
+   {
+    "exit": "Session Close",
+    "trades": 2,
+    "pnl": 1353.0,
+    "favorable": 1225.75,
+    "adverse": -111.75
+   },
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": -286.0,
+    "favorable": 44.5,
+    "adverse": -280.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true,
+ "answer": {
+  "because": "The reduced_stop_dollars input is not connected to any exit logic, so it changes no trade; the script must use it for the stop when the reduced risk window is active.",
+  "script": "//@version=5\n// How this script works\n// The script builds a volume profile and uses the point of control (POC) and POC delta imbalance as directional context.\n// It opens trades on a pivot-confirmed breakout (BOS) when a confirmed pivot is broken, subject to VWMA trend, confirmation-bar volume, and session/reduced-risk filters.\n// The stop is a dollar stop from the stop_dollars input, with long_stop below price and short_stop above price, and the script also closes a position if open P&L reaches that stop.\n// Exits also include a take-profit from tp_dollars, with optional trailing and reduced-risk stop/take-profit logic.\n// The VWMA is used as a filter, not as the entry signal.\n\nstrategy(\"Day shift BOS Profitable 17k Delta Volume Breakout\", overlay=true,\n  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,\n  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,\n  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,\n  max_bars_back=5000, max_labels_count=500)\n// ===== RISK =====\npv                = input.float(50, \"Point Value ($)\")\nstop_dollars      = input.int(250, \"Stop ($)\", minval=250, maxval=1500)\ntp_dollars        = input.int(500, \"Take Profit ($)\", minval=250, maxval=2000)\nuse_trail         = input.bool(false, \"Enable Trailing Stop\")\ntrail_pct         = input.float(50, \"Trail keep (%)\", minval=0, maxval=100)\ntrail_step_amt    = input.int(500, \"Trail: Tighten every ($)\", minval=0, maxval=2000)\ntrail_step_pct    = input.float(50, \"Trail step (%)\", minval=0, maxval=100)\ntrail_min_dollars = input.int(1000, \"Trail: Min Profit ($)\", minval=0, maxval=2000)\nlong_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv\nlong_limit = close + tp_dollars / pv\nshort_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv\nshort_limit = close - tp_dollars / pv\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -stop_dollars\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\n// ===== VOLUME PROFILE =====\nprofile_lookback = input.int(120, \"Profile Lookback (bars)\", minval=20, maxval=2000, step=10)\nprofile_rows     = input.int(10, \"Price Levels (rows)\", minval=5, maxval=100, step=5, tooltip=\"More rows = finer resolution but slower.\")\n\n// ===== DELTA VOLUME =====\nmin_delta_pct = input.float(10.0, \"Min Delta Imbalance (%)\", minval=0, maxval=80, step=5, tooltip=\"Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.\")\n\n// ===== TREND FILTER =====\nvwma_len       = input.int(50, \"Trend VWMA Length\", minval=1)\nvwma_slope_len = input.int(5, \"VWMA Slope Lookback (bars)\", minval=1)\nmin_slope      = input.float(0.0, \"Min VWMA Slope (pts)\", minval=0.0, tooltip=\"0 = disabled.\")\n\n// ===== ENTRY (Pivot confirmation) =====\npivot_left   = input.int(3, \"Pivot Left Bars\", minval=2, maxval=21, step=1, tooltip=\"Bars to left of pivot high/low.\")\npivot_right  = input.int(3, \"Pivot Right Bars\", minval=2, maxval=21, step=1, tooltip=\"Bars to right - pivot confirmed when this many bars pass.\")\ndisarm_only_inside_poc = input.bool(true, \"Disarm Only When Back Inside POC\", tooltip=\"If true, stay armed through pullbacks; only disarm when price fully re-enters POC zone.\")\ncooldown_bars = input.int(5, \"Cooldown (bars)\", minval=0, maxval=100, step=1)\n\n// ===== FILTERS =====\nuse_price_vwma  = input.bool(true, \"Price vs VWMA\", group=\"Filters\", tooltip=\"Long: close above VWMA. Short: close below VWMA.\")\nvol_ma_len     = input.int(20, \"Volume MA Length\", minval=5, maxval=100, group=\"Filters\")\nuse_vol_filter = input.bool(true, \"High Volume on Confirmation\", group=\"Filters\", tooltip=\"Confirmation bar must have above-average volume.\")\n\n// ===== SESSION =====\nuse_session   = input.bool(true, \"Use Session Filter\")\nsess_start_hr = input.int(8, \"Session Start Hour (ET)\")\nsess_start_mn = input.int(0,  \"Session Start Minute\")\nsess_end_hr   = input.int(16,  \"Session End Hour (ET)\")\nsess_end_mn   = input.int(0,  \"Session End Minute\")\n\n\n// ===== REDUCED RISK =====\nuse_reduced_risk      = input.bool(true, \"Use Reduced Risk Window\", group=\"Reduced Risk\")\nreduced_start_hr      = input.int(12, \"Start Hour (ET)\", minval=0, maxval=23, group=\"Reduced Risk\")\nreduced_start_mn      = input.int(0,  \"Start Minute\", minval=0, maxval=59, group=\"Reduced Risk\")\nreduced_end_hr        = input.int(16, \"End Hour (ET)\", minval=0, maxval=23, group=\"Reduced Risk\")\nreduced_end_mn        = input.int(0,  \"End Minute\", minval=0, maxval=59, group=\"Reduced Risk\")\nreduced_stop_dollars  = input.float(500.0, \"Reduced Stop ($)\", group=\"Reduced Risk\")\nreduced_tp_dollars    = input.float(450.0, \"Reduced Take Profit ($)\", group=\"Reduced Risk\")\n\n\n// ===== BREAKEVEN =====\nuse_breakeven      = input.bool(true, \"Enable Breakeven Stop\", group=\"Breakeven\")\nbe_trigger_dollars = input.float(150.0, \"BE Trigger ($)\", minval=50, tooltip=\"Move stop to entry + 1 tick after this much unrealized profit.\", group=\"Breakeven\")\nrev_on_any_loss    = input.bool(false, \"Reverse on Any Loss (incl. BE)\", group=\"Breakeven\",\n  tooltip=\"If true, reverse on ANY losing trade (including after BE triggered). If false, only reverse on full stop-outs where BE was never hit.\")\n\n// ===== COMPUTED =====\nfloat be_trigger_pts = be_trigger_dollars / pv\n\n// ===== SESSION LOGIC =====\nbar_hr = hour(time, \"America/New_York\")\nbar_mn = minute(time, \"America/New_York\")\nbar_t  = bar_hr * 100 + bar_mn\nint s_start = sess_start_hr * 100 + sess_start_mn\nint s_end   = sess_end_hr * 100 + sess_end_mn\n\nbool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))\n\n// Reduced risk window\nint r_start = reduced_start_hr * 100 + reduced_start_mn\nint r_end   = reduced_end_hr * 100 + reduced_end_mn\nbool in_reduced = use_reduced_risk and (r_start > r_end ? (bar_t >= r_start or bar_t < r_end) : (bar_t >= r_start and bar_t < r_end))\n\nfloat stop_pts = stop_dollars / pv\nfloat tp_pts   = tp_dollars / pv\n\nprev_hr = hour(time[1], \"America/New_York\")\nprev_mn = minute(time[1], \"America/New_York\")\nprev_t  = prev_hr * 100 + prev_mn\nbool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))\nbool session_ended = was_in_session and not in_session\n\nif session_ended and strategy.position_size != 0\n    strategy.close_all(comment=\"Session Close\")\n\n// ===== PER-BAR EXIT MANAGEMENT =====\nlong_stop := strategy.position_size > 0 ? strategy.position_avg_price - (in_reduced ? reduced_stop_dollars : stop_dollars) / pv : close - (in_reduced ? reduced_stop_dollars : stop_dollars) / pv\nshort_stop := strategy.position_size < 0 ? strategy.position_avg_price + (in_reduced ? reduced_stop_dollars : stop_dollars) / pv : close + (in_reduced ? reduced_stop_dollars : stop_dollars) / pv\n\nif strategy.position_size > 0\n    strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\nelse if strategy.position_size < 0\n    strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -(in_reduced ? reduced_stop_dollars : stop_dollars)\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\n// ===== VWMA TREND =====\nfloat vwma_val   = ta.vwma(close, vwma_len)\nfloat vwma_slope = vwma_val - vwma_val[vwma_slope_len]\nbool  vwma_up    = min_slope <= 0 or vwma_slope > min_slope\nbool  vwma_dn    = min_slope <= 0 or vwma_slope < -min_slope\n\n// ===== VOLUME FILTER =====\nfloat vol_ma    = ta.sma(volume, vol_ma_len)\nbool high_vol   = volume >= vol_ma\n\n// ===== VOLUME PROFILE WITH DELTA =====\nint lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    for a = 0 to 2\n        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn\n        if arr.size() != rows\n            arr.clear()\n            for i = 0 to rows - 1\n                arr.push(0.0)\n        else\n            for i = 0 to rows - 1\n                arr.set(i, 0.0)\n\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0\n\n// ===== BREAKOUT SIGNALS =====\nbool above_poc = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi\nbool below_poc = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo\n\nbool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nbool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\n\n// ===== PIVOT POINT CONFIRMATION =====\nfloat ph = ta.pivothigh(high, pivot_left, pivot_right)\nfloat pl = ta.pivotlow(low, pivot_left, pivot_right)\n\n\n// ===== ARM ON POC BREAKOUT, ENTER ON PIVOT CONFIRMATION =====\nvar int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear\n    armed_dir := -1\n\n// Disarm: standard = any giveback; disarm_only_inside_poc = only when price fully back in POC zone\nif armed_dir == 1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close <= poc_lo\n            armed_dir := 0\n    else if close <= poc_hi\n        armed_dir := 0\nelse if armed_dir == -1 and not na(poc_hi) and not na(poc_lo)\n    if disarm_only_inside_poc\n        if close >= poc_hi\n            armed_dir := 0\n    else if close >= poc_lo\n        armed_dir := 0\n\n// Pivot confirms: pivot high = new high established (long). Pivot low = new low established (short).\nbool pivot_confirm_long  = armed_dir == 1 and not na(ph)\nbool pivot_confirm_short = armed_dir == -1 and not na(pl)\n\n// Apply filters\nbool price_ok_long  = not use_price_vwma or close > vwma_val\nbool price_ok_short = not use_price_vwma or close < vwma_val\nbool vol_ok         = not use_vol_filter or high_vol\n\nbool confirmed_long  = pivot_confirm_long and price_ok_long and vol_ok\nbool confirmed_short = pivot_confirm_short and price_ok_short and vol_ok\n\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\nbool long_sig  = confirmed_long and in_session and cooled_down and strategy.position_size <= 0\nbool short_sig = confirmed_short and in_session and cooled_down and strategy.position_size >= 0\n\n// ===== ENTRIES =====\nvar float current_stop    = 0.0\nvar float entry_price     = 0.0\nvar float peak_profit_pts = 0.0\nvar bool  be_active       = false\nvar int   last_dir        = 0      // 1=long, -1=short\nvar bool  was_be_active   = false  // snapshot of be_active before reset\nvar bool  reversal_pending = false\nvar bool  is_reversal     = false  // true while in a reversal trade\n\nfloat rev_stop_pts = stop_pts / 2.0\nfloat rev_tp_pts   = stop_pts         // 2:1 RR on half risk\n\nif long_sig\n    current_stop    := close - stop_pts\n    entry_price     := close\n    peak_profit_pts := 0.0\n    be_active       := false\n    is_reversal     := false\n    last_trade_bar  := bar_index\n    last_dir        := 1\n    armed_dir       := 0\n    strategy.entry(\"Long\", strategy.long)\n    strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\nelse if short_sig\n    current_stop    := close + stop_pts\n    entry_price     := close\n    peak_profit_pts := 0.0\n    be_active       := false\n    is_reversal     := false\n    last_trade_bar  := bar_index\n    last_dir        := -1\n    armed_dir       := 0\n    strategy.entry(\"Short\", strategy.short)\n    strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\n// ===== RESET AFTER TRADE \u2014 detect full stop loss =====\nif strategy.position_size == 0 and strategy.position_size[1] != 0\n    was_be_active := be_active\n    armed_dir       := 0\n    peak_profit_pts := 0.0\n    // Reverse on loss: either any loss (rev_on_any_loss) or only full stop (BE never hit)\n    if not is_reversal and last_dir != 0\n        bool loss_qualifies = rev_on_any_loss or not be_active\n        if loss_qualifies\n            int idx = strategy.closedtrades - 1\n            if idx >= 0 and strategy.closedtrades.profit(idx) < 0\n                reversal_pending := true\n    be_active   := false\n    is_reversal := false\n\n// ===== REVERSAL TRADE \u2014 opposite direction, half risk, 2:1 RR =====\nif reversal_pending and strategy.position_size == 0 and in_session\n    reversal_pending := false\n    is_reversal      := true\n    peak_profit_pts  := 0.0\n    be_active        := false\n    last_trade_bar   := bar_index\n    if last_dir == 1\n        // Was long, got stopped \u2192 reverse short\n        current_stop := close + rev_stop_pts\n        entry_price  := close\n        last_dir     := -1\n        strategy.entry(\"RevShort\", strategy.short)\n        strategy.exit(\"XRS\", \"RevShort\", stop=short_stop, limit=short_limit)\n    else if last_dir == -1\n        // Was short, got stopped \u2192 reverse long\n        current_stop := close - rev_stop_pts\n        entry_price  := close\n        last_dir     := 1\n        strategy.entry(\"RevLong\", strategy.long)\n        strategy.exit(\"XRL\", \"RevLong\", stop=long_stop, limit=long_limit)\n\n// ===== BREAKEVEN MANAGEMENT =====\nif use_breakeven and strategy.position_size != 0 and not be_active\n    if strategy.position_size > 0\n        float unrealized_pts = close - entry_price\n        if unrealized_pts >= be_trigger_pts\n            be_active    := true\n            current_stop := entry_price + 0.25\n            strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n    else if strategy.position_size < 0\n        float unrealized_pts = entry_price - close\n        if unrealized_pts >= be_trigger_pts\n            be_active    := true\n            current_stop := entry_price - 0.25\n            strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\nif strategy.position_size == 0\n    be_active := false\n\n// ===== TRAILING STOP =====\nif use_trail\n    if strategy.position_size > 0\n        float avg        = strategy.position_avg_price\n        float profit_now = high - avg\n        if profit_now > peak_profit_pts\n            peak_profit_pts := profit_now\n        if peak_profit_pts >= trail_min_dollars / pv\n            float peak_dollars = peak_profit_pts * pv\n            int   steps        = math.floor(peak_dollars / trail_step_amt)\n            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)\n            float new_stop     = avg + peak_profit_pts * (keep_pct / 100.0)\n            if new_stop > current_stop\n                current_stop := new_stop\n                strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\n    else if strategy.position_size < 0\n        float avg        = strategy.position_avg_price\n        float profit_now = avg - low\n        if profit_now > peak_profit_pts\n            peak_profit_pts := profit_now\n        if peak_profit_pts >= trail_min_dollars / pv\n            float peak_dollars = peak_profit_pts * pv\n            int   steps        = math.floor(peak_dollars / trail_step_amt)\n            float keep_pct     = math.min(trail_pct + steps * trail_step_pct, 95.0)\n            float new_stop     = avg - peak_profit_pts * (keep_pct / 100.0)\n            if new_stop < current_stop\n                current_stop := new_stop\n                strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\n// ===== CRITERIA DISPLAY TABLE (NEVER REMOVE) =====\n// Updated on every bar so it always stays rendered.\nvar table crit_table = table.new(position.top_right, 3, 11, bgcolor=color.new(color.black, 70), border_width=1)\n\ntable.cell(crit_table, 0, 0, \"Criterion\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 0, \"Long\", text_color=color.lime, text_size=size.tiny)\ntable.cell(crit_table, 2, 0, \"Short\", text_color=color.red, text_size=size.tiny)\n\n// Row 1: POC Breakout\ntable.cell(crit_table, 0, 1, \"POC Breakout\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 1, above_poc ? \"1\" : \"0\", text_color=above_poc ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 1, below_poc ? \"1\" : \"0\", text_color=below_poc ? color.red : color.gray, text_size=size.tiny)\n\n// Row 2: VWMA Trend\ntable.cell(crit_table, 0, 2, \"VWMA Slope (\" + str.tostring(vwma_slope, \"#.##\") + \")\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 2, vwma_up ? \"1\" : \"0\", text_color=vwma_up ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 2, vwma_dn ? \"1\" : \"0\", text_color=vwma_dn ? color.red : color.gray, text_size=size.tiny)\n\n// Row 3: Delta Imbalance\nstring delta_str = not na(poc_delta_pct) ? str.tostring(poc_delta_pct, \"#.#\") + \"%\" : \"n/a\"\ntable.cell(crit_table, 0, 3, \"Delta (\" + delta_str + \")\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 3, delta_bull ? \"1\" : \"0\", text_color=delta_bull ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 3, delta_bear ? \"1\" : \"0\", text_color=delta_bear ? color.red : color.gray, text_size=size.tiny)\n\n// Row 4: Pivot Confirm\ntable.cell(crit_table, 0, 4, \"Pivot Confirm\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 4, pivot_confirm_long ? \"1\" : \"0\", text_color=pivot_confirm_long ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 4, pivot_confirm_short ? \"1\" : \"0\", text_color=pivot_confirm_short ? color.red : color.gray, text_size=size.tiny)\n\n// Row 5: Price vs VWMA\ntable.cell(crit_table, 0, 5, \"Price vs VWMA\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 5, price_ok_long ? \"1\" : \"0\", text_color=price_ok_long ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 5, price_ok_short ? \"1\" : \"0\", text_color=price_ok_short ? color.red : color.gray, text_size=size.tiny)\n\n// Row 6: Volume Filter\ntable.cell(crit_table, 0, 6, \"High Volume\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 6, vol_ok ? \"1\" : \"0\", text_color=vol_ok ? color.lime : color.gray, text_size=size.tiny)\ntable.cell(crit_table, 2, 6, vol_ok ? \"1\" : \"0\", text_color=vol_ok ? color.red : color.gray, text_size=size.tiny)\n\n// Row 7: Armed direction\nstring armed_txt = armed_dir == 1 ? \"LONG\" : armed_dir == -1 ? \"SHORT\" : \"---\"\ncolor armed_col = armed_dir == 1 ? color.lime : armed_dir == -1 ? color.red : color.gray\ntable.cell(crit_table, 0, 7, \"Armed\", text_color=color.yellow, text_size=size.tiny)\ntable.cell(crit_table, 1, 7, armed_txt, text_color=armed_col, text_size=size.tiny)\ntable.cell(crit_table, 2, 7, \"\", text_size=size.tiny)\n\n// Row 8: Risk Mode\nstring risk_txt = in_reduced ? \"REDUCED  SL=$\" + str.tostring(reduced_stop_dollars, \"#\") + \"  TP=$\" + str.tostring(reduced_tp_dollars, \"#\") : \"NORMAL  SL=$\" + str.tostring(stop_dollars, \"#\") + \"  TP=$\" + str.tostring(tp_dollars, \"#\")\ncolor risk_col = in_reduced ? color.orange : color.gray\ntable.cell(crit_table, 0, 8, \"Risk Mode\", text_color=color.white, text_size=size.tiny)\ntable.cell(crit_table, 1, 8, risk_txt, text_color=risk_col, text_size=size.tiny)\ntable.cell(crit_table, 2, 8, \"\", text_size=size.tiny)\n\n// Row 9: Reversal\nstring rev_txt = is_reversal ? \"ACTIVE\" : reversal_pending ? \"PENDING\" : \"---\"\ncolor rev_col = is_reversal ? color.orange : reversal_pending ? color.yellow : color.gray\ntable.cell(crit_table, 0, 9, \"Reversal\", text_color=color.orange, text_size=size.tiny)\ntable.cell(crit_table, 1, 9, rev_txt, text_color=rev_col, text_size=size.tiny)\ntable.cell(crit_table, 2, 9, \"\u00bdR  2:1\", text_color=color.gray, text_size=size.tiny)\n\n// Row 10: Signal\nstring sig_txt = long_sig ? \"LONG TRIGGERED\" : short_sig ? \"SHORT TRIGGERED\" : \"---\"\ncolor sig_col = long_sig ? color.lime : short_sig ? color.red : color.gray\ntable.cell(crit_table, 0, 10, \"Signal\", text_color=color.yellow, text_size=size.tiny)\ntable.cell(crit_table, 1, 10, sig_txt, text_color=sig_col, text_size=size.tiny)\ntable.cell(crit_table, 2, 10, \"\", text_size=size.tiny)\n\n// ===== ENTRY LABELS WITH HOVER TOOLTIP (NEVER REMOVE) =====\nif long_sig\n    string tt = \"LONG ENTRY\\n\" +\n      \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n      (above_poc      ? \"\u2713\" : \"\u2717\") + \"  POC breakout up\\n\" +\n      (vwma_up        ? \"\u2713\" : \"\u2717\") + \"  VWMA slope up  (\" + str.tostring(vwma_slope, \"#.##\") + \" pts)\\n\" +\n      (delta_bull     ? \"\u2713\" : \"\u2717\") + \"  Delta bullish  (\" + str.tostring(nz(poc_delta_pct), \"#.#\") + \"%)\\n\" +\n      (not na(ph)     ? \"\u2713\" : \"\u2717\") + \"  Pivot high confirmed\\n\" +\n      (price_ok_long  ? \"\u2713\" : \"\u2717\") + \"  Price > VWMA  (\" + str.tostring(close - vwma_val, \"#.##\") + \" pts)\\n\" +\n      (vol_ok         ? \"\u2713\" : \"\u2717\") + \"  High volume  (\" + str.tostring(volume, \"#\") + \" vs \" + str.tostring(vol_ma, \"#\") + \" avg)\\n\" +\n      \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n      \"Entry: \" + str.tostring(close, \"#.##\")\n    label.new(bar_index, low, \"\u25b2\", style=label.style_label_up, color=color.lime, textcolor=color.white, size=size.small, tooltip=tt)\n\nif short_sig\n    string tt = \"SHORT ENTRY\\n\" +\n      \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n      (below_poc       ? \"\u2713\" : \"\u2717\") + \"  POC breakout down\\n\" +\n      (vwma_dn         ? \"\u2713\" : \"\u2717\") + \"  VWMA slope down  (\" + str.tostring(vwma_slope, \"#.##\") + \" pts)\\n\" +\n      (delta_bear      ? \"\u2713\" : \"\u2717\") + \"  Delta bearish  (\" + str.tostring(nz(poc_delta_pct), \"#.#\") + \"%)\\n\" +\n      (not na(pl)      ? \"\u2713\" : \"\u2717\") + \"  Pivot low confirmed\\n\" +\n      (price_ok_short  ? \"\u2713\" : \"\u2717\") + \"  Price < VWMA  (\" + str.tostring(close - vwma_val, \"#.##\") + \" pts)\\n\" +\n      (vol_ok          ? \"\u2713\" : \"\u2717\") + \"  High volume  (\" + str.tostring(volume, \"#\") + \" vs \" + str.tostring(vol_ma, \"#\") + \" avg)\\n\" +\n      \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n      \"Entry: \" + str.tostring(close, \"#.##\")\n    label.new(bar_index, high, \"\u25bc\", style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small, tooltip=tt)\n\n// Reversal entry labels\nif is_reversal and strategy.position_size != 0 and strategy.position_size[1] == 0\n    float rev_risk_d = rev_stop_pts * pv\n    float rev_tp_d   = rev_tp_pts * pv\n    if strategy.position_size > 0\n        string tt = \"REVERSAL LONG  (prev short stopped)\\n\" +\n          \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n          \"Half risk: $\" + str.tostring(rev_risk_d, \"#\") + \"  (\" + str.tostring(rev_stop_pts, \"#.##\") + \" pts)\\n\" +\n          \"TP 2:1: $\" + str.tostring(rev_tp_d, \"#\") + \"  (\" + str.tostring(rev_tp_pts, \"#.##\") + \" pts)\\n\" +\n          \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n          \"Entry: \" + str.tostring(entry_price, \"#.##\") + \"\\n\" +\n          \"Stop: \" + str.tostring(entry_price - rev_stop_pts, \"#.##\") + \"\\n\" +\n          \"TP: \" + str.tostring(entry_price + rev_tp_pts, \"#.##\")\n        label.new(bar_index, low, \"\u25b2R\", style=label.style_label_up, color=color.orange, textcolor=color.white, size=size.small, tooltip=tt)\n    else if strategy.position_size < 0\n        string tt = \"REVERSAL SHORT  (prev long stopped)\\n\" +\n          \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n          \"Half risk: $\" + str.tostring(rev_risk_d, \"#\") + \"  (\" + str.tostring(rev_stop_pts, \"#.##\") + \" pts)\\n\" +\n          \"TP 2:1: $\" + str.tostring(rev_tp_d, \"#\") + \"  (\" + str.tostring(rev_tp_pts, \"#.##\") + \" pts)\\n\" +\n          \"\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\\n\" +\n          \"Entry: \" + str.tostring(entry_price, \"#.##\") + \"\\n\" +\n          \"Stop: \" + str.tostring(entry_price + rev_stop_pts, \"#.##\") + \"\\n\" +\n          \"TP: \" + str.tostring(entry_price - rev_tp_pts, \"#.##\")\n        label.new(bar_index, high, \"\u25bcR\", style=label.style_label_down, color=color.orange, textcolor=color.white, size=size.small, tooltip=tt)\n\n// ===== POC DELTA FILL COLOR =====\ncolor channel_fill = na\nif not na(poc_delta_pct)\n    float s = math.min(math.abs(poc_delta_pct) / 5.0, 1.0)\n    if poc_delta_pct > 0\n        channel_fill := color.new(color.green, 95 - math.round(s * 50))\n    else if poc_delta_pct < 0\n        channel_fill := color.new(color.red, 95 - math.round(s * 50))\n\n// ===== POC DELTA LABEL (NEVER REMOVE) =====\nvar label lbl_delta = na\nif not na(poc_price) and not na(poc_delta_pct)\n    string dtxt = (poc_delta_pct >= 0 ? \"+\" : \"\") + str.tostring(poc_delta_pct, \"#.#\") + \"%\"\n    if na(lbl_delta)\n        lbl_delta := label.new(bar_index, poc_price, dtxt, style=label.style_label_center, color=color.new(color.gray, 60), textcolor=color.white, size=size.small)\n    else\n        label.set_xy(lbl_delta, bar_index, poc_price)\n        label.set_text(lbl_delta, dtxt)\n\n// ===== PLOT =====\nplot(vwma_val, \"VWMA\", vwma_up ? color.lime : vwma_dn ? color.red : color.gray, linewidth=2)\nfloat ppoc = not na(poc_price) ? poc_price : na\nfloat phi  = not na(poc_hi) ? poc_hi : na\nfloat plo  = not na(poc_lo) ? poc_lo : na\nplot(ppoc, \"POC\", color.yellow, style=plot.style_stepline, linewidth=1)\nplot_hi = plot(phi, \"POC High\", #2962FF, style=plot.style_stepline, linewidth=2)\nplot_lo = plot(plo, \"POC Low\", #2962FF, style=plot.style_stepline, linewidth=2)\nfill(plot_lo, plot_hi, channel_fill)\nplot(strategy.position_size != 0 ? current_stop : na, \"Stop\", color.fuchsia, style=plot.style_stepline, linewidth=2)\n\nplot(not na(poc_delta_pct) ? poc_delta_pct : na, \"POC Delta %\", color.orange, display=display.data_window)",
+  "params": null,
+  "settings": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "pivot_left": 3,
+   "pivot_right": 3,
+   "disarm_only_inside_poc": true,
+   "cooldown_bars": 5,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_reduced_risk": true,
+   "reduced_start_hr": 12,
+   "reduced_start_mn": 0,
+   "reduced_end_hr": 16,
+   "reduced_end_mn": 0,
+   "reduced_stop_dollars": 500.0,
+   "reduced_tp_dollars": 450.0,
+   "use_breakeven": true,
+   "be_trigger_dollars": 150.0,
+   "rev_on_any_loss": false
+  }
+ }
+}

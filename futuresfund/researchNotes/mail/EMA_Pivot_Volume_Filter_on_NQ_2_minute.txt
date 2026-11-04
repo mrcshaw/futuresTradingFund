@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: EMA Pivot Volume Filter.
+Chart tested: 2-minute Nasdaq (NQ1!).
+Profit 6000.0. Drawdown 1930.0. Trades 3.
+Trades a day: 0.16 over 19 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: yes.
+Inside the trailing drawdown: yes.
+Inside the pace: no.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because 0.16 trades a day is outside 1 to 3.
+Settings of this version: ema200_len=50, ema55_len=58, sma_len=41, volume_threshold=1.5, cooldown_bars=16.
+Engine attempts on this chart: 8.

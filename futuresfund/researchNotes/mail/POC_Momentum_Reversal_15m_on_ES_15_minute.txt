@@ -1,0 +1,10 @@
+Subject: Strategy Result: POC Momentum Reversal 15m
+
+The POC Momentum Reversal 15m strategy has completed its run on the 15-minute ES chart. The results are as follows:
+
+Profit: $1,062.50
+Drawdown: $2,462.50
+Trades: 533
+Trades per day: 10.25 (over 260 trading days)
+
+The strategy library requires a profit above $5,000, a drawdown under 5% of the account, a win rate above 40%, and at least 60 trades. This run does not meet the profit threshold. Consequently, it is not on the strategy library and was not filed.

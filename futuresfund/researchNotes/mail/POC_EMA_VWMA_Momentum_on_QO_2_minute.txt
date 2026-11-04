@@ -1,0 +1,9 @@
+Subject: Desk Result: POC EMA VWMA Momentum (Gold 2m)
+
+The POC EMA VWMA Momentum strategy on the 2-minute Gold chart has completed its run. The result is a profit of $4,850.00 with a drawdown of $11,287.50 over 96 trades. The average trade frequency is 8.4 trades per week, which annualizes to approximately 436 trades, sitting comfortably within the 130 to 600 trade target.
+
+However, this result does not meet the criteria for inclusion in the strategy library. The library shelf requires a profit over $10,000, and this run fell short. Additionally, the profit ratio (average winning trade divided by average losing trade) was not above the 1.12 threshold required for immediate filing. Consequently, this result was not filed. The settings tested were len_ema=4, len_vwma=20, len_atr=14, stop_mult=3.75, and tp_mult=3.125. This was one of 53 different results observed on this chart, drawn from 1,802 engine runs.
+
+Desk clock: Wednesday 07:02 AM ET.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 42 minutes 30 seconds.

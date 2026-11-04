@@ -1,0 +1,5 @@
+Subject: DeltaVolumeBOS_NightShift_v29 Result: Not Filed
+
+The DeltaVolumeBOS_NightShift_v29 run on the 15-minute Gold (GC1!) chart has concluded. The strategy generated a profit of $7,462.50 with a drawdown of $9,125.00 across 280 trades. The average trade frequency was 11.3 trades per week over 124 trading days, covering 9,504 bars from April 16, 2026, through October 9, 2026.
+
+This result was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.1, a win rate above 45 percent, and at least 60 trades. This run’s profit of $7,462.50 is below the $14,000 threshold. Consequently, it does not meet the four specific numbers required for inclusion on the strategy library page. The settings used were len_ema=200, stop_mult=1.875, tp_mult=2.5, and cooldown_bars=10.

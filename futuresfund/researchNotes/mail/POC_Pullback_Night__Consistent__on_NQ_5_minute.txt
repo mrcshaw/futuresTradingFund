@@ -1,0 +1,15 @@
+Subject: POC Pullback Night [Consistent] - Results from NQ1! 5-Minute Chart  
+
+Dear Team,  
+
+The POC Pullback Night [Consistent] strategy was recently tested on the 5-minute Nasdaq (NQ1!) chart. Over 21 trading days, the strategy generated a profit of $3,981.0 with a drawdown of $1,125.5 and executed 19 trades.  
+
+Key points:  
+- The profit target of $3,000 was met.  
+- The drawdown of $1,125.5 remained within the trailing drawdown limit of $2,500.  
+- The pace of 0.9 trades per day fell outside the required range of 1 to 3 trades per day.  
+
+As a result, this outcome was not filed in the strategy library. The reason for exclusion is the pace of 0.9 trades per day, which is outside the required range.  
+
+Best regards,  
+[Your Name]

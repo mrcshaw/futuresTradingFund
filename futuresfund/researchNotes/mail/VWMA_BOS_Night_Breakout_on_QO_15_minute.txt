@@ -1,0 +1,9 @@
+Subject: Desk Update: VWMA BOS Night Breakout (GC1!) Run Results
+
+The VWMA BOS Night Breakout strategy on the 15-minute Gold chart has completed its run. The results show a profit of $33,275.00 with a maximum drawdown of $7,362.50 across 147 trades. The win rate for this run was 43.54%.
+
+To be filed in the strategy library, a run must meet four specific criteria: profit above $14,000, profit factor above 1.1, win rate above 48%, and at least 60 trades. This run met the profit and trade count requirements, but it failed the win rate requirement. The library keeps a win rate above 48 percent. This run's win rate is 43.54%. Therefore, this result was not filed in the strategy library.
+
+The settings for this version were: pivot_left=2, pivot_right=2, vwma_len=28, vol_ma_len=32, stop_dollars=244.1406, tp_dollars=1500.0, cooldown_bars=2. The engine ran 10 times on this chart. The acceptance line above is the only acceptance bar on this desk.
+
+Desk clock: Sunday 04:50 PM ET.

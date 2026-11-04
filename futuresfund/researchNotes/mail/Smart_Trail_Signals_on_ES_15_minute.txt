@@ -1,0 +1,28 @@
+Subject: Smart Trail Signals Test Result  
+
+Hi [User's Name],  
+
+I wanted to share the latest result from the Smart Trail Signals strategy on the 15-minute ES (ES1!) chart.  
+
+The strategy generated a profit of **$1,986.00** with a drawdown of **$1,346.50** over **24 trades** across **21 trading days**. This averages to approximately **1.14 trades per day**, which aligns with the required pace of 1 to 3 trades per day.  
+
+While the strategy successfully stayed within the trailing drawdown limit of **$2,500**, it fell short of meeting the profit target of **$3,000**. As a result, this result was not filed in the strategy library.  
+
+The settings used for this version were:  
+- sensitivity=13  
+- min_score=2  
+- zone_ema_len=55  
+- zone_atr_len=20  
+- zone_atr_mult=2.0  
+- mid_slope_len=82  
+- min_mid_slope=0.5  
+- cooldown_bars=12  
+- use_session=True  
+- sess_start_hr=18  
+- sess_start_mn=0  
+- sess_end_hr=9  
+
+Let me know if you'd like to discuss this result further or explore other optimizations.  
+
+Best regards,  
+[Your Name]

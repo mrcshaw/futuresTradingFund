@@ -1,6 +1,7 @@
 """Successful-run count and Skip for the script an engine is running."""
 
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -15,9 +16,90 @@ class EngineProgressTests(unittest.TestCase):
         import futuresfund.learn as learn
 
         learn._engine4_learning = False
+        learn._repairs.clear()
         clear_engine_results()
-        for index in range(4):
+        from futuresfund.backtrader_engine import set_engine_notice
+
+        from futuresfund.backtrader_engine import _ENGINE_SLOTS
+
+        for index in range(_ENGINE_SLOTS):
             finish_study(index)
+            set_engine_notice(index, "")
+
+    def test_a_missing_name_is_declared_and_math_min_can_be_replaced(self):
+        from futuresfund.pine_runtime import compile_pine
+        from futuresfund.strategy_team import _replace_math_call, repair_for_pine
+
+        source = "\n".join([
+            "//@version=5",
+            'strategy("Trail check", overlay=true)',
+            'use_trail = input.bool(false, "Enable Trailing Stop")',
+            "if use_trail",
+            "    float keep = math.min(trail_pct + trail_step_pct, 95.0)",
+        ])
+        fixed, notes = repair_for_pine(source)
+        self.assertIn("Declared trail_pct.", notes)
+        self.assertIn("Declared trail_step_pct.", notes)
+        compile_pine(fixed)
+        replaced = _replace_math_call("float keep = math.min(trail_pct, 95.0)", "min")
+        self.assertEqual(replaced, "float keep = (trail_pct < 95.0 ? trail_pct : 95.0)")
+
+    def test_a_compile_failure_is_repaired_and_validated_while_the_engine_moves_on(self):
+        import time
+        from tempfile import TemporaryDirectory
+
+        from futuresfund import learn
+        from futuresfund.backtrader_engine import engine_status
+
+        self.assertTrue(learn.compile_problem(
+            'Failed to transpile Pine Script version 5: Input\'s "defval" value must be between "minval" and "maxval"'
+        ))
+        self.assertFalse(learn.compile_problem("PineTS did not finish within 10 minutes."))
+
+        class Board:
+            def __init__(self):
+                self.lines = []
+                self.cancel = __import__("threading").Event()
+
+            def post(self, author, text, **kwargs):
+                self.lines.append(f"{author}: {text}")
+
+        source = "\n".join([
+            "//@version=5",
+            'strategy("Trail check", overlay=true)',
+            'use_trail = input.bool(false, "Enable Trailing Stop")',
+            "if use_trail",
+            "    float keep = math.min(trail_pct + trail_step_pct, 95.0)",
+        ])
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "trail.pine"
+            path.write_text(source, encoding="utf-8")
+            board = Board()
+            dry_run = mock.patch("futuresfund.strategy_team.engine_problem", lambda text: "")
+            dry_run.start()
+            self.addCleanup(dry_run.stop)
+            learn.start_compile_repair(
+                board, path, "2min chart developer", "2m", source, "Unknown name trail_pct.", 0, "Chart researcher",
+            )
+            status, job = "pending", None
+            for _ in range(40):
+                status, job = learn.collect_validated("2min chart developer")
+                if status != "pending":
+                    break
+                time.sleep(0.05)
+            saved = path.read_text(encoding="utf-8")
+        self.assertEqual(status, "ready")
+        self.assertIn("trail_pct", saved)
+        self.assertTrue(any("compiles" in line for line in board.lines))
+        self.assertEqual(engine_status()[0]["notice"], "")
+
+    def test_a_blocked_engine_keeps_its_notice(self):
+        from futuresfund.backtrader_engine import engine_status, set_engine_notice
+
+        set_engine_notice(1, "Engine 2 is not backtesting. Unknown name trail_pct. PineTS has not started.")
+        row = engine_status()[1]
+        self.assertIn("not backtesting", row["notice"])
+        self.assertIn("trail_pct", row["notice"])
 
     def test_a_new_script_starts_the_success_count_over(self):
         from futuresfund.backtrader_engine import begin_study, engine_status, record_success
@@ -48,6 +130,29 @@ class EngineProgressTests(unittest.TestCase):
         fresh = engine_status()[1]
         self.assertEqual(fresh["scale"], 0.0)
         self.assertEqual(fresh["scale_move"], "")
+
+    def test_a_result_opens_the_script_and_settings_it_ran(self):
+        from futuresfund.backtrader_engine import engine_result_script, engine_status, record_engine_result
+
+        source = '//@version=5\nstrategy("Opened", overlay=true)\npv = input.float(50, "Point Value ($)")\nstop_dollars = input.int(250, "Stop ($)", minval=250, maxval=750)\n'
+        record_engine_result(0, {"script": "Opened", "time": "19:10:00", "net_profit": 100.0, "source": source, "inputs": {"Stop ($)": 500}, "instrument": "GC", "timeframe": "15m"})
+        row = engine_status()[0]["results"][-1]
+        self.assertEqual({key for key in row if key.startswith("_")}, set())
+        self.assertNotIn("source", row)
+        opened = engine_result_script(row["run"])
+        self.assertEqual(opened["title"], "Opened")
+        self.assertIn("input.int(500,", opened["pine"])
+        self.assertIn("GC 15m at 19:10:00", opened["note"])
+
+    def test_a_result_off_the_list_has_no_script(self):
+        from futuresfund.backtrader_engine import engine_result_script, engine_status, record_engine_result
+
+        record_engine_result(0, {"script": "First", "net_profit": 1.0, "source": 'strategy("First")'})
+        first = engine_status()[0]["results"][-1]["run"]
+        for number in range(20):
+            record_engine_result(0, {"script": f"Script {number}", "net_profit": 1.0})
+        self.assertIsNone(engine_result_script(first))
+        self.assertIsNone(engine_result_script(engine_status()[0]["results"][-1]["run"]))
 
     def test_an_engine_keeps_the_last_20_results(self):
         from futuresfund.backtrader_engine import engine_status, record_engine_result
@@ -93,7 +198,8 @@ class EngineProgressTests(unittest.TestCase):
             request_skip(1)
             return {"net_profit": 100, "max_drawdown": 50, "trades": 20, "days": 20}
 
-        trials = _search({"len": 14}, execute, 50000, 20, None, None, None, slot=0)
+        with mock.patch("futuresfund.objective.counted_success", lambda row, size: True):
+            trials = _search({"len": 14}, execute, 50000, 20, None, None, None, slot=0)
         self.assertEqual(len(calls), 1)
         self.assertTrue(getattr(trials, "skipped", False))
         self.assertEqual(engine_status()[0]["successes"], 1)
@@ -149,8 +255,9 @@ class EngineProgressTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         with self.assertRaises(ValueError):
             request_skip(0)
+        # Engines 5 and 6 are the second 5-minute and 15-minute engines. There is no engine 7.
         with self.assertRaises(ValueError):
-            request_skip(5)
+            request_skip(7)
 
     def test_restart_stops_a_hung_engine_and_sends_engine_4_to_the_learning_folder(self):
         from futuresfund.backtrader_engine import begin_study, request_restart, restarted
@@ -179,14 +286,15 @@ class EngineProgressTests(unittest.TestCase):
         self.assertIn("/api/engines/", js)
         self.assertIn("hood-skip", js)
         self.assertIn("hood-restart", js)
-        self.assertIn("/restart", js)
+        self.assertIn('fetch(`/api/engines/${id}/${path}`', js)
+        self.assertIn('skip ? "skip" : "restart"', js)
         self.assertIn("hood-tools", js)
         self.assertNotIn("hood-log", js)
-        self.assertLess(js.index("hood-tools"), js.index("hood-results"))
+        # The card shows the scale, then Restart and Skip, then the last results.
+        self.assertIn("card.append(header, who, scale, tools, results)", js)
         self.assertIn(".hood-tools", css)
         self.assertIn("justify-content: flex-end", css)
         self.assertIn("hood-scale", js)
-        self.assertLess(js.index("hood-scale"), js.index("hood-results"))
         self.assertIn("Opposite of the goal", js)
         self.assertIn(".hood-scale-track", css)
         self.assertIn("strategy_acceptance", js)
@@ -198,10 +306,15 @@ class EngineProgressTests(unittest.TestCase):
         self.assertIn("renderEngineResults", js)
         self.assertIn(".hood-result-table", css)
         self.assertIn("box-shadow", css)
-        self.assertIn("app.js?v=133", html)
-        self.assertIn("styles.css?v=61", html)
-        self.assertIn('id="kronos-count"', html)
-        self.assertIn('id="kronos-bar"', html)
+        self.assertIn("app.js?v=161", html)
+        self.assertIn("Six engines", html)
+        self.assertIn("Engines 2 and 5", html)
+        self.assertIn("Engines 3 and 6", html)
+        self.assertIn("styles.css?v=79", html)
+        self.assertIn("hood-run", js)
+        self.assertIn(".hood-run", css)
+        self.assertIn("hood-alert", js)
+        self.assertIn("engine.notice", js)
         self.assertIn("hold-new", html)
         self.assertIn("Hold new strategies", html)
         self.assertIn("Make new strategies", js)
@@ -216,49 +329,9 @@ class EngineProgressTests(unittest.TestCase):
         self.assertIn("Not tested on the full dataset", html)
         self.assertIn("untested-table", html)
         self.assertIn("untested-add", html)
-        self.assertIn("paintKronosProgress", js)
-        self.assertIn("kronos-track", css)
+        # Kronos and its forecast were taken off the desk.
+        for text in (html, js, css):
+            self.assertNotIn("kronos", text.lower())
         self.assertIn('data-sort="profit_ratio"', html)
         self.assertIn("renderUntested", js)
         self.assertIn("libraryRow", js)
-
-
-class KronosBarTests(unittest.TestCase):
-    def test_a_step_line_sets_the_counter(self):
-        from futuresfund.kronos_feed import snapshot
-
-        row = snapshot(
-            "2026-10-13 01:23:10 - tokenizer_training_rank_0 - INFO - [Epoch 1/30, Step 50/266] LR: 0.000039, Loss: -0.0295",
-            "tokenizer",
-        )
-        self.assertEqual(row["step"], 50)
-        self.assertEqual(row["steps"], 266)
-        self.assertEqual(row["epoch"], 1)
-        self.assertEqual(row["epochs"], 30)
-        self.assertEqual(row["phase"], "tokenizer")
-        self.assertAlmostEqual(row["percent"], 100 * 50 / 266, places=3)
-
-    def test_a_finished_tokenizer_leaves_the_predictor_epochs_on_the_bar(self):
-        from futuresfund.kronos_feed import overall
-
-        tokenizer = "\n".join([
-            "Training epochs: 30",
-            "[Epoch 30/30, Step 236/266] LR: 0.000000, Loss: -0.0314",
-            "--- Epoch 30/30 Summary ---",
-            "Tokenizer training completed! Best validation loss: 0.0031",
-        ])
-        predictor = "\n".join([
-            "Training epochs: 20",
-            "Starting training...",
-        ])
-        row = overall(tokenizer, predictor, 30, 20)
-        self.assertEqual(row["whole_done"], 30 * 266)
-        self.assertEqual(row["whole_total"], 50 * 266)
-        self.assertEqual(row["whole_left"], 20 * 266)
-        self.assertEqual(row["phase"], "predictor")
-        self.assertEqual(row["step"], 0)
-        self.assertEqual(row["epochs"], 20)
-        self.assertTrue(row["tokenizer_finished"])
-        self.assertTrue(row["running"])
-        self.assertFalse(row["finished"])
-        self.assertAlmostEqual(row["percent"], 100 * 30 / 50, places=3)

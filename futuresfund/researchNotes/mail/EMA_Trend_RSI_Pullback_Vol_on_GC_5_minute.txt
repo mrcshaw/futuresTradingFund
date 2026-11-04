@@ -1,0 +1,5 @@
+Subject: EMA Trend RSI Pullback Vol on 5-minute Gold (GC1!)
+
+The latest run of EMA Trend RSI Pullback Vol on the 5-minute Gold (GC1!) chart finished with a profit of $33,735.00 and a drawdown of $5,725.50. The strategy executed 155 trades over the test period, averaging 3.0 trades per week across 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 1.05.
+
+This run was not filed in the strategy library. The reason provided is that a stronger version of this name is already on this contract and timeframe. While the run met the individual criteria of the acceptance line—profit above $8,000, profit factor above 1.05, win rate above 40 percent, and trade count above 80—it did not clear the final filing requirement because it is not the best performing variant for this specific setup. The settings used were stop_dollars=1000, tp_dollars=1250, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_len=50, rsi_len=14.

@@ -1,0 +1,8 @@
+Strategy: POC RSI Reversal v4.
+File: poc_rsi_reversal_v4_6.pine.
+Chart: 5m ES1!.
+Profit 14050.0. Drawdown 8475.0. Trades 369.
+Profit ratio 1.133. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 1.66 times the drawdown. A profitable run at 1.5 or more counts.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Research Department</title>
+  <link rel="stylesheet" href="/static/styles.css?v=17">
+</head>
+<body data-page="home">
+  <button id="run" type="button">Start</button>
+  <header>
+    <div>
+      <p class="kicker">Futures research</p>
+      <h1>Research Department</h1>
+      <a id="phone" href="" target="_blank" rel="noopener"></a>
+    </div>
+    <form id="settings">
+      <label>Win percentage <input id="success-rate" type="number" min="1" max="100" step="1"></label>
+      <label>Attempts <input id="attempts" type="number" min="1" step="1"></label>
+      <label>Daily target <input id="daily-target" type="number" min="1" step="1"></label>
+      <label>Daily loss <input id="daily-loss" type="number" min="1" step="1"></label>
+      <label>Baseline risk <input id="baseline-risk" type="number" min="1" step="1"></label>
+      <button type="submit">Save settings</button>
+      <p id="settings-note"></p>
+    </form>
+  </header>
+  <main>
+    <section class="feed" aria-label="Department">
+      <div class="section-head">
+        <h2>Department</h2>
+        <p id="job-state">Waiting for a script</p>
+      </div>
+      <p id="markets">ES, NQ, MNQ</p>
+      <section id="reward" class="reward" aria-label="Reward scales">
+        <h2>Reward scales</h2>
+        <h3 class="scale-name">Win percentage</h3>
+        <p id="reward-note">The goal is the win percentage.</p>
+        <div class="scale" id="win-scale" data-direction="waiting">
+          <div class="scale-track">
+            <div class="scale-fill" id="scale-fill"></div>
+            <div class="scale-goal" id="scale-goal"><span id="scale-goal-label">Goal</span></div>
+            <div class="scale-marker" id="scale-marker" hidden></div>
+          </div>
+          <div class="scale-labels">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <h3 class="scale-name">Profit</h3>
+        <p id="profit-note">The scale starts at $0. The goal is 50% of $500 times the days tested.</p>
+        <div class="scale" id="profit-scale" data-direction="waiting">
+          <div class="scale-track">
+            <div class="scale-fill" id="profit-fill"></div>
+            <div class="scale-goal" id="profit-goal"><span id="profit-goal-label">Goal</span></div>
+            <div class="scale-marker" id="profit-marker" hidden></div>
+          </div>
+          <div class="scale-labels">
+            <span>$0</span>
+            <span id="profit-total-label">Total</span>
+          </div>
+        </div>
+      </section>
+      <nav class="researchers" id="researchers" aria-label="Researchers">
+        <a class="person" href="/researcher?who=Researcher%201">
+          <span class="person-name">Researcher 1</span>
+          <span class="person-line" data-who="Researcher 1">Waiting.</span>
+        </a>
+        <a class="person" href="/researcher?who=Researcher%202">
+          <span class="person-name">Researcher 2</span>
+          <span class="person-line" data-who="Researcher 2">Waiting.</span>
+        </a>
+        <a class="person" href="/researcher?who=Researcher%203">
+          <span class="person-name">Researcher 3</span>
+          <span class="person-line" data-who="Researcher 3">Waiting.</span>
+        </a>
+        <a class="person" href="/researcher?who=Manager">
+          <span class="person-name">Manager</span>
+          <span class="person-line" data-who="Manager">Waiting.</span>
+        </a>
+      </nav>
+      <a class="library-button" href="/library">Scripts library</a>
+      <div id="success-tables"></div>
+    </section>
+    <section class="engines" aria-label="Engines">
+      <div class="section-head">
+        <h2>Engines</h2>
+        <form id="add-engine">
+          <select id="timeframe" aria-label="Timeframe">
+            <option>1m</option>
+            <option>2m</option>
+            <option selected>5m</option>
+          </select>
+          <button type="submit">Add engine</button>
+        </form>
+      </div>
+      <div id="cards"></div>
+      <div id="engine-runs"></div>
+    </section>
+  </main>
+  <script src="/static/app.js?v=22"></script>
+</body>
+</html>

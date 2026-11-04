@@ -1,0 +1,17 @@
+Subject: Volume Profile + Smart Trail Test Result on 15-minute Gold Chart
+
+Dear Team,
+
+I am writing to share the recent test results for the Volume Profile + Smart Trail strategy applied to the 15-minute Gold (GC1!) chart. Here are the key findings:
+
+- **Strategy and Chart**: Volume Profile + Smart Trail on the 15-minute Gold chart.
+- **Results**:
+  - **Profit**: $187.0, which falls short of the required $3,000 profit target.
+  - **Drawdown**: $2,213.5, which is within the acceptable $2,500 trailing drawdown limit.
+  - **Trades**: A total of 8 trades over 20 trading days, averaging 0.4 trades per day. This is below the desired range of 1 to 3 trades a day.
+
+Due to the profit being under the target and the trade pace being too slow, this result was not filed in the strategy library.
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

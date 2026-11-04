@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: Day shift BOS Profitable 17k Delta Volume Breakout.
+Chart tested: 15-minute Gold (GC1!).
+Profit -36390.0. Drawdown 45288.0. Trades 550.
+Trades a week: 2.15 over 1291 trading days.
+Bars in this test: 118,259 from 2021-10-03 20:00 through 2026-10-02 16:45.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The profit was not filed. The library keeps a profit that comes from 4 or more trades a week. 4 to 7 is the average, and more than that still counts. This run is 2.15 trades a week.
+Settings of this version: profile_lookback=74, profile_rows=10, min_delta_pct=10.0, vwma_len=50, vwma_slope_len=5, min_slope=0.0, pivot_left=3, pivot_right=3, disarm_only_inside_poc=True, cooldown_bars=1, use_price_vwma=True, vol_ma_len=20.
+Different results on this chart: 50.
+Engine runs on this chart: 53.

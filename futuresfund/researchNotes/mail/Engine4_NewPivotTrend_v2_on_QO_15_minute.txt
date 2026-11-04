@@ -1,0 +1,14 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v2 Gold Run Complete
+
+The Engine4_NewPivotTrend_v2 strategy just finished its run on the 15-minute Gold (GC1!) chart. The result is a profit of $8,112.50 with a drawdown of $4,450.00 across 269 trades. The test covered 9,495 bars from April 16, 2026, through October 1, 2026.
+
+The pace of this run is 11.1 trades per week, which annualizes to approximately 578 trades. This falls within the required band of 130 to 600 trades per year, so the frequency is acceptable. However, the total profit of $8,112.50 is below the $10,000 threshold required for the strategy library. Consequently, this result was not filed. The strategy library only keeps runs with profit over $10,000, and this run did not meet that financial target.
+
+The settings used were len_ema1=6, len_ema2=200, len_sma=100, atr_len=56, stop_mult=1.5, tp_mult=1.0, and cooldown=10. This was one of 13 different engine runs on this chart. The trailing drawdown and profit target criteria were not the deciding factors for rejection; the primary reason for non-filing is the profit amount relative to the library's minimum standard.
+
+The desk remains responsive. The next meeting is scheduled for 5:00 PM ET Sunday.
+
+Portfolio Manager
+[This Desk Instance]
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 23 seconds.

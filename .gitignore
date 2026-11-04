@@ -4,3 +4,25 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Local Python environments.
+.venv*/
+
+# Claude Code worktrees.
+.claude/worktrees/
+
+# Databento downloads and the minute series built from them. They stay on disk; the desk rebuilds the series.
+chartData/**/glbx-mdp3-*
+chartData/**/databento-1m.csv
+chartData/**/*.csv.tmp
+chartData/**/condition.json
+chartData/**/manifest.json
+chartData/**/metadata.json
+chartData/historicalData/
+strategyResearcher/chartData/
+
+# Research-note archives and backups. Kept on disk, not in git.
+futuresfund/researchNotes/archive_*/
+futuresfund/researchNotes/before_*/
+futuresfund/researchNotes/previous_runs/
+futuresfund/researchNotes/script_versions/

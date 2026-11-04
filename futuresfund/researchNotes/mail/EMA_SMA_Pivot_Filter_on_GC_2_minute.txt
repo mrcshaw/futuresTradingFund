@@ -1,0 +1,12 @@
+Taken from the application just now.
+Strategy: EMA SMA Pivot Filter.
+Chart tested: 2-minute Gold (GC1!).
+Profit 38740.0. Drawdown 4800.0. Trades 4227.
+Trades a week: 16.35 over 1291 trading days.
+Bars in this test: 886,836 from 2021-10-03 20:00 through 2026-10-02 16:58.
+On this full chart a profit counts at 4 or more trades a week. 4 to 7 is the average, and trading more often still counts. Two or three trades is not a strategy. At that pace the search keeps the lower drawdown first, then the larger profit. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. It trades at least 4 times a week, and it is not on the shelf yet.
+Settings of this version: ema200_len=200, ema55_len=55, sma_len=25, atr_len=24, tp_mult=2.0, sl_mult=1.5, cooldown_bars=20.
+Different results on this chart: 50.
+Engine runs on this chart: 50.

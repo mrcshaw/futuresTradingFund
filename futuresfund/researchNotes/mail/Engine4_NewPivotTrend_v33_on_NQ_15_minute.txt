@@ -1,0 +1,9 @@
+Subject: Desk Update: Engine4_NewPivotTrend_v33 Test Result
+
+The latest run for Engine4_NewPivotTrend_v33 on the 15-minute Nasdaq (NQ1!) chart has completed. The strategy tested a pivot-based trend following setup with specific EMA and ATR parameters. The result shows a net profit of -$6,480.00 against a maximum drawdown of $20,315.00 across 161 total trades.
+
+Regarding the performance targets: The pace of 3.1 trades per week translates to approximately 806 trades per year (3.1 * 260), which exceeds the maximum threshold of 600 trades per year. Consequently, this run does not meet the required pace criteria. Even if the pace were adjusted, the profit target was not met, as the result is negative. The trailing drawdown of $20,315.00 is also significant relative to the negative profit outcome.
+
+The strategy is not on the library. This result was not filed in the strategy library because the shelf requires a profit over $10,000, and this run is under that threshold. The settings used were pivot_left=5, pivot_right=5, len_ema1=55, len_ema2=200, len_atr=14, stop_mult=1.7578, tp_mult=7.276, cooldown_bars=80, and session_window=1800-1600. The engine ran 202 times on this chart with 200 different results, but this specific iteration did not qualify for inclusion.
+
+Desk clock: Wednesday 04:21 AM ET. No meeting scheduled until 8:00 AM ET.

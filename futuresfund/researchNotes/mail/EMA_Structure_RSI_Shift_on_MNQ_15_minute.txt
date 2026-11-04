@@ -1,0 +1,12 @@
+To: Prop Account Team
+Subject: Desk Update: EMA Structure RSI Shift on 15-minute Micro Nasdaq
+
+The desk has completed a test of the EMA Structure RSI Shift strategy on the 15-minute Micro Nasdaq (MNQ1!) chart. The run covered 23,612 bars from October 15, 2025, to October 15, 2026. The result was a profit of $1,557.50 against a drawdown of $4,904.50 over 154 trades. This pace equates to 2.95 trades per week over 260 trading days. The profit ratio for this run is not provided in the application facts, so it is not included in this report.
+
+This run was not filed in the strategy library. The application facts state that the library keeps a profit over $8,000, and this run is under that threshold. The specific settings used were stop_dollars=500, tp_dollars=750, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_len=50, and rsi_len=14. There have been 6 different results on this chart and 9 engine runs in total.
+
+Please note that the desk clock is currently Sunday 05:16 PM ET. All open trades must be flattened by 16:45 New York time. The next meeting is scheduled for 5:00 PM ET today, Sunday, while the futures market is closed.
+
+Best regards,
+Portfolio Manager
+Qwen3.8 27B Desk Instance

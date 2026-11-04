@@ -1,0 +1,7 @@
+Subject: Engine4_NewPivotTrend_v2 results on NQ 15m
+
+The Engine4_NewPivotTrend_v2 strategy has finished its run on the 15-minute Nasdaq chart. The test covered 23,704 bars from October 1, 2025, through October 2, 2026. The strategy generated a profit of $93,205.00 with a maximum drawdown of $31,475.00 across 589 trades. The pace was 11.35 trades per week, which annualizes to a healthy volume within the required 130 to 600 trades per year band. This result met the profit target and the trailing drawdown constraints.
+
+However, this result was not filed in the strategy library. A stronger version of this name is already present on this contract and timeframe, so the library did not accept this iteration. The settings used were len_ema1=6, len_ema2=200, len_sma=100, atr_len=112, stop_mult=1.5, tp_mult=2.5, and cooldown=10. This was one of 32 results from this specific configuration and one of 78 engine runs on this chart. The address for viewing this desk on a phone is being updated now.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 3 minutes 38 seconds.

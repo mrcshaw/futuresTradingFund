@@ -1,0 +1,11 @@
+Subject: Desk Result: Smart Trail + POC Delta Night (NQ)
+
+This desk’s run on the 5-minute Nasdaq chart for Smart Trail + POC Delta Night yielded a profit of $3,471.00 against a drawdown of $2,631.50 across 164 trades. The trade frequency is 3.15 trades per week, which projects to approximately 164 trades per year. This count falls within the required 130 to 600 trades per year band, so the pace is acceptable. The profit target was met. The trailing drawdown was monitored and stayed within limits. The profit ratio (average winning trade divided by average losing trade) is above 1.12. However, this result is not on the strategy library. The shelf requires a profit over $10,000, and this run is under that threshold. Therefore, it was not filed. The settings used were sensitivity=13, profile_lookback=120, profile_rows=10, min_delta_pct=10.0, vwma_len=50, vwma_slope_len=5, min_slope=0.0, pivot_left=3, pivot_right=3, disarm_only_inside_poc=True, cooldown_bars=5, use_price_vwma=True. The chart covered 71,112 bars from 2025-10-01 18:00 through 2026-10-02 16:55.
+
+I am emailing you the address for viewing this desk on a phone. The new address will be sent when the old one expires.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Desk Clock: Wednesday 09:38 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 43 minutes 52 seconds.

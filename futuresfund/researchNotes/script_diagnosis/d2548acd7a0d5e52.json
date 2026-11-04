@@ -1,0 +1,137 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 479.0,
+   "max_drawdown": 435.5,
+   "trades": 1
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 229.0,
+   "max_drawdown": 5.5,
+   "trades": 1
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "poc_zone_rows": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "min_delta_pct": {
+   "value": 20.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "vwma_len": {
+   "value": 80,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_len": {
+   "value": 2,
+   "net_profit": 479.0,
+   "max_drawdown": 235.5,
+   "trades": 1
+  },
+  "entry_start_mn": {
+   "value": 59,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  }
+ },
+ "flat": [
+  "vwma_slope_len",
+  "min_outside_bars",
+  "allow_long",
+  "entry_start_hr",
+  "entry_end_hr",
+  "entry_end_mn",
+  "max_entries_per_day",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 100.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "poc_zone_rows": 1,
+   "min_delta_pct": 5.0,
+   "vwma_len": 20,
+   "vwma_slope_len": 5,
+   "pivot_len": 5,
+   "min_outside_bars": 3,
+   "allow_long": false,
+   "entry_start_hr": 9,
+   "entry_start_mn": 0,
+   "entry_end_hr": 13,
+   "entry_end_mn": 0,
+   "max_entries_per_day": 2
+  },
+  "net_profit": -281.0,
+  "max_drawdown": 281.0,
+  "trades": 1,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -281.0,
+  "biggest_loser": -281.0,
+  "held_loser": -281.0,
+  "exits": [
+   {
+    "exit": "Short Exit",
+    "trades": 1,
+    "pnl": -281.0,
+    "favorable": 384.5,
+    "adverse": -275.5
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [
+  "ES 15m"
+ ],
+ "version": 3
+}

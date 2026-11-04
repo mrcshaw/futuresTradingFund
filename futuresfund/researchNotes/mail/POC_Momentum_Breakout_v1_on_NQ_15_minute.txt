@@ -1,0 +1,5 @@
+Subject: POC Momentum Breakout v1 Run Result - Nasdaq (NQ1!)
+
+The POC Momentum Breakout v1 strategy has completed its run on the 15-minute Nasdaq chart. The results show a profit of $5,300.00 with a maximum drawdown of $1,250.00 across 268 trades. The win rate for this run was 12.69%.
+
+This result was not filed in the strategy library. The acceptance criteria require a win rate above 40 percent. This run’s win rate of 12.69% fails to meet that threshold. Therefore, it is not included in the library.

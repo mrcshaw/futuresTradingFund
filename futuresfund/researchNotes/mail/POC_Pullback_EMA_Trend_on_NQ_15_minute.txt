@@ -1,0 +1,3 @@
+Subject: Desk Update: POC Pullback EMA Trend (NQ1!) Live
+
+The POC Pullback EMA Trend strategy on the 15-minute Nasdaq chart has cleared the prop account. The run generated $92,240.00 in profit with a maximum drawdown of $47,355.00 across 452 trades. The pace is 8.7 trades per week, which equates to approximately 2,260 trades annually, well within the required 130 to 600 trades per year band. The profit ratio is above 1.12, confirming the run made a profit. It met the profit target, the trailing drawdown constraints, and the trade count pace. The result is on the Nasdaq strategy library. Settings used: pivot_left=5, pivot_right=5, len_ema=20, len_atr=14, len_cooldown=30, stop_mult=5.0, tp_mult=8.0. This desk is now live.

@@ -1,0 +1,264 @@
+//@version=5
+strategy("Day Shift Delta Volume Breakout colored Back ground Good Copy Redesign 3", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000, max_boxes_count=500)
+// ===== RISK =====
+pv                = input.float(2, "Point Value ($)")
+stop_dollars      = input.int(700, "Stop ($)", minval=250, maxval=700)
+tp_dollars        = input.int(1000, "Take Profit ($)", minval=250)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+
+
+// ===== PROFILE INPUTS =====
+profile_lookback = input.int(120, "Profile Lookback (bars)", minval=20, maxval=2000, step=10)
+profile_rows     = input.int(20, "Price Levels (rows)", minval=5, maxval=100, step=5)
+
+// ===== TREND INPUTS =====
+vwma_len       = input.int(50, "Trend VWMA Length", minval=1)
+vwma_slope_len = input.int(5, "VWMA Slope Lookback (bars)", minval=1)
+min_slope      = input.float(0.5, "Min VWMA Slope (pts)", minval=0.0)
+
+// ===== DELTA INPUT =====
+min_delta_pct = input.float(3, "Min Delta Imbalance (%)", minval=0, maxval=80, step=5)
+
+// ===== ENTRY PARAMETERS =====
+pivot_len        = input.int(2, "Pivot Length", minval=1, maxval=20)
+arm_expire_bars  = input.int(20, "Arm Expire Bars", minval=1, maxval=100)
+cooldown_bars    = input.int(10, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+bar_t  = bar_hr * 100 + bar_mn
+
+int sess_start = 1800
+int sess_end   = 1600
+
+bool in_session = (sess_start > sess_end) ? (bar_t >= sess_start or bar_t < sess_end) : (bar_t >= sess_start and bar_t < sess_end)
+
+prev_hr = hour(time[1], "America/New_York")
+prev_mn = minute(time[1], "America/New_York")
+prev_t  = prev_hr * 100 + prev_mn
+bool was_in_session = (sess_start > sess_end) ? (prev_t >= sess_start or prev_t < sess_end) : (prev_t >= sess_start and prev_t < sess_end)
+
+bool session_ended = was_in_session and not in_session
+
+// ===== VWMA TREND =====
+float vwma_val   = ta.vwma(close, vwma_len)
+float vwma_slope = vwma_val - vwma_val[vwma_slope_len]
+bool  vwma_up    = vwma_slope > min_slope
+bool  vwma_dn    = vwma_slope < -min_slope
+
+// ===== VOLUME PROFILE WITH DELTA =====
+int lb   = math.min(profile_lookback, bar_index)
+int rows = profile_rows
+
+float prof_hi   = ta.highest(high, lb > 0 ? lb : 1)
+float prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)
+float prof_span = prof_hi - prof_lo
+float step_size = prof_span > 0 ? prof_span / rows : na
+
+var array<float> vol_total = array.new_float(100, 0.0)
+var array<float> vol_up    = array.new_float(100, 0.0)
+var array<float> vol_dn    = array.new_float(100, 0.0)
+
+float poc_price = na
+float poc_hi    = na
+float poc_lo    = na
+float poc_delta_pct = na
+int   poc_row   = 0
+
+if not na(step_size) and prof_span > 0 and lb > 1
+    for a = 0 to 2
+        arr = a == 0 ? vol_total : a == 1 ? vol_up : vol_dn
+        if arr.size() != rows
+            arr.clear()
+            for i = 0 to rows - 1
+                arr.push(0.0)
+        else
+            for i = 0 to rows - 1
+                arr.set(i, 0.0)
+
+    for iBar = 0 to lb - 1
+        float bar_vol = volume[iBar]
+        if bar_vol <= 0
+            continue
+
+        float bar_lo  = low[iBar]
+        float bar_hi  = high[iBar]
+        bool  bar_up  = close[iBar] >= open[iBar]
+
+        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)
+        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)
+        int span  = e_row - s_row + 1
+
+        if span <= 0
+            continue
+
+        float per_row = bar_vol / span
+        for k = 0 to span - 1
+            int r = s_row + k
+            if r >= 0 and r < rows
+                vol_total.set(r, vol_total.get(r) + per_row)
+                if bar_up
+                    vol_up.set(r, vol_up.get(r) + per_row)
+                else
+                    vol_dn.set(r, vol_dn.get(r) + per_row)
+
+    float max_vol = 0.0
+    for r = 0 to rows - 1
+        float v = vol_total.get(r)
+        if v > max_vol
+            max_vol := v
+            poc_row := r
+
+    poc_price := prof_lo + (poc_row + 0.5) * step_size
+    poc_lo    := prof_lo + poc_row * step_size
+    poc_hi    := prof_lo + (poc_row + 1) * step_size
+
+    float poc_up  = vol_up.get(poc_row)
+    float poc_dn  = vol_dn.get(poc_row)
+    float poc_tot = vol_total.get(poc_row)
+    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0
+
+// ===== FILTERS =====
+bool delta_bull = not na(poc_delta_pct) and poc_delta_pct > min_delta_pct
+bool delta_bear = not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct
+
+bool in_poc_zone = not na(poc_lo) and not na(poc_hi) and close >= poc_lo and close <= poc_hi
+
+// ===== ARM & ENTRY LOGIC =====
+var int armed_dir     = 0
+var int arm_start_bar = 0
+var int last_entry_bar = -9999
+var int last_trade_dir = 0
+var bool reversal_pending = false
+
+bool cooled_down = bar_index - last_entry_bar >= cooldown_bars
+bool can_enter_base = in_session and strategy.position_size == 0 and cooled_down
+
+bool long_arm_cond = not na(poc_hi) and close > poc_hi and vwma_up and delta_bull
+bool short_arm_cond = not na(poc_lo) and close < poc_lo and vwma_dn and delta_bear
+
+// Update Arm State
+if armed_dir == 0
+    if long_arm_cond
+        armed_dir := 1
+        arm_start_bar := bar_index
+    else if short_arm_cond
+        armed_dir := -1
+        arm_start_bar := bar_index
+else if armed_dir == 1
+    bool expired = bar_index - arm_start_bar >= arm_expire_bars
+    if in_poc_zone or expired
+        armed_dir := 0
+else if armed_dir == -1
+    bool expired = bar_index - arm_start_bar >= arm_expire_bars
+    if in_poc_zone or expired
+        armed_dir := 0
+
+// Pivot Confirmation
+float pivot_low_val = ta.pivotlow(pivot_len, pivot_len)
+float pivot_high_val = ta.pivothigh(pivot_len, pivot_len)
+
+bool pivot_long_confirm = not na(pivot_low_val)
+bool pivot_short_confirm = not na(pivot_high_val)
+
+// Determine Allowed Direction based on Reversal Logic
+bool allow_long = true
+bool allow_short = true
+
+if last_trade_dir != 0
+    if reversal_pending
+        // Must be opposite
+        if last_trade_dir == 1
+            allow_long := false
+            allow_short := true
+        else if last_trade_dir == -1
+            allow_long := true
+            allow_short := false
+    else
+        // Must be same (no reversal)
+        if last_trade_dir == 1
+            allow_long := true
+            allow_short := false
+        else if last_trade_dir == -1
+            allow_long := false
+            allow_short := true
+
+// Entry Execution
+bool enter_long = can_enter_base and armed_dir == 1 and pivot_long_confirm and allow_long
+bool enter_short = can_enter_base and armed_dir == -1 and pivot_short_confirm and allow_short
+
+if enter_long
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+    last_entry_bar := bar_index
+    last_trade_dir := 1
+    reversal_pending := false
+    armed_dir := 0
+
+if enter_short
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+    last_entry_bar := bar_index
+    last_trade_dir := -1
+    reversal_pending := false
+    armed_dir := 0
+
+// Track Exit Reason for Reversal Logic
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    // Trade just closed
+    float last_profit = strategy.closedtrades.profit(strategy.closedtrades - 1)
+    if last_profit < 0
+        reversal_pending := true
+    else
+        reversal_pending := false
+
+// Session Close
+if session_ended and strategy.position_size != 0
+    strategy.close_all(comment="Session Close")
+    reversal_pending := false
+
+// ===== PLOTS =====
+plot(vwma_val, "VWMA", vwma_up ? color.lime : vwma_dn ? color.red : color.gray, linewidth=2)
+
+float plo  = not na(poc_lo) ? poc_lo : na
+float ppoc = not na(poc_price) ? poc_price : na
+float phi  = not na(poc_hi) ? poc_hi : na
+
+plot_lo  = plot(plo, "POC Low", #2962FF, style=plot.style_stepline, linewidth=2)
+plot_poc = plot(ppoc, "POC", color.yellow, style=plot.style_stepline, linewidth=1)
+plot_hi  = plot(phi, "POC High", #2962FF, style=plot.style_stepline, linewidth=2)
+
+color channel_fill = na
+if not na(poc_delta_pct)
+    if poc_delta_pct > min_delta_pct
+        channel_fill := color.new(color.green, 90)
+    else if poc_delta_pct < -min_delta_pct
+        channel_fill := color.new(color.red, 90)
+    else
+        channel_fill := color.new(color.gray, 95)
+
+fill(plot_lo, plot_hi, channel_fill)
+
+plot(strategy.position_size != 0 ? (strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : strategy.position_avg_price + stop_dollars / pv) : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(enter_long, "Long Signal", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(enter_short, "Short Signal", shape.triangledown, location.abovebar, color.red, size=size.small)
+
+plot(not na(poc_delta_pct) ? poc_delta_pct : na, "POC Delta %", color.orange, display=display.data_window)

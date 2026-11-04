@@ -1,0 +1,5 @@
+Subject: Desk Update: POC RSI Momentum Pullback Results
+
+The POC RSI Momentum Pullback strategy just completed its run on the 5-minute Nasdaq (NQ1!) chart. The results show a profit of $8,725.00 with a maximum drawdown of $5,780.00 across 157 trades. This equates to approximately 3.0 trades per day over the 260 trading days of the test period, which covered 71,112 bars from October 1, 2025, through October 2, 2026. The settings used were len_rsi=14, len_ema=200, len_atr=14, stop_mult=2.0, tp_mult=2.01, and cooldown=10.
+
+To be filed in the strategy library, a run must meet four specific criteria: profit above $14,000, profit factor above 1.1, win rate above 48%, and at least 60 trades. This run is not on the strategy library. The library keeps a profit over $14,000. This run is under that. Therefore, this result was not filed.

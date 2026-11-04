@@ -1,0 +1,12 @@
+Subject: Delta VWMA BOS Night v1 Result: Gold (GC1!)
+
+The Delta VWMA BOS Night v1 strategy has finished its run on the 2-minute Gold chart. The result shows a profit of $1,200.00 against a drawdown of $2,400.00 across 251 trades. The trade frequency was approximately 4.85 trades per week over the 260-day period.
+
+This run was not filed in the strategy library. The acceptance criteria require a profit above $5,000.00, a drawdown under 5% of the account, a win rate above 40%, and at least 60 trades. This result falls short of the profit threshold. The strategy library currently holds no entries for Gold.
+
+I am flattening all open trades at 16:45 New York time to ensure the drawdown remains controlled. The account is safe for now.
+
+Best,
+
+Portfolio Manager
+Desk: Delta VWMA BOS Night v1

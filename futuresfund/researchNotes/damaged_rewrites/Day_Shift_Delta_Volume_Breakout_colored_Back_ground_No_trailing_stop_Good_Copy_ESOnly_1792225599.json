@@ -1,0 +1,5481 @@
+{
+  "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy ESOnly_1792225599.txt",
+  "title": "Day Shift Delta Volume Breakout",
+  "attempts": 23,
+  "best": {
+    "params": {
+      "stop_dollars": 250,
+      "tp_dollars": 500,
+      "use_trail": false,
+      "trail_step_amt": 500,
+      "trail_min_dollars": 1000,
+      "profile_lookback": 120,
+      "profile_rows": 15,
+      "min_delta_pct": 4.0,
+      "vwma_len": 25,
+      "vwma_slope_len": 5,
+      "min_slope": 0.5,
+      "confirm_candles": 10,
+      "cooldown_bars": 5,
+      "pullback_dollars": 25.0,
+      "use_session": true,
+      "sess_start_hr": 18,
+      "sess_start_mn": 0,
+      "sess_end_hr": 8,
+      "sess_end_mn": 0,
+      "use_daily_limits": false,
+      "daily_loss_limit": 0.0,
+      "daily_profit_cap": 0.0
+    },
+    "net_profit": 120.5,
+    "max_drawdown": 144.5,
+    "trades": 2,
+    "win_rate": 100.0,
+    "sharpe": 38.021,
+    "profit_factor": null,
+    "profit_ratio": null,
+    "biggest_winner": 71.5,
+    "biggest_loser": 49.0,
+    "days": 5,
+    "bars": 376,
+    "tested_from": "2026-10-11 18:00",
+    "tested_through": "2026-10-15 19:45",
+    "trades_per_day": 0.4,
+    "error": null,
+    "runner": "pinets",
+    "stop_reason": "",
+    "breached": false,
+    "timeframe": "15m",
+    "frames": [
+      {
+        "timeframe": "15m",
+        "net_profit": 120.5,
+        "max_drawdown": 144.5,
+        "trades": 2,
+        "passed": false
+      }
+    ],
+    "blocked": false,
+    "stopped": false,
+    "fatal": false,
+    "engine": "pinets",
+    "instrument": "MNQ",
+    "contract": "MNQ1!",
+    "spans": {
+      "7": {
+        "net_profit": 120.5,
+        "trades": 2,
+        "biggest_loser": 49.0
+      },
+      "30": {
+        "net_profit": 120.5,
+        "trades": 2,
+        "biggest_loser": 49.0
+      },
+      "90": {
+        "net_profit": 120.5,
+        "trades": 2,
+        "biggest_loser": 49.0
+      },
+      "365": {
+        "net_profit": 120.5,
+        "trades": 2,
+        "biggest_loser": 49.0
+      }
+    },
+    "passed": false,
+    "change": "confirm_candles 2 to 10",
+    "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+    "take_profit": 500,
+    "stage_days": 7,
+    "stage_passed": false,
+    "stage": "stopped at the 7-day stage"
+  },
+  "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\nseveral settings                                    $120.50        $144.50        2      no\nseveral settings                                     $19.50        $222.50        2      no\nseveral settings                                     $51.00        $142.00        1      no\nseveral settings                                     $49.00        $144.50        1      no\nseveral settings                                     $16.50        $176.50        1      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nseveral settings                                    $120.50        $144.50        2      no\n\nMost profitable change\nseveral settings                                    $120.50        $144.50        2      no\n\nA change that made money\nseveral settings                                    $120.50        $144.50        2      no\n\nNo change lost money",
+  "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=10, cooldown_bars=5, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=4.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 6.",
+  "analyst": "The script enters long or short when price pulls back within a configurable dollar zone of a 25-bar VWMA after a run of consecutive confirmation candles, provided the VWMA slope over a lookback window meets a minimum and the volume-profile POC delta imbalance exceeds a set percentage of POC volume. The stop is a fixed dollar amount (default $250) divided by the point value to get points, placed on the far side of the entry close, and a matching take-profit is set on the other side. A session filter (default 18:00 to 08:00 ET) gates all entries and force-closes any open position the moment the session ends. Daily loss and profit dollar limits can lock the strategy out of further trading for the rest of the day, and an optional trailing stop tightens the exit incrementally as unrealized profit grows.",
+  "trials": [
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 8.0,
+        "vwma_len": 25,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 2,
+        "cooldown_bars": 10,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 0.0,
+      "max_drawdown": 0.0,
+      "trades": 0,
+      "win_rate": null,
+      "sharpe": null,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": null,
+      "biggest_loser": null,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.0,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null
+        },
+        "30": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null
+        },
+        "90": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null
+        },
+        "365": {
+          "net_profit": 0.0,
+          "trades": 0,
+          "biggest_loser": null
+        }
+      },
+      "passed": false,
+      "change": "Starting settings",
+      "impact": "Starting measurement. The next run changes one variable from here.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    },
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 4.0,
+        "vwma_len": 25,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 8,
+        "cooldown_bars": 5,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 49.0,
+      "max_drawdown": 144.5,
+      "trades": 1,
+      "win_rate": 100.0,
+      "sharpe": null,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": 49.0,
+      "biggest_loser": 49.0,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.2,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 49.0,
+          "max_drawdown": 144.5,
+          "trades": 1,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 49.0,
+          "trades": 1,
+          "biggest_loser": 49.0
+        },
+        "30": {
+          "net_profit": 49.0,
+          "trades": 1,
+          "biggest_loser": 49.0
+        },
+        "90": {
+          "net_profit": 49.0,
+          "trades": 1,
+          "biggest_loser": 49.0
+        },
+        "365": {
+          "net_profit": 49.0,
+          "trades": 1,
+          "biggest_loser": 49.0
+        }
+      },
+      "passed": false,
+      "change": "confirm_candles 2 to 8, cooldown_bars 10 to 5, min_delta_pct 8.0 to 4.0",
+      "impact": "That change did not move the result toward the goal. Profit moved 49. Drawdown moved 144. The next run leaves That change and changes another setting.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    },
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 4.0,
+        "vwma_len": 25,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 2,
+        "cooldown_bars": 5,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 19.5,
+      "max_drawdown": 222.5,
+      "trades": 2,
+      "win_rate": 50.0,
+      "sharpe": 1.764,
+      "profit_factor": 1.661,
+      "profit_ratio": 1.661,
+      "biggest_winner": 49.0,
+      "biggest_loser": -29.5,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.4,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 19.5,
+          "max_drawdown": 222.5,
+          "trades": 2,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 19.5,
+          "trades": 2,
+          "biggest_loser": -29.5
+        },
+        "30": {
+          "net_profit": 19.5,
+          "trades": 2,
+          "biggest_loser": -29.5
+        },
+        "90": {
+          "net_profit": 19.5,
+          "trades": 2,
+          "biggest_loser": -29.5
+        },
+        "365": {
+          "net_profit": 19.5,
+          "trades": 2,
+          "biggest_loser": -29.5
+        }
+      },
+      "passed": false,
+      "change": "confirm_candles 8 to 2",
+      "impact": "confirm_candles 8 to 2 moved away from the goal. Profit moved -30. Drawdown moved 78. The next run reverses this direction.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    },
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 4.0,
+        "vwma_len": 25,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 10,
+        "cooldown_bars": 5,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 120.5,
+      "max_drawdown": 144.5,
+      "trades": 2,
+      "win_rate": 100.0,
+      "sharpe": 38.021,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": 71.5,
+      "biggest_loser": 49.0,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.4,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 120.5,
+          "max_drawdown": 144.5,
+          "trades": 2,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 120.5,
+          "trades": 2,
+          "biggest_loser": 49.0
+        },
+        "30": {
+          "net_profit": 120.5,
+          "trades": 2,
+          "biggest_loser": 49.0
+        },
+        "90": {
+          "net_profit": 120.5,
+          "trades": 2,
+          "biggest_loser": 49.0
+        },
+        "365": {
+          "net_profit": 120.5,
+          "trades": 2,
+          "biggest_loser": 49.0
+        }
+      },
+      "passed": false,
+      "change": "confirm_candles 2 to 10",
+      "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    },
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 4.0,
+        "vwma_len": 10,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 10,
+        "cooldown_bars": 5,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 16.5,
+      "max_drawdown": 176.5,
+      "trades": 1,
+      "win_rate": 100.0,
+      "sharpe": null,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": 16.5,
+      "biggest_loser": 16.5,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.2,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 16.5,
+          "max_drawdown": 176.5,
+          "trades": 1,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 16.5,
+          "trades": 1,
+          "biggest_loser": 16.5
+        },
+        "30": {
+          "net_profit": 16.5,
+          "trades": 1,
+          "biggest_loser": 16.5
+        },
+        "90": {
+          "net_profit": 16.5,
+          "trades": 1,
+          "biggest_loser": 16.5
+        },
+        "365": {
+          "net_profit": 16.5,
+          "trades": 1,
+          "biggest_loser": 16.5
+        }
+      },
+      "passed": false,
+      "change": "vwma_len 25 to 10",
+      "impact": "vwma_len 25 to 10 did not move the result toward the goal. Profit moved -104. Drawdown moved 32. The next run leaves vwma_len and changes another setting.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    },
+    {
+      "params": {
+        "stop_dollars": 250,
+        "tp_dollars": 500,
+        "use_trail": false,
+        "trail_step_amt": 500,
+        "trail_min_dollars": 1000,
+        "profile_lookback": 120,
+        "profile_rows": 15,
+        "min_delta_pct": 4.0,
+        "vwma_len": 10,
+        "vwma_slope_len": 5,
+        "min_slope": 0.5,
+        "confirm_candles": 1,
+        "cooldown_bars": 5,
+        "pullback_dollars": 25.0,
+        "use_session": true,
+        "sess_start_hr": 18,
+        "sess_start_mn": 0,
+        "sess_end_hr": 8,
+        "sess_end_mn": 0,
+        "use_daily_limits": false,
+        "daily_loss_limit": 0.0,
+        "daily_profit_cap": 0.0
+      },
+      "net_profit": 51.0,
+      "max_drawdown": 142.0,
+      "trades": 1,
+      "win_rate": 100.0,
+      "sharpe": null,
+      "profit_factor": null,
+      "profit_ratio": null,
+      "biggest_winner": 51.0,
+      "biggest_loser": 51.0,
+      "days": 5,
+      "bars": 376,
+      "tested_from": "2026-10-11 18:00",
+      "tested_through": "2026-10-15 19:45",
+      "trades_per_day": 0.2,
+      "error": null,
+      "runner": "pinets",
+      "stop_reason": "",
+      "breached": false,
+      "timeframe": "15m",
+      "frames": [
+        {
+          "timeframe": "15m",
+          "net_profit": 51.0,
+          "max_drawdown": 142.0,
+          "trades": 1,
+          "passed": false
+        }
+      ],
+      "blocked": false,
+      "stopped": false,
+      "fatal": false,
+      "engine": "pinets",
+      "instrument": "MNQ",
+      "contract": "MNQ1!",
+      "spans": {
+        "7": {
+          "net_profit": 51.0,
+          "trades": 1,
+          "biggest_loser": 51.0
+        },
+        "30": {
+          "net_profit": 51.0,
+          "trades": 1,
+          "biggest_loser": 51.0
+        },
+        "90": {
+          "net_profit": 51.0,
+          "trades": 1,
+          "biggest_loser": 51.0
+        },
+        "365": {
+          "net_profit": 51.0,
+          "trades": 1,
+          "biggest_loser": 51.0
+        }
+      },
+      "passed": false,
+      "change": "confirm_candles 10 to 1",
+      "impact": "confirm_candles 10 to 1 did not move the result toward the goal. Profit moved 34. Drawdown moved -34. The next run leaves confirm_candles and changes another setting.",
+      "take_profit": 500,
+      "stage_days": 7,
+      "stage_passed": false
+    }
+  ],
+  "instruments": {
+    "ES": {
+      "attempts": 1,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 15,
+          "min_delta_pct": 8.0,
+          "vwma_len": 25,
+          "vwma_slope_len": 5,
+          "min_slope": 0.5,
+          "confirm_candles": 2,
+          "cooldown_bars": 10,
+          "pullback_dollars": 25.0,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 8,
+          "sess_end_mn": 0,
+          "use_daily_limits": false,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 0.0
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "days": 5,
+        "bars": 460,
+        "tested_from": "2026-09-27 18:00",
+        "tested_through": "2026-10-02 16:45",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "15m",
+        "frames": [
+          {
+            "timeframe": "15m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "ES",
+        "contract": "ES1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          }
+        },
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {
+        "15m": {
+          "attempts": 1,
+          "best": {
+            "params": {
+              "stop_dollars": 250,
+              "tp_dollars": 500,
+              "use_trail": false,
+              "trail_step_amt": 500,
+              "trail_min_dollars": 1000,
+              "profile_lookback": 120,
+              "profile_rows": 15,
+              "min_delta_pct": 8.0,
+              "vwma_len": 25,
+              "vwma_slope_len": 5,
+              "min_slope": 0.5,
+              "confirm_candles": 2,
+              "cooldown_bars": 10,
+              "pullback_dollars": 25.0,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_start_mn": 0,
+              "sess_end_hr": 8,
+              "sess_end_mn": 0,
+              "use_daily_limits": false,
+              "daily_loss_limit": 0.0,
+              "daily_profit_cap": 0.0
+            },
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "win_rate": null,
+            "sharpe": null,
+            "profit_factor": null,
+            "profit_ratio": null,
+            "biggest_winner": null,
+            "biggest_loser": null,
+            "days": 5,
+            "bars": 460,
+            "tested_from": "2026-09-27 18:00",
+            "tested_through": "2026-10-02 16:45",
+            "trades_per_day": 0.0,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "15m",
+            "frames": [
+              {
+                "timeframe": "15m",
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "ES",
+            "contract": "ES1!",
+            "spans": {
+              "7": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "30": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "90": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "365": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              }
+            },
+            "passed": false,
+            "change": "Starting settings",
+            "impact": "Starting measurement. The next run changes one variable from here.",
+            "take_profit": 500,
+            "stage_days": 7,
+            "stage_passed": false,
+            "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+            "skipped": true,
+            "stage": "stopped at the 7-day stage"
+          },
+          "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+          "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 1.",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "win_rate": null,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": null,
+              "biggest_loser": null,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.0,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "ES",
+              "contract": "ES1!",
+              "spans": {
+                "7": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "30": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "90": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "365": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                }
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false,
+              "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+              "skipped": true
+            }
+          ],
+          "error": "",
+          "blocked": false
+        }
+      },
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "ES",
+          "contract": "ES1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            }
+          },
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ]
+    },
+    "GC": {
+      "attempts": 1,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 15,
+          "min_delta_pct": 8.0,
+          "vwma_len": 25,
+          "vwma_slope_len": 5,
+          "min_slope": 0.5,
+          "confirm_candles": 2,
+          "cooldown_bars": 10,
+          "pullback_dollars": 25.0,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 8,
+          "sess_end_mn": 0,
+          "use_daily_limits": false,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 0.0
+        },
+        "net_profit": 0.0,
+        "max_drawdown": 0.0,
+        "trades": 0,
+        "win_rate": null,
+        "sharpe": null,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": null,
+        "biggest_loser": null,
+        "days": 5,
+        "bars": 460,
+        "tested_from": "2026-09-27 18:00",
+        "tested_through": "2026-10-02 16:45",
+        "trades_per_day": 0.0,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "15m",
+        "frames": [
+          {
+            "timeframe": "15m",
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "GC",
+        "contract": "GC1!",
+        "spans": {
+          "7": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "30": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "90": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          },
+          "365": {
+            "net_profit": 0.0,
+            "trades": 0,
+            "biggest_loser": null
+          }
+        },
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+        "skipped": true,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {
+        "15m": {
+          "attempts": 1,
+          "best": {
+            "params": {
+              "stop_dollars": 250,
+              "tp_dollars": 500,
+              "use_trail": false,
+              "trail_step_amt": 500,
+              "trail_min_dollars": 1000,
+              "profile_lookback": 120,
+              "profile_rows": 15,
+              "min_delta_pct": 8.0,
+              "vwma_len": 25,
+              "vwma_slope_len": 5,
+              "min_slope": 0.5,
+              "confirm_candles": 2,
+              "cooldown_bars": 10,
+              "pullback_dollars": 25.0,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_start_mn": 0,
+              "sess_end_hr": 8,
+              "sess_end_mn": 0,
+              "use_daily_limits": false,
+              "daily_loss_limit": 0.0,
+              "daily_profit_cap": 0.0
+            },
+            "net_profit": 0.0,
+            "max_drawdown": 0.0,
+            "trades": 0,
+            "win_rate": null,
+            "sharpe": null,
+            "profit_factor": null,
+            "profit_ratio": null,
+            "biggest_winner": null,
+            "biggest_loser": null,
+            "days": 5,
+            "bars": 460,
+            "tested_from": "2026-09-27 18:00",
+            "tested_through": "2026-10-02 16:45",
+            "trades_per_day": 0.0,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "15m",
+            "frames": [
+              {
+                "timeframe": "15m",
+                "net_profit": 0.0,
+                "max_drawdown": 0.0,
+                "trades": 0,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "GC",
+            "contract": "GC1!",
+            "spans": {
+              "7": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "30": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "90": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              },
+              "365": {
+                "net_profit": 0.0,
+                "trades": 0,
+                "biggest_loser": null
+              }
+            },
+            "passed": false,
+            "change": "Starting settings",
+            "impact": "Starting measurement. The next run changes one variable from here.",
+            "take_profit": 500,
+            "stage_days": 7,
+            "stage_passed": false,
+            "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+            "skipped": true,
+            "stage": "stopped at the 7-day stage"
+          },
+          "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+          "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 1.",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "win_rate": null,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": null,
+              "biggest_loser": null,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.0,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "GC",
+              "contract": "GC1!",
+              "spans": {
+                "7": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "30": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "90": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "365": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                }
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false,
+              "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+              "skipped": true
+            }
+          ],
+          "error": "",
+          "blocked": false
+        }
+      },
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                              $0.00          $0.00        0      no\n\nMost profitable change\nOriginal                                              $0.00          $0.00        0      no\n\nNo change made money\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 1.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "GC",
+          "contract": "GC1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            }
+          },
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false,
+          "note": "The conditions that allow an entry were changed and the script still took no trades. Profit, drawdown, and the trade count stayed at zero, so stepping the other inputs would repeat that result. This chart is leaving the script for a rewrite. The script stays on file and the other charts are still tested.",
+          "skipped": true
+        }
+      ]
+    },
+    "NQ": {
+      "attempts": 15,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 15,
+          "min_delta_pct": 8.0,
+          "vwma_len": 25,
+          "vwma_slope_len": 5,
+          "min_slope": 0.5,
+          "confirm_candles": 2,
+          "cooldown_bars": 10,
+          "pullback_dollars": 25.0,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 8,
+          "sess_end_mn": 0,
+          "use_daily_limits": false,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 0.0
+        },
+        "net_profit": -542.0,
+        "max_drawdown": 542.0,
+        "trades": 2,
+        "win_rate": 0.0,
+        "sharpe": null,
+        "profit_factor": 0.0,
+        "profit_ratio": null,
+        "biggest_winner": -271.0,
+        "biggest_loser": -271.0,
+        "days": 5,
+        "bars": 460,
+        "tested_from": "2026-09-27 18:00",
+        "tested_through": "2026-10-02 16:45",
+        "trades_per_day": 0.4,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "15m",
+        "frames": [
+          {
+            "timeframe": "15m",
+            "net_profit": -542.0,
+            "max_drawdown": 542.0,
+            "trades": 2,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "NQ",
+        "contract": "NQ1!",
+        "spans": {
+          "7": {
+            "net_profit": -542.0,
+            "trades": 2,
+            "biggest_loser": -271.0
+          },
+          "30": {
+            "net_profit": -542.0,
+            "trades": 2,
+            "biggest_loser": -271.0
+          },
+          "90": {
+            "net_profit": -542.0,
+            "trades": 2,
+            "biggest_loser": -271.0
+          },
+          "365": {
+            "net_profit": -542.0,
+            "trades": 2,
+            "biggest_loser": -271.0
+          }
+        },
+        "passed": false,
+        "change": "Starting settings",
+        "impact": "Starting measurement. The next run changes one variable from here.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {
+        "15m": {
+          "attempts": 15,
+          "best": {
+            "params": {
+              "stop_dollars": 250,
+              "tp_dollars": 500,
+              "use_trail": false,
+              "trail_step_amt": 500,
+              "trail_min_dollars": 1000,
+              "profile_lookback": 120,
+              "profile_rows": 15,
+              "min_delta_pct": 8.0,
+              "vwma_len": 25,
+              "vwma_slope_len": 5,
+              "min_slope": 0.5,
+              "confirm_candles": 2,
+              "cooldown_bars": 10,
+              "pullback_dollars": 25.0,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_start_mn": 0,
+              "sess_end_hr": 8,
+              "sess_end_mn": 0,
+              "use_daily_limits": false,
+              "daily_loss_limit": 0.0,
+              "daily_profit_cap": 0.0
+            },
+            "net_profit": -542.0,
+            "max_drawdown": 542.0,
+            "trades": 2,
+            "win_rate": 0.0,
+            "sharpe": null,
+            "profit_factor": 0.0,
+            "profit_ratio": null,
+            "biggest_winner": -271.0,
+            "biggest_loser": -271.0,
+            "days": 5,
+            "bars": 460,
+            "tested_from": "2026-09-27 18:00",
+            "tested_through": "2026-10-02 16:45",
+            "trades_per_day": 0.4,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "15m",
+            "frames": [
+              {
+                "timeframe": "15m",
+                "net_profit": -542.0,
+                "max_drawdown": 542.0,
+                "trades": 2,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "NQ",
+            "contract": "NQ1!",
+            "spans": {
+              "7": {
+                "net_profit": -542.0,
+                "trades": 2,
+                "biggest_loser": -271.0
+              },
+              "30": {
+                "net_profit": -542.0,
+                "trades": 2,
+                "biggest_loser": -271.0
+              },
+              "90": {
+                "net_profit": -542.0,
+                "trades": 2,
+                "biggest_loser": -271.0
+              },
+              "365": {
+                "net_profit": -542.0,
+                "trades": 2,
+                "biggest_loser": -271.0
+              }
+            },
+            "passed": false,
+            "change": "Starting settings",
+            "impact": "Starting measurement. The next run changes one variable from here.",
+            "take_profit": 500,
+            "stage_days": 7,
+            "stage_passed": false,
+            "stage": "stopped at the 7-day stage"
+          },
+          "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                           -$542.00        $542.00        2      no\nseveral settings                                 -$1,042.00      $1,042.00        2      no\nseveral settings                                    $213.00      $1,311.50        2      no\nseveral settings                                  $1,113.00      $1,411.50        2      no\nseveral settings                                    $213.00      $1,561.50        2      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                           -$542.00        $542.00        2      no\n\nMost profitable change\nseveral settings                                  $1,984.00        $765.50        1      no\n\nA change that made money\nseveral settings                                  $1,984.00        $765.50        1      no\n\nA change that lost money\nseveral settings                                 -$1,742.00      $1,742.00        2      no",
+          "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 15.",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -542.0,
+              "max_drawdown": 542.0,
+              "trades": 2,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -271.0,
+              "biggest_loser": -271.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -542.0,
+                  "max_drawdown": 542.0,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -542.0,
+                  "trades": 2,
+                  "biggest_loser": -271.0
+                },
+                "30": {
+                  "net_profit": -542.0,
+                  "trades": 2,
+                  "biggest_loser": -271.0
+                },
+                "90": {
+                  "net_profit": -542.0,
+                  "trades": 2,
+                  "biggest_loser": -271.0
+                },
+                "365": {
+                  "net_profit": -542.0,
+                  "trades": 2,
+                  "biggest_loser": -271.0
+                }
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 500,
+                "tp_dollars": 750,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -1042.0,
+              "max_drawdown": 1042.0,
+              "trades": 2,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -521.0,
+              "biggest_loser": -521.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -1042.0,
+                  "max_drawdown": 1042.0,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -1042.0,
+                  "trades": 2,
+                  "biggest_loser": -521.0
+                },
+                "30": {
+                  "net_profit": -1042.0,
+                  "trades": 2,
+                  "biggest_loser": -521.0
+                },
+                "90": {
+                  "net_profit": -1042.0,
+                  "trades": 2,
+                  "biggest_loser": -521.0
+                },
+                "365": {
+                  "net_profit": -1042.0,
+                  "trades": 2,
+                  "biggest_loser": -521.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+              "impact": "That change did not move the result toward the goal. Profit moved -500. Drawdown moved 500. The next run leaves That change and changes another setting.",
+              "take_profit": 750,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 750,
+                "tp_dollars": 1000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 213.0,
+              "max_drawdown": 1311.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 0.862,
+              "profit_factor": 1.276,
+              "profit_ratio": 1.276,
+              "biggest_winner": 984.0,
+              "biggest_loser": -771.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 213.0,
+                  "max_drawdown": 1311.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -771.0
+                },
+                "30": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -771.0
+                },
+                "90": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -771.0
+                },
+                "365": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -771.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 500 to 750, tp_dollars 750 to 1000",
+              "impact": "That change did not move the result toward the goal. Profit moved 1255. Drawdown moved 270. The next run leaves That change and changes another setting.",
+              "take_profit": 1000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 1000,
+                "tp_dollars": 1250,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 213.0,
+              "max_drawdown": 1561.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 0.671,
+              "profit_factor": 1.209,
+              "profit_ratio": 1.209,
+              "biggest_winner": 1234.0,
+              "biggest_loser": -1021.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 213.0,
+                  "max_drawdown": 1561.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1021.0
+                },
+                "30": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1021.0
+                },
+                "90": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1021.0
+                },
+                "365": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1021.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 750 to 1000, tp_dollars 1000 to 1250",
+              "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+              "take_profit": 1250,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 1250,
+                "tp_dollars": 1500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 213.0,
+              "max_drawdown": 1811.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 0.549,
+              "profit_factor": 1.168,
+              "profit_ratio": 1.168,
+              "biggest_winner": 1484.0,
+              "biggest_loser": -1271.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 213.0,
+                  "max_drawdown": 1811.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1271.0
+                },
+                "30": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1271.0
+                },
+                "90": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1271.0
+                },
+                "365": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1271.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 1000 to 1250, tp_dollars 1250 to 1500",
+              "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+              "take_profit": 1500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 1500,
+                "tp_dollars": 1750,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 213.0,
+              "max_drawdown": 2061.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 0.465,
+              "profit_factor": 1.14,
+              "profit_ratio": 1.14,
+              "biggest_winner": 1734.0,
+              "biggest_loser": -1521.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 213.0,
+                  "max_drawdown": 2061.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "30": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "90": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "365": {
+                  "net_profit": 213.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 1250 to 1500, tp_dollars 1500 to 1750",
+              "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+              "take_profit": 1750,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 1500,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 463.0,
+              "max_drawdown": 2061.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 0.938,
+              "profit_factor": 1.304,
+              "profit_ratio": 1.304,
+              "biggest_winner": 1984.0,
+              "biggest_loser": -1521.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 463.0,
+                  "max_drawdown": 2061.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 463.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "30": {
+                  "net_profit": 463.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "90": {
+                  "net_profit": 463.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                },
+                "365": {
+                  "net_profit": 463.0,
+                  "trades": 2,
+                  "biggest_loser": -1521.0
+                }
+              },
+              "passed": false,
+              "change": "tp_dollars 1750 to 2000",
+              "impact": "tp_dollars 1750 to 2000 did not move the result toward the goal. Profit moved 250. Drawdown moved 0. The next run leaves tp_dollars and changes another setting.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 1500,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 4,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -1521.0,
+              "max_drawdown": 1521.0,
+              "trades": 1,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -1521.0,
+              "biggest_loser": -1521.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -1521.0,
+                  "max_drawdown": 1521.0,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -1521.0,
+                  "trades": 1,
+                  "biggest_loser": -1521.0
+                },
+                "30": {
+                  "net_profit": -1521.0,
+                  "trades": 1,
+                  "biggest_loser": -1521.0
+                },
+                "90": {
+                  "net_profit": -1521.0,
+                  "trades": 1,
+                  "biggest_loser": -1521.0
+                },
+                "365": {
+                  "net_profit": -1521.0,
+                  "trades": 1,
+                  "biggest_loser": -1521.0
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 2 to 4",
+              "impact": "confirm_candles 2 to 4 moved away from the goal. Profit moved -1984. Drawdown moved -540. The next run reverses this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 750,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 4,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -771.0,
+              "max_drawdown": 771.0,
+              "trades": 1,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -771.0,
+              "biggest_loser": -771.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -771.0,
+                  "max_drawdown": 771.0,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -771.0,
+                  "trades": 1,
+                  "biggest_loser": -771.0
+                },
+                "30": {
+                  "net_profit": -771.0,
+                  "trades": 1,
+                  "biggest_loser": -771.0
+                },
+                "90": {
+                  "net_profit": -771.0,
+                  "trades": 1,
+                  "biggest_loser": -771.0
+                },
+                "365": {
+                  "net_profit": -771.0,
+                  "trades": 1,
+                  "biggest_loser": -771.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 1500 to 750",
+              "impact": "stop_dollars 1500 to 750 moved toward the goal. Profit moved 750. Drawdown moved -750. The next run moves stop_dollars further in this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 4,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -871.0,
+              "max_drawdown": 871.0,
+              "trades": 1,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -871.0,
+              "biggest_loser": -871.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -871.0,
+                  "max_drawdown": 871.0,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -871.0,
+                  "trades": 1,
+                  "biggest_loser": -871.0
+                },
+                "30": {
+                  "net_profit": -871.0,
+                  "trades": 1,
+                  "biggest_loser": -871.0
+                },
+                "90": {
+                  "net_profit": -871.0,
+                  "trades": 1,
+                  "biggest_loser": -871.0
+                },
+                "365": {
+                  "net_profit": -871.0,
+                  "trades": 1,
+                  "biggest_loser": -871.0
+                }
+              },
+              "passed": false,
+              "change": "stop_dollars 750 to 850",
+              "impact": "stop_dollars 750 to 850 did not move the result toward the goal. Profit moved -100. Drawdown moved 100. The next run leaves stop_dollars and changes another setting.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 1113.0,
+              "max_drawdown": 1411.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 2.768,
+              "profit_factor": 2.278,
+              "profit_ratio": 2.278,
+              "biggest_winner": 1984.0,
+              "biggest_loser": -871.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 1113.0,
+                  "max_drawdown": 1411.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 1113.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "30": {
+                  "net_profit": 1113.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "90": {
+                  "net_profit": 1113.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "365": {
+                  "net_profit": 1113.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 4 to 2",
+              "impact": "confirm_candles 4 to 2 moved toward the goal. Profit moved 1984. Drawdown moved 540. The next run moves confirm_candles further in this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 21,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "win_rate": null,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": null,
+              "biggest_loser": null,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.0,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "30": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "90": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "365": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                }
+              },
+              "passed": false,
+              "change": "vwma_len 25 to 21",
+              "impact": "vwma_len 25 to 21 moved away from the goal. Profit moved -1113. Drawdown moved -1412. The next run reverses this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 12,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 1984.0,
+              "max_drawdown": 765.5,
+              "trades": 1,
+              "win_rate": 100.0,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 1984.0,
+              "biggest_loser": 1984.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 1984.0,
+                  "max_drawdown": 765.5,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "30": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "90": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "365": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                }
+              },
+              "passed": false,
+              "change": "vwma_len 21 to 12",
+              "impact": "vwma_len 21 to 12 moved toward the goal. Profit moved 1984. Drawdown moved 766. The next run moves vwma_len further in this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 3,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": -1742.0,
+              "max_drawdown": 1742.0,
+              "trades": 2,
+              "win_rate": 0.0,
+              "sharpe": null,
+              "profit_factor": 0.0,
+              "profit_ratio": null,
+              "biggest_winner": -871.0,
+              "biggest_loser": -871.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": -1742.0,
+                  "max_drawdown": 1742.0,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": -1742.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "30": {
+                  "net_profit": -1742.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "90": {
+                  "net_profit": -1742.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                },
+                "365": {
+                  "net_profit": -1742.0,
+                  "trades": 2,
+                  "biggest_loser": -871.0
+                }
+              },
+              "passed": false,
+              "change": "vwma_len 12 to 3",
+              "impact": "vwma_len 12 to 3 moved away from the goal. Profit moved -3726. Drawdown moved 976. The next run reverses this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 850,
+                "tp_dollars": 2000,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 24,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 1984.0,
+              "max_drawdown": 540.5,
+              "trades": 1,
+              "win_rate": 100.0,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 1984.0,
+              "biggest_loser": 1984.0,
+              "days": 5,
+              "bars": 460,
+              "tested_from": "2026-09-27 18:00",
+              "tested_through": "2026-10-02 16:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 1984.0,
+                  "max_drawdown": 540.5,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "NQ",
+              "contract": "NQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "30": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "90": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                },
+                "365": {
+                  "net_profit": 1984.0,
+                  "trades": 1,
+                  "biggest_loser": 1984.0
+                }
+              },
+              "passed": false,
+              "change": "vwma_len 3 to 24",
+              "impact": "vwma_len 3 to 24 moved toward the goal. Profit moved 3726. Drawdown moved -1202. The next run moves vwma_len further in this direction.",
+              "take_profit": 2000,
+              "stage_days": 7,
+              "stage_passed": false
+            }
+          ],
+          "error": "",
+          "blocked": false
+        }
+      },
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                           -$542.00        $542.00        2      no\nseveral settings                                 -$1,042.00      $1,042.00        2      no\nseveral settings                                    $213.00      $1,311.50        2      no\nseveral settings                                  $1,113.00      $1,411.50        2      no\nseveral settings                                    $213.00      $1,561.50        2      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nOriginal                                           -$542.00        $542.00        2      no\n\nMost profitable change\nseveral settings                                  $1,984.00        $765.50        1      no\n\nA change that made money\nseveral settings                                  $1,984.00        $765.50        1      no\n\nA change that lost money\nseveral settings                                 -$1,742.00      $1,742.00        2      no",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=2, cooldown_bars=10, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=8.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 15.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -542.0,
+          "max_drawdown": 542.0,
+          "trades": 2,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -271.0,
+          "biggest_loser": -271.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -542.0,
+              "max_drawdown": 542.0,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -542.0,
+              "trades": 2,
+              "biggest_loser": -271.0
+            },
+            "30": {
+              "net_profit": -542.0,
+              "trades": 2,
+              "biggest_loser": -271.0
+            },
+            "90": {
+              "net_profit": -542.0,
+              "trades": 2,
+              "biggest_loser": -271.0
+            },
+            "365": {
+              "net_profit": -542.0,
+              "trades": 2,
+              "biggest_loser": -271.0
+            }
+          },
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 500,
+            "tp_dollars": 750,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -1042.0,
+          "max_drawdown": 1042.0,
+          "trades": 2,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -521.0,
+          "biggest_loser": -521.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -1042.0,
+              "max_drawdown": 1042.0,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -1042.0,
+              "trades": 2,
+              "biggest_loser": -521.0
+            },
+            "30": {
+              "net_profit": -1042.0,
+              "trades": 2,
+              "biggest_loser": -521.0
+            },
+            "90": {
+              "net_profit": -1042.0,
+              "trades": 2,
+              "biggest_loser": -521.0
+            },
+            "365": {
+              "net_profit": -1042.0,
+              "trades": 2,
+              "biggest_loser": -521.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 250 to 500, tp_dollars 500 to 750",
+          "impact": "That change did not move the result toward the goal. Profit moved -500. Drawdown moved 500. The next run leaves That change and changes another setting.",
+          "take_profit": 750,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 750,
+            "tp_dollars": 1000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 213.0,
+          "max_drawdown": 1311.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 0.862,
+          "profit_factor": 1.276,
+          "profit_ratio": 1.276,
+          "biggest_winner": 984.0,
+          "biggest_loser": -771.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 213.0,
+              "max_drawdown": 1311.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -771.0
+            },
+            "30": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -771.0
+            },
+            "90": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -771.0
+            },
+            "365": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -771.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 500 to 750, tp_dollars 750 to 1000",
+          "impact": "That change did not move the result toward the goal. Profit moved 1255. Drawdown moved 270. The next run leaves That change and changes another setting.",
+          "take_profit": 1000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 1000,
+            "tp_dollars": 1250,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 213.0,
+          "max_drawdown": 1561.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 0.671,
+          "profit_factor": 1.209,
+          "profit_ratio": 1.209,
+          "biggest_winner": 1234.0,
+          "biggest_loser": -1021.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 213.0,
+              "max_drawdown": 1561.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1021.0
+            },
+            "30": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1021.0
+            },
+            "90": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1021.0
+            },
+            "365": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1021.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 750 to 1000, tp_dollars 1000 to 1250",
+          "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+          "take_profit": 1250,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 1250,
+            "tp_dollars": 1500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 213.0,
+          "max_drawdown": 1811.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 0.549,
+          "profit_factor": 1.168,
+          "profit_ratio": 1.168,
+          "biggest_winner": 1484.0,
+          "biggest_loser": -1271.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 213.0,
+              "max_drawdown": 1811.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1271.0
+            },
+            "30": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1271.0
+            },
+            "90": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1271.0
+            },
+            "365": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1271.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 1000 to 1250, tp_dollars 1250 to 1500",
+          "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+          "take_profit": 1500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 1500,
+            "tp_dollars": 1750,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 213.0,
+          "max_drawdown": 2061.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 0.465,
+          "profit_factor": 1.14,
+          "profit_ratio": 1.14,
+          "biggest_winner": 1734.0,
+          "biggest_loser": -1521.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 213.0,
+              "max_drawdown": 2061.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "30": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "90": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "365": {
+              "net_profit": 213.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 1250 to 1500, tp_dollars 1500 to 1750",
+          "impact": "That change did not move the result toward the goal. Profit moved 0. Drawdown moved 250. The next run leaves That change and changes another setting.",
+          "take_profit": 1750,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 1500,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 463.0,
+          "max_drawdown": 2061.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 0.938,
+          "profit_factor": 1.304,
+          "profit_ratio": 1.304,
+          "biggest_winner": 1984.0,
+          "biggest_loser": -1521.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 463.0,
+              "max_drawdown": 2061.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 463.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "30": {
+              "net_profit": 463.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "90": {
+              "net_profit": 463.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            },
+            "365": {
+              "net_profit": 463.0,
+              "trades": 2,
+              "biggest_loser": -1521.0
+            }
+          },
+          "passed": false,
+          "change": "tp_dollars 1750 to 2000",
+          "impact": "tp_dollars 1750 to 2000 did not move the result toward the goal. Profit moved 250. Drawdown moved 0. The next run leaves tp_dollars and changes another setting.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 1500,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 4,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -1521.0,
+          "max_drawdown": 1521.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -1521.0,
+          "biggest_loser": -1521.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -1521.0,
+              "max_drawdown": 1521.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -1521.0,
+              "trades": 1,
+              "biggest_loser": -1521.0
+            },
+            "30": {
+              "net_profit": -1521.0,
+              "trades": 1,
+              "biggest_loser": -1521.0
+            },
+            "90": {
+              "net_profit": -1521.0,
+              "trades": 1,
+              "biggest_loser": -1521.0
+            },
+            "365": {
+              "net_profit": -1521.0,
+              "trades": 1,
+              "biggest_loser": -1521.0
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 2 to 4",
+          "impact": "confirm_candles 2 to 4 moved away from the goal. Profit moved -1984. Drawdown moved -540. The next run reverses this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 750,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 4,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -771.0,
+          "max_drawdown": 771.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -771.0,
+          "biggest_loser": -771.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -771.0,
+              "max_drawdown": 771.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -771.0,
+              "trades": 1,
+              "biggest_loser": -771.0
+            },
+            "30": {
+              "net_profit": -771.0,
+              "trades": 1,
+              "biggest_loser": -771.0
+            },
+            "90": {
+              "net_profit": -771.0,
+              "trades": 1,
+              "biggest_loser": -771.0
+            },
+            "365": {
+              "net_profit": -771.0,
+              "trades": 1,
+              "biggest_loser": -771.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 1500 to 750",
+          "impact": "stop_dollars 1500 to 750 moved toward the goal. Profit moved 750. Drawdown moved -750. The next run moves stop_dollars further in this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 4,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -871.0,
+          "max_drawdown": 871.0,
+          "trades": 1,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -871.0,
+          "biggest_loser": -871.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -871.0,
+              "max_drawdown": 871.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -871.0,
+              "trades": 1,
+              "biggest_loser": -871.0
+            },
+            "30": {
+              "net_profit": -871.0,
+              "trades": 1,
+              "biggest_loser": -871.0
+            },
+            "90": {
+              "net_profit": -871.0,
+              "trades": 1,
+              "biggest_loser": -871.0
+            },
+            "365": {
+              "net_profit": -871.0,
+              "trades": 1,
+              "biggest_loser": -871.0
+            }
+          },
+          "passed": false,
+          "change": "stop_dollars 750 to 850",
+          "impact": "stop_dollars 750 to 850 did not move the result toward the goal. Profit moved -100. Drawdown moved 100. The next run leaves stop_dollars and changes another setting.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 1113.0,
+          "max_drawdown": 1411.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 2.768,
+          "profit_factor": 2.278,
+          "profit_ratio": 2.278,
+          "biggest_winner": 1984.0,
+          "biggest_loser": -871.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 1113.0,
+              "max_drawdown": 1411.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 1113.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "30": {
+              "net_profit": 1113.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "90": {
+              "net_profit": 1113.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "365": {
+              "net_profit": 1113.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 4 to 2",
+          "impact": "confirm_candles 4 to 2 moved toward the goal. Profit moved 1984. Drawdown moved 540. The next run moves confirm_candles further in this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 21,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            }
+          },
+          "passed": false,
+          "change": "vwma_len 25 to 21",
+          "impact": "vwma_len 25 to 21 moved away from the goal. Profit moved -1113. Drawdown moved -1412. The next run reverses this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 12,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 1984.0,
+          "max_drawdown": 765.5,
+          "trades": 1,
+          "win_rate": 100.0,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 1984.0,
+          "biggest_loser": 1984.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 1984.0,
+              "max_drawdown": 765.5,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "30": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "90": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "365": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            }
+          },
+          "passed": false,
+          "change": "vwma_len 21 to 12",
+          "impact": "vwma_len 21 to 12 moved toward the goal. Profit moved 1984. Drawdown moved 766. The next run moves vwma_len further in this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 3,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": -1742.0,
+          "max_drawdown": 1742.0,
+          "trades": 2,
+          "win_rate": 0.0,
+          "sharpe": null,
+          "profit_factor": 0.0,
+          "profit_ratio": null,
+          "biggest_winner": -871.0,
+          "biggest_loser": -871.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": -1742.0,
+              "max_drawdown": 1742.0,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": -1742.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "30": {
+              "net_profit": -1742.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "90": {
+              "net_profit": -1742.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            },
+            "365": {
+              "net_profit": -1742.0,
+              "trades": 2,
+              "biggest_loser": -871.0
+            }
+          },
+          "passed": false,
+          "change": "vwma_len 12 to 3",
+          "impact": "vwma_len 12 to 3 moved away from the goal. Profit moved -3726. Drawdown moved 976. The next run reverses this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 850,
+            "tp_dollars": 2000,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 24,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 1984.0,
+          "max_drawdown": 540.5,
+          "trades": 1,
+          "win_rate": 100.0,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 1984.0,
+          "biggest_loser": 1984.0,
+          "days": 5,
+          "bars": 460,
+          "tested_from": "2026-09-27 18:00",
+          "tested_through": "2026-10-02 16:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 1984.0,
+              "max_drawdown": 540.5,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "NQ",
+          "contract": "NQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "30": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "90": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            },
+            "365": {
+              "net_profit": 1984.0,
+              "trades": 1,
+              "biggest_loser": 1984.0
+            }
+          },
+          "passed": false,
+          "change": "vwma_len 3 to 24",
+          "impact": "vwma_len 3 to 24 moved toward the goal. Profit moved 3726. Drawdown moved -1202. The next run moves vwma_len further in this direction.",
+          "take_profit": 2000,
+          "stage_days": 7,
+          "stage_passed": false
+        }
+      ]
+    },
+    "MNQ": {
+      "attempts": 6,
+      "best": {
+        "params": {
+          "stop_dollars": 250,
+          "tp_dollars": 500,
+          "use_trail": false,
+          "trail_step_amt": 500,
+          "trail_min_dollars": 1000,
+          "profile_lookback": 120,
+          "profile_rows": 15,
+          "min_delta_pct": 4.0,
+          "vwma_len": 25,
+          "vwma_slope_len": 5,
+          "min_slope": 0.5,
+          "confirm_candles": 10,
+          "cooldown_bars": 5,
+          "pullback_dollars": 25.0,
+          "use_session": true,
+          "sess_start_hr": 18,
+          "sess_start_mn": 0,
+          "sess_end_hr": 8,
+          "sess_end_mn": 0,
+          "use_daily_limits": false,
+          "daily_loss_limit": 0.0,
+          "daily_profit_cap": 0.0
+        },
+        "net_profit": 120.5,
+        "max_drawdown": 144.5,
+        "trades": 2,
+        "win_rate": 100.0,
+        "sharpe": 38.021,
+        "profit_factor": null,
+        "profit_ratio": null,
+        "biggest_winner": 71.5,
+        "biggest_loser": 49.0,
+        "days": 5,
+        "bars": 376,
+        "tested_from": "2026-10-11 18:00",
+        "tested_through": "2026-10-15 19:45",
+        "trades_per_day": 0.4,
+        "error": null,
+        "runner": "pinets",
+        "stop_reason": "",
+        "breached": false,
+        "timeframe": "15m",
+        "frames": [
+          {
+            "timeframe": "15m",
+            "net_profit": 120.5,
+            "max_drawdown": 144.5,
+            "trades": 2,
+            "passed": false
+          }
+        ],
+        "blocked": false,
+        "stopped": false,
+        "fatal": false,
+        "engine": "pinets",
+        "instrument": "MNQ",
+        "contract": "MNQ1!",
+        "spans": {
+          "7": {
+            "net_profit": 120.5,
+            "trades": 2,
+            "biggest_loser": 49.0
+          },
+          "30": {
+            "net_profit": 120.5,
+            "trades": 2,
+            "biggest_loser": 49.0
+          },
+          "90": {
+            "net_profit": 120.5,
+            "trades": 2,
+            "biggest_loser": 49.0
+          },
+          "365": {
+            "net_profit": 120.5,
+            "trades": 2,
+            "biggest_loser": 49.0
+          }
+        },
+        "passed": false,
+        "change": "confirm_candles 2 to 10",
+        "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+        "take_profit": 500,
+        "stage_days": 7,
+        "stage_passed": false,
+        "stage": "stopped at the 7-day stage"
+      },
+      "charts": {
+        "15m": {
+          "attempts": 6,
+          "best": {
+            "params": {
+              "stop_dollars": 250,
+              "tp_dollars": 500,
+              "use_trail": false,
+              "trail_step_amt": 500,
+              "trail_min_dollars": 1000,
+              "profile_lookback": 120,
+              "profile_rows": 15,
+              "min_delta_pct": 4.0,
+              "vwma_len": 25,
+              "vwma_slope_len": 5,
+              "min_slope": 0.5,
+              "confirm_candles": 10,
+              "cooldown_bars": 5,
+              "pullback_dollars": 25.0,
+              "use_session": true,
+              "sess_start_hr": 18,
+              "sess_start_mn": 0,
+              "sess_end_hr": 8,
+              "sess_end_mn": 0,
+              "use_daily_limits": false,
+              "daily_loss_limit": 0.0,
+              "daily_profit_cap": 0.0
+            },
+            "net_profit": 120.5,
+            "max_drawdown": 144.5,
+            "trades": 2,
+            "win_rate": 100.0,
+            "sharpe": 38.021,
+            "profit_factor": null,
+            "profit_ratio": null,
+            "biggest_winner": 71.5,
+            "biggest_loser": 49.0,
+            "days": 5,
+            "bars": 376,
+            "tested_from": "2026-10-11 18:00",
+            "tested_through": "2026-10-15 19:45",
+            "trades_per_day": 0.4,
+            "error": null,
+            "runner": "pinets",
+            "stop_reason": "",
+            "breached": false,
+            "timeframe": "15m",
+            "frames": [
+              {
+                "timeframe": "15m",
+                "net_profit": 120.5,
+                "max_drawdown": 144.5,
+                "trades": 2,
+                "passed": false
+              }
+            ],
+            "blocked": false,
+            "stopped": false,
+            "fatal": false,
+            "engine": "pinets",
+            "instrument": "MNQ",
+            "contract": "MNQ1!",
+            "spans": {
+              "7": {
+                "net_profit": 120.5,
+                "trades": 2,
+                "biggest_loser": 49.0
+              },
+              "30": {
+                "net_profit": 120.5,
+                "trades": 2,
+                "biggest_loser": 49.0
+              },
+              "90": {
+                "net_profit": 120.5,
+                "trades": 2,
+                "biggest_loser": 49.0
+              },
+              "365": {
+                "net_profit": 120.5,
+                "trades": 2,
+                "biggest_loser": 49.0
+              }
+            },
+            "passed": false,
+            "change": "confirm_candles 2 to 10",
+            "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+            "take_profit": 500,
+            "stage_days": 7,
+            "stage_passed": false,
+            "stage": "stopped at the 7-day stage"
+          },
+          "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\nseveral settings                                    $120.50        $144.50        2      no\nseveral settings                                     $19.50        $222.50        2      no\nseveral settings                                     $51.00        $142.00        1      no\nseveral settings                                     $49.00        $144.50        1      no\nseveral settings                                     $16.50        $176.50        1      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nseveral settings                                    $120.50        $144.50        2      no\n\nMost profitable change\nseveral settings                                    $120.50        $144.50        2      no\n\nA change that made money\nseveral settings                                    $120.50        $144.50        2      no\n\nNo change lost money",
+          "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=10, cooldown_bars=5, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=4.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 6.",
+          "trials": [
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 8.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 10,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "win_rate": null,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": null,
+              "biggest_loser": null,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.0,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 0.0,
+                  "max_drawdown": 0.0,
+                  "trades": 0,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "30": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "90": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                },
+                "365": {
+                  "net_profit": 0.0,
+                  "trades": 0,
+                  "biggest_loser": null
+                }
+              },
+              "passed": false,
+              "change": "Starting settings",
+              "impact": "Starting measurement. The next run changes one variable from here.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 4.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 8,
+                "cooldown_bars": 5,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 49.0,
+              "max_drawdown": 144.5,
+              "trades": 1,
+              "win_rate": 100.0,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 49.0,
+              "biggest_loser": 49.0,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 49.0,
+                  "max_drawdown": 144.5,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 49.0,
+                  "trades": 1,
+                  "biggest_loser": 49.0
+                },
+                "30": {
+                  "net_profit": 49.0,
+                  "trades": 1,
+                  "biggest_loser": 49.0
+                },
+                "90": {
+                  "net_profit": 49.0,
+                  "trades": 1,
+                  "biggest_loser": 49.0
+                },
+                "365": {
+                  "net_profit": 49.0,
+                  "trades": 1,
+                  "biggest_loser": 49.0
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 2 to 8, cooldown_bars 10 to 5, min_delta_pct 8.0 to 4.0",
+              "impact": "That change did not move the result toward the goal. Profit moved 49. Drawdown moved 144. The next run leaves That change and changes another setting.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 4.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 2,
+                "cooldown_bars": 5,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 19.5,
+              "max_drawdown": 222.5,
+              "trades": 2,
+              "win_rate": 50.0,
+              "sharpe": 1.764,
+              "profit_factor": 1.661,
+              "profit_ratio": 1.661,
+              "biggest_winner": 49.0,
+              "biggest_loser": -29.5,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 19.5,
+                  "max_drawdown": 222.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 19.5,
+                  "trades": 2,
+                  "biggest_loser": -29.5
+                },
+                "30": {
+                  "net_profit": 19.5,
+                  "trades": 2,
+                  "biggest_loser": -29.5
+                },
+                "90": {
+                  "net_profit": 19.5,
+                  "trades": 2,
+                  "biggest_loser": -29.5
+                },
+                "365": {
+                  "net_profit": 19.5,
+                  "trades": 2,
+                  "biggest_loser": -29.5
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 8 to 2",
+              "impact": "confirm_candles 8 to 2 moved away from the goal. Profit moved -30. Drawdown moved 78. The next run reverses this direction.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 4.0,
+                "vwma_len": 25,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 10,
+                "cooldown_bars": 5,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 120.5,
+              "max_drawdown": 144.5,
+              "trades": 2,
+              "win_rate": 100.0,
+              "sharpe": 38.021,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 71.5,
+              "biggest_loser": 49.0,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.4,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 120.5,
+                  "max_drawdown": 144.5,
+                  "trades": 2,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 120.5,
+                  "trades": 2,
+                  "biggest_loser": 49.0
+                },
+                "30": {
+                  "net_profit": 120.5,
+                  "trades": 2,
+                  "biggest_loser": 49.0
+                },
+                "90": {
+                  "net_profit": 120.5,
+                  "trades": 2,
+                  "biggest_loser": 49.0
+                },
+                "365": {
+                  "net_profit": 120.5,
+                  "trades": 2,
+                  "biggest_loser": 49.0
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 2 to 10",
+              "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 4.0,
+                "vwma_len": 10,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 10,
+                "cooldown_bars": 5,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 16.5,
+              "max_drawdown": 176.5,
+              "trades": 1,
+              "win_rate": 100.0,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 16.5,
+              "biggest_loser": 16.5,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 16.5,
+                  "max_drawdown": 176.5,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 16.5,
+                  "trades": 1,
+                  "biggest_loser": 16.5
+                },
+                "30": {
+                  "net_profit": 16.5,
+                  "trades": 1,
+                  "biggest_loser": 16.5
+                },
+                "90": {
+                  "net_profit": 16.5,
+                  "trades": 1,
+                  "biggest_loser": 16.5
+                },
+                "365": {
+                  "net_profit": 16.5,
+                  "trades": 1,
+                  "biggest_loser": 16.5
+                }
+              },
+              "passed": false,
+              "change": "vwma_len 25 to 10",
+              "impact": "vwma_len 25 to 10 did not move the result toward the goal. Profit moved -104. Drawdown moved 32. The next run leaves vwma_len and changes another setting.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            },
+            {
+              "params": {
+                "stop_dollars": 250,
+                "tp_dollars": 500,
+                "use_trail": false,
+                "trail_step_amt": 500,
+                "trail_min_dollars": 1000,
+                "profile_lookback": 120,
+                "profile_rows": 15,
+                "min_delta_pct": 4.0,
+                "vwma_len": 10,
+                "vwma_slope_len": 5,
+                "min_slope": 0.5,
+                "confirm_candles": 1,
+                "cooldown_bars": 5,
+                "pullback_dollars": 25.0,
+                "use_session": true,
+                "sess_start_hr": 18,
+                "sess_start_mn": 0,
+                "sess_end_hr": 8,
+                "sess_end_mn": 0,
+                "use_daily_limits": false,
+                "daily_loss_limit": 0.0,
+                "daily_profit_cap": 0.0
+              },
+              "net_profit": 51.0,
+              "max_drawdown": 142.0,
+              "trades": 1,
+              "win_rate": 100.0,
+              "sharpe": null,
+              "profit_factor": null,
+              "profit_ratio": null,
+              "biggest_winner": 51.0,
+              "biggest_loser": 51.0,
+              "days": 5,
+              "bars": 376,
+              "tested_from": "2026-10-11 18:00",
+              "tested_through": "2026-10-15 19:45",
+              "trades_per_day": 0.2,
+              "error": null,
+              "runner": "pinets",
+              "stop_reason": "",
+              "breached": false,
+              "timeframe": "15m",
+              "frames": [
+                {
+                  "timeframe": "15m",
+                  "net_profit": 51.0,
+                  "max_drawdown": 142.0,
+                  "trades": 1,
+                  "passed": false
+                }
+              ],
+              "blocked": false,
+              "stopped": false,
+              "fatal": false,
+              "engine": "pinets",
+              "instrument": "MNQ",
+              "contract": "MNQ1!",
+              "spans": {
+                "7": {
+                  "net_profit": 51.0,
+                  "trades": 1,
+                  "biggest_loser": 51.0
+                },
+                "30": {
+                  "net_profit": 51.0,
+                  "trades": 1,
+                  "biggest_loser": 51.0
+                },
+                "90": {
+                  "net_profit": 51.0,
+                  "trades": 1,
+                  "biggest_loser": 51.0
+                },
+                "365": {
+                  "net_profit": 51.0,
+                  "trades": 1,
+                  "biggest_loser": 51.0
+                }
+              },
+              "passed": false,
+              "change": "confirm_candles 10 to 1",
+              "impact": "confirm_candles 10 to 1 did not move the result toward the goal. Profit moved 34. Drawdown moved -34. The next run leaves confirm_candles and changes another setting.",
+              "take_profit": 500,
+              "stage_days": 7,
+              "stage_passed": false
+            }
+          ],
+          "error": "",
+          "blocked": false
+        }
+      },
+      "profitable": [],
+      "quantitative_researcher": "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.\n\nChange                                               Profit       Drawdown   Trades   Trail\n-------------------------------------------- -------------- -------------- -------- -------\nOriginal                                              $0.00          $0.00        0      no\nseveral settings                                    $120.50        $144.50        2      no\nseveral settings                                     $19.50        $222.50        2      no\nseveral settings                                     $51.00        $142.00        1      no\nseveral settings                                     $49.00        $144.50        1      no\nseveral settings                                     $16.50        $176.50        1      no\n\nBest change under the objective (130 to 600 trades a year, then the lowest drawdown, then the larger profit)\nseveral settings                                    $120.50        $144.50        2      no\n\nMost profitable change\nseveral settings                                    $120.50        $144.50        2      no\n\nA change that made money\nseveral settings                                    $120.50        $144.50        2      no\n\nNo change lost money",
+      "indicator_researcher": "The next setting follows the last result. A change that raises profit, without a higher drawdown, is increased again until the drawdown rises or the profit falls by 5 percent. The stop and the take profit are inputs and are moved along with every other input. One input changes per run, and that change is the label on the result. A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 100 trades, profit is above $6,000, and the win rate is above 53 percent. Those are the boxes turned on at the strategy library page. Two or three trades is not a strategy. Among the stored runs, the lower drawdown still ranks first and the larger profit after that. The best version uses confirm_candles=10, cooldown_bars=5, daily_loss_limit=0.0, daily_profit_cap=0.0, min_delta_pct=4.0, min_slope=0.5, profile_lookback=120, profile_rows=15. Attempts recorded: 6.",
+      "trials": [
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 8.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 10,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 0.0,
+          "max_drawdown": 0.0,
+          "trades": 0,
+          "win_rate": null,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": null,
+          "biggest_loser": null,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.0,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 0.0,
+              "max_drawdown": 0.0,
+              "trades": 0,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "30": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "90": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            },
+            "365": {
+              "net_profit": 0.0,
+              "trades": 0,
+              "biggest_loser": null
+            }
+          },
+          "passed": false,
+          "change": "Starting settings",
+          "impact": "Starting measurement. The next run changes one variable from here.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 4.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 8,
+            "cooldown_bars": 5,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 49.0,
+          "max_drawdown": 144.5,
+          "trades": 1,
+          "win_rate": 100.0,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 49.0,
+          "biggest_loser": 49.0,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 49.0,
+              "max_drawdown": 144.5,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 49.0,
+              "trades": 1,
+              "biggest_loser": 49.0
+            },
+            "30": {
+              "net_profit": 49.0,
+              "trades": 1,
+              "biggest_loser": 49.0
+            },
+            "90": {
+              "net_profit": 49.0,
+              "trades": 1,
+              "biggest_loser": 49.0
+            },
+            "365": {
+              "net_profit": 49.0,
+              "trades": 1,
+              "biggest_loser": 49.0
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 2 to 8, cooldown_bars 10 to 5, min_delta_pct 8.0 to 4.0",
+          "impact": "That change did not move the result toward the goal. Profit moved 49. Drawdown moved 144. The next run leaves That change and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 4.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 2,
+            "cooldown_bars": 5,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 19.5,
+          "max_drawdown": 222.5,
+          "trades": 2,
+          "win_rate": 50.0,
+          "sharpe": 1.764,
+          "profit_factor": 1.661,
+          "profit_ratio": 1.661,
+          "biggest_winner": 49.0,
+          "biggest_loser": -29.5,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 19.5,
+              "max_drawdown": 222.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 19.5,
+              "trades": 2,
+              "biggest_loser": -29.5
+            },
+            "30": {
+              "net_profit": 19.5,
+              "trades": 2,
+              "biggest_loser": -29.5
+            },
+            "90": {
+              "net_profit": 19.5,
+              "trades": 2,
+              "biggest_loser": -29.5
+            },
+            "365": {
+              "net_profit": 19.5,
+              "trades": 2,
+              "biggest_loser": -29.5
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 8 to 2",
+          "impact": "confirm_candles 8 to 2 moved away from the goal. Profit moved -30. Drawdown moved 78. The next run reverses this direction.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 4.0,
+            "vwma_len": 25,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 10,
+            "cooldown_bars": 5,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 120.5,
+          "max_drawdown": 144.5,
+          "trades": 2,
+          "win_rate": 100.0,
+          "sharpe": 38.021,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 71.5,
+          "biggest_loser": 49.0,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.4,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 120.5,
+              "max_drawdown": 144.5,
+              "trades": 2,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 120.5,
+              "trades": 2,
+              "biggest_loser": 49.0
+            },
+            "30": {
+              "net_profit": 120.5,
+              "trades": 2,
+              "biggest_loser": 49.0
+            },
+            "90": {
+              "net_profit": 120.5,
+              "trades": 2,
+              "biggest_loser": 49.0
+            },
+            "365": {
+              "net_profit": 120.5,
+              "trades": 2,
+              "biggest_loser": 49.0
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 2 to 10",
+          "impact": "confirm_candles 2 to 10 moved toward the goal. Profit moved 101. Drawdown moved -78. The next run moves confirm_candles further in this direction.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 4.0,
+            "vwma_len": 10,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 10,
+            "cooldown_bars": 5,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 16.5,
+          "max_drawdown": 176.5,
+          "trades": 1,
+          "win_rate": 100.0,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 16.5,
+          "biggest_loser": 16.5,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 16.5,
+              "max_drawdown": 176.5,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 16.5,
+              "trades": 1,
+              "biggest_loser": 16.5
+            },
+            "30": {
+              "net_profit": 16.5,
+              "trades": 1,
+              "biggest_loser": 16.5
+            },
+            "90": {
+              "net_profit": 16.5,
+              "trades": 1,
+              "biggest_loser": 16.5
+            },
+            "365": {
+              "net_profit": 16.5,
+              "trades": 1,
+              "biggest_loser": 16.5
+            }
+          },
+          "passed": false,
+          "change": "vwma_len 25 to 10",
+          "impact": "vwma_len 25 to 10 did not move the result toward the goal. Profit moved -104. Drawdown moved 32. The next run leaves vwma_len and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        },
+        {
+          "params": {
+            "stop_dollars": 250,
+            "tp_dollars": 500,
+            "use_trail": false,
+            "trail_step_amt": 500,
+            "trail_min_dollars": 1000,
+            "profile_lookback": 120,
+            "profile_rows": 15,
+            "min_delta_pct": 4.0,
+            "vwma_len": 10,
+            "vwma_slope_len": 5,
+            "min_slope": 0.5,
+            "confirm_candles": 1,
+            "cooldown_bars": 5,
+            "pullback_dollars": 25.0,
+            "use_session": true,
+            "sess_start_hr": 18,
+            "sess_start_mn": 0,
+            "sess_end_hr": 8,
+            "sess_end_mn": 0,
+            "use_daily_limits": false,
+            "daily_loss_limit": 0.0,
+            "daily_profit_cap": 0.0
+          },
+          "net_profit": 51.0,
+          "max_drawdown": 142.0,
+          "trades": 1,
+          "win_rate": 100.0,
+          "sharpe": null,
+          "profit_factor": null,
+          "profit_ratio": null,
+          "biggest_winner": 51.0,
+          "biggest_loser": 51.0,
+          "days": 5,
+          "bars": 376,
+          "tested_from": "2026-10-11 18:00",
+          "tested_through": "2026-10-15 19:45",
+          "trades_per_day": 0.2,
+          "error": null,
+          "runner": "pinets",
+          "stop_reason": "",
+          "breached": false,
+          "timeframe": "15m",
+          "frames": [
+            {
+              "timeframe": "15m",
+              "net_profit": 51.0,
+              "max_drawdown": 142.0,
+              "trades": 1,
+              "passed": false
+            }
+          ],
+          "blocked": false,
+          "stopped": false,
+          "fatal": false,
+          "engine": "pinets",
+          "instrument": "MNQ",
+          "contract": "MNQ1!",
+          "spans": {
+            "7": {
+              "net_profit": 51.0,
+              "trades": 1,
+              "biggest_loser": 51.0
+            },
+            "30": {
+              "net_profit": 51.0,
+              "trades": 1,
+              "biggest_loser": 51.0
+            },
+            "90": {
+              "net_profit": 51.0,
+              "trades": 1,
+              "biggest_loser": 51.0
+            },
+            "365": {
+              "net_profit": 51.0,
+              "trades": 1,
+              "biggest_loser": 51.0
+            }
+          },
+          "passed": false,
+          "change": "confirm_candles 10 to 1",
+          "impact": "confirm_candles 10 to 1 did not move the result toward the goal. Profit moved 34. Drawdown moved -34. The next run leaves confirm_candles and changes another setting.",
+          "take_profit": 500,
+          "stage_days": 7,
+          "stage_passed": false
+        }
+      ]
+    }
+  }
+}

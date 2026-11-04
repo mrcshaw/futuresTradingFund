@@ -68,7 +68,7 @@ def far_under(row: dict | None) -> bool:
 def is_average_length(name: str, source: str = "") -> bool:
     """An EMA or SMA length, or a fast/slow length on a script that uses those averages."""
     lowered = (name or "").lower().replace("_", "")
-    if any(word in lowered for word in ("stop", "target", "profit", "dollar", "tick", "qty", "cooldown", "session", "lookback", "profile")):
+    if any(word in lowered for word in ("stop", "target", "profit", "dollar", "tick", "qty", "cooldown", "session", "skip", "lookback", "profile")):
         return False
     if "ema" in lowered or "sma" in lowered:
         return True

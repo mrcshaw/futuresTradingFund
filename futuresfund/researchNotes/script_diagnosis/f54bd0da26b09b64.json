@@ -1,0 +1,123 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "profile_lookback": {
+   "value": 50,
+   "net_profit": -2308.0,
+   "max_drawdown": 4900.5,
+   "trades": 53
+  },
+  "profile_rows": {
+   "value": 12,
+   "net_profit": -755.0,
+   "max_drawdown": 3525.0,
+   "trades": 30
+  },
+  "poc_zone_rows": {
+   "value": 0,
+   "net_profit": -8745.0,
+   "max_drawdown": 10362.5,
+   "trades": 70
+  },
+  "delta_min": {
+   "value": 2,
+   "net_profit": -4704.5,
+   "max_drawdown": 6881.5,
+   "trades": 47
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": -5007.5,
+   "max_drawdown": 7184.5,
+   "trades": 45
+  },
+  "pivot_len": {
+   "value": 2,
+   "net_profit": -8317.5,
+   "max_drawdown": 10246.0,
+   "trades": 80
+  }
+ },
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 200,
+   "profile_rows": 50,
+   "poc_zone_rows": 2,
+   "delta_min": 10,
+   "vwma_len": 50,
+   "pivot_len": 5
+  },
+  "net_profit": -5020.0,
+  "max_drawdown": 7197.0,
+  "trades": 45,
+  "win_rate": 17.78,
+  "profit_factor": 0.501,
+  "biggest_winner": 1139.0,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "Long Exit",
+    "trades": 24,
+    "pnl": -3139.0,
+    "favorable": 414.81,
+    "adverse": -260.71
+   },
+   {
+    "exit": "Short Exit",
+    "trades": 19,
+    "pnl": -2171.5,
+    "favorable": 364.89,
+    "adverse": -247.61
+   },
+   {
+    "exit": "Session End",
+    "trades": 2,
+    "pnl": 290.5,
+    "favorable": 319.5,
+    "adverse": -130.5
+   }
+  ]
+ },
+ "reviewed": [
+  "30 M2K 5m",
+  "7 ES 2m",
+  "7 ES 5m",
+  "7 GC 2m",
+  "7 GC 5m",
+  "7 M2K 15m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true
+}

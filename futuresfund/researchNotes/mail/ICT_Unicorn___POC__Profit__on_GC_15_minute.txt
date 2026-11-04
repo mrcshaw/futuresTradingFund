@@ -1,0 +1,5 @@
+Subject: Result: ICT Unicorn + POC [Profit] on Gold (GC1!)
+
+The run for ICT Unicorn + POC [Profit] on the 15-minute Gold chart has concluded. The strategy generated a profit of $12,978.00 with a maximum drawdown of $1,305.50 across 403 trades. The trades per day were approximately 7.75, based on the 260 trading days in the test period. The profit ratio, calculated as the average winning trade divided by the average losing trade, was not provided in the result facts.
+
+The acceptance criteria for the strategy library require a drawdown under 5% of the account ($2,500), at least 60 trades, profit above $5,000, and a win rate above 40%. This run met the drawdown, trade count, and profit thresholds. However, the win rate was 15.38%, which is below the required 40%. Consequently, this result was not filed in the strategy library. The only reason for non-filing is that the win rate did not meet the library's minimum threshold.

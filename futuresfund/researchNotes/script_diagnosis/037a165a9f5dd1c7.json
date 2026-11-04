@@ -1,0 +1,135 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "atrLen"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 750,
+   "net_profit": -100.0,
+   "max_drawdown": 875.0,
+   "trades": 2
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 512.5,
+   "max_drawdown": 175.0,
+   "trades": 2
+  },
+  "rsiLen": {
+   "value": 4,
+   "net_profit": 1637.5,
+   "max_drawdown": 175.0,
+   "trades": 3
+  },
+  "pivotRight": {
+   "value": 1,
+   "net_profit": 312.5,
+   "max_drawdown": 1312.5,
+   "trades": 21
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 3160.0,
+   "max_drawdown": 6780.0,
+   "trades": 58
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 5690.0,
+   "max_drawdown": 4780.0,
+   "trades": 46
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 980.0,
+   "max_drawdown": 2230.0,
+   "trades": 13
+  }
+ },
+ "flat": [
+  "pivotLeft",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 20.0,
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 23,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 18,
+   "skip_start_mn": 0,
+   "skip_end_hr": 19,
+   "skip_end_mn": 30,
+   "rsiLen": 7,
+   "atrLen": 14,
+   "pivotLeft": 5,
+   "pivotRight": 2
+  },
+  "net_profit": 2045.0,
+  "max_drawdown": 1280.0,
+  "trades": 12,
+  "win_rate": 41.67,
+  "profit_factor": 1.658,
+  "biggest_winner": 1990.0,
+  "biggest_loser": -520.0,
+  "held_loser": -520.0,
+  "exits": [
+   {
+    "exit": "ExitShort",
+    "trades": 5,
+    "pnl": -30.0,
+    "favorable": 720.0,
+    "adverse": -408.0
+   },
+   {
+    "exit": "ExitLong",
+    "trades": 4,
+    "pnl": 950.0,
+    "favorable": 672.5,
+    "adverse": -386.25
+   },
+   {
+    "exit": "Session",
+    "trades": 2,
+    "pnl": 70.0,
+    "favorable": 302.5,
+    "adverse": -185.0
+   },
+   {
+    "exit": "Short",
+    "trades": 1,
+    "pnl": 1055.0,
+    "favorable": 1260.0,
+    "adverse": -165.0
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "30 NQ 5m"
+ ]
+}

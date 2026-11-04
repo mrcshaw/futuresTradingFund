@@ -1,0 +1,25 @@
+Subject: Smart Trail NO CONDITIONS ES Evening - Test Result  
+
+Dear Team,  
+
+The strategy "Smart Trail NO CONDITIONS ES Evening" was recently tested on the 5-minute Nasdaq (NQ1!) chart. Here are the results:  
+
+- **Profit**: -$5,639.00  
+- **Drawdown**: $7,360.50  
+- **Trades**: 189  
+- **Trades per Day**: 9.0 (over 21 trading days)  
+
+This strategy did not meet the required criteria:  
+- Profit target of $3,000 was not achieved.  
+- Drawdown exceeded the $2,500 trailing drawdown limit.  
+- Trades per day (9.0) were outside the 1 to 3 trades per day requirement.  
+
+As a result, this strategy was not filed in the strategy library. It was excluded because the profit was below the target, the drawdown was too high, and the trades per day were outside the specified range.  
+
+The settings for this version included: length=58, multiplier=2.0, sensitivity=3, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=9, sess_end_mn=0, stop_dollars=300.0, tp_dollars=500.0, use_trail=False, trail_pct=75.0.  
+
+Let me know if you have any questions.  
+
+Best regards,  
+[Your Name]  
+Portfolio Manager

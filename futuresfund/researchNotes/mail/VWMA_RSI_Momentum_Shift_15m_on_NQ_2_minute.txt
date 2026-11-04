@@ -1,0 +1,5 @@
+Subject: VWMA RSI Momentum Shift 15m on 2-minute Nasdaq (NQ1!)
+
+The VWMA RSI Momentum Shift 15m strategy just finished a test on the 2-minute Nasdaq (NQ1!) chart. The run generated a profit of $7,832.00 with a drawdown of $4,385.50. It executed 148 trades, averaging 2.85 trades per week over 260 trading days. The profit ratio, calculated as the average winning trade divided by the average losing trade, is 1.79.
+
+This run was not filed in the strategy library. The strategy library page requires a profit above $8,000, a profit factor above 1.05, a win rate above 40 percent, and at least 80 trades. This run fell short of the profit requirement, as the library keeps a profit over $8,000 and this run is under that.

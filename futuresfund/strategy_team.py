@@ -2,10 +2,14 @@
 
 The team is trained on strategies this desk has already backtested. It is not trained on
 the scripts it wrote. Each chart has its own strategy developer, and those developers are
-the only ones who save a new Pine script in createdStrategies. Engine 4 develops a queued
-script on the full five-year download. It does not file it. The three chart engines file
-a one-year result on the Not tested on the full dataset list when it clears the same
-acceptance as that list.
+the only ones who write a new Pine script. Every new script is a delta volume breakout,
+the golden strategy's core, written for an instrument that has no delta volume breakout
+result yet that clears the acceptance (delta_core.py). It waits in draftStrategies while
+engine 4 develops it on the last year of that instrument's chart. It enters
+createdStrategies only after one run clears the acceptance; a draft that never does is kept
+in unprovenStrategies and is not tested again. Engine 4 does not file a result. The three
+chart engines file a one-year result on the Not tested on the full dataset list when it
+clears the same acceptance as that list.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ from zoneinfo import ZoneInfo
 from futuresfund.learn import LEARNED, LEARNING, NOTES
 
 CREATED = LEARNING.parent / "createdStrategies"
+DRAFTS = LEARNING.parent / "draftStrategies"
+UNPROVEN = LEARNING.parent / "unprovenStrategies"
 
 CARD_KEEPER = "Card keeper"
 STRATEGY_DEVELOPER = "Strategy developer"
@@ -29,7 +35,7 @@ LESSON_WRITER = "Lesson writer"
 CREATION_ENGINE = 3
 CREATION_CHART = "5m"
 QUEUE_PATH = NOTES / "creation_queue.json"
-CANDLE_NOTES = NOTES / "candle_probabilities.json"
+TARGETS_PATH = NOTES / "creation_targets.json"   # the instrument and chart each draft was written for
 _LIBRARY_SEEN: set[str] = set()
 CONFIRM_CHARTS = ("2m", "15m")
 MAX_SENT_BACK = 3
@@ -373,14 +379,16 @@ def risk_block(point: float = 50) -> str:
     return "\n".join([
         "// ===== RISK =====",
         f'pv                = input.float({shown}, "Point Value ($)")',
-        'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=1500)',
-        'tp_dollars        = input.int(500, "Take Profit ($)", minval=250, maxval=2000)',
+        'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)',
+        'tp_dollars        = input.int(500, "Take Profit ($)", minval=250)',
         'use_trail         = input.bool(false, "Enable Trailing Stop")',
+        'trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)',
         'trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)',
+        'trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)',
         'trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)',
-        "long_stop = close - stop_dollars / pv",
+        "long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv",
         "long_limit = close + tp_dollars / pv",
-        "short_stop = close + stop_dollars / pv",
+        "short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv",
         "short_limit = close - tp_dollars / pv",
         "if strategy.position_size != 0 and not na(stop_dollars)",
         "    if strategy.openprofit <= -stop_dollars",
@@ -390,6 +398,178 @@ def risk_block(point: float = 50) -> str:
 
 # The block every new script is saved with, and every backtest writes into the file first.
 RISK_BLOCK = risk_block()
+
+
+def _declaration_line(name: str) -> str:
+    """An input for a name the script uses and never declares."""
+    from futuresfund.risk_style import RISK_DEFAULTS
+
+    value = RISK_DEFAULTS.get(name, 0)
+    if isinstance(value, bool):
+        return f'{name} = input.bool({str(value).lower()}, "{name}")'
+    number = float(value)
+    shown = str(int(number)) if number.is_integer() else str(number)
+    return f'{name} = input.float({shown}, "{name}")'
+
+
+def _insert_declaration(source: str, line: str) -> str:
+    rows = source.splitlines()
+    insert_at = 0
+    for index, row in enumerate(rows):
+        if "Open P&L > SL Risk" in row or "Dollar stop" in row:
+            insert_at = index + 1
+            break
+    else:
+        for index, row in enumerate(rows):
+            if "strategy(" in row:
+                insert_at = index + 1
+                if ")" not in row:
+                    for follow in range(index, min(index + 12, len(rows))):
+                        if ")" in rows[follow]:
+                            insert_at = follow + 1
+                            break
+                break
+    rows.insert(insert_at, line)
+    text = "\n".join(rows)
+    return text + ("\n" if source.endswith("\n") else "")
+
+
+def _replace_math_call(source: str, fn: str) -> str:
+    """math.min(a, b) becomes the smaller of the two. math.max becomes the larger."""
+    needle = f"math.{fn}("
+    op = "<" if fn == "min" else ">"
+    out = []
+    cursor = 0
+    while True:
+        found = source.find(needle, cursor)
+        if found < 0:
+            out.append(source[cursor:])
+            break
+        out.append(source[cursor:found])
+        depth = 1
+        start = found + len(needle)
+        arg_at = start
+        args = []
+        index = start
+        while index < len(source) and depth:
+            char = source[index]
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    args.append(source[arg_at:index].strip())
+            elif char == "," and depth == 1:
+                args.append(source[arg_at:index].strip())
+                arg_at = index + 1
+            index += 1
+        if depth == 0 and len(args) == 2:
+            left, right = args
+            out.append(f"({left} {op} {right} ? {left} : {right})")
+            cursor = index
+        else:
+            out.append(source[found:index])
+            cursor = index
+    return "".join(out)
+
+
+def compile_error(source: str) -> str:
+    """The desk compiler's reason, or blank when the script compiles."""
+    from futuresfund.pine_check import tv_problems
+    from futuresfund.pine_runtime import PineUnsupported, compile_pine
+
+    refused = tv_problems(source or "")
+    if refused:
+        return " ".join(refused[:6])
+    try:
+        compile_pine(source or "")
+    except PineUnsupported as exc:
+        return str(exc)
+    return ""
+
+
+def engine_problem(source: str, root: str = "ES", timeframe: str = "5m") -> str:
+    """Why PineTS stops this script on the last few hundred bars, or blank. A failure of the engine itself is not the script's."""
+    from futuresfund.backtrader_engine import _bars_from
+    from futuresfund.pinets_engine import PineTSError, PineTSScriptError, run_pinets
+    from futuresfund.research_bars import research_series
+
+    bars = _bars_from(research_series(root, timeframe, include_live=False)[-DRY_RUN_BARS:])
+    if not bars:
+        return ""
+    try:
+        run_pinets(prepare_backtest(source, root), bars, timeframe, root)
+    except PineTSScriptError as exc:
+        return f"The engine stopped it on a dry run: {exc}"
+    except PineTSError:
+        return ""
+    return ""
+
+
+def repair_for_pine(source: str) -> tuple[str, list[str]]:
+    """Declare a missing name, and replace math.min or math.max when the compiler rejects it.
+
+    The script stays Pine. A name such as trail_pct is an input. math.min(a, b)
+    becomes a < b ? a : b when math.min itself does not compile.
+    """
+    text = source or ""
+    notes = []
+    seen = set()
+    for _ in range(12):
+        error = compile_error(text)
+        if not error:
+            return text, notes
+        missing = re.search(r"Unknown name (\w+)|Undeclared identifier \"(\w+)\"", error)
+        if missing:
+            name = missing.group(1) or missing.group(2)
+            if name in seen or re.search(rf"(?m)^[^\n]*\b{name}\s*=(?!=)", text):
+                return text, notes
+            seen.add(name)
+            text = _insert_declaration(text, _declaration_line(name))
+            notes.append(f"Declared {name}.")
+            continue
+        rejected = re.search(r"math\.(min|max) is not supported", error)
+        if rejected:
+            fn = rejected.group(1)
+            rewritten = _replace_math_call(text, fn)
+            if rewritten == text or fn in seen:
+                return text, notes
+            seen.add(fn)
+            text = rewritten
+            compare = "the smaller value" if fn == "min" else "the larger value"
+            notes.append(f"Replaced math.{fn} with {compare}.")
+            continue
+        return text, notes
+    return text, notes
+
+
+def repair_with_developer(board, developer: str, source: str, error: str) -> str:
+    """One thinking pass. The chart developer declares the missing name or replaces the math call."""
+    if board is None or not source or not error:
+        return ""
+    reply = _ask(
+        board,
+        developer,
+        "Repairing the script so it can compile",
+        "The script did not compile, so the backtest has not started.\n"
+        f"{error}\n"
+        "Declare every name that is used and not declared. trail_pct and trail_step_pct are inputs.\n"
+        "If a default is outside minval or maxval, put that default inside the range.\n"
+        "If math.min does not compile, write the smaller of the two values as a < b ? a : b.\n"
+        "If math.max does not compile, write the larger value as a > b ? a : b.\n"
+        "If a call cannot be used in local scope, move it and what it reads to the left margin.\n"
+        "Keep every other line of the script. Reply with the whole Pine script only.\n\n"
+        f"The script:\n{source}",
+    )
+    if board.cancel.is_set() or str(reply).startswith("The meeting model could not answer"):
+        return ""
+    candidate = extract_pine(reply)
+    if not candidate:
+        return ""
+    fixed, _notes = repair_for_pine(candidate)
+    from futuresfund.pine_check import rewrite_problem
+
+    return fixed if not compile_error(fixed) and not rewrite_problem(source, fixed) else ""
 _RISK_ASSIGN = re.compile(
     r"^(?:[\w.]+\s+)*(?:pv|stop_pct|tp_pct|stop_cash|tp_cash|stop_dollars|tp_dollars|use_trail|trail_pct|"
     r"trail_step_amt|trail_step_pct|trail_step_acct|trail_min_dollars|trail_min_pct)\s*=(?!=)"
@@ -407,7 +587,7 @@ _RISK_LINES = {
     'strategy.close_all(comment="Open P&L > SL Risk")',
 }
 _PERCENT_ASSIGN = re.compile(
-    r"^(?:[\w.]+\s+)*(?:stop_pct|tp_pct|stop_cash|tp_cash|trail_pct|trail_step_pct|trail_step_acct|trail_min_pct)\s*=(?!=)"
+    r"^(?:[\w.]+\s+)*(?:stop_pct|tp_pct|stop_cash|tp_cash|trail_step_acct|trail_min_pct)\s*=(?!=)"
 )
 _PERCENT_FORMULA = re.compile(
     r"^(?:stop_dollars|tp_dollars|trail_step_amt|trail_min_dollars)\s*=\s*strategy\.initial_capital\b"
@@ -435,10 +615,12 @@ def atr_exit(source: str) -> str:
     return ""
 
 
+# The stop holds at the entry price for the whole trade. The take profit stays on the last close on purpose:
+# a script that resends its exit every bar moves the target ahead of price, and that lets a winner run.
 _EXIT_PRICE_LINES = (
-    ("long_stop", "long_stop = close - stop_dollars / pv"),
+    ("long_stop", "long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv"),
     ("long_limit", "long_limit = close + tp_dollars / pv"),
-    ("short_stop", "short_stop = close + stop_dollars / pv"),
+    ("short_stop", "short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv"),
     ("short_limit", "short_limit = close - tp_dollars / pv"),
 )
 _OPEN_LOSS_BLOCK = "\n".join([
@@ -612,9 +794,68 @@ def _wire_exit_calls(source: str) -> str:
     return "".join(out)
 
 
+def _exit_prices_below_inputs(source: str) -> str:
+    """The four dollar prices read pv and the dollar inputs, so they stay below those lines.
+
+    Written above them, TradingView and PineTS both stop on an undeclared stop_dollars.
+    """
+    lines = (source or "").splitlines()
+    inputs = [i for i, line in enumerate(lines) if re.match(r"(?:[\w.]+\s+)*(?:pv|stop_dollars|tp_dollars)\s*=(?!=)", line)]
+    prices = [i for i, line in enumerate(lines) if _EXIT_PRICE.match(line)]
+    if not inputs or not prices or min(prices) > max(inputs):
+        return source
+    last = max(inputs)
+    moved = [lines[i] for i in prices]
+    kept = [line for i, line in enumerate(lines[: last + 1]) if i not in prices]
+    after = [line for i, line in enumerate(lines[last + 1 :], start=last + 1) if i not in prices]
+    body = "\n".join([*kept, *moved, *after])
+    return body + "\n" if (source or "").endswith("\n") else body
+
+
+def _exit_on_entry_bar(source: str) -> str:
+    """Send the exit on the bar that enters, so the first bar of a trade is not left without its stop.
+
+    It uses the same exit id the script already sends later, so that call replaces this one. An exit
+    only inside the trailing block is left alone: with the trail off it never runs, and sending it here
+    would set a take profit the script does not have.
+    """
+    text = source or ""
+    lines = text.splitlines()
+    exits: dict[str, str] = {}
+    for index, line in enumerate(lines):
+        found = re.search(r'strategy\.exit\(\s*"([^"]+)"\s*,\s*(?:from_entry\s*=\s*)?"([^"]+)"', line)
+        if found is None:
+            continue
+        indent = len(line) - len(line.lstrip())
+        trail_only = False
+        for above in reversed(lines[:index]):
+            if not above.strip():
+                continue
+            depth = len(above) - len(above.lstrip())
+            if depth < indent:
+                indent = depth
+                trail_only = trail_only or "use_trail" in above
+            if indent == 0:
+                break
+        if not trail_only:
+            exits.setdefault(found.group(2), found.group(1))
+    out: list[str] = []
+    for index, line in enumerate(lines):
+        out.append(line)
+        entry = re.match(r'^(\s*)strategy\.entry\(\s*"([^"]+)"[^\n]*\)\s*$', line)
+        if entry is None or entry.group(2) not in exits:
+            continue
+        ahead = next((item for item in lines[index + 1:] if item.strip() and not item.strip().startswith("//")), "")
+        if ahead.strip().startswith("strategy.exit") and f'"{entry.group(2)}"' in ahead:
+            continue
+        out.append(f'{entry.group(1)}strategy.exit("{exits[entry.group(2)]}", "{entry.group(2)}", stop=na, limit=na)')
+    body = "\n".join(out)
+    return body + "\n" if text.endswith("\n") else body
+
+
 def _apply_shared_exit(source: str) -> str:
     """The dollar prices, the open-loss close, and strategy.exit all use the same exit."""
-    return _wire_exit_calls(_ensure_open_loss(_ensure_exit_prices(source)))
+    return _wire_exit_calls(_exit_on_entry_bar(_ensure_open_loss(_exit_prices_below_inputs(_ensure_exit_prices(source)))))
 
 
 def _similar_risk(source: str) -> bool:
@@ -697,7 +938,9 @@ def prepare_backtest(source: str, root: str) -> str:
         point = point_value(root)
     except ValueError:
         point = 50.0
-    return ensure_risk_management(ensure_session(source), point)
+    prepared = ensure_risk_management(ensure_session(source), point)
+    fixed, _notes = repair_for_pine(prepared)
+    return fixed
 
 
 def _closes_before_1645(source: str) -> bool:
@@ -751,6 +994,9 @@ def pine_problems(source: str) -> list[str]:
         problems.append(
             "ta.valuewhen was given an assignment. The first argument is a condition, such as not na(pivot_high), then the price, then the occurrence."
         )
+    from futuresfund.pine_check import tv_problems
+
+    problems.extend(tv_problems(text))
     if not problems:
         from futuresfund.pine_runtime import PineUnsupported, compile_pine
 
@@ -772,6 +1018,13 @@ def runtime_problems(source: str, bars: list[dict], timeframe: str = CREATION_CH
     """
     if not source or len(bars or []) < 50:
         return []
+    compared = _string_compared(source)
+    if compared:
+        # TradingView refuses this line. PineTS reads it as false on every bar, so the dry run alone shows no error.
+        return [
+            f"A dry run cannot start it: {compared} is a string and is compared with <, >, <=, or >=. "
+            "Pine compares a string only with == or !=. A session is in_session = not na(time(timeframe.period, session))."
+        ]
     from futuresfund.backtrader_engine import run_script
 
     try:
@@ -781,6 +1034,18 @@ def runtime_problems(source: str, bars: list[dict], timeframe: str = CREATION_CH
     if measured.get("fatal") or measured.get("error"):
         return [f"The engine stopped it on a dry run of {len(bars[-DRY_RUN_BARS:])} bars: {measured.get('error') or 'no result'}"]
     return []
+
+
+_STRING_NAME = re.compile(r"(?m)^\s*(?:(?:var|varip|simple|const|string)\s+)*(\w+)\s*=\s*(?:input\.(?:session|string)\s*\(|\")")
+
+
+def _string_compared(source: str) -> str:
+    """The first string variable, such as an input.session, that the script orders with <, >, <=, or >=."""
+    text = source or ""
+    for name in dict.fromkeys(_STRING_NAME.findall(text)):
+        if re.search(rf"(?:[<>]=?\s*\b{name}\b(?!\s*\()|\b{name}\b\s*[<>]=?(?!=))", text):
+            return name
+    return ""
 
 
 def baseline_ready(rows: list[dict]) -> bool:
@@ -793,13 +1058,13 @@ def baseline_ready(rows: list[dict]) -> bool:
 
 
 def script_name(title: str, folder: Path | None = None) -> str:
-    """A new file name that does not replace a script already in the folder."""
+    """A new file name that does not replace a script already in the folder, or in any creation folder when none is named."""
     slug = re.sub(r"[^a-z0-9]+", "_", (title or "strategy").lower()).strip("_")[:40] or "strategy"
-    folder = folder or CREATED
+    folders = [folder] if folder is not None else [DRAFTS, CREATED, UNPROVEN, LEARNING]
     name = f"{_CREATED}{slug}.pine"
     stem = f"{_CREATED}{slug}"
     number = 2
-    while (folder / name).exists():
+    while any((place / name).exists() for place in folders):
         name = f"{stem}_{number}.pine"
         number += 1
     return name
@@ -809,14 +1074,14 @@ def script_name(title: str, folder: Path | None = None) -> str:
 
 
 def team_wrote(name: str) -> bool:
-    """True when this file is one the creation team saved in createdStrategies."""
+    """True when this file is one the creation team wrote: a draft, a created script, or an unproven one."""
     filename = Path(str(name or "")).name
     if not filename:
         return False
     if filename.startswith(_CREATED):
         return True
     stem = Path(filename).stem
-    return (CREATED / f"{_CREATED}{stem}.pine").is_file() or (CREATED / filename).is_file()
+    return any((folder / f"{_CREATED}{stem}.pine").is_file() or (folder / filename).is_file() for folder in (CREATED, DRAFTS, UNPROVEN))
 
 
 def new_library_lines() -> tuple[str, list[str]]:
@@ -890,175 +1155,15 @@ def mark_library(ids: list[str]) -> None:
     _LIBRARY_SEEN.update(str(item) for item in ids if item)
 
 
-_candle_lock = threading.Lock()
-
-
-def candle_session(hour: int, minute: int = 0) -> str:
-    """The futures slice a candle sits in. The 16:45 halt is not a session to trade."""
-    mark = int(hour) * 60 + int(minute)
-    if 16 * 60 + 45 <= mark < 18 * 60:
-        return "halt"
-    if mark >= 18 * 60 or mark < 9 * 60 + 30:
-        return "overnight"
-    if mark < 12 * 60:
-        return "morning"
-    return "afternoon"
-
-
-def record_candle(entry: dict, path: Path | None = None) -> None:
-    """One replayed bar for the creation team: the 0.9 set, and whether the real candle was inside it."""
-    target = path or CANDLE_NOTES
-    row = _candle_row(entry)
-    with _candle_lock:
-        rows = _read_candles(target)
-        rows.append(row)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            json.dumps({"kind": "candle_probabilities", "rows": rows[-4000:]}, indent=1, default=str),
-            encoding="utf-8",
-        )
-
-
-def candle_lines(path: Path | None = None, *, audience: str = "creation") -> str:
-    """Measured replay notes. The creation team writes from them. The chart teams adjust from them and stay on one year."""
-    chart = audience == "chart"
-    who = "the chart teams" if chart else "the creation team"
-    rows = _read_candles(path or CANDLE_NOTES)
-    if not rows:
-        if chart:
-            return (
-                f"Candle notes for {who}. No replay has been recorded yet. "
-                "Do not invent how often the 0.9 set contained the real candle. "
-                "Keep this chart on the last year of futures sessions, 260 sessions."
-            )
-        return (
-            f"Candle notes for {who}. No replay has been recorded yet. "
-            "Do not invent how often the 0.9 set contained the real candle."
-        )
-    groups: dict[tuple, list] = {}
-    for row in rows:
-        groups.setdefault(_candle_key(row), []).append(row)
-    usable = []
-    avoid = []
-    for key, items in groups.items():
-        hits = sum(1 for item in items if item.get("inside_90"))
-        line = _candle_line(key, hits, len(items))
-        if len(items) >= 20 and hits / len(items) >= 0.6 and key[4] == "strong" and key[5] == "peaked" and key[3] != "split":
-            usable.append((hits / len(items), len(items), line))
-        elif hits / len(items) < 0.5 or key[4] == "split" or key[5] == "flat" or key[3] == "split":
-            avoid.append((len(items), line))
-    usable.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    avoid.sort(key=lambda item: item[0], reverse=True)
-    lines = [
-        f"Candle notes for {who}. A replay keeps the candles that hold 0.9 of the probability for the next bar. "
-        "Correct means the real next candle was one of those: its direction matched the agreed paths, and its high and low stayed inside that set. "
-        "The count is the number of replayed bars in that circumstance, not a backtest profit.",
-        f"Across {len(rows)} replayed bars, the real candle was inside the 0.9 set on {sum(1 for row in rows if row.get('inside_90'))} bars.",
-    ]
-    if usable:
-        lines.append("Use one of these circumstances as an entry filter. Require the chart, the session, the path agreement, and the peaked next candle together:")
-        lines.extend(f"- {line}" for _rate, _count, line in usable[:6])
-    else:
-        lines.append("No circumstance has 20 replayed bars with the real candle inside the 0.9 set on most of them. Do not invent one.")
-    if avoid:
-        lines.append("Do not enter on these. The 0.9 set missed the real candle, or the paths were split, or the next candle was flat:")
-        lines.extend(f"- {line}" for _count, line in avoid[:4])
-    if chart:
-        lines.append(
-            "Adjust the script you are studying from one circumstance above. "
-            "Change the entry so it requires that session, that path agreement, and that next-candle confidence, then measure that one change. "
-            "Keep the backtest on the last year of futures sessions, 260 sessions. Do not run this chart on the five-year download. "
-            "A strong agreement is at least 8 of 10 paths the same way. Five of ten is not a trade. A flat next candle is not a trade. "
-            "Leave out any circumstance that is not listed."
-        )
-    else:
-        lines.append(
-            "Write the filter from a line above. A strong agreement is at least 8 of 10 paths the same way. "
-            "Five of ten is not a trade. A flat next candle is not a trade. Leave out any circumstance that is not listed."
-        )
-    return "\n".join(lines)
-
-
-def _candle_row(entry: dict) -> dict:
-    paths = int(entry.get("paths") or 0)
-    agreed = int(entry.get("agreed") or 0)
-    direction = str(entry.get("direction") or "split").lower()
-    if direction not in {"up", "down", "split"}:
-        direction = "split"
-    if paths and agreed / paths <= 0.5:
-        direction = "split"
-    confidence = entry.get("confidence")
-    if isinstance(confidence, str):
-        peaked = confidence.strip().lower() == "peaked"
-    else:
-        try:
-            peaked = float(confidence) >= 0.6
-        except (TypeError, ValueError):
-            peaked = False
-    share = agreed / paths if paths else 0.0
-    if share >= 0.8:
-        band = "strong"
-    elif share <= 0.5:
-        band = "split"
-    else:
-        band = "leaning"
-    return {
-        "time": entry.get("time") or "",
-        "instrument": str(entry.get("instrument") or "").upper(),
-        "timeframe": str(entry.get("timeframe") or ""),
-        "session": str(entry.get("session") or "unmeasured"),
-        "paths": paths,
-        "agreed": agreed,
-        "direction": direction,
-        "agreement": band,
-        "confidence": "peaked" if peaked else "flat",
-        "inside_90": bool(entry.get("inside_90")),
-    }
-
-
-def _candle_key(row: dict) -> tuple:
-    return (
-        row.get("instrument") or "",
-        row.get("timeframe") or "",
-        row.get("session") or "",
-        row.get("direction") or "",
-        row.get("agreement") or "",
-        row.get("confidence") or "",
-    )
-
-
-def _candle_line(key: tuple, hits: int, count: int) -> str:
-    instrument, timeframe, session, direction, agreement, confidence = key
-    if agreement == "strong":
-        agreed = "at least 8 of 10 paths"
-    elif agreement == "split":
-        agreed = "about half the paths each way"
-    else:
-        agreed = "a lean short of 8 of 10 paths"
-    way = "up" if direction == "up" else "down" if direction == "down" else "with no agreed direction"
-    return (
-        f"{instrument} {timeframe}, {session}, {agreed} {way}, next candle {confidence}: "
-        f"the real candle was inside the 0.9 set on {hits} of {count} bars."
-    )
-
-
-def _read_candles(path: Path | None = None) -> list[dict]:
-    target = path or CANDLE_NOTES
-    try:
-        data = json.loads(target.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return []
-    rows = data.get("rows") if isinstance(data, dict) else data
-    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
-
-
-def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_limit: int = 5200, chart: str | None = None, library_note: str = "") -> str:
+def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_limit: int = 5200, chart: str | None = None, library_note: str = "", target: str | None = None) -> str:
     """Ask for one new script, written from scratch from successful backtests.
 
     The creation team learns from strategies that already passed a backtest. It does not
     learn from the scripts it wrote. Engine 4 develops the new script.
     """
+    from futuresfund.delta_core import CORE_TEXT, coverage_lines, has_core
     from futuresfund.exemplars import brief
+    from futuresfund.golden import creation_brief as golden_creation_brief, results_line
     from futuresfund.indicators import creation_context
     from futuresfund.objective import acceptance_line, account_line, drawdown_share_text
 
@@ -1073,11 +1178,28 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         opening + "Learn from the successful backtested strategies below. Do not learn from a script this creation team wrote, and do not copy one. "
         "A backtest is filed on the Not tested on the full dataset list when it clears this bar. "
         f"{acceptance_line()} "
-        "No more than 600 trades a year, and no single trade down more than $1,500. "
+        "No more than 600 trades a year, and no single trade down more than $750. "
         "A script that takes more than 900 trades cannot be saved, so do not write one. "
         "A created script has to be profitable on the last 7 days, the last 30 days, the last 90 days, and the last 365 days. Write toward that bar. "
-        "The candle notes below are for this creation team. Use one only when it lists at least 20 replayed bars and the real candle was inside the 0.9 set on most of them. "
-        "Engine 4 develops the new script on the full five-year download. The file stays in createdStrategies.",
+        f"Engine 4 develops the new script on the last year of the {target or 'ES'} {chart or '5-minute'} chart. "
+        "It waits in draftStrategies and enters createdStrategies only after one run clears that bar. "
+        "A script that never clears it is kept in unprovenStrategies and is not tested again.",
+        "",
+        f"Core, and it is not optional: the script is a delta volume breakout. It keeps {CORE_TEXT}. "
+        "Write the volume profile with array.new_float rows and for loops, the way the golden strategy below does. "
+        "Change what sits around that core to make it pay on this instrument and chart: the profile lookback and rows, "
+        "the delta threshold, the trend filter, the entry confirmation, the cooldown, the session, a skip window, the reversal trade, and the exits. "
+        "A script without that core is sent back.",
+        "",
+        (
+            f"Instrument: write this script for {target} on the {chart or '5-minute'} chart. "
+            f"{target} has no delta volume breakout result yet that clears the acceptance. "
+            "The desk needs one on every instrument, on at least one of the 2-minute, 5-minute, and 15-minute charts. "
+            f"{results_line()} Aim for results like that on {target}."
+        ) if target else results_line(),
+        "Delta volume breakout results that clear the acceptance, by instrument: " + " ".join(coverage_lines()),
+        "",
+        golden_creation_brief(),
         "",
         brief(brief_limit),
         "",
@@ -1090,9 +1212,9 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
     if library_note:
         lines.append(library_note)
         lines.append("")
-    lines.append(candle_lines())
-    lines.append("")
     ready = [card for card in measured_cards(cards) if not team_wrote(str(card.get("file") or ""))]
+    # The measured changes of delta volume breakout scripts come first, because the new script is one.
+    ready.sort(key=lambda card: not _card_has_core(card))
     if ready:
         lines.append(
             "Cards: measured one-variable changes from the studies, best under the objective first. "
@@ -1116,16 +1238,17 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         "Enter only while in_session. When in_session is false, strategy.close_all(comment=\"Session\"). "
         "Do not write time() with a weekday suffix. 12345 is not seconds and it shuts Friday. "
         "The researcher may change that window from the measured result. Do not move that close to add trades. "
-        f"{account_line()} Do not write a script whose drawdown reaches {drawdown_share_text()}.",
+        f"{account_line()} Do not write a script whose drawdown goes past {drawdown_share_text()}.",
         "Rules for the script:",
         "1. Line 1 is //@version=5. Line 2 is a comment: // Built from: <the lesson or card the new idea came from>, <the indicators used>. The body is a new strategy, not a copy.",
         "2. strategy(\"<a new title>\", overlay=true, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=50000).",
         "3. Every value that can be tuned is an input.int or input.float with minval and maxval: lengths, stop, target, cooldown, session. The parameter is maxval. Never write maxmax or minmin. "
         "A stop is at least one tick and its default sits inside minval and maxval. On NQ one point is $20, so one tick is $5. "
-        "The default stop on one contract must keep one trade inside 3 percent of the account. "
-        "On NQ that is at most 75 points. On ES that is at most 30 points. On GC that is at most 15 points. On MNQ that is at most 750 points. "
-        "The instrument roots are ES, GC, NQ, and MNQ. MNQ is $2 a point. Gold is GC. GOLD is not a root. "
-        "The search may move that stop, and it reverses the move when one trade loses more than 3 percent of the account. "
+        "The default stop on one contract must keep one trade inside 1.5 percent of the account. "
+        "On NQ that is at most 37 points. On ES that is at most 15 points. On GC that is at most 7 points. On MNQ that is at most 375 points. "
+        "On MES, M2K, and YM that is at most 150 points. "
+        "The instrument roots are ES, GC, NQ, MNQ, MES, M2K, and YM. MNQ is $2 a point. MES, M2K, and YM are $5 a point. Gold is GC. GOLD is not a root. "
+        "The search may move that stop, and it reverses the move when one trade loses more than 1.5 percent of the account. "
         "The take profit is points times the point value, larger than the stop, and a distance one session can reach before the trade is closed at the session end. "
         "Do not write a stop of a fraction of a cent or a take profit of many hundreds of points on one contract.",
         "4. Every entry has strategy.exit(\"...\", from_entry=\"...\", stop=<price>, limit=<price>). "
@@ -1137,27 +1260,29 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         "// ===== RISK ===== "
         "pv = input.float(50, \"Point Value ($)\"). "
         "On ES the point value is 50. On NQ it is 20. On GC it is 100. The engine writes that value into pv before the backtest. "
-        "On MNQ the point value is 2. "
-        "stop_dollars = input.int(250, \"Stop ($)\", minval=250, maxval=1500). "
-        "tp_dollars = input.int(500, \"Take Profit ($)\", minval=250, maxval=2000). "
+        "On MNQ the point value is 2. On MES it is 5. "
+        "stop_dollars = input.int(250, \"Stop ($)\", minval=250, maxval=700). "
+        "tp_dollars = input.int(500, \"Take Profit ($)\", minval=250). "
         "use_trail = input.bool(false, \"Enable Trailing Stop\"). "
         "trail_step_amt = input.int(500, \"Trail: Tighten every ($)\"). "
         "trail_min_dollars = input.int(1000, \"Trail: Min Profit ($)\"). "
         "Write these prices and use them on strategy.exit: "
-        "long_stop = close - stop_dollars / pv. long_limit = close + tp_dollars / pv. "
-        "short_stop = close + stop_dollars / pv. short_limit = close - tp_dollars / pv. "
+        "long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv. long_limit = close + tp_dollars / pv. "
+        "short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv. short_limit = close - tp_dollars / pv. "
+        "The stop holds at the entry price for the whole trade, so it never moves away from a losing trade. "
+        "The take profit stays on the last close on purpose, so a winner can run. Do not lock it to the entry price. "
         "A created script that shows no profit after 20 attempts is scrapped, and a new script is written. "
-        "Do not put a created script in the learning folder until it has a profit. "
-        "The stop is not larger than 3 percent of the account and the take profit is not larger than 4 percent of the account. use_trail stays false. "
+        "Do not put a created script in the learning folder until one run clears the acceptance. "
+        "The stop is not larger than 1.4 percent of the account. The take profit has no maximum. use_trail stays false. "
         "Do not write atr_len, stop_mult, tp_mult, atr_mult_sl, or atr_mult_tp. Do not write atr * stop_mult. "
         "A script with those lines is not accepted. ATR times a multiplier is not the exit, and changing the multiplier does not keep the loss inside the dollar stop. "
         "On every bar, if strategy.position_size is not zero and stop_dollars is not na and strategy.openprofit is at or below minus stop_dollars, strategy.close_all(comment=\"Open P&L > SL Risk\"). "
-        "The search does not stop at a $1,000 stop and a $1,500 take profit. It measures stops of $250, $500, $750, $1,000, $1,250, and $1,500, and the take profit on those same steps through $2,000. "
-        "The stop is checked on every price of the bar. One trade cannot lose more than the dollar stop, and not more than $1,500. "
+        "The search measures stops of $250, $500, and $700, and the take profit on steps up to $10,000. There is no maximum on the take profit. "
+        "The stop is checked on every price of the bar. One trade cannot lose more than the dollar stop, and not more than $750. "
         "Do not write a script that takes more than 900 trades. It cannot be saved. "
         "The script has to show a profit on the last 7 days, the last 30 days, the last 90 days, and the last 365 days.",
         "5. An entry needs at least two agreeing conditions: a trend or structure filter and a trigger, built from the indicator library.",
-        "6. Only the built-in indicators listed above and plain if/else; no request.security, arrays, tables, plots, or alerts. "
+        "6. Only the built-in indicators listed above, plain if/else, and the array rows and for loops of the volume profile; no request.security, tables, plots, or alerts. "
         "ta.valuewhen takes a condition, then the series, then the occurrence: ta.valuewhen(not na(pivot_high), high, 1). "
         "Never write ta.valuewhen(pivot_high = pivot_high, high, 1). A named argument cannot be followed by a bare argument.",
         "7. The session from guideline 1 is required on every script. A cooldown in bars may be added as well, so the script does not trade every bar. "
@@ -1278,14 +1403,38 @@ def _read_queue(path: Path | None = None) -> list[str]:
     return [str(row) for row in rows if str(row).strip()] if isinstance(rows, list) else []
 
 
-def enqueue_script(name: str, path: Path | None = None) -> None:
-    """Engine 4 develops this file next. Writers do not wait for that backtest."""
-    target = path or QUEUE_PATH
+def enqueue_script(name: str, path: Path | None = None, target: dict | None = None) -> None:
+    """Engine 4 develops this file next. Writers do not wait for that backtest. target is the instrument and chart it was written for."""
+    queue_file = path or QUEUE_PATH
     with _create_lock:
-        rows = _read_queue(target)
+        rows = _read_queue(queue_file)
         rows.append(name)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({"kind": "creation_queue", "scripts": rows}, indent=1), encoding="utf-8")
+        queue_file.parent.mkdir(parents=True, exist_ok=True)
+        queue_file.write_text(json.dumps({"kind": "creation_queue", "scripts": rows}, indent=1), encoding="utf-8")
+        if target:
+            kept = _read_targets()
+            kept[name] = {"root": str(target.get("root") or "ES").upper(), "timeframe": str(target.get("timeframe") or CREATION_CHART)}
+            TARGETS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            TARGETS_PATH.write_text(json.dumps(kept, indent=1), encoding="utf-8")
+
+
+def _read_targets() -> dict:
+    try:
+        data = json.loads(TARGETS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def target_for(name: str) -> tuple[str, str]:
+    """The instrument and chart a draft was written for. A script queued before targets is ES on the 5-minute chart."""
+    row = _read_targets().get(name) or {}
+    timeframe = str(row.get("timeframe") or CREATION_CHART)
+    from futuresfund.learn import RESEARCH_CHARTS
+
+    if timeframe not in RESEARCH_CHARTS:
+        timeframe = CREATION_CHART
+    return str(row.get("root") or "ES").upper(), timeframe
 
 
 def take_queued_script(path: Path | None = None) -> str:
@@ -1360,22 +1509,30 @@ def run_chart_creation(board, pause, desk: dict) -> None:
             return
 
 
-def handoff(board, cards: list[dict], source_name: str, desk: dict, library_note: str = "") -> str:
-    """Write one script and queue it for engine 4. The chart engines study it after a profitable run."""
+def handoff(board, cards: list[dict], source_name: str, desk: dict, library_note: str = "", target: str | None = None) -> str:
+    """Write one delta volume breakout script for one instrument and queue it for engine 4.
+
+    The chart engines study it only after one of engine 4's runs clears the acceptance.
+    """
+    from futuresfund.delta_core import CORE_TEXT, has_core, next_target
     from futuresfund.learn import file_indicators, pine_facts
 
     developer = desk["strategy_developer"]
     label = desk["label"]
+    timeframe = str(desk.get("timeframe") or CREATION_CHART)
+    root = (target or next_target(timeframe)).upper()
     reply = _ask(
         board,
         developer,
-        f"Writing one Pine script for the {label} chart after {source_name}",
-        prompt_for(cards, chart=label, library_note=library_note),
+        f"Writing one delta volume breakout script for {root} on the {label} chart after {source_name}",
+        prompt_for(cards, chart=label, library_note=library_note, target=root),
     )
     if board.cancel.is_set():
         return "stopped"
     source = repair_pine(extract_pine(reply))
     problems = pine_problems(source)
+    if source and not problems and not has_core(source):
+        problems = [f"It is not a delta volume breakout. Every new script keeps {CORE_TEXT}."]
     title = _title_from(source) if source else "No script"
     if problems:
         board.post(
@@ -1404,16 +1561,16 @@ def handoff(board, cards: list[dict], source_name: str, desk: dict, library_note
         channel=SCRIPT_CHECKER,
     )
     name = _store_created(title, source)
-    enqueue_script(name)
+    enqueue_script(name, target={"root": root, "timeframe": timeframe})
     facts = pine_facts(source) if source else {}
     from futuresfund.exemplars import indicator_names
 
     used = indicator_names(source)
     file_indicators(board, name, source, developer)
     verdict = (
-        f"Queued {name} for engine 4. The {label} strategy developer saved it in createdStrategies. "
-        "Engine 4 develops it on the full five-year download. "
-        "The three backtest engines file a one-year result on the Not tested on the full dataset list when it clears the library acceptance."
+        f"Queued {name} for engine 4. The {label} strategy developer wrote it for {root} and saved it in draftStrategies. "
+        f"Engine 4 develops it on the last year of the {root} {label} chart. "
+        "It enters createdStrategies only after one run clears the acceptance. Then the chart engines test it on every instrument."
     )
     record_lesson({
         "time": _now(),
@@ -1467,13 +1624,20 @@ def develop_one(board, pause) -> str:
 
 
 def _develop_queued(board, pause, name: str) -> str:
-    """Develop one created script. The caller keeps the charts off this file until this returns."""
+    """Develop one draft on the last year of the instrument and chart it was written for.
+
+    The caller keeps the charts off this file until this returns. A draft with one run that
+    clears the acceptance moves into createdStrategies, where the chart engines study it on
+    every instrument and file it. A draft without one moves to unprovenStrategies and is
+    not tested again.
+    """
     from futuresfund.backtrader_engine import finish_study
     from futuresfund.exemplars import indicator_names
     from futuresfund.learn import (
         ACCOUNT_SIZE,
         ATTEMPT_LIMIT,
         _engine_execute,
+        _in_drafts,
         _load_frames,
         _pine_params,
         _search,
@@ -1481,15 +1645,19 @@ def _develop_queued(board, pause, name: str) -> str:
         pine_facts,
         promote_fixed_exits,
         promote_fixed_pivots,
+        set_unproven,
     )
-    from futuresfund.objective import consistent_spans, research_success
+    from futuresfund.objective import acceptance_reason, passes_acceptance
+    from futuresfund.roster import chart_desk
 
-    path = CREATED / name
+    path = _draft_path(name)
     if not path.is_file():
         return "missing"
+    root, timeframe = target_for(name)
+    label = chart_desk(timeframe)["label"]
     source = path.read_text(encoding="utf-8", errors="replace")
     prepared = promote_fixed_pivots(promote_fixed_exits(source))
-    promoted = prepare_backtest(prepared, "ES")
+    promoted = prepare_backtest(prepared, root)
     if promoted != source:
         path.write_text(promoted, encoding="utf-8")
         if promote_fixed_pivots(source) != source:
@@ -1508,19 +1676,20 @@ def _develop_queued(board, pause, name: str) -> str:
             )
         source = promoted
     facts = pine_facts(source) if source else {"title": path.stem, "inputs": [], "named": {}}
-    frames = _load_frames("ES")
+    frames = _load_frames(root)
     board.set_status(CREATION_TESTER, "working")
-    board.set_task(CREATION_TESTER, f"Developing {name} on engine 4", working=True)
+    board.set_task(CREATION_TESTER, f"Developing {name} on the {root} {label} chart on engine 4", working=True)
     board.post(
         CREATION_TESTER,
-        f"Engine 4 is developing {name} on the full five-year download. The script stays in createdStrategies. The chart engines file a one-year result that clears the library acceptance.",
+        f"Engine 4 is developing {name} on the last year of the {root} {label} chart. It stays in {path.parent.name} "
+        "until one run clears the acceptance. Then it moves to createdStrategies and the chart engines test it on every instrument.",
         kind="report",
         channel=CREATION_TESTER,
     )
-    execute = _engine_execute(source, frames, facts, board, "ES", CREATION_TESTER, CREATION_CHART, CREATION_ENGINE, full=True)
+    execute = _engine_execute(source, frames, facts, board, root, CREATION_TESTER, timeframe, CREATION_ENGINE)
     try:
         trials = _search(
-            _with_contract_point(_pine_params(facts), "ES"),
+            _with_contract_point(_pine_params(facts), root),
             execute,
             ACCOUNT_SIZE,
             ATTEMPT_LIMIT,
@@ -1531,84 +1700,136 @@ def _develop_queued(board, pause, name: str) -> str:
             extras=False,
             developer=CREATION_TESTER,
             researcher=STRATEGY_DEVELOPER,
-            accept=lambda row: research_success(row, ACCOUNT_SIZE) and consistent_spans(row.get("spans")),
+            accept=passes_acceptance,
             slot=CREATION_ENGINE,
         )
     finally:
         finish_study(CREATION_ENGINE)
+    stopped = _compile_stop(board, trials, path, source)
+    if stopped:
+        return stopped
     if board.cancel.is_set():
         return "stopped"
     if getattr(trials, "flat_stop", False):
         return "cannot_run"
-    if getattr(trials, "scrapped", False):
-        note = (trials[-1].get("note") if trials else "") or f"{name} was scrapped after 20 attempts with no profit."
-        record_lesson({
-            "time": _now(),
-            "name": name,
-            "title": facts.get("title") or name,
-            "built_from": built_from(source),
-            "indicators": indicator_names(source),
-            "net_profit": None,
-            "max_drawdown": None,
-            "trades": None,
-            "accepted": False,
-            "verdict": note,
-        })
-        return "scrapped"
-    if getattr(trials, "skipped", False):
-        record_lesson({
-            "time": _now(),
-            "name": name,
-            "title": facts.get("title") or name,
-            "built_from": built_from(source),
-            "indicators": indicator_names(source),
-            "net_profit": None,
-            "max_drawdown": None,
-            "trades": None,
-            "accepted": False,
-            "verdict": f"{name} was skipped on engine 4. The next queued script is next.",
-        })
-        board.post(CREATION_TESTER, f"{name} was skipped. Taking the next script.", kind="log", channel=CREATION_TESTER)
-        return "skipped"
-    proved = next((row for row in trials if research_success(row, ACCOUNT_SIZE) and consistent_spans(row.get("spans"))), None)
-    if proved:
-        promoted = ""
-        verdict = (
-            f"Profit {proved.get('net_profit')}, drawdown {proved.get('max_drawdown')}, trades {proved.get('trades')}. "
-            f"{name} stays in createdStrategies. Engine 4 measured it on the full five-year download. "
-            "The three backtest engines file a one-year result on the Not tested on the full dataset list "
-            "when it clears the library acceptance."
-        )
-        accepted = False
-    else:
-        promoted = ""
-        note = (trials[-1].get("note") if trials else "") or ""
-        verdict = note or f"{name} did not find a profit on the full five-year download on engine 4. It stays in createdStrategies. The next script is next."
-        accepted = False
-    record_lesson({
+    lesson = {
         "time": _now(),
         "name": name,
         "title": facts.get("title") or name,
         "built_from": built_from(source),
         "indicators": indicator_names(source),
-        "net_profit": None if not proved else proved.get("net_profit"),
-        "max_drawdown": None if not proved else proved.get("max_drawdown"),
-        "trades": None if not proved else proved.get("trades"),
-        "accepted": accepted,
-        "promoted": promoted,
-        "verdict": verdict,
-    })
+        "instrument": root,
+        "timeframe": timeframe,
+        "net_profit": None,
+        "max_drawdown": None,
+        "trades": None,
+        "accepted": False,
+        "promoted": "",
+    }
+    if getattr(trials, "scrapped", False):
+        note = (trials[-1].get("note") if trials else "") or f"{name} was scrapped after 20 attempts with no profit."
+        record_lesson({**lesson, "verdict": note})
+        return "scrapped"
+    # Engine 4's runs leave the chart, so a chart engine still studies this instrument and chart and can file it.
+    _set_chart_record_aside(path, root, timeframe)
+    if getattr(trials, "skipped", False):
+        verdict = f"{name} was skipped on engine 4 before a run cleared the acceptance. It was kept in unprovenStrategies."
+        if _in_drafts(path):
+            set_unproven(path, verdict)
+        record_lesson({**lesson, "verdict": verdict})
+        board.post(CREATION_TESTER, f"{name} was skipped. Taking the next script.", kind="log", channel=CREATION_TESTER)
+        return "skipped"
+    proved = next((row for row in trials if passes_acceptance(row)), None)
+    if proved:
+        moved = _promote_draft(path)
+        verdict = (
+            f"Profit {proved.get('net_profit')}, drawdown {proved.get('max_drawdown')}, trades {proved.get('trades')}, "
+            f"win rate {proved.get('win_rate')}, profit factor {proved.get('profit_factor')} on the last year of the {root} {label} chart. "
+            f"That run cleared the acceptance, so {moved.name} moved into createdStrategies. "
+            "The chart engines test it on every instrument and file a one-year result that clears the library acceptance."
+        )
+        record_lesson({
+            **lesson,
+            "net_profit": proved.get("net_profit"),
+            "max_drawdown": proved.get("max_drawdown"),
+            "trades": proved.get("trades"),
+            "accepted": True,
+            "promoted": "createdStrategies",
+            "verdict": verdict,
+        })
+        from futuresfund.delta_core import coverage
+
+        coverage(fresh=True)
+    else:
+        best = max(trials, key=lambda row: float(row.get("net_profit") or float("-inf")), default={}) if trials else {}
+        reason = acceptance_reason(best) if best else "It did not finish a run."
+        verdict = (
+            (trials[-1].get("note") if trials else "")
+            or f"No run cleared the acceptance on the last year of the {root} {label} chart. {reason} "
+            f"{name} was kept in unprovenStrategies and is not tested again."
+        )
+        if _in_drafts(path) or path.parent == CREATED:
+            set_unproven(path, verdict)
+        record_lesson({
+            **lesson,
+            "net_profit": best.get("net_profit") if best else None,
+            "max_drawdown": best.get("max_drawdown") if best else None,
+            "trades": best.get("trades") if best else None,
+            "promoted": "unprovenStrategies",
+            "verdict": verdict,
+        })
     board.post(LESSON_WRITER, f"Recorded {name}. {verdict}", kind="report", channel=LESSON_WRITER)
     board.post(CREATION_TESTER, f"{name}: {verdict}", kind="report", channel=CREATION_TESTER)
     return "studied" if proved else "unproven"
 
 
+def _compile_stop(board, trials, path: Path, source: str) -> str | None:
+    """A compile failure goes to the developer. An engine fault goes to the systems administrator."""
+    if not trials:
+        return None
+    last = trials[-1]
+    if last.get("compile"):
+        from futuresfund.learn import start_compile_repair
+
+        start_compile_repair(
+            board,
+            path,
+            CREATION_TESTER,
+            CREATION_CHART,
+            source,
+            str(last.get("error") or "The script did not compile."),
+            CREATION_ENGINE,
+            CREATION_TESTER,
+        )
+        return "repairing"
+    if last.get("engine_fault"):
+        from futuresfund.learn import _tell_administrator
+
+        _tell_administrator(board, CREATION_ENGINE, path, str(last.get("error") or "The backtest did not finish."))
+        return "engine"
+    return None
+
+
 def run_creation_engine(board, pause) -> None:
-    """Keep engine 4 developing a new script whenever research is running."""
+    """Keep engine 4 developing a new script whenever research is running, and studying the learning folder when none is queued."""
     from futuresfund.backtrader_engine import clear_restart, clear_skip, restarted
     from futuresfund.learn import _sleep, _wait, engine4_should_study_learning, study_learning_on_engine_4
 
     announced = False
+    waiting_repair = False
+
+    def _after(outcome) -> None:
+        nonlocal waiting_repair
+        if outcome == "repairing":
+            waiting_repair = True
+            return
+        if not waiting_repair:
+            return
+        from futuresfund.learn import pickup_validated
+
+        follow = pickup_validated(board, CREATION_TESTER, {}, pause, CREATION_ENGINE)
+        waiting_repair = follow == "pending" or follow == "repairing"
+
     while not board.cancel.is_set():
         if not _wait(board, pause):
             return
@@ -1617,11 +1838,13 @@ def run_creation_engine(board, pause) -> None:
             clear_restart(CREATION_ENGINE)
             clear_skip(CREATION_ENGINE)
             outcome = study_learning_on_engine_4(board, pause)
+            _after(outcome)
             if outcome == "none" and not _sleep(board, pause, 5):
                 return
             continue
         if board.holding_new_scripts():
             outcome = study_learning_on_engine_4(board, pause)
+            _after(outcome)
             if outcome == "none":
                 if not announced:
                     board.post(
@@ -1639,169 +1862,14 @@ def run_creation_engine(board, pause) -> None:
             continue
         announced = False
         outcome = develop_one(board, pause)
+        # No new script is queued, so engine 4 takes a learning script instead of sitting idle.
+        if outcome == "waiting":
+            outcome = study_learning_on_engine_4(board, pause)
+        _after(outcome)
         if outcome == "stopped" or board.cancel.is_set():
             return
-        if outcome == "waiting" and not _sleep(board, pause, 2):
+        if outcome == "none" and not _sleep(board, pause, 2):
             return
-
-
-def create_once(board, pause, cards: list[dict], source_name: str) -> str:
-    """One creation round. Returns sent_back, blocked, or done."""
-    from futuresfund.learn import (
-        ACCOUNT_SIZE,
-        ATTEMPT_LIMIT,
-        _engine_execute,
-        _load_frames,
-        _pine_params,
-        _rank,
-        _search,
-        _with_contract_point,
-        file_indicators,
-        pine_facts,
-    )
-    from futuresfund.exemplars import drawdown_cap, meets_target, profit_target
-    from futuresfund.objective import consistent_spans, pace_text
-
-    reply = _ask(
-        board,
-        STRATEGY_DEVELOPER,
-        f"Writing one Pine script after {source_name}",
-        prompt_for(cards),
-    )
-    source = repair_pine(extract_pine(reply))
-    problems = pine_problems(source)
-    frames = _load_frames("ES") if not problems else {}
-    if not problems:
-        problems = runtime_problems(source, frames.get(CREATION_CHART) or [])
-    if problems:
-        board.post(
-            SCRIPT_CHECKER,
-            "The script was sent back. " + " ".join(problems),
-            kind="report",
-            channel=SCRIPT_CHECKER,
-        )
-        record_lesson({
-            "time": _now(),
-            "name": "",
-            "title": _title_from(source) if source else "No script",
-            "built_from": built_from(source),
-            "indicators": [],
-            "net_profit": None,
-            "max_drawdown": None,
-            "trades": None,
-            "accepted": False,
-            "verdict": "sent back by the script checker: " + " ".join(problems),
-        })
-        return "sent_back"
-    board.post(
-        SCRIPT_CHECKER,
-        f"The script has a version line, an entry, an exit, and a protective stop, and it ran on a slice of real bars. Engine 4 will run up to {ATTEMPT_LIMIT} attempts "
-        f"on the full five-year download until it hits the ${profit_target():,.0f} profit target inside the drawdown cap of ${drawdown_cap():,.0f} at {pace_text()}.",
-        kind="log",
-        channel=SCRIPT_CHECKER,
-    )
-    title = _title_from(source)
-    name = _store_created(title, source)
-    created = CREATED / name
-    facts = pine_facts(source) if source else {"title": title, "inputs": [], "named": {}}
-    indicators = [row["name"] for row in file_indicators(board, name, source, CREATION_TESTER) or []]
-    from futuresfund.exemplars import indicator_names
-
-    used = indicator_names(source)
-    from futuresfund.backtrader_engine import _bars_from
-    from futuresfund.entry_rules import ensure_entry_rule
-
-    if ensure_entry_rule(board, CREATION_TESTER, source, _bars_from(frames.get(CREATION_CHART) or []), wait=True) is not True:
-        record_lesson({
-            "time": _now(), "name": name, "title": title, "built_from": built_from(source), "indicators": used,
-            "net_profit": None, "max_drawdown": None, "trades": None, "accepted": False,
-            "verdict": "the engine could not enter with this script and the entry rule was not written",
-        })
-        return "blocked"
-    board.post(
-        CREATION_TESTER,
-        f"Engine 4 is backtesting {name} on the 5-minute ES chart over the full five-year download, up to {ATTEMPT_LIMIT} attempts. "
-        f"The file stays in createdStrategies. Target: profit ${profit_target():,.0f} inside the drawdown cap of ${drawdown_cap():,.0f}, at {pace_text()}.",
-        kind="report",
-        channel=CREATION_TESTER,
-    )
-    execute = _engine_execute(source, frames, facts, board, "ES", CREATION_TESTER, CREATION_CHART, CREATION_ENGINE, full=True)
-    trials = _search(
-        _with_contract_point(_pine_params(facts), "ES"),
-        execute,
-        ACCOUNT_SIZE,
-        ATTEMPT_LIMIT,
-        board,
-        created,
-        pause,
-        facts,
-        extras=False,
-        developer=CREATION_TESTER,
-        researcher=STRATEGY_DEVELOPER,
-        accept=lambda row: meets_target(row) and consistent_spans(row.get("spans")),
-        slot=CREATION_ENGINE,
-    )
-    if board.cancel.is_set():
-        return "stopped"
-    if getattr(trials, "flat_stop", False):
-        return "cannot_run"
-    if getattr(trials, "scrapped", False):
-        note = (trials[-1].get("note") if trials else "") or f"{name} was scrapped after 20 attempts with no profit."
-        record_lesson({
-            "time": _now(), "name": name, "title": title, "built_from": built_from(source), "indicators": used,
-            "net_profit": None, "max_drawdown": None, "trades": None, "accepted": False,
-            "verdict": note,
-        })
-        board.post(CREATION_TESTER, note, kind="log", channel=CREATION_TESTER)
-        return "scrapped"
-    if getattr(trials, "skipped", False):
-        record_lesson({
-            "time": _now(), "name": name, "title": title, "built_from": built_from(source), "indicators": used,
-            "net_profit": None, "max_drawdown": None, "trades": None, "accepted": False,
-            "verdict": f"{name} was skipped. A script with more than 900 trades cannot be saved.",
-        })
-        board.post(CREATION_TESTER, f"{name} was skipped. Taking the next script.", kind="log", channel=CREATION_TESTER)
-        return "skipped"
-    best = max(trials, key=_rank) if trials else {}
-    accepted = bool(best) and meets_target(best) and consistent_spans(best.get("spans"))
-    confirmations: list[dict] = []
-    green = 0
-    inside = False
-    if accepted:
-        confirmations = confirm(source, frames, facts, board, best.get("params") or {})
-        green = 1 + sum(1 for row in confirmations if _chart_green(row))
-        inside = len(confirmations) == len(CONFIRM_CHARTS) and all(_chart_inside(row) for row in confirmations)
-    promoted = name if accepted and inside else ""
-    verdict = _verdict(best, accepted, confirmations, green, promoted, len(trials))
-    board.post(CREATION_TESTER, f"{name}: {verdict}", kind="report", channel=CREATION_TESTER)
-    lesson = {
-        "time": _now(),
-        "name": name,
-        "title": title,
-        "built_from": built_from(source),
-        "indicators": used or indicators,
-        "attempts": len(trials),
-        "net_profit": best.get("net_profit"),
-        "max_drawdown": best.get("max_drawdown"),
-        "trades": best.get("trades"),
-        "params": best.get("params") or {},
-        "confirmations": [
-            {"timeframe": row.get("timeframe"), "net_profit": row.get("net_profit"), "max_drawdown": row.get("max_drawdown"), "trades": row.get("trades")}
-            for row in confirmations
-        ],
-        "green_charts": green if accepted else 0,
-        "accepted": accepted,
-        "promoted": promoted,
-        "verdict": verdict,
-    }
-    record_lesson(lesson)
-    board.post(
-        LESSON_WRITER,
-        f"Recorded {name}. {verdict}",
-        kind="report",
-        channel=LESSON_WRITER,
-    )
-    return "done"
 
 
 def confirm(source: str, frames: dict, facts: dict, board, params: dict) -> list[dict]:
@@ -1820,17 +1888,18 @@ def confirm(source: str, frames: dict, facts: dict, board, params: dict) -> list
 
 
 def _chart_inside(row: dict) -> bool:
-    """The promotion gate: the chart ran, and its max drawdown stayed within the one-year cap."""
-    from futuresfund.exemplars import drawdown_cap
+    """The promotion gate: the chart ran, and its max drawdown stayed inside the pro account rule."""
+    from futuresfund.exemplars import account_size
+    from futuresfund.objective import year_allowance
 
     if not isinstance(row, dict) or row.get("error") or row.get("fatal") or row.get("blocked") or row.get("breached"):
         return False
     try:
         drawdown = float(row.get("max_drawdown") or 0)
-        float(row.get("net_profit"))
+        profit = float(row.get("net_profit"))
     except (TypeError, ValueError):
         return False
-    return drawdown <= drawdown_cap()
+    return drawdown <= year_allowance(profit, account_size())
 
 
 def _chart_green(row: dict) -> bool:
@@ -1886,7 +1955,7 @@ def promote(board, name: str, source: str, params: dict, folder: Path | None = N
 
 
 def _verdict(best: dict, accepted: bool, confirmations: list[dict], green: int, promoted: str, attempts: int) -> str:
-    from futuresfund.exemplars import drawdown_cap, profit_target
+    from futuresfund.exemplars import drawdown_cap_text, profit_target
     from futuresfund.objective import pace_text, paced, trades_per_week
 
     if not best:
@@ -1899,7 +1968,7 @@ def _verdict(best: dict, accepted: bool, confirmations: list[dict], green: int, 
     if not accepted:
         why = f" The pace was outside {pace_text()}." if paced(best) is False else ""
         return (
-            f"{head} It did not meet the target (profit ${profit_target():,.0f} without crossing the ${drawdown_cap():,.0f} trailing drawdown, "
+            f"{head} It did not meet the target (profit ${profit_target():,.0f} without crossing {drawdown_cap_text()} in drawdown, "
             f"at {pace_text()}).{why} It stays in createdStrategies."
         )
     charts = "; ".join(
@@ -1908,12 +1977,12 @@ def _verdict(best: dict, accepted: bool, confirmations: list[dict], green: int, 
     )
     if promoted:
         return (
-            f"{head} Met the target. Confirmation: {charts}. The drawdown stayed inside ${drawdown_cap():,.0f} on every ES chart "
+            f"{head} Met the target. Confirmation: {charts}. The drawdown stayed inside {drawdown_cap_text()} on every ES chart "
             f"(green on {green} of 3). Engine 4 measured the full five-year download. It stays in createdStrategies as {promoted}. "
             "The three backtest engines file a one-year result on the Not tested on the full dataset list when it clears the library acceptance."
         )
     return (
-        f"{head} Met the target on the 5-minute chart, but the drawdown went past ${drawdown_cap():,.0f} on another chart ({charts}). "
+        f"{head} Met the target on the 5-minute chart, but the drawdown went past {drawdown_cap_text()} on another chart ({charts}). "
         f"Green on {green} of 3. It stays in createdStrategies."
     )
 
@@ -1951,12 +2020,71 @@ def _remember_source(name: str) -> None:
 
 
 def _store_created(title: str, source: str) -> str:
-    """Save a new script in createdStrategies. A chart studies that folder after it finishes the learning folder."""
-    CREATED.mkdir(parents=True, exist_ok=True)
-    name = script_name(title, CREATED)
+    """Save a new script in draftStrategies. It moves to createdStrategies only after one run clears the acceptance."""
+    DRAFTS.mkdir(parents=True, exist_ok=True)
+    name = script_name(title)
     text = source if source.endswith("\n") else source + "\n"
-    (CREATED / name).write_text(text, encoding="utf-8")
+    (DRAFTS / name).write_text(text, encoding="utf-8")
     return name
+
+
+def _card_has_core(card: dict) -> bool:
+    from futuresfund.delta_core import is_core_file
+    from futuresfund.strategy import pine_text
+
+    name = str(card.get("file") or "")
+    for folder in (LEARNING, LEARNED):
+        if (folder / name).is_file():
+            return is_core_file(folder / name)
+    from futuresfund.delta_core import has_core
+
+    return has_core(pine_text(name)) if name else False
+
+
+def _draft_path(name: str) -> Path:
+    """Where a queued script is: draftStrategies, or createdStrategies for one queued before drafts."""
+    for folder in (DRAFTS, CREATED):
+        if (folder / name).is_file():
+            return folder / name
+    return DRAFTS / name
+
+
+def _set_chart_record_aside(path: Path, root: str, timeframe: str) -> None:
+    """Engine 4's runs move to notes["creation"], so the chart engines still study that chart and can file it."""
+    from futuresfund import learn
+    from futuresfund.learn import _notes_lock, _read_notes
+
+    with _notes_lock:
+        notes = _read_notes(path)
+        instruments = notes.get("instruments") if isinstance(notes.get("instruments"), dict) else {}
+        record = instruments.get(root) if isinstance(instruments.get(root), dict) else {}
+        charts = record.get("charts") if isinstance(record.get("charts"), dict) else {}
+        chart = charts.pop(timeframe, None)
+        if not isinstance(chart, dict):
+            return
+        record["charts"] = charts
+        record["trials"] = [row for row in (record.get("trials") or []) if isinstance(row, dict) and row.get("timeframe") != timeframe]
+        if not charts:
+            instruments.pop(root, None)
+        notes["instruments"] = instruments
+        notes["creation"] = {"root": root, "timeframe": timeframe, "trials": chart.get("trials") or [], "best": chart.get("best") or {}}
+        notes["trials"] = [row for row in (notes.get("trials") or []) if not (isinstance(row, dict) and row.get("instrument") == root and row.get("timeframe") == timeframe)]
+        learn.NOTES.mkdir(parents=True, exist_ok=True)
+        (learn.NOTES / f"{path.stem.replace(' ', '_')}.json").write_text(json.dumps(notes, indent=2, default=str), encoding="utf-8")
+
+
+def _promote_draft(path: Path) -> Path:
+    """A draft whose run cleared the acceptance moves into createdStrategies, where the chart engines study it."""
+    import shutil
+
+    if path.parent == CREATED:
+        return path
+    CREATED.mkdir(parents=True, exist_ok=True)
+    target = CREATED / path.name
+    if target.exists():
+        target = CREATED / f"{path.stem}_{int(datetime.now().timestamp())}{path.suffix}"
+    shutil.move(str(path), str(target))
+    return target
 
 
 def _note_for(store: Path, path: Path) -> dict:

@@ -400,14 +400,22 @@ class LiveStopTests(unittest.TestCase):
     def test_a_one_minute_alert_flattens_at_the_stop_and_does_not_reenter(self):
         import tempfile
         from pathlib import Path
+        from unittest import mock
 
         from futuresfund import book as bookmod
-        from futuresfund import research
+        from futuresfund import chart_feed, ninjatrader, research
         from futuresfund.board import Board
         from futuresfund.session import handle_interval
         from futuresfund.strategy import store_strategy
 
-        with tempfile.TemporaryDirectory() as tmp:
+        # Outside the 4:45pm-6:00pm ET halt, on paper, with no streamed position left by another test.
+        ninjatrader.reset_cache()
+        with tempfile.TemporaryDirectory() as tmp, \
+             mock.patch.dict(os.environ, {"DRY_RUN": "true"}), \
+             mock.patch("futuresfund.session.trading_halt", return_value=None), \
+             mock.patch("futuresfund.crosstrade._post", side_effect=AssertionError("no order may reach CrossTrade in a test")), \
+             mock.patch("futuresfund.session._email_trade", lambda *args, **kwargs: None), \
+             mock.patch.object(chart_feed, "LIVE_BARS_PATH", Path(tmp) / "live.json"):
             bookmod.BOOK_PATH = Path(tmp) / "book.json"
             research.BARS_PATH = Path(tmp) / "bars.json"
             store_strategy({

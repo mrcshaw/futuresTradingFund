@@ -1,0 +1,13 @@
+Taken from the application just now.
+Strategy: Untitled strategy.
+Chart tested: 15-minute Gold (GC1!).
+Profit 712.5. Drawdown 4500.0. Trades 34.
+Trades a day: 1.7 over 20 trading days.
+Headquarters requires a $3,000 profit target, a $2,500 trailing drawdown, and 1 to 3 trades a trading day.
+Meets the profit target: no.
+Inside the trailing drawdown: no.
+Inside the pace: yes.
+On the strategy library: no.
+This result was not filed in the strategy library. It was left off because the profit is under the $3,000 target; the drawdown is past the $2,500 trailing drawdown.
+Settings of this version: use_session=True, sess_start_hr=0, sess_start_mn=0, sess_end_hr=23, sess_end_mn=59, min_cross_pts=2.0, cooldown_bars=10, max_trades_day=5, atr_len=14, atr_stop=1.5, tp_dollars=500.0, use_trail=False.
+Engine attempts on this chart: 200.

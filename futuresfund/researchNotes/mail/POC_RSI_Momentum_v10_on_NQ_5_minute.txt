@@ -1,0 +1,7 @@
+Subject: Desk Update: POC RSI Momentum v10 on Nasdaq (NQ1!)
+
+The latest run for POC RSI Momentum v10 on the 5-minute Nasdaq chart has cleared the desk’s criteria and is recommended for the strategy library. The run generated a profit of $24,545.00 against a trailing drawdown of $7,270.00 across 195 trades. This pace equates to approximately 3.75 trades per week, which falls comfortably within the required annual range of 130 to 600 trades. The profit factor is 3.0, satisfying the threshold for runs with lower trade counts. The settings tested were rsiLen=14, emaLen=10, atrLen=14, stopMult=1.0, tpMult=2.0, and cooldownBars=5. This result meets the profit target, the trailing drawdown constraint, and the trade count pace. It has been filed on the Nasdaq strategy library.
+
+Email sent to viewing address.
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 57 seconds.

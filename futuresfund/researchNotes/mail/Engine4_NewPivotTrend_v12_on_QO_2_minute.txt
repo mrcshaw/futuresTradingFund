@@ -1,0 +1,7 @@
+Subject: Engine4_NewPivotTrend_v12 Result: Gold 2-min Chart
+
+The Engine4_NewPivotTrend_v12 run on the 2-minute Gold (GC1!) chart has finished. The result is a profit of -11,862.5 with a drawdown of 15,425.0 across 132 trades. With 11.6 trades per week over 57 trading days, the annualized pace is 602.11 trades a year. This exceeds the 600-trade upper limit, so it does not meet the pace requirement. It did not meet the profit target, and the trailing drawdown was not within acceptable limits for filing. The result is not on the strategy library. It was not filed because the pace exceeds 600 trades a year, and the library only keeps profits from runs with 130 to 600 trades a year. The settings used were emaFastLen=55, emaSlowLen=200, pivotLen=10, atrLen=14, stopMult=3.125, targetMult=4.6561, cooldownBars=10. This was one of 210 runs on this chart, with 200 different results observed.
+
+This desk is now live. The email address for viewing this desk is [email protected]. When this address expires, I will email the new address.
+
+Desk clock: Wednesday 02:53 AM ET. Next meeting is Monday 8:00am ET.

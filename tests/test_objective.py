@@ -15,6 +15,17 @@ def _row(profit, drawdown, trades, **extra):
     return row
 
 
+def _default_book(test):
+    """An empty book holds the default acceptance boxes, so the desk's saved boxes do not change the answer."""
+    from futuresfund import book as bookmod
+
+    folder = tempfile.TemporaryDirectory()
+    test.addCleanup(folder.cleanup)
+    patcher = mock.patch.object(bookmod, "BOOK_PATH", Path(folder.name) / "book.json")
+    patcher.start()
+    test.addCleanup(patcher.stop)
+
+
 class LimitTests(unittest.TestCase):
     def test_the_target_and_the_drawdown_come_from_headquarters(self):
         from futuresfund.objective import band_width, drawdown_limit, limits, profit_target
@@ -40,28 +51,25 @@ class LimitTests(unittest.TestCase):
     def test_a_research_success_is_a_profit_inside_twenty_percent_of_the_account(self):
         from futuresfund.objective import research_drawdown_cap, research_success
 
-        self.assertEqual(research_drawdown_cap(50000), 35000.0)
-        paced = {"net_profit": 800.0, "max_drawdown": 35000.0, "trades": 20, "days": 20}
-        self.assertTrue(research_success(paced, 50000))
-        self.assertTrue(research_success({**paced, "max_drawdown": 25000.0}, 50000))
-        band = {"net_profit": 53895.0, "max_drawdown": 29523.5, "trades": 400, "days": 260}
+        self.assertEqual(research_drawdown_cap(50000), 750.0)
+        band = {"net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 400, "days": 260, "profit_factor": 1.5, "win_rate": 50.0, "profit_ratio": 1.3}
         self.assertTrue(research_success(band, 50000))
-        self.assertFalse(research_success({"net_profit": 53895.0, "max_drawdown": 29523.5, "trades": 1335, "days": 260}, 50000))
-        self.assertFalse(research_success({**paced, "max_drawdown": 35000.01}, 50000))
-        self.assertFalse(research_success({**paced, "net_profit": 0}, 50000))
-        self.assertFalse(research_success({**paced, "net_profit": -40}, 50000))
+        self.assertFalse(research_success({**band, "trades": 1335}, 50000))
+        self.assertFalse(research_success({**band, "max_drawdown": 16200.0}, 50000))
+        self.assertFalse(research_success({**band, "net_profit": 0}, 50000))
+        self.assertFalse(research_success({**band, "net_profit": -40}, 50000))
         self.assertFalse(research_success({"net_profit": 9000.0, "max_drawdown": 100.0, "trades": 2, "days": 20}, 50000))
 
-    def test_a_profit_at_least_1_5_times_the_drawdown_counts_with_a_real_trade_count(self):
+    def test_a_drawdown_at_most_30_percent_of_the_profit_counts_with_a_real_trade_count(self):
         from futuresfund.objective import counted_success, profit_to_drawdown, ratio_success, research_success
 
-        measured = {"net_profit": 53895.0, "max_drawdown": 29523.5, "trades": 400, "days": 260}
-        self.assertGreater(profit_to_drawdown(measured), 1.5)
+        measured = {"net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 400, "days": 260, "profit_factor": 1.5, "win_rate": 50.0, "profit_ratio": 1.3}
+        self.assertGreater(profit_to_drawdown(measured), 3.33)
         self.assertTrue(research_success(measured, 50000))
         self.assertTrue(ratio_success(measured))
         self.assertTrue(counted_success(measured, 50000))
         self.assertFalse(ratio_success({**measured, "trades": 1335}))
-        self.assertFalse(ratio_success({"net_profit": 30000.0, "max_drawdown": 29523.5, "trades": 400, "days": 260}))
+        self.assertFalse(ratio_success({"net_profit": 53895.0, "max_drawdown": 16200.0, "trades": 400, "days": 260}))
         self.assertFalse(ratio_success({"net_profit": 90000.0, "max_drawdown": 1000.0, "trades": 2, "days": 20}))
         self.assertFalse(ratio_success({"net_profit": 90000.0, "max_drawdown": 1000.0, "trades": 10, "days": 260}))
         self.assertFalse(ratio_success({"net_profit": -53895.0, "max_drawdown": 29523.5, "trades": 1335, "days": 260}))
@@ -77,7 +85,7 @@ class RankTests(unittest.TestCase):
     def test_a_result_that_hits_the_target_beats_one_that_does_not_whatever_the_drawdown(self):
         from futuresfund.objective import rank
 
-        self.assertGreater(rank(_row(self.target, self.trail - 100, 20)), rank(_row(self.target - 1, 50, 20)))
+        self.assertGreater(rank(_row(self.target, 700, 20)), rank(_row(self.target - 1, 50, 20)))
 
     def test_among_results_that_hit_the_target_the_smaller_drawdown_beats_the_larger_profit(self):
         from futuresfund.objective import rank
@@ -131,20 +139,20 @@ class RankTests(unittest.TestCase):
 
         self.assertGreater(rank(_row(self.target + 10, 200, 8)), rank(_row(self.target + 10, 900, 40)))
         self.assertGreater(rank(_row(self.target, 400, 20)), rank(_row(self.target, 400, 8)))
-        self.assertGreater(rank(_row(2000, 800, 8)), rank(_row(500, 100, 40)))
+        self.assertGreater(rank(_row(2000, 700, 8)), rank(_row(500, 100, 40)))
         self.assertGreater(rank(_row(self.target, 900, 8)), rank(_row(self.target * 3, 100, 2)))
 
     def test_crossing_the_drawdown_is_a_loss_even_with_the_target_hit(self):
         from futuresfund.objective import TIER_COUNTS, TIER_LOSING, acceptable, rank, research_drawdown_cap, tier
 
         cap = research_drawdown_cap(50000)
-        deep = _row(self.target * 2, cap + 1, 20)
+        deep = _row(self.target * 2, self.target * 2 * 0.3 + 1, 20)
         self.assertEqual(tier(deep), TIER_LOSING)
         self.assertFalse(acceptable(deep))
         self.assertTrue(acceptable(_row(self.target, cap, 20, days=20)))
         inside = _row(self.target * 2, 500, 20)
         self.assertEqual(tier(inside), TIER_COUNTS)
-        self.assertGreater(rank(_row(50, 950, 9)), rank(deep))
+        self.assertGreater(rank(_row(50, 700, 9)), rank(deep))
 
     def test_the_engine_stop_at_the_target_counts_as_hitting_it(self):
         from futuresfund.objective import acceptable, hit_target
@@ -167,20 +175,21 @@ class RankTests(unittest.TestCase):
 
         self.assertTrue(improved(_row(self.target + 50, 250, 10), _row(self.target + 500, 400, 10)))
         self.assertFalse(improved(_row(900, 600, 10), _row(1500, 300, 10)))
-        self.assertTrue(counts(_row(self.target, self.trail, 8)))
-        self.assertFalse(counts(_row(self.target, self.trail, 0)))
-        self.assertFalse(counts(_row(self.target, self.trail, 2)))
-        self.assertFalse(counts(_row(self.target, self.trail, 3)))
-        self.assertTrue(acceptable(_row(self.target, self.trail, 8)))
+        self.assertTrue(counts(_row(self.target, 700, 8)))
+        self.assertFalse(counts(_row(self.target, 700, 0)))
+        self.assertFalse(counts(_row(self.target, 700, 2)))
+        self.assertFalse(counts(_row(self.target, 700, 3)))
+        self.assertTrue(acceptable(_row(self.target, 700, 8)))
         self.assertFalse(counts(_row(self.target - 1, 50, 80)))
         self.assertFalse(counts(_row(-1, 50, 80)))
 
     def test_describe_names_the_target_the_drawdown_the_pace_and_the_order(self):
         from futuresfund.objective import describe, short
 
+        _default_book(self)
         text = describe()
         self.assertIn("$3,000 profit target", text)
-        self.assertIn("one-year drawdown is no higher than $35,000", text)
+        self.assertIn("one-year drawdown is no higher than 30 percent of the profit once the profit reaches $2,500", text)
         self.assertIn("$50,000 account", text)
         self.assertIn("set on headquarters", text)
         self.assertIn("130 to 600 trades a year", text)
@@ -190,23 +199,33 @@ class RankTests(unittest.TestCase):
 
         self.assertIn(f"trade count of {scale_min_trades():g}", text)
         self.assertIn("strategy library page", text)
-        from futuresfund.book import strategy_acceptance
-
-        pct = float(strategy_acceptance()["drawdown_pct"])
-        self.assertIn(f"keep the drawdown under {pct:g} percent of the account, and meet the trade count", text)
-        self.assertIn("A single loss cannot be more than 3 percent of the account", text)
+        self.assertIn("keep the drawdown inside 30 percent of the profit once the profit reaches $2,500, and meet the trade count", text)
+        self.assertIn("The stop is never set above 1.5 percent of the account", text)
         self.assertIn("larger than the stop loss", text)
-        self.assertIn("more than 3 percent of the account", text)
+        self.assertIn("its stop is set above 1.5 percent of the account", text)
         self.assertIn("Trade count only breaks a tie", text)
         self.assertIn("130 to 600 trades a year", short())
 
-    def test_a_series_of_losses_under_2500_before_300000_profit_is_not_included(self):
-        from futuresfund.objective import account_survives
+    def test_the_drawdown_has_no_limit_until_2500_then_30_percent_of_the_profit(self):
+        from futuresfund.objective import acceptance_misses, account_survives, drawdown_goal
 
-        self.assertFalse(account_survives({"net_profit": 2000, "max_drawdown": 2600}))
-        self.assertFalse(account_survives({"net_profit": 3000, "max_drawdown": 2600}))
-        self.assertFalse(account_survives({"net_profit": 9000, "max_drawdown": 2500}))
-        self.assertTrue(account_survives({"net_profit": 1000, "max_drawdown": 2499}))
+        _default_book(self)
+        self.assertTrue(account_survives({"net_profit": -500, "max_drawdown": 9000}))
+        self.assertTrue(account_survives({"net_profit": 1000, "max_drawdown": 750.01}))
+        self.assertTrue(account_survives({"net_profit": 2499.99, "max_drawdown": 6000}))
+        self.assertFalse(account_survives({"net_profit": 2500, "max_drawdown": 750.01}))
+        self.assertTrue(account_survives({"net_profit": 2500, "max_drawdown": 750}))
+        self.assertFalse(account_survives({"net_profit": 3000, "max_drawdown": 900.01}))
+        # A one-trade loss is checked on its own, and the search still aims under the lower goal.
+        limits = {"use_drawdown": True, "use_trades": False, "use_profit": False, "use_factor": False, "use_win_rate": False}
+        small = {"net_profit": 1000.0, "max_drawdown": 900.0, "trades": 5, "win_rate": 50.0, "profit_factor": 1.2, "profit_ratio": 1.3}
+        self.assertNotIn("drawdown", acceptance_misses(small, days=7, limits=limits))
+        self.assertIn("trade_loss", acceptance_misses({**small, "held_loser": -750.01}, days=7, limits=limits))
+        self.assertEqual(drawdown_goal(1000.0, 50000), 750.0)
+        self.assertEqual(drawdown_goal(10000.0, 50000), 3000.0)
+        self.assertTrue(account_survives({"net_profit": 3000, "max_drawdown": 900}))
+        self.assertTrue(account_survives({"net_profit": 35803, "max_drawdown": 7245.5}))
+        self.assertFalse(account_survives({"net_profit": 9000, "max_drawdown": 2701}))
         self.assertTrue(account_survives({"net_profit": 100, "max_drawdown": 0}))
 
 
@@ -367,6 +386,9 @@ class PaceTests(unittest.TestCase):
 
 
 class ResearcherTests(unittest.TestCase):
+    def setUp(self):
+        _default_book(self)
+
     def test_a_profitable_opening_does_not_raise_the_stop(self):
         from unittest.mock import patch
 
@@ -447,11 +469,10 @@ class ResearcherTests(unittest.TestCase):
 
         text = research_guidelines()
         self.assertIn("Limit risk", text)
-        self.assertIn("Drawdown stays under 5 percent of the account.", text)
-        self.assertIn("Until profit is above $3,000, a deeper drawdown is not included.", text)
-        self.assertIn("1.5 times the drawdown", text)
-        self.assertIn("One trade down more than 3 percent of the account is out", text)
-        self.assertIn("3.6 percent", text)
+        self.assertIn("The pro account rule", text)
+        self.assertIn("30 percent of the profit", text)
+        self.assertIn("$2,500", text)
+        self.assertIn("One trade down more than $750, 1.5 percent of the account, is out", text)
         self.assertIn("The take profit stays larger than the stop", text)
         self.assertNotIn("300,000", text)
         self.assertNotIn("1800-1645:12345", text)
@@ -481,7 +502,7 @@ class ScaleTests(unittest.TestCase):
     def test_the_goal_is_one_end_and_a_loss_is_toward_the_other(self, _goal):
         from futuresfund.objective import result_scale, scale_move
 
-        goal = {"net_profit": 4000, "max_drawdown": 2000, "trades": 20, "days": 20}
+        goal = {"net_profit": 4000, "max_drawdown": 1000, "trades": 20, "days": 20}
         loss = {"net_profit": -150000, "max_drawdown": 170000, "trades": 5000, "days": 260}
         smaller = {"net_profit": -120000, "max_drawdown": 170000, "trades": 5000, "days": 260}
         quiet = {"net_profit": 0, "max_drawdown": 0, "trades": 0}
@@ -554,7 +575,7 @@ class ScaleTests(unittest.TestCase):
         def row(factor, profit=1000.0):
             return {
                 "net_profit": profit,
-                "max_drawdown": 2000.0,
+                "max_drawdown": 700.0,
                 "trades": 40,
                 "days": 20,
                 "profit_factor": factor,
@@ -603,7 +624,7 @@ class ScaleTests(unittest.TestCase):
         richer = row(72, 1.8)
         thin = row(60, 1.1)
         fraction = row(0.6, 1.2)
-        huge = row(70, 2.0, -1800.01)
+        huge = row(70, 2.0, -750.01)  # one trade past 1.5 percent of the $50,000 account
         with mock.patch("futuresfund.objective.scale_win_rate", return_value=60.0), mock.patch(
             "futuresfund.objective.scale_profit_factor", return_value=1.1
         ):
@@ -624,7 +645,7 @@ class ScaleTests(unittest.TestCase):
             self.assertEqual(result_scale(row(48, 1.2), 50000), 1.0)
             self.assertEqual(result_scale(goal, 50000), 1.0)
         self.assertFalse(trade_loss_ok(huge))
-        self.assertTrue(trade_loss_ok(row(60, 1.2, -1800.0)))
+        self.assertTrue(trade_loss_ok(row(60, 1.2, -750.0)))
 
     def test_the_chosen_acceptance_number_is_the_scale_goal(self):
         import tempfile
@@ -707,10 +728,10 @@ class ShelfTests(unittest.TestCase):
         from futuresfund.library import _library_rows
 
         rows = [
-            {"id": "a", "contract": "ES1!", "title": "Pullback", "script": "Pullback", "net_profit": 32000, "max_drawdown": 900, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "a", "contract": "ES1!", "title": "Pullback", "script": "Pullback", "net_profit": 32000, "max_drawdown": 900, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
             {"id": "b", "contract": "ES1!", "title": "Pullback", "script": "Pullback", "net_profit": 3200, "max_drawdown": 350, "trades": 12, "days": 20, "profit_ratio": 1.2},
             {"id": "c", "contract": "ES1!", "title": "Pullback", "script": "Pullback", "net_profit": 20000, "max_drawdown": 50, "trades": 3, "days": 20, "profit_ratio": 1.2},
-            {"id": "d", "contract": "ES1!", "title": "Breakout", "script": "Breakout", "net_profit": 25000, "max_drawdown": 400, "trades": 120, "days": 260, "win_rate": 62, "profit_factor": 1.3, "profit_ratio": 1.2},
+            {"id": "d", "contract": "ES1!", "title": "Breakout", "script": "Breakout", "net_profit": 25000, "max_drawdown": 400, "trades": 180, "days": 260, "win_rate": 62, "profit_factor": 1.3, "profit_ratio": 1.2},
             {"id": "e", "contract": "ES1!", "title": "Loss", "script": "Loss", "net_profit": -100, "max_drawdown": 20, "trades": 20, "days": 20, "profit_ratio": 1.2},
         ]
         shown = _library_rows(rows)
@@ -722,12 +743,12 @@ class ShelfTests(unittest.TestCase):
         from futuresfund.library import _library_rows
 
         rows = [
-            {"id": "a", "contract": "ES1!", "title": "Pullback", "net_profit": 25000, "max_drawdown": 900, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "a", "contract": "ES1!", "title": "Pullback", "net_profit": 25000, "max_drawdown": 900, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
             {"id": "b", "contract": "ES1!", "title": "Pullback", "net_profit": 3200, "max_drawdown": 350, "trades": 12, "days": 20, "profit_ratio": 1.2},
             {"id": "c", "contract": "ES1!", "title": "Pullback", "net_profit": 2000, "max_drawdown": 2600, "trades": 40, "days": 20, "profit_ratio": 1.2},  # a series of losses goes lower than $2,500 before $300,000
-            {"id": "d", "contract": "ES1!", "title": "Breakout", "net_profit": 21000, "max_drawdown": 400, "trades": 120, "days": 260, "win_rate": 61, "profit_factor": 1.2, "profit_ratio": 1.2},
+            {"id": "d", "contract": "ES1!", "title": "Breakout", "net_profit": 21000, "max_drawdown": 400, "trades": 180, "days": 260, "win_rate": 61, "profit_factor": 1.2, "profit_ratio": 1.2},
             {"id": "e", "contract": "ES1!", "title": "Held", "net_profit": 118180, "max_drawdown": 11100, "trades": 2, "days": 1291, "profit_ratio": 1.2},
-            {"id": "f", "contract": "NQ1!", "title": "Held", "net_profit": 22000, "max_drawdown": 500, "trades": 140, "days": 260, "win_rate": 62, "profit_factor": 1.3, "profit_ratio": 1.2},
+            {"id": "f", "contract": "NQ1!", "title": "Held", "net_profit": 22000, "max_drawdown": 500, "trades": 200, "days": 260, "win_rate": 62, "profit_factor": 1.3, "profit_ratio": 1.2},
             {"id": "h", "contract": "ES1!", "title": "Fast", "net_profit": 80000, "max_drawdown": 1000, "trades": 4000, "days": 260, "profit_ratio": 1.2},
         ]
         shown = _library_rows(rows)
@@ -752,20 +773,28 @@ class ShelfTests(unittest.TestCase):
         self.assertTrue(firm_ratio({"net_profit": 80000, "max_drawdown": 44000, "trades": 20, "days": 20}))
         self.assertFalse(firm_ratio({"net_profit": 80000, "max_drawdown": 44001, "trades": 20, "days": 20}))
         self.assertFalse(firm_ratio({"net_profit": 50000, "max_drawdown": 30000, "trades": 20, "days": 20}))
-        alive = {"id": "alive", "contract": "ES1!", "title": "Alive", "script": "Alive", "net_profit": 50000, "max_drawdown": 1500, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2}
+        alive = {"id": "alive", "contract": "ES1!", "title": "Alive", "script": "Alive", "net_profit": 50000, "max_drawdown": 1500, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2}
         shown = _library_rows([near, richer, lower, better, short, alive])
         self.assertEqual([row["id"] for row in shown], ["alive"])
 
     def test_the_shelf_keeps_one_version_over_20000(self):
+        from futuresfund.book import save_strategy_acceptance
         from futuresfund.library import shelf_rows
 
+        _default_book(self)
+        # The profit box at $20,000 keeps the $12,000 run off; the win rate and the factor boxes stay off.
+        save_strategy_acceptance({
+            "min_profit": 20000, "profit_factor": 1.1, "win_rate": 53, "min_trades": 100, "drawdown_pct": 5,
+            "use_drawdown": True, "use_trades": True, "use_profit": True,
+            "use_factor": False, "use_win_rate": False,
+        })
         rows = [
-            {"id": "ema", "script": "EMA SMA Pivot Filter", "net_profit": 152130.0, "max_drawdown": 2000.0, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "ema", "script": "EMA SMA Pivot Filter", "net_profit": 152130.0, "max_drawdown": 2000.0, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
             {"id": "ema-small", "script": "EMA SMA Pivot Filter", "net_profit": 37.5, "max_drawdown": 837.5, "profit_ratio": 1.2},
-            {"id": "pivot-v4", "script": "Engine4_NewPivotTrend_v4", "net_profit": 83200.0, "max_drawdown": 1800.0, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "pivot-v4", "script": "Engine4_NewPivotTrend_v4", "net_profit": 83200.0, "max_drawdown": 1800.0, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
             {"id": "pivot-v11", "script": "Engine4_NewPivotTrend_v11", "net_profit": 39787.5, "max_drawdown": 8912.5, "profit_ratio": 1.2},
-            {"id": "shift", "script": "POC RSI Momentum Shift v1", "net_profit": 27450.0, "max_drawdown": 2000.0, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
-            {"id": "rsi", "script": "POC RSI Momentum v1", "net_profit": 66200.0, "max_drawdown": 2000.0, "trades": 150, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "shift", "script": "POC RSI Momentum Shift v1", "net_profit": 27450.0, "max_drawdown": 2000.0, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
+            {"id": "rsi", "script": "POC RSI Momentum v1", "net_profit": 66200.0, "max_drawdown": 2000.0, "trades": 210, "days": 260, "win_rate": 65, "profit_factor": 1.4, "profit_ratio": 1.2},
             {"id": "rsi-v3", "script": "POC RSI Momentum v3", "net_profit": 20437.5, "max_drawdown": 14250.0, "profit_ratio": 1.12},
             {"id": "ten", "script": "Ten Thousand Band", "net_profit": 12000.0, "max_drawdown": 4000.0, "trades": 200, "days": 260, "profit_ratio": 1.2},
             {"id": "fast", "script": "Fast Scalp", "net_profit": 80000.0, "max_drawdown": 4000.0, "trades": 4000, "days": 260, "profit_ratio": 1.2},
@@ -774,16 +803,16 @@ class ShelfTests(unittest.TestCase):
         shown = shelf_rows(rows)
         self.assertEqual([row["id"] for row in shown], ["ema", "pivot-v4", "rsi", "shift"])
 
-    def test_a_single_trade_loss_over_1800_is_left_off_the_shelf(self):
+    def test_a_single_trade_loss_over_750_is_left_off_the_shelf(self):
         from futuresfund.library import shelf_rows
 
         kept = {
             "id": "kept", "script": "Steady", "net_profit": 22000.0, "max_drawdown": 2000.0,
-            "trades": 200, "days": 260, "profit_ratio": 1.2, "profit_factor": 1.2, "win_rate": 65, "biggest_loser": -1800.0,
+            "trades": 200, "days": 260, "profit_ratio": 1.2, "profit_factor": 1.2, "win_rate": 65, "biggest_loser": -750.0,
         }
         huge = {
             "id": "huge", "script": "Blowup", "net_profit": 40000.0, "max_drawdown": 2000.0,
-            "trades": 200, "days": 260, "profit_ratio": 1.4, "profit_factor": 1.4, "win_rate": 70, "biggest_loser": -1800.01,
+            "trades": 200, "days": 260, "profit_ratio": 1.4, "profit_factor": 1.4, "win_rate": 70, "biggest_loser": -750.01,
         }
         shown = shelf_rows([kept, huge])
         self.assertEqual([row["id"] for row in shown], ["kept"])
@@ -798,7 +827,7 @@ class ShelfTests(unittest.TestCase):
 
         ready = {
             "id": "ready", "script": "Ready", "net_profit": 25000.0, "max_drawdown": 800.0,
-            "trades": 120, "days": 260, "win_rate": 65, "profit_factor": 1.2, "profit_ratio": 1.2,
+            "trades": 180, "days": 260, "win_rate": 65, "profit_factor": 1.2, "profit_ratio": 1.2,
         }
         original = bookmod.BOOK_PATH
         try:
@@ -806,7 +835,9 @@ class ShelfTests(unittest.TestCase):
                 bookmod.BOOK_PATH = Path(tmp) / "book.json"
                 self.assertTrue(library_ready(ready))
                 self.assertTrue(library_ready({**ready, "net_profit": 20000.0}))
-                self.assertFalse(library_ready({**ready, "max_drawdown": 2500.0}))
+                # Above $3,000 profit the drawdown cap lifts, so the drawdown fails only past profit / 1.5.
+                self.assertTrue(library_ready({**ready, "max_drawdown": 2500.0}))
+                self.assertFalse(library_ready({**ready, "max_drawdown": 17000.0}))
                 self.assertFalse(library_ready({**ready, "trades": 99}))
                 save_strategy_acceptance({
                     "min_profit": 20000, "profit_factor": 1.1, "win_rate": 53, "min_trades": 100,
@@ -840,7 +871,7 @@ class ShelfTests(unittest.TestCase):
 
         original = bookmod.BOOK_PATH
         row = {
-            "net_profit": 25000.0, "max_drawdown": 800.0, "trades": 120, "days": 260,
+            "net_profit": 25000.0, "max_drawdown": 800.0, "trades": 180, "days": 260,
             "win_rate": 54, "profit_factor": 1.2, "profit_ratio": 1.2,
         }
         try:
@@ -875,7 +906,7 @@ class ShelfTests(unittest.TestCase):
 
         original = bookmod.BOOK_PATH
         row = {
-            "net_profit": 15000.0, "max_drawdown": 800.0, "trades": 70, "days": 260,
+            "net_profit": 15000.0, "max_drawdown": 800.0, "trades": 170, "days": 260,
             "win_rate": 55.0, "profit_factor": 1.3, "profit_ratio": 1.2,
         }
         try:
@@ -978,9 +1009,9 @@ class LeaderTests(unittest.TestCase):
             busy = self._note(folder, "busy", {**base, "net_profit": 3900, "max_drawdown": 200, "trades": 90})
             flat = self._note(folder, "flat", {**base, "net_profit": 3900, "max_drawdown": 20, "trades": 0})
             wide = self._note(folder, "wide", {**base, "net_profit": 9000, "max_drawdown": 2600, "trades": 40})
-            deep = self._note(folder, "deep", {**base, "net_profit": 9000, "max_drawdown": 35000.01, "trades": 40})
-            learned = self._note(folder, "year_band", {**base, "net_profit": 53895.0, "max_drawdown": 29523.5, "trades": 400, "days": 260})
-            crowded = self._note(folder, "crowded", {**base, "net_profit": 53895.0, "max_drawdown": 29523.5, "trades": 1335, "days": 260})
+            deep = self._note(folder, "deep", {**base, "net_profit": 9000, "max_drawdown": 2700.01, "trades": 40})
+            learned = self._note(folder, "year_band", {**base, "net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 400, "days": 260})
+            crowded = self._note(folder, "crowded", {**base, "net_profit": 53895.0, "max_drawdown": 16000.0, "trades": 1335, "days": 260})
             listed = folder / "creation_lessons.json"
             listed.write_text(json.dumps([{"name": "x"}]), encoding="utf-8")
             row = _leader_row(steady)
@@ -1048,12 +1079,12 @@ class CreationTests(unittest.TestCase):
         self.assertEqual(drawdown_cap(), research_drawdown_cap(50000))
         self.assertEqual(profit_target(), hq_target())
         self.assertTrue(meets_target({"net_profit": hq_target(), "max_drawdown": drawdown_cap(), "trades": 18, "days": 20}))
-        self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": drawdown_cap() + 1, "trades": 18, "days": 20}))
+        self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": hq_target() * 0.3 + 1, "trades": 18, "days": 20}))
         self.assertFalse(meets_target({"net_profit": hq_target(), "max_drawdown": 10, "trades": 8, "days": 20}))
         self.assertFalse(meets_target({"net_profit": hq_target() - 1, "max_drawdown": 10, "trades": 40, "days": 20}))
         text = target_text()
         self.assertIn("profit target $3,000", text)
-        self.assertIn("one-year drawdown no higher than $35,000", text)
+        self.assertIn("one-year drawdown no higher than 30 percent of the profit once the profit reaches $2,500", text)
         self.assertIn("set on headquarters", text)
         self.assertIn("130 to 600 trades a year", text)
         self.assertIn("Trade count only breaks a tie", text)
@@ -1097,18 +1128,19 @@ class CreationTests(unittest.TestCase):
         cap = research_drawdown_cap(50000)
         self.assertTrue(_chart_inside({"net_profit": -120, "max_drawdown": 400, "trades": 6, "timeframe": "2m"}))
         self.assertTrue(_chart_inside({"net_profit": 3000, "max_drawdown": cap, "trades": 2, "timeframe": "2m"}))
-        self.assertFalse(_chart_inside({"net_profit": 3000, "max_drawdown": cap + 1, "trades": 30, "timeframe": "2m"}))
+        self.assertFalse(_chart_inside({"net_profit": 3000, "max_drawdown": 900.01, "trades": 30, "timeframe": "2m"}))
+        self.assertTrue(_chart_inside({"net_profit": 1000, "max_drawdown": cap + 1, "trades": 30, "timeframe": "2m"}))
         self.assertFalse(_chart_inside({"net_profit": None, "max_drawdown": None, "trades": 0, "error": "stopped"}))
 
 
 class LossCapTests(unittest.TestCase):
-    def test_a_loss_past_1500_is_rejected_and_900_trades_cannot_be_saved(self):
+    def test_a_loss_past_750_is_rejected_and_900_trades_cannot_be_saved(self):
         from datetime import datetime
 
         from futuresfund.objective import consistent_spans, too_many_to_save, trade_loss_ok, trade_spans
 
-        self.assertTrue(trade_loss_ok({"biggest_loser": -1500.0}))
-        self.assertFalse(trade_loss_ok({"biggest_loser": -1500.01}))
+        self.assertTrue(trade_loss_ok({"biggest_loser": -750.0}))
+        self.assertFalse(trade_loss_ok({"biggest_loser": -750.01}))
         self.assertFalse(too_many_to_save({"trades": 900}))
         self.assertTrue(too_many_to_save({"trades": 901}))
         end = datetime(2026, 10, 15, 16, 0)
@@ -1121,6 +1153,27 @@ class LossCapTests(unittest.TestCase):
         self.assertTrue(consistent_spans(trade_spans(trades, end)))
         losing_week = trades + [{"exit_time": "2026-10-15 09:00", "pnl": -200.0}]
         self.assertFalse(consistent_spans(trade_spans(losing_week, end)))
+
+    def test_a_stop_set_inside_750_passes_even_when_a_fill_lost_more(self):
+        from futuresfund.objective import acceptance_misses, acceptance_reason, stop_in_script, stop_setting, trade_loss_ok
+
+        self.assertTrue(trade_loss_ok({"biggest_loser": -1400.0, "stop_dollars": 700}))
+        self.assertTrue(trade_loss_ok({"biggest_loser": -1400.0, "stop_dollars": 750}))
+        self.assertFalse(trade_loss_ok({"biggest_loser": -300.0, "stop_dollars": 900}))
+        # An older run has the stop in its settings. The engine ran anything above $700 at $700.
+        self.assertEqual(stop_setting({"params": {"stop_dollars": 1200}}), 700.0)
+        self.assertTrue(trade_loss_ok({"biggest_loser": -1100.0, "params": {"stop_dollars": 500}}))
+        # Without a recorded stop, the largest loss is the check.
+        self.assertFalse(trade_loss_ok({"biggest_loser": -1100.0, "params": {"length": 20}}))
+        script = 'stop_dollars      = input.int(650, "Stop ($)", minval=250, maxval=700)\n'
+        self.assertEqual(stop_in_script(script), 650.0)
+        self.assertIsNone(stop_in_script("len = input.int(20)"))
+        row = {"net_profit": 9000.0, "max_drawdown": 200.0, "trades": 200, "days": 260, "win_rate": 50.0, "profit_factor": 1.5,
+               "biggest_loser": -1300.0, "held_loser": -1300.0, "stop_dollars": 700}
+        self.assertNotIn("trade_loss", acceptance_misses(row))
+        wide = dict(row, stop_dollars=1000)
+        self.assertEqual(acceptance_misses(wide)["trade_loss"], 1000.0)
+        self.assertIn("The stop is set at $1,000", acceptance_reason(wide))
 
 
 if __name__ == "__main__":

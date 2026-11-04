@@ -1,0 +1,12 @@
+Subject: Desk Update: ES Trend Breakout safe V2 (MNQ) Run Results
+
+The latest run for ES Trend Breakout safe V2 on the 5-minute Micro Nasdaq chart has concluded. The strategy generated a profit of $213.50 with a drawdown of $1,130.00 across 183 trades. The trade frequency was approximately 3.5 trades per week over the 260-day backtest period.
+
+Per the strategy library guidelines, this run was not filed. The acceptance criteria require a profit above $5,000, a drawdown under 5% of the account, a win rate above 40%, and at least 60 trades. This run’s profit of $213.50 falls significantly short of the $5,000 threshold. Consequently, it does not meet the filing requirements and is not included in the strategy library.
+
+The desk remains focused on maintaining the trailing drawdown below $2,500. I will continue to monitor the ES Trend Breakout safe V2 parameters, but no new rules are being added to the active library at this time.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

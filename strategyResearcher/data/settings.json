@@ -1,0 +1,7 @@
+{
+  "success_rate": 0.5,
+  "attempts": 200,
+  "daily_target": 500,
+  "daily_loss": 400,
+  "baseline_risk": 250
+}

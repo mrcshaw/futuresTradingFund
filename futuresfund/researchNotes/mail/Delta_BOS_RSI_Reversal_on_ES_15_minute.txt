@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.05, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+Strategy: Delta BOS RSI Reversal.
+Chart tested: 15-minute ES (ES1!).
+Profit 7337.5. Drawdown 9087.5. Trades 513.
+Trades a week: 9.85 over 260 trading days.
+Bars in this test: 23,704 from 2025-10-01 18:00 through 2026-10-02 16:45.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that.
+Settings of this version: stop_dollars=410.1564, tp_dollars=1000.01, use_trail=False, trail_pct=50.0, trail_step_amt=500.0, trail_step_pct=50.0, trail_min_dollars=1000.0, len_ema=50, len_rsi=14, len_atr=14, lookback=5.
+Different results on this chart: 21.
+Engine runs on this chart: 21.

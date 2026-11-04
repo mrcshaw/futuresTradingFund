@@ -84,7 +84,8 @@ class ResultCurveTests(unittest.TestCase):
     def test_real_trials_stay_on_the_curve_and_profit_still_lifts_it(self):
         from futuresfund.objective import result_curve
 
-        path = Path(__file__).resolve().parents[1] / "futuresfund" / "researchNotes" / "trendlines.json"
+        # Measured trials from the trendlines study, kept here so archiving research notes does not remove them.
+        path = Path(__file__).resolve().parent / "data" / "trendlines_trials.json"
         trials = json.loads(path.read_text(encoding="utf-8"))["trials"]
         scored = []
         for row in trials:

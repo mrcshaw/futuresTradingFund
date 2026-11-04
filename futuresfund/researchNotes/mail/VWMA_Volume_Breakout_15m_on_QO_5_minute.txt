@@ -1,0 +1,5 @@
+Subject: Desk Update: VWMA Volume Breakout 15m (GC1!) Results
+
+The VWMA Volume Breakout 15m strategy has completed its run on the 5-minute Gold (GC1!) chart. The results show a profit of $7,300.00 with a maximum drawdown of $3,375.00 across 149 trades. The trade frequency was 10.2 trades per week over 73 trading days, covering 9,744 bars from July 2, 2026, through October 12, 2026.
+
+To be filed in the strategy library, a run must meet four specific criteria: profit above $14,000, profit factor above 1.1, win rate above 48 percent, and at least 60 trades. This run did not meet the profit threshold, as $7,300.00 is below the required $14,000. Consequently, this result was not filed in the strategy library. The settings used were vwma_len=28, vol_ma_len=54, atr_len=14, stop_mult=1.25, and tp_mult=10.0.

@@ -36,9 +36,7 @@ FEED_NT = "ninjatrader"
 CONTRACTS = {"ES1!": "ES", "NQ1!": "NQ", "MNQ1!": "MNQ", "GC1!": "GC", "QO1!": "QO"}
 WIDTH = {"1m": 60, "2m": 120, "5m": 300, "15m": 900}
 PAPER = "paper"
-PAPER_KRONOS = "paper-2"
 LIVE = "live"
-KRONOS_ID = "kronos-paper"
 _QUARTERLY = {"ES", "MES", "NQ", "MNQ", "YM", "MYM", "RTY", "M2K"}
 _HANDLED_KEPT = 200
 
@@ -176,16 +174,10 @@ def record_lines(book: dict | None = None) -> list[str]:
             f"{held['side']} {held['qty']} from {held['entry']} on {held['account']} ({held['mode']})"
             if held else "flat"
         )
-        if row.get("kind") == "kronos":
-            lines.append(
-                f"{row['trader']} is paper trading {row['title']} on the {row['timeframe']} {row['contract']} chart. "
-                f"{trade}. {row['trades']} closed trades since {row['started']}, realized {row['realized']}. No order is sent."
-            )
-        else:
-            lines.append(
-                f"{row['trader']} is executing {row['title']} on the {row['timeframe']} {row['contract']} chart from {'NinjaTrader' if row.get('feed') == FEED_NT else 'TradingView'} for account {row['account']}: "
-                f"{trade}. {row['trades']} closed trades since {row['started']}, realized {row['realized']}."
-            )
+        lines.append(
+            f"{row['trader']} is executing {row['title']} on the {row['timeframe']} {row['contract']} chart from {'NinjaTrader' if row.get('feed') == FEED_NT else 'TradingView'} for account {row['account']}: "
+            f"{trade}. {row['trades']} closed trades since {row['started']}, realized {row['realized']}."
+        )
     return lines
 
 
@@ -324,65 +316,6 @@ def available_trader(book: dict | None = None) -> str | None:
     return next((name for name in TRADERS if name not in taken), None)
 
 
-def start_kronos(board, contract: str, timeframe: str) -> dict:
-    """Hand Kronos buy and sell signals to the free trader. The fill is paper, including while live mode is on."""
-    from futuresfund.timeframe import parse_timeframe
-
-    root = root_of(str(contract or ""))
-    if root not in POINT_VALUE or root not in TICK_SIZE:
-        raise ValueError("Choose a contract the desk charts.")
-    frame = parse_timeframe(timeframe)
-    symbol = str(contract or "").upper()
-    with BOOK_LOCK:
-        book = load()
-        existing = _slot(book, KRONOS_ID)
-        if existing is not None:
-            raise ValueError(
-                f"{existing['trader']} is already paper trading Kronos on the {existing['timeframe']} {existing['contract']} chart."
-            )
-        trader = available_trader(book)
-        if trader is None:
-            raise ValueError("Both traders are executing a strategy. Stop one before paper trading Kronos.")
-        now = time.time()
-        note = (
-            f"{trader} is paper trading Kronos buy and sell signals on the {frame} {symbol} chart. "
-            "One contract. The trade closes after those 6 candles, or sooner at the $1,000 stop or the $1,500 target. "
-            "The fill stays on the paper account. No order is sent."
-        )
-        slot = {
-            "id": KRONOS_ID,
-            "kind": "kronos",
-            "title": "Kronos direction",
-            "contract": symbol,
-            "root": root,
-            "timeframe": frame,
-            "account": PAPER_KRONOS,
-            "order_instrument": "",
-            "trader": trader,
-            "feed": "kronos",
-            "source": "",
-            "since": 0,
-            "since_label": "",
-            "started": _clock(now),
-            "started_epoch": int(now),
-            "was_locked": False,
-            "handled": [],
-            "traded": [],
-            "trades": 0,
-            "wins": 0,
-            "realized": 0.0,
-            "last_bar": None,
-            "note": note,
-            "paper_only": True,
-        }
-        book["executing"] = _slots(book) + [slot]
-        save(book)
-    board.post(trader, note, kind="report", channel=trader)
-    board.log(trader, f"Paper trading Kronos on {frame} {symbol}")
-    _queue(board, KRONOS_ID)
-    return slot
-
-
 def stop(board, card_id: str) -> dict:
     """Stop executing a card. An open trade is closed first."""
     with BOOK_LOCK:
@@ -421,15 +354,9 @@ def stop(board, card_id: str) -> dict:
 def resume(board) -> None:
     """After the desk restarts, the traders go on executing what they were executing."""
     for slot in _slots(load()):
-        if slot.get("kind") == "kronos":
-            text = (
-                f"The desk restarted. {slot['trader']} is still paper trading Kronos signals on the {slot['timeframe']} {slot['contract']} chart. "
-                "Fills stay on the paper account."
-            )
-        else:
-            text = (
-                f"The desk restarted. {slot['trader']} is still executing {slot['title']} on the {slot['timeframe']} {slot['contract']} chart from {'NinjaTrader' if _feed(slot) == FEED_NT else 'TradingView'}."
-            )
+        text = (
+            f"The desk restarted. {slot['trader']} is still executing {slot['title']} on the {slot['timeframe']} {slot['contract']} chart from {'NinjaTrader' if _feed(slot) == FEED_NT else 'TradingView'}."
+        )
         board.post(slot["trader"], text, kind="report", channel=slot["trader"])
         _queue(board, slot["id"])
 
@@ -567,259 +494,6 @@ def _priced(state: dict) -> dict:
     return {**state, "broker": broker}
 
 
-def _evaluate_kronos(board, slot_id: str) -> list[dict]:
-    """Follow the stored Kronos direction on this trader's chart. The script engine is not used."""
-    slot = _slot(load(), slot_id)
-    if slot is None:
-        return []
-    from futuresfund.chart_view import _candles
-
-    candles = _candles(slot["root"], slot["timeframe"])
-    return _follow_kronos(board, slot_id, candles)
-
-
-def _kronos_prediction(candles: list[dict], root: str, timeframe: str) -> dict:
-    from futuresfund import kronos_replay
-
-    if not kronos_replay._live:
-        kronos_replay.enable_live()
-    return kronos_replay.prediction_for(list(candles)[-450:], root, timeframe)
-
-
-def _follow_kronos(board, slot_id: str, candles: list[dict]) -> list[dict]:
-    """Record the forecast, then paper-trade a buy or sell for the six candles that follow it."""
-    slot = _slot(load(), slot_id)
-    if slot is None:
-        return []
-    from futuresfund.kronos_track import entry_signal, observe
-
-    root, frame = slot["root"], slot["timeframe"]
-    try:
-        prediction = _kronos_prediction(candles, root, frame)
-    except Exception:
-        prediction = {}
-    try:
-        observe(root, frame, candles, prediction, contract=slot["contract"])
-    except Exception:
-        pass
-    board.set_task(slot["trader"], f"Checking Kronos on the {frame} {slot['contract']} chart.", working=True)
-    _key, position = _held(load(), slot_id)
-    if position is not None:
-        _guard_kronos(board, slot_id, candles)
-        return []
-    closed = [candle for candle in candles if not candle.get("forming")]
-    signal = entry_signal(root, frame, closed, set(slot.get("traded") or []))
-    if signal is None:
-        _update(slot_id, note=f"Waiting for a Kronos buy or sell on {slot['contract']} {frame}.")
-        return []
-    if halt_window(signal["bar_epoch"]):
-        _remember_kronos(slot_id, signal["anchor"], "The next candle is inside the 4:45pm halt, so no paper trade was opened.")
-        return []
-    _open_kronos(board, slot_id, signal)
-    if _held(load(), slot_id)[1] is not None:
-        _guard_kronos(board, slot_id, candles)
-    return []
-
-
-def _open_kronos(board, slot_id: str, signal: dict) -> None:
-    """Book one paper contract at the next bar's open. This does not call the live order path."""
-    from futuresfund.risk_style import RISK_DEFAULTS
-
-    slot = _slot(load(), slot_id)
-    if slot is None:
-        return
-    side = 1 if signal["direction"] == "Buy" else -1
-    tick = float(TICK_SIZE.get(slot["root"], 0.25))
-    point = float(POINT_VALUE.get(slot["root"], 50))
-    fill = _tick_price(float(signal["bar"]["o"]) + tick * side, tick)
-    stop = _tick_price(fill - (float(RISK_DEFAULTS["stop_dollars"]) / point) * side, tick)
-    limit = _tick_price(fill + (float(RISK_DEFAULTS["tp_dollars"]) / point) * side, tick)
-    word = "BUY" if side > 0 else "SELL"
-    anchor = int(signal["anchor"])
-    key = f"{PAPER_KRONOS}|{slot['contract']}|{slot_id}"
-    with BOOK_LOCK:
-        book = load()
-        found = _slot(book, slot_id)
-        if found is None or _held(book, slot_id)[1] is not None:
-            return
-        traded = [int(value) for value in found.get("traded") or []]
-        if anchor in traded:
-            return
-        traded.append(anchor)
-        found["traded"] = traded[-_HANDLED_KEPT:]
-        book.setdefault("positions", {})[key] = {
-            "account": PAPER_KRONOS,
-            "instrument": slot["contract"],
-            "yahoo": f"{slot['root']}=F",
-            "contracts": side,
-            "average_price": fill,
-            "last_price": fill,
-            "updated": _now(),
-            "strategy": slot["title"],
-            "strategy_id": slot_id,
-            "trader": slot["trader"],
-            "mode": PAPER,
-            "order_instrument": "",
-            "entry_ms": anchor * 1000,
-            "entry_time": _clock(signal["bar_epoch"]),
-            "entry_signal": f"Kronos {signal['direction']}",
-            "entry_fee": 5.5,
-            "stop": stop,
-            "take_profit": limit,
-            "kronos_anchor": anchor,
-            "kronos_entry": int(signal["bar_epoch"]),
-            "kronos_managed": 0,
-        }
-        reason = (
-            f"{slot['title']} {'long' if side > 0 else 'short'} 1 {slot['contract']} at {fill}, filled on paper. "
-            f"Stop {stop}. Target {limit}."
-        )
-        _order(book, found, PAPER_KRONOS, "entry", word, 1, fill, {"sent": False, "dry_run": False}, reason)
-        found["note"] = reason
-        _refresh_paper(book, PAPER_KRONOS, slot["contract"])
-        save(book)
-    board.post(slot["trader"], f"{slot['trader']}: {reason}", kind="report", channel=slot["trader"])
-    board.log(slot["trader"], f"{word} 1 {slot['contract']} for {slot['title']}")
-
-
-def _guard_kronos(board, slot_id: str, candles: list[dict]) -> None:
-    """Check the dollar stop on every new bar, then close the trade when its six candles have printed."""
-    from futuresfund.kronos_track import epoch_of
-
-    book = load()
-    slot = _slot(book, slot_id)
-    _key, position = _held(book, slot_id)
-    if slot is None or position is None:
-        return
-    side = 1 if int(position.get("contracts") or 0) > 0 else -1
-    tick = float(TICK_SIZE.get(slot["root"], 0.25))
-    anchor = int(position.get("kronos_anchor") or 0)
-    entry_epoch = int(position.get("kronos_entry") or 0)
-    managed = int(position.get("kronos_managed") or 0)
-    stop = position.get("stop")
-    limit = position.get("take_profit")
-    closed_after = []
-    forming = None
-    for candle in candles:
-        stamp = epoch_of(candle.get("t"))
-        if stamp is None or stamp <= anchor:
-            continue
-        if candle.get("forming"):
-            forming = candle
-            continue
-        closed_after.append(candle)
-    pending = [candle for candle in closed_after if epoch_of(candle.get("t")) >= entry_epoch and epoch_of(candle.get("t")) > managed]
-    if forming is not None:
-        stamp = epoch_of(forming.get("t"))
-        if stamp is not None and stamp >= entry_epoch and stamp > managed:
-            pending.append(forming)
-    last_closed = managed
-    for candle in pending:
-        stamp = epoch_of(candle.get("t"))
-        if stamp is None:
-            continue
-        if halt_window(stamp):
-            _exit_kronos(board, slot_id, candle, float(candle["o"]) - tick * side, "Halt", "No risk is held from 4:45pm ET until the 6:00pm open.")
-            return
-        price, why = _kronos_level(candle, side, stop, limit, tick)
-        if price is not None:
-            reason = "The $1,000 stop was hit." if why == "Stop" else "The $1,500 target was hit."
-            _exit_kronos(board, slot_id, candle, price, why, reason)
-            return
-        if not candle.get("forming"):
-            last_closed = stamp
-            if closed_after.index(candle) >= 5:
-                _exit_kronos(
-                    board,
-                    slot_id,
-                    candle,
-                    float(candle["c"]) - tick * side,
-                    "Six candles",
-                    "The six candles in the forecast have printed.",
-                )
-                return
-    if last_closed != managed:
-        _touch_kronos(slot_id, candles, last_closed)
-
-
-def _kronos_level(candle: dict, side: int, stop, limit, tick: float):
-    """The stop is checked before the target. A gap through either fills at the open."""
-    if stop is None:
-        return None, ""
-    open_, high, low = float(candle["o"]), float(candle["h"]), float(candle["l"])
-    stop, limit = float(stop), float(limit) if limit is not None else None
-    if side > 0:
-        if open_ <= stop:
-            return open_, "Stop"
-        if low <= stop:
-            return _tick_price(stop - tick, tick), "Stop"
-        if limit is not None and open_ >= limit:
-            return open_, "Target"
-        if limit is not None and high >= limit:
-            return _tick_price(limit, tick), "Target"
-    else:
-        if open_ >= stop:
-            return open_, "Stop"
-        if high >= stop:
-            return _tick_price(stop + tick, tick), "Stop"
-        if limit is not None and open_ <= limit:
-            return open_, "Target"
-        if limit is not None and low <= limit:
-            return _tick_price(limit, tick), "Target"
-    return None, ""
-
-
-def _exit_kronos(board, slot_id: str, candle: dict, price: float, signal: str, reason: str) -> None:
-    from futuresfund.kronos_track import epoch_of
-
-    _exit(board, slot_id, {
-        "price": price,
-        "time": epoch_of(candle.get("t")) or time.time(),
-        "signal": signal,
-        "fee": 5.5,
-        "reason": reason,
-    })
-
-
-def _touch_kronos(slot_id: str, candles: list[dict], managed: int) -> None:
-    from futuresfund.kronos_track import epoch_of
-
-    last = None
-    for candle in candles:
-        stamp = epoch_of(candle.get("t"))
-        if stamp is not None and stamp <= managed and not candle.get("forming"):
-            last = candle
-    with BOOK_LOCK:
-        book = load()
-        _key, position = _held(book, slot_id)
-        if position is None:
-            return
-        position["kronos_managed"] = int(managed)
-        if last is not None:
-            position["last_price"] = float(last["c"])
-        save(book)
-
-
-def _remember_kronos(slot_id: str, anchor: int, note: str) -> None:
-    with BOOK_LOCK:
-        book = load()
-        slot = _slot(book, slot_id)
-        if slot is None:
-            return
-        traded = [int(value) for value in slot.get("traded") or []]
-        if int(anchor) not in traded:
-            traded.append(int(anchor))
-        slot["traded"] = traded[-_HANDLED_KEPT:]
-        slot["note"] = note
-        save(book)
-
-
-def _tick_price(price: float, tick: float) -> float:
-    if tick <= 0:
-        return float(price)
-    return round(round(float(price) / tick) * tick, 10)
-
-
 def evaluate(board, slot_id: str) -> list[dict]:
     """Run the script on the newest bars in the trader's trading engine, then do what it did."""
     from futuresfund.backtrader_engine import Bar
@@ -828,8 +502,6 @@ def evaluate(board, slot_id: str) -> list[dict]:
     slot = _slot(load(), slot_id)
     if slot is None:
         return []
-    if slot.get("kind") == "kronos":
-        return _evaluate_kronos(board, slot_id)
     root, frame = slot["root"], slot["timeframe"]
     feed = _feed(slot)
     instrument = str(slot.get("order_instrument") or "").strip() or front_month(root)
@@ -1449,9 +1121,7 @@ def _loss_limit(book: dict, held: dict | None) -> float | None:
 
 
 def _feed(slot: dict) -> str:
-    """Strategy checks read the desk chart. Kronos paper trades do too. Neither asks NinjaTrader for bars."""
-    if slot.get("kind") == "kronos" or slot.get("feed") == "kronos":
-        return "kronos"
+    """Strategy checks read the desk chart. They do not ask NinjaTrader for bars."""
     return FEED_TV
 
 

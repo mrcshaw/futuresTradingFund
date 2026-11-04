@@ -1,0 +1,9 @@
+Strategy: Day Shift Delta Volume Breakout v1.
+File: created_day_shift_delta_volume_breakout_v1.pine.
+Chart: 2m ES1!.
+Profit 18812.5. Drawdown 7150.0. Trades 383.
+Profit ratio 1.278. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 2.63 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 60 trades, profit is above $5,000, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

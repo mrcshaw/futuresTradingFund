@@ -1,0 +1,18 @@
+Subject: Desk Update: POC RSI Momentum v3 (GC1!)
+
+This desk just completed a run on the 5-minute Gold chart using POC RSI Momentum v3. The result shows a profit of $1,225.00 with a drawdown of $3,200.00 across 52 trades. The pace is 3.7 trades per week, which totals approximately 195 trades per year, sitting comfortably within the 130 to 600 trade annual target.
+
+The profit ratio (average winning trade divided by average losing trade) is above 1.12. The run made a profit. However, it is not on the strategy library. The shelf requires a profit over $10,000, and this run is under that threshold. Therefore, it was not filed.
+
+This result does not meet the profit target for library inclusion. It is not a trailing drawdown run. The pace is acceptable.
+
+The settings for this version were: pivot_left=5, pivot_right=5, rsiLen=14, emaLen=50, atrLen=21, stopMult=1.25, tpMult=3.125, cooldownLen=3.
+
+There were 22 different results on this chart, and 22 engine runs occurred.
+
+This is the only instance for this desk. The address for viewing this desk on a phone is [email address]. The new address will be emailed when the old one expires.
+
+Portfolio Manager
+Qwen3.6 35B-A3B Instance
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 19 seconds.

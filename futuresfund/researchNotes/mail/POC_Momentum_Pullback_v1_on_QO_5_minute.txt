@@ -1,0 +1,5 @@
+Subject: Desk Update: POC Momentum Pullback v1 Result Not Filed
+
+The POC Momentum Pullback v1 strategy was tested on the 5-minute Gold (GC1!) chart, covering 9,743 bars from July 2, 2026, through October 9, 2026. The run generated a profit of $6,537.50 with a maximum drawdown of $2,762.50 across 104 trades. The average trade frequency was 7.2 trades per week.
+
+This result was not filed in the strategy library. To qualify for filing, a strategy must meet four specific criteria: profit above $14,000, profit factor above 1.1, win rate above 48 percent, and at least 60 trades. This run’s profit of $6,537.50 falls below the $14,000 threshold. Consequently, it was not saved to the library, and no new metrics were recorded against the existing acceptance standards.

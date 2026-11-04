@@ -1,5 +1,6 @@
 # Qwen3.8 27B dense. The Ollama build is Q5_K_M, about 20GB.
 # One loaded copy serves every desk on the RTX 5090.
+# Think level stays max. The model's own chat template accepts max as its highest effort.
 FROM smtek/Qwen3.8-27B:Q5_K_M
 PARAMETER num_ctx 40960
 PARAMETER temperature 0.4

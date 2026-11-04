@@ -1,0 +1,1 @@
+created_vwma_slope_rsi_pullback_2.pine took 952 trades. A script with more than 900 trades cannot be saved, so this chart is skipping it.

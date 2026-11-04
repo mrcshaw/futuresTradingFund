@@ -1,0 +1,13 @@
+Subject: Desk Update: VWMA Momentum Breakout (GC1!) Run Results
+
+The VWMA Momentum Breakout strategy on the 15-minute Gold chart has completed its run. The results are as follows:
+
+Strategy: VWMA Momentum Breakout
+Chart: 15-minute Gold (GC1!)
+Profit: $11,637.50
+Drawdown: $4,712.50
+Total Trades: 76
+Trades per Day: ~0.61 (3.05 per week over 124 days)
+Test Period: 2026-04-16 to 2026-10-09 (9,504 bars)
+
+This run was not filed in the strategy library. The acceptance criteria require a profit above $14,000, a profit factor above 1.1, a win rate above 48%, and at least 60 trades. This run fell short of the profit threshold at $11,637.50. Consequently, it is not on the strategy library page. The specific settings for this run were vwma_len=28, atr_len=14, stop_mult=1.0, tp_mult=5.0, and cooldown_bars=5.

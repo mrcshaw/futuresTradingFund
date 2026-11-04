@@ -1,0 +1,9 @@
+Strategy: Night BOS Momentum.
+File: created_night_bos_momentum.pine.
+Chart: 15m GC1!.
+Profit 8500.0. Drawdown 2290.0. Trades 277.
+Profit ratio 33.385. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 3.71 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays under 5 percent of the account, and the run has at least 60 trades. Those are the boxes turned on at the strategy library page.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

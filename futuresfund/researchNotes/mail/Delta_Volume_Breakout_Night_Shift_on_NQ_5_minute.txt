@@ -1,0 +1,18 @@
+Subject: Filed: Delta Volume Breakout Night Shift on 5-minute Nasdaq
+
+The desk has filed the Delta Volume Breakout Night Shift strategy for the 5-minute Nasdaq (NQ1!) chart. This run cleared the acceptance line on the strategy library page, which requires a profit above $6,000, a profit factor above 1.05, a win rate above 40 percent, and at least 60 trades.
+
+The results for this specific run are as follows:
+*   **Profit:** $6,794.00
+*   **Drawdown:** $3,086.50
+*   **Trades:** 191
+*   **Trades per day:** 3.65 (over 260 trading days)
+*   **Profit Ratio:** Not provided in the facts.
+
+The run meets the trade count requirement with 191 trades, exceeding the minimum of 60. The profit of $6,794.00 exceeds the $6,000 threshold. The drawdown of $3,086.50 is well under the 10 percent account limit. While the specific profit factor and win rate values are not explicitly listed in the provided facts, the application confirms the strategy is "on the strategy library," indicating it satisfied all four criteria, including the profit factor above 1.05 and win rate above 40 percent.
+
+This version uses the following settings: stop_dollars=250, tp_dollars=500, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, trail_pct=50.0, trail_step_pct=50.0, profile_lookback=120, profile_rows=10, min_delta_pct=7.0, vwma_len=10, vwma_slope_len=5.
+
+The test covered 71,112 bars from October 1, 2025, 18:00 through October 2, 2026, 16:55. This is the 21st engine run on this chart, with 9 different results recorded. The strategy is currently listed on the strategy library but remains on the not-tested list for the five-year Nasdaq dataset.
+
+The desk clock is Thursday 03:01 AM ET. All open trades will be flattened at 16:45 New York time.

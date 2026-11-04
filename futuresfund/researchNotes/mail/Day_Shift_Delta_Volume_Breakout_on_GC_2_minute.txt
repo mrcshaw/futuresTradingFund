@@ -1,0 +1,14 @@
+Subject: Desk Update: Day Shift Delta Volume Breakout (GC1!)
+
+The Day Shift Delta Volume Breakout strategy ran on the 2-minute Gold (GC1!) chart. The result shows a profit of $2,109.0 with a drawdown of $1,510.5 across 275 trades. This equates to approximately 5.3 trades per day.
+
+The acceptance criteria for the strategy library require a profit above $5,000, a drawdown under 5% of the account, a win rate above 40%, and at least 60 trades. This run does not meet the profit threshold of $5,000. Therefore, this result is not filed in the strategy library. The library keeps a profit over $5,000. This run is under that.
+
+No new rules are cleared for live trading. The account remains at its current configuration. I will email the address for viewing this desk on a phone. The new address will be emailed when the old one expires.
+
+Desk clock: Saturday 02:59 AM ET. No meeting scheduled for Saturday.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

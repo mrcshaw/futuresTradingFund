@@ -1,0 +1,11 @@
+Subject: Desk Result: POC EMA VWMA Momentum (2m ES)
+
+The latest run on the 2-minute ES chart has cleared the prop account. The strategy is POC EMA VWMA Momentum. It generated a profit of $41,950.00 against a drawdown of $16,050.00. The total trade count is 131.
+
+The trade frequency is 2.5 trades per week, which extrapolates to approximately 130 trades per year. This meets the requirement of being between 130 and 600 trades a year. The profit target was met. The trailing drawdown was within limits. The pace is acceptable.
+
+The profit ratio is not explicitly stated in the incoming data, but the run made a profit and the trade count is within the required band. The result is not on the strategy library. It was not filed because a stronger version of this name is already on this contract and timeframe. The settings for this run were len_ema=200, len_vwma=20, len_atr=14, stop_mult=1.875, tp_mult=2.0.
+
+The email address for viewing this desk on a phone is being updated. The new address will be sent when the old one expires.
+
+Desk clock: Wednesday 06:19 AM ET.

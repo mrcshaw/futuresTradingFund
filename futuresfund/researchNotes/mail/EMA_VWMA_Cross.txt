@@ -1,0 +1,9 @@
+Strategy: EMA VWMA Cross.
+File: sma55_vwma144_angle_1792688964.pine.
+Chart: 5m GC1!.
+Profit 26370.0. Drawdown 7780.0. Trades 310.
+Profit ratio 1.421. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 3.39 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays inside 30 percent of the profit once the profit reaches $2,500, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, have an average winning trade more than 1.12 times its average losing trade, and no trade may lose more than 1.5 percent of the account.
+This run used a year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

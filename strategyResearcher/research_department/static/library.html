@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scripts library</title>
+  <link rel="stylesheet" href="/static/styles.css?v=17">
+</head>
+<body data-page="library">
+  <a class="back" href="/">Department</a>
+  <button id="run" type="button">Start</button>
+  <header class="page-head">
+    <div>
+      <p class="kicker">Script results</p>
+      <h1>Scripts library</h1>
+      <p id="library-note">Highest profit is first.</p>
+      <p id="job-state">Waiting for a script</p>
+    </div>
+  </header>
+  <main class="library">
+    <div class="sort-bar" aria-label="Sort results">
+      <button id="sort-profit" type="button" aria-pressed="true">Profit</button>
+      <button id="sort-win" type="button" aria-pressed="false">Win percentage</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Script</th>
+            <th>Instrument</th>
+            <th>Time</th>
+            <th>Change</th>
+            <th>Days</th>
+            <th>Days at $500</th>
+            <th>Win percentage</th>
+            <th>Profit</th>
+            <th>Worst day</th>
+            <th>Trades</th>
+            <th>Attempt</th>
+            <th class="delete-col">Delete</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+  <div id="script-modal" class="script-modal" hidden>
+    <div class="script-modal-card" role="dialog" aria-modal="true" aria-labelledby="source-title">
+      <div class="script-modal-bar">
+        <h2 id="source-title">Script</h2>
+        <button id="copy-script" type="button">Copy</button>
+        <button id="close-script" type="button">Close</button>
+      </div>
+      <textarea id="source-script" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+  <script src="/static/app.js?v=22"></script>
+</body>
+</html>

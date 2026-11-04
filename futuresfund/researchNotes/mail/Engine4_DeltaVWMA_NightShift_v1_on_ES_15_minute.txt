@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when profit is above $14,000, the profit factor is above 1.1, the win rate is above 45 percent, and the run has at least 60 trades. Those four numbers are the ones saved on the strategy library page.
+Strategy: Engine4_DeltaVWMA_NightShift_v1.
+Chart tested: 15-minute ES (ES1!).
+Profit 9975.0. Drawdown 15125.0. Trades 539.
+Trades a week: 10.35 over 260 trading days.
+Bars in this test: 23,704 from 2025-10-01 18:00 through 2026-10-02 16:45.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a profit over $14,000. This run is under that.
+Settings of this version: len_vwma=28, len_atr=14, stop_mult=0.75, tp_mult=1.51, cooldown_bars=10.
+Different results on this chart: 12.
+Engine runs on this chart: 12.

@@ -1,0 +1,5 @@
+Subject: POC Momentum Pullback v3 – Gold (GC1!) – Not Filed
+
+The POC Momentum Pullback v3 strategy was tested on the 15-minute Gold chart. The results show a profit of $4,300.00, a drawdown of $1,940.00, and 233 trades executed over the test period. This equates to approximately 4.5 trades per week. The profit ratio, calculated as the average winning trade divided by the average losing trade, is available in the engine logs but the primary metric for filing is the total profit.
+
+This run was not filed in the strategy library. The acceptance criteria on the strategy library page require a profit above $5,000. This run’s profit of $4,300.00 falls short of that threshold. The other criteria (drawdown under 5%, win rate above 40%, and trade count of 60+) are secondary to the profit target for filing eligibility in this instance. Since the profit target was not met, the strategy is not on the library.

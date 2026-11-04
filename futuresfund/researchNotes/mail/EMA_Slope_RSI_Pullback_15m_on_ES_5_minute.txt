@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when the drawdown stays under 20 percent of the account, the run has at least 80 trades, profit is above $8,000, the profit factor is above 1.05, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+Strategy: EMA Slope RSI Pullback 15m.
+Chart tested: 5-minute ES (ES1!).
+Profit 34462.5. Drawdown 11850.0. Trades 145.
+Trades a week: 2.8 over 260 trading days.
+Bars in this test: 71,112 from 2025-10-01 18:00 through 2026-10-02 16:55.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. A stronger version of this name is already on this contract and timeframe.
+Settings of this version: stop_dollars=1500, tp_dollars=1650, use_trail=False, trail_step_amt=500, trail_min_dollars=1000, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=16, sess_end_mn=0, ema_fast=15, ema_slow=50.
+Different results on this chart: 90.
+Engine runs on this chart: 109.

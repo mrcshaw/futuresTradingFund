@@ -1,0 +1,9 @@
+Strategy: Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure.
+File: Night Shift 25sma 55ema es 1min 5k year .txt.
+Chart: 5m NQ1!.
+Profit 38234.0. Drawdown 7235.5. Trades 141.
+Profit ratio 1.906. That is the average winning trade divided by the average losing trade, and it is above 1.12.
+Profit is 5.28 times the drawdown. A profitable run at 1.5 or more counts.
+A strategy is filed when the drawdown stays inside the larger of 1.5 percent of the account or 30 percent of the total profit, the run has at least 100 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, its average win must be more than 1.12 times its average loss, and no trade may lose more than 3.4 percent of the account.
+This run used the last year of futures sessions. It has not been tested on the full dataset.
+On the not-yet-full-dataset list: yes.

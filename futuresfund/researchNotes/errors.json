@@ -1,0 +1,716 @@
+{
+ "kind": "error_journal",
+ "errors": [
+  {
+   "time": "2026-10-31T03:43:50-04:00",
+   "last": "2026-10-31T03:50:08-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-10-31T13:24:31-04:00",
+   "last": "2026-10-31T13:24:31-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T13:40:50-04:00",
+   "last": "2026-10-31T13:45:11-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-10-31T14:54:20-04:00",
+   "last": "2026-10-31T14:54:20-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T14:55:53-04:00",
+   "last": "2026-10-31T14:55:53-04:00",
+   "desk": "Creation tester",
+   "text": "created_vwma_rsi_pullback_15m.pine attempt 1 on created_vwma_rsi_pullback_15m.pine: The script stopped in PineTS: Invalid session specification: \"180\"",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:48-04:00",
+   "last": "2026-10-31T15:22:48-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 1 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:50-04:00",
+   "last": "2026-10-31T15:22:50-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 2 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:51-04:00",
+   "last": "2026-10-31T15:22:51-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 3 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:52-04:00",
+   "last": "2026-10-31T15:22:52-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 4 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:53-04:00",
+   "last": "2026-10-31T15:22:53-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 5 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:54-04:00",
+   "last": "2026-10-31T15:22:54-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 6 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:55-04:00",
+   "last": "2026-10-31T15:22:55-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 7 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:57-04:00",
+   "last": "2026-10-31T15:22:57-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 8 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:22:59-04:00",
+   "last": "2026-10-31T15:22:59-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 9 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:00-04:00",
+   "last": "2026-10-31T15:23:00-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 10 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:01-04:00",
+   "last": "2026-10-31T15:23:01-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 11 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:02-04:00",
+   "last": "2026-10-31T15:23:02-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 12 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:04-04:00",
+   "last": "2026-10-31T15:23:04-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 13 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:07-04:00",
+   "last": "2026-10-31T15:23:07-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 14 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:08-04:00",
+   "last": "2026-10-31T15:23:08-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 15 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:09-04:00",
+   "last": "2026-10-31T15:23:09-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 16 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:11-04:00",
+   "last": "2026-10-31T15:23:11-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 17 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:12-04:00",
+   "last": "2026-10-31T15:23:12-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 18 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:14-04:00",
+   "last": "2026-10-31T15:23:14-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 19 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:23:15-04:00",
+   "last": "2026-10-31T15:23:15-04:00",
+   "desk": "15 min chart developer",
+   "text": "Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt attempt 20 on Day shift BOS Profitable 14k Delta Volume Breakout long term profit_1792215550.txt: AttributeError: 'function' object has no attribute 'Queue'",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T15:24:08-04:00",
+   "last": "2026-10-31T15:24:08-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T16:06:45-04:00",
+   "last": "2026-10-31T16:06:45-04:00",
+   "desk": "Creation tester",
+   "text": "created_delta_vwma_bos_night_v1.pine attempt 1 on created_delta_vwma_bos_night_v1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T16:16:51-04:00",
+   "last": "2026-10-31T16:16:51-04:00",
+   "desk": "Creation tester",
+   "text": "created_deltavwma_bos_trend_v1_2.pine attempt 1 on created_deltavwma_bos_trend_v1_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T19:01:56-04:00",
+   "last": "2026-10-31T19:01:56-04:00",
+   "desk": "Creation tester",
+   "text": "created_engine4_nightbos_vwma_v1_2.pine attempt 1 on created_engine4_nightbos_vwma_v1_2.pine: The script stopped in PineTS: Identifier 'short_condition' has already been declared (74:4)",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T19:11:59-04:00",
+   "last": "2026-10-31T19:11:59-04:00",
+   "desk": "Creation tester",
+   "text": "created_engine4_nightvwma_bos.pine attempt 1 on created_engine4_nightvwma_bos.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-10-31T19:44:00-04:00",
+   "last": "2026-10-31T19:48:18-04:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 3
+  },
+  {
+   "time": "2026-10-31T23:02:17-04:00",
+   "last": "2026-10-31T23:02:17-04:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_15m_6.pine attempt 1 on created_poc_momentum_reversal_15m_6.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T00:51:59-04:00",
+   "last": "2026-11-01T00:51:59-04:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_5.pine attempt 1 on created_poc_momentum_reversal_5.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T01:02:03-04:00",
+   "last": "2026-11-01T01:02:03-04:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_6.pine attempt 1 on created_poc_momentum_reversal_6.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T01:12:07-04:00",
+   "last": "2026-11-01T01:12:07-04:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_v1_2.pine attempt 1 on created_poc_momentum_reversal_v1_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T03:39:32-05:00",
+   "last": "2026-11-01T03:39:32-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_rsi_momentum_pullback_5.pine attempt 1 on created_poc_rsi_momentum_pullback_5.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T05:48:01-05:00",
+   "last": "2026-11-01T05:48:01-05:00",
+   "desk": "Creation tester",
+   "text": "created_vwma_bos_breakout_2min_2.pine attempt 1 on created_vwma_bos_breakout_2min_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T13:19:26-05:00",
+   "last": "2026-11-01T13:19:26-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T13:30:44-05:00",
+   "last": "2026-11-01T13:31:05-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-01T13:43:17-05:00",
+   "last": "2026-11-01T13:44:13-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-01T14:30:44-05:00",
+   "last": "2026-11-01T14:30:44-05:00",
+   "desk": "Creation tester",
+   "text": "created_vwma_rsi_pullback_15m.pine attempt 1 on created_vwma_rsi_pullback_15m.pine: The script stopped in PineTS: Invalid session specification: \"180\"",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T14:44:20-05:00",
+   "last": "2026-11-01T14:44:20-05:00",
+   "desk": "Creation tester",
+   "text": "created_delta_vwma_bos_night_v1.pine attempt 1 on created_delta_vwma_bos_night_v1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T14:54:26-05:00",
+   "last": "2026-11-01T14:54:26-05:00",
+   "desk": "Creation tester",
+   "text": "created_deltavwma_bos_trend_v1_2.pine attempt 1 on created_deltavwma_bos_trend_v1_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T14:54:32-05:00",
+   "last": "2026-11-01T14:54:32-05:00",
+   "desk": "Creation tester",
+   "text": "created_engine4_nightbos_vwma_v1_2.pine attempt 1 on created_engine4_nightbos_vwma_v1_2.pine: The script stopped in PineTS: Identifier 'short_condition' has already been declared (74:4)",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T15:04:39-05:00",
+   "last": "2026-11-01T15:04:39-05:00",
+   "desk": "Creation tester",
+   "text": "created_engine4_nightvwma_bos.pine attempt 1 on created_engine4_nightvwma_bos.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T15:25:07-05:00",
+   "last": "2026-11-01T15:25:07-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_15m_6.pine attempt 1 on created_poc_momentum_reversal_15m_6.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T15:35:12-05:00",
+   "last": "2026-11-01T15:35:12-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_5.pine attempt 1 on created_poc_momentum_reversal_5.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T15:45:18-05:00",
+   "last": "2026-11-01T15:45:18-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_6.pine attempt 1 on created_poc_momentum_reversal_6.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T15:55:22-05:00",
+   "last": "2026-11-01T15:55:22-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_momentum_reversal_v1_2.pine attempt 1 on created_poc_momentum_reversal_v1_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T17:45:18-05:00",
+   "last": "2026-11-01T17:45:18-05:00",
+   "desk": "Creation tester",
+   "text": "created_poc_rsi_momentum_pullback_5.pine attempt 1 on created_poc_rsi_momentum_pullback_5.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T18:11:12-05:00",
+   "last": "2026-11-01T18:11:12-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T20:34:46-05:00",
+   "last": "2026-11-01T20:34:46-05:00",
+   "desk": "Creation tester",
+   "text": "created_vwma_bos_breakout_2min_2.pine attempt 1 on created_vwma_bos_breakout_2min_2.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-01T21:49:33-05:00",
+   "last": "2026-11-01T21:49:33-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T00:37:12-05:00",
+   "last": "2026-11-02T00:37:12-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T00:51:31-05:00",
+   "last": "2026-11-02T00:59:05-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 4
+  },
+  {
+   "time": "2026-11-02T02:13:16-05:00",
+   "last": "2026-11-02T02:13:16-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T02:45:49-05:00",
+   "last": "2026-11-02T02:45:49-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T03:19:14-05:00",
+   "last": "2026-11-02T03:19:14-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T04:47:27-05:00",
+   "last": "2026-11-02T04:47:27-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T05:21:12-05:00",
+   "last": "2026-11-02T05:21:12-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T05:53:51-05:00",
+   "last": "2026-11-02T05:53:51-05:00",
+   "desk": "Creation tester",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T06:00:38-05:00",
+   "last": "2026-11-02T06:00:38-05:00",
+   "desk": "2min chart developer",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T06:21:39-05:00",
+   "last": "2026-11-02T06:21:39-05:00",
+   "desk": "15 min chart developer",
+   "text": "created_vwma_rsi_pullback_15m.pine attempt 1 on created_vwma_rsi_pullback_15m.pine: The script stopped in PineTS: Invalid session specification: \"180\"",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T06:33:30-05:00",
+   "last": "2026-11-02T06:33:30-05:00",
+   "desk": "2min chart developer",
+   "text": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine attempt 1 on Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T10:08:32-05:00",
+   "last": "2026-11-02T10:08:32-05:00",
+   "desk": "Creation tester",
+   "text": "hull_ma_cross_redesign1.pine attempt 1 on hull_ma_cross_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T12:29:02-05:00",
+   "last": "2026-11-02T12:29:02-05:00",
+   "desk": "2min chart developer",
+   "text": "hull_ma_cross_redesign1.pine attempt 1 on hull_ma_cross_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T12:45:11-05:00",
+   "last": "2026-11-02T12:53:57-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-02T13:40:36-05:00",
+   "last": "2026-11-02T13:40:36-05:00",
+   "desk": "2min chart developer",
+   "text": "hull_ma_cross_redesign1.pine attempt 1 on hull_ma_cross_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T13:53:54-05:00",
+   "last": "2026-11-02T13:53:54-05:00",
+   "desk": "Creation tester",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T14:21:34-05:00",
+   "last": "2026-11-02T14:21:34-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T14:58:12-05:00",
+   "last": "2026-11-02T14:58:12-05:00",
+   "desk": "2min chart developer",
+   "text": "hull_ma_cross_redesign1.pine attempt 1 on hull_ma_cross_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T15:07:09-05:00",
+   "last": "2026-11-02T15:07:09-05:00",
+   "desk": "Creation tester",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T15:48:55-05:00",
+   "last": "2026-11-02T15:48:55-05:00",
+   "desk": "Creation tester",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T16:29:42-05:00",
+   "last": "2026-11-02T16:29:42-05:00",
+   "desk": "Creation tester",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T16:40:03-05:00",
+   "last": "2026-11-02T16:40:03-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T17:13:06-05:00",
+   "last": "2026-11-02T17:15:33-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 2
+  },
+  {
+   "time": "2026-11-02T17:33:28-05:00",
+   "last": "2026-11-02T17:33:28-05:00",
+   "desk": "2min chart developer",
+   "text": "hull_ma_cross_redesign1.pine attempt 1 on hull_ma_cross_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T17:59:16-05:00",
+   "last": "2026-11-02T17:59:16-05:00",
+   "desk": "Creation tester",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T18:53:08-05:00",
+   "last": "2026-11-02T18:53:08-05:00",
+   "desk": "2min chart developer",
+   "text": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_redesign1.pine attempt 1 on Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T19:51:50-05:00",
+   "last": "2026-11-02T19:51:50-05:00",
+   "desk": "2min chart developer",
+   "text": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine attempt 1 on Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-02T21:48:43-05:00",
+   "last": "2026-11-02T21:48:43-05:00",
+   "desk": "Creation tester",
+   "text": "ICT Unicorn + POC [Profit] ES 5min_redesign1.pine attempt 1 on ICT Unicorn + POC [Profit] ES 5min_redesign1.pine: The script stopped in PineTS: PineTS did not finish within 10 minutes.",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-03T02:37:15-05:00",
+   "last": "2026-11-03T02:37:15-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-03T17:31:13-05:00",
+   "last": "2026-11-03T17:31:13-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-03T23:04:27-05:00",
+   "last": "2026-11-03T23:04:27-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-03T23:26:34-05:00",
+   "last": "2026-11-03T23:26:34-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-04T12:35:18-05:00",
+   "last": "2026-11-04T12:35:18-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-04T15:20:46-05:00",
+   "last": "2026-11-04T15:20:46-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  },
+  {
+   "time": "2026-11-04T17:22:45-05:00",
+   "last": "2026-11-04T17:22:45-05:00",
+   "desk": "2min chart developer",
+   "text": "the script attempt 1 on the script: The script stopped in PineTS: Invalid session specification",
+   "source": "engine",
+   "repeats": 1
+  }
+ ],
+ "last_report": {
+  "time": "2026-11-04T17:17:40-05:00",
+  "errors": 5,
+  "sent": true,
+  "reason": "sent",
+  "to": "thefutureoffuturestrading@gmail.com"
+ }
+}

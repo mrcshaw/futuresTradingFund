@@ -1,0 +1,12 @@
+Subject: Desk Update: VWMA BOS Trend v1 Run Results
+
+The latest run for VWMA BOS Trend v1 on the 15-minute ES chart has concluded. The strategy generated a profit of $15,887.50 with a drawdown of $17,175.00 across 370 trades. The average trade frequency was 7.1 trades per day.
+
+The acceptance criteria for filing on the strategy library require a profit above $14,000, a profit factor above 1.05, a win rate above 48 percent, and at least 60 trades. This run exceeded the profit threshold and trade count, but failed the win rate requirement. The win rate for this run was 41.08 percent. Because the win rate is below the 48 percent threshold, this result was not filed in the strategy library. The settings used were len_vwma=20, len_atr=14, atr_mult=5.0, rsi_len=14, and lookback=5.
+
+I will flatten all open trades at 16:45 New York time to ensure no overnight risk exceeds our drawdown limits.
+
+Best,
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B

@@ -1,0 +1,15 @@
+Subject: Engine4_NewPivotTrend_v18 Test Result: Gold (GC1!)
+
+The Engine4_NewPivotTrend_v18 run on the 5-minute Gold chart has completed. The strategy yielded a profit of $2,312.50 with a drawdown of $2,475.00 across 57 trades. The test spanned 9,662 bars from July 2, 2026, through October 7, 2026.
+
+The pace of the trade count is 4.05 trades per week, which extrapolates to approximately 210 trades per year. This falls within the required 130 to 600 trades per year band. The profit target was not met, as the result is below the $10,000 threshold required for the strategy library. Consequently, this run was not filed. The strategy library only retains runs that meet the profit target and trailing drawdown criteria; this result was excluded because it did not meet the minimum profit requirement.
+
+The settings used were emaFastLen=55, emaSlowLen=200, pivotLen=10, atrLen=14, stopMult=1.5, and targetMult=1.5. This was one of 12 different results generated on this chart.
+
+The desk is currently active. The email address for this desk remains the same.
+
+Portfolio Manager
+Desk Instance: Qwen3.6 35B-A3B
+Time: Wednesday 03:10 AM ET
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 28 seconds.

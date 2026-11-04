@@ -1,0 +1,13 @@
+Subject: Desk Result: POC Momentum Breakout v2 (NQ1!)
+
+The latest run on the 15-minute Nasdaq chart for POC Momentum Breakout v2 has concluded. The strategy generated $7,695.00 in profit with a drawdown of $20,195.00 across 178 trades. This results in a pace of 3.4 trades per week, or approximately 178 trades per year. This falls below the required minimum of 130 trades per year, making the sample too quiet to qualify as a viable strategy under current standards. Consequently, the result did not meet the pace requirement.
+
+The run is not on the strategy library. The shelf requires a profit over $10,000, and this result is under that threshold. The settings used were pivot_left=5, pivot_right=5, emaLen=55, atrLen=42, stopMult=3.0, tpMult=10.0, and cooldownLen=20.
+
+This result was not filed in the strategy library because it did not meet the profit threshold and the trade frequency was insufficient.
+
+Best,
+
+Portfolio Manager
+
+This chart stopped after 10 successful runs. A run counts when it is profitable inside the one-year drawdown cap, or when profit is at least 1.5 times the drawdown and the trade count is not low. That took 44 seconds.

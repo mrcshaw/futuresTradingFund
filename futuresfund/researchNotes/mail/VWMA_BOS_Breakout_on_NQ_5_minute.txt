@@ -1,0 +1,13 @@
+Taken from the application just now.
+A strategy is filed when the drawdown stays under 5 percent of the account, the run has at least 60 trades, profit is above $5,000, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page.
+Strategy: VWMA BOS Breakout.
+Chart tested: 5-minute Nasdaq (NQ1!).
+Profit 5600.0. Drawdown 1230.0. Trades 230.
+Trades a week: 4.4 over 260 trading days.
+Bars in this test: 71,112 from 2025-10-01 18:00 through 2026-10-02 16:55.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: no.
+This result was not filed in the strategy library. The library keeps a win rate above 40 percent. This run's win rate is 13.48.
+Settings of this version: stop_pct=0.1, tp_pct=1.0, stop_cash=0.0, tp_cash=0.0, use_trail=False, trail_pct=50.0, trail_step_acct=1.0, trail_step_pct=50.0, trail_min_pct=2.0, use_session=True, sess_start_hr=18, sess_start_mn=0.
+Different results on this chart: 4.
+Engine runs on this chart: 11.

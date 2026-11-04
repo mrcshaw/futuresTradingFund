@@ -1,0 +1,1 @@
+created_poc_momentum_reversal_12.pine took 1592 trades. A script with more than 900 trades cannot be saved, so every chart is skipping it.

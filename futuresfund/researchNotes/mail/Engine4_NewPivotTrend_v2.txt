@@ -1,0 +1,6 @@
+Strategy: Engine4_NewPivotTrend_v2.
+File: engine4_newpivottrend_v2.pine.
+Chart: 5m NQ1!.
+Profit 154870.0. Drawdown 79480.0. Trades 168.
+On the strategy library: yes, under Nasdaq.
+This profit and drawdown are near $50,000 of profit and $22,000 of drawdown. A profit $10,000 lower still counts, and any higher profit counts.
