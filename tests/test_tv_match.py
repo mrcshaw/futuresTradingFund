@@ -177,7 +177,12 @@ class ScriptErrorTests(unittest.TestCase):
             calls.append(plan)
             return {"error": "The script stopped in PineTS: Invalid session specification", "fatal": True, "script_error": True, "net_profit": None, "max_drawdown": None, "trades": 0}
 
-        trials = _search({"stop_dollars": 500, "ema_len": 20}, execute, 50000, 20, None, None, None)
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch("futuresfund.errors.JOURNAL", Path(tmp) / "errors.json"), mock.patch(
+            "futuresfund.risk_style.SUGGESTIONS_PATH", Path(tmp) / "risk_suggestions.json"
+        ):
+            trials = _search({"stop_dollars": 500, "ema_len": 20}, execute, 50000, 20, None, None, None)
         self.assertEqual(len(calls), 1)
         self.assertIn("Invalid session", trials[-1]["unrunnable"])
         self.assertNotIn("engine_fault", trials[-1])
@@ -296,3 +301,41 @@ class MnqExportTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OwnDollarExitTests(unittest.TestCase):
+    """A script that brings its own dollar stop and open-loss close is backtested with that exit as written."""
+
+    def test_the_mnq_pullback_exit_is_not_rewritten(self):
+        from futuresfund.backtrader_engine import script_as_run
+
+        source = (ROOT / "futuresfund" / "checkScripts" / "ema_structure_rsi_pullback_night_nmq.pine").read_text(encoding="utf-8")
+        run = script_as_run(source, None, "MNQ")
+        # TradingView moves this stop with each close and sends the exit only once the position is open.
+        self.assertIn("long_stop = close - stop_dollars / pv", run)
+        self.assertIn("short_stop = close + stop_dollars / pv", run)
+        self.assertNotIn("position_avg_price", run)
+        self.assertEqual(run.count("strategy.exit("), source.count("strategy.exit("))
+
+    @unittest.skipUnless(shutil.which("node") and (ROOT / ".tools" / "pinets").exists(), "PineTS is not installed")
+    def test_the_research_run_takes_the_strategy_tester_trades(self):
+        from futuresfund.backtrader_engine import _bars_from, load_tv_trades
+        from futuresfund.csv_bars import parse_tradingview_csv
+
+        chart = ROOT / "chartData" / "mnq" / "CME_MINI_MNQ1!, 5_43a1f.csv"
+        if not chart.exists():
+            self.skipTest("The MNQ 5-minute chart is not on this computer.")
+        source = (ROOT / "futuresfund" / "checkScripts" / "ema_structure_rsi_pullback_night_nmq.pine").read_text(encoding="utf-8")
+        bars = _bars_from(parse_tradingview_csv(chart.read_text(encoding="utf-8")))
+        # The chart starts on 2026-09-11; three days warm the 50 EMA before the comparison.
+        start, end = "2026-09-14", "2026-10-28 23:59"
+
+        def key(trade):
+            return (trade["entry_time"], trade["side"], round(float(trade["entry_price"]), 2), trade["exit_time"], round(float(trade["exit_price"]), 2), trade["exit_signal"])
+
+        tv = {key(trade) for trade in load_tv_trades(MNQ_EXPORT) if start <= trade["entry_time"] <= end}
+        for as_written in (True, False):
+            trades = script_trades(source, bars, None, "MNQ", "5m", as_written=as_written)
+            engine = {key(trade) for trade in trades if start <= trade["entry_time"] <= end}
+            self.assertGreaterEqual(len(tv), 20)
+            self.assertEqual(engine, tv, f"as_written={as_written}")

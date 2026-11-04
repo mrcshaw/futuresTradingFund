@@ -1,4 +1,4 @@
-# summarized through byte 55807
+# summarized through byte 57829
 EMA Squeeze RSI Breakout: attempts 6, best profit -50499.0, drawdown 55717.0, trades 409. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Volume Shift 5m: attempts 6, best profit -50168.0, drawdown 53602.0, trades 438.
 VWMA Slope RSI Momentum: attempts 7, best profit -50038.0, drawdown 61670.5, trades 733. Single changes that beat the original on profit and drawdown: several settings.
@@ -18,6 +18,7 @@ BOS Momentum Pullback: attempts 1, best profit 0.0, drawdown 0.0, trades 0
 BOS Momentum Pullback v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 BOS Momentum Reversal: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 BOS_Momentum_Pullback_v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
+Day shift BOS Profitable 17k Delta Volume Breakout Redesign 3: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta BOS Pullback 2min: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta BOS VWMA Breakout: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta Momentum Breakout 15m: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
@@ -26,7 +27,6 @@ Delta POC RSI BOS v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta RSI Breakout v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta VMA Breakout v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta Vol Breakout 15m: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
-Delta Volume Breakout Night Shift Redesign 2: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta Volume Breakout v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta VWMA BOS 2m: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Delta VWMA BOS Breakout: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
@@ -61,6 +61,7 @@ Engine4_VWMA_RSI_Breakout: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 Engine4_VWMA_RSI_Breakout_v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 ES Delta BOS RSI: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 ES Delta Momentum Breakout: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
+ICT Unicorn + POC [Profit] Redesign 2: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
 ict_concepts_strategy: attempts 200, best profit 0.0, drawdown 0.0, trail not cleared
 ict_unicorn_poc_overnight_strategy: attempts 200, best profit 0.0, drawdown 0.0, trail not cleared
 Momentum Pullback v1: attempts 1, best profit 0.0, drawdown 0.0, trades 0.
@@ -140,20 +141,22 @@ EMA RSI Structure Break: attempts 2, best profit 1504.5, drawdown 405.0, trades 
 EMA RSI Momentum Shift 2m: attempts 5, best profit 1514.0, drawdown 1481.0, trades 23.
 POC Momentum Reversal: attempts 2, best profit 1737.5, drawdown 350.0, trades 20. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 250.0.
 EMA Trend RSI Pullback 15m: attempts 7, best profit 1745.0, drawdown 5098.5, trades 105. Single changes that beat the original on profit and drawdown: several settings.
+Day shift BOS Profitable 17k Delta Volume Breakout Redesign 2: attempts 5, best profit 1794.25, drawdown 1707.0, trades 127.
 EMA RSI Volume Pullback: attempts 7, best profit 1840.0, drawdown 620.0, trades 14. Single changes that beat the original on profit and drawdown: several settings.
 EMA Trend RSI Pullback 2m: attempts 4, best profit 1844.5, drawdown 617.5, trades 18. Single changes that beat the original on profit and drawdown: several settings.
 ict_unicorn_poc_strategy: attempts 200, best profit 1904.0, drawdown 1764.0, trail not cleared
 VWMA Trend RSI Pullback 15m: attempts 5, best profit 2006.0, drawdown 2260.0, trades 25.
 POC Momentum RSI Reversal: attempts 13, best profit 2012.5, drawdown 875.0, trades 12. Single changes that beat the original on profit and drawdown: len_ema 200 to 500.
+POC RSI Momentum Pullback Redesign 2: attempts 6, best profit 2070.0, drawdown 17255.0, trades 312.
 POC VWMA Momentum: attempts 2, best profit 2137.5, drawdown 2300.0, trades 330. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 250.0.
-Delta Volume Breakout Redesign 2: attempts 18, best profit 2303.0, drawdown 2578.5, trades 7. Single changes that beat the original on profit and drawdown: several settings.
+POC RSI Momentum Pullback Redesign 1: attempts 20, best profit 2237.5, drawdown 2350.0, trades 12. Single changes that beat the original on profit and drawdown: several settings.
 ICT Unicorn + POC [Profit] Redesign 1: attempts 18, best profit 2420.0, drawdown 2092.5, trades 10. Single changes that beat the original on profit and drawdown: several settings.
 EMA Structure RSI Momentum: attempts 6, best profit 2433.0, drawdown 1912.5, trades 65. Single changes that beat the original on profit and drawdown: several settings.
-Day shift BOS Profitable 17k Delta Volume Breakout Redesign 1: attempts 20, best profit 2471.0, drawdown 10666.5, trades 49. Single changes that beat the original on profit and drawdown: several settings.
 RSI Pivot Momentum Shift: attempts 7, best profit 2512.0, drawdown 658.5, trades 18. Single changes that beat the original on profit and drawdown: several settings.
 VWMA BOS Night Shift: attempts 4, best profit 2520.0, drawdown 4080.0, trades 27. Single changes that beat the original on profit and drawdown: several settings.
 EMA SMA RSI Night Reversal: attempts 7, best profit 2605.0, drawdown 3765.5, trades 5. Single changes that beat the original on profit and drawdown: several settings.
 EMA Slope RSI Pullback 2m: attempts 7, best profit 2725.0, drawdown 1087.5, trades 42.
+ICT Unicorn + POC [Profit] Redesign 3: attempts 7, best profit 2781.0, drawdown 647.0, trades 4. Single changes that beat the original on profit and drawdown: stop_dollars 250 to 500.
 VWMA BOS Breakout 2min: attempts 2, best profit 2840.0, drawdown 155.0, trades 21.
 SuperTrend AI Strategy: attempts 200, best profit 2903.5, drawdown 2251.0, trail not cleared
 Momentum RSI Pullback 15m: attempts 6, best profit 2929.5, drawdown 5.5, trades 3. Single changes that beat the original on profit and drawdown: several settings.
@@ -167,7 +170,6 @@ VWMA Trend Slope Breakout: attempts 20, best profit 3525.0, drawdown 2768.5, tra
 EMA Trend RSI Reversal 2m: attempts 5, best profit 3728.0, drawdown 5.5, trades 2. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Structure Pullback: attempts 5, best profit 3828.0, drawdown 5.5, trades 2. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Volume Reversal 15m: attempts 5, best profit 3828.0, drawdown 5.5, trades 2. Single changes that beat the original on profit and drawdown: several settings.
-Day Shift Delta Volume Breakout colored Back ground Good Copy Redesign 1: attempts 18, best profit 3880.0, drawdown 805.5, trades 11. Single changes that beat the original on profit and drawdown: several settings.
 RSI Momentum Reversal EMA Trend: attempts 6, best profit 3953.0, drawdown 5.5, trades 2. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Trend Reversal 2m: attempts 6, best profit 3953.0, drawdown 5.5, trades 2. Single changes that beat the original on profit and drawdown: several settings.
 DeltaVWMA_Pullback_Night_v1: attempts 100, best profit 4195.0, drawdown 1075.0, trades 7. Single changes that beat the original on profit and drawdown: several settings.
@@ -205,7 +207,7 @@ EMA Crossover: attempts 20, best profit 6845.0, drawdown 4569.5, trades 134. Sin
 VWMA EMA Volume Spike 5m: attempts 8, best profit 6910.0, drawdown 17698.5, trades 290. Single changes that beat the original on profit and drawdown: several settings.
 POC Momentum ATR Filter: attempts 200, best profit 7015.0, drawdown 6470.0, trades 29
 POC RSI Momentum v14: attempts 12, best profit 7015.0, drawdown 15560.0, trades 343
-Day Shift Delta Volume Breakout Redesign 2: attempts 20, best profit 7265.0, drawdown 2084.5, trades 40. Single changes that beat the original on profit and drawdown: pivot_len 5 to 2.
+Delta Volume Breakout Night Shift Redesign 2: attempts 20, best profit 7042.0, drawdown 978.5, trades 33. Single changes that beat the original on profit and drawdown: min_delta_pct 5.0 to 10.0.
 VWMA Slope RSI Pullback: attempts 6, best profit 7596.0, drawdown 2136.5, trades 14. Single changes that beat the original on profit and drawdown: several settings.
 ICT Unicorn + ORB: attempts 200, best profit 7609.0, drawdown 311.5, trail cleared
 RSI Volume Momentum Pullback: attempts 5, best profit 7616.0, drawdown 836.0, trades 40. Single changes that beat the original on profit and drawdown: several settings.
@@ -230,6 +232,7 @@ Delta BOS RSI Compression v1: attempts 23, best profit 9170.0, drawdown 7590.0, 
 Delta Volume BOS Night Shift: attempts 50, best profit 9507.0, drawdown 4384.5, trades 153
 Day Shift Delta Volume Breakout v1: attempts 16, best profit 9525.0, drawdown 14150.0, trades 367. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 900.0.
 EMA Trend RSI Momentum Pullback: attempts 7, best profit 9532.0, drawdown 21377.5, trades 28. Single changes that beat the original on profit and drawdown: several settings.
+Day Shift Delta Volume Breakout colored Back ground Good Copy Redesign 1: attempts 20, best profit 9752.0, drawdown 6652.5, trades 43. Single changes that beat the original on profit and drawdown: several settings.
 VWMA BOS Breakout: attempts 2, best profit 9920.0, drawdown 3180.0, trades 748.
 POC Momentum Breakout: attempts 16, best profit 10190.0, drawdown 17030.0, trades 553. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 900.0.
 ICT Unicorn + POC Overnight [Consistent]: attempts 186, best profit 10251.0, drawdown 2540.5, trail not cleared
@@ -238,25 +241,23 @@ POC Color + Pullback: attempts 200, best profit 10528.0, drawdown 1964.0, trail 
 POC Pullback Night [Consistent]: attempts 200, best profit 10528.0, drawdown 1964.0, trail cleared
 Smart Trail + POC Delta Night: attempts 200, best profit 10528.0, drawdown 1964.0, trail cleared
 Day Shift 9k Smart Trail + POC Delta Combined dual time: attempts 20, best profit 10560.0, drawdown 6986.0, trades 140
-Day Shift Delta Volume Breakout Redesign 1: attempts 20, best profit 10635.0, drawdown 3745.5, trades 40. Single changes that beat the original on profit and drawdown: several settings.
-POC RSI Momentum Pullback: attempts 20, best profit 10720.0, drawdown 3510.0, trades 47. Single changes that beat the original on profit and drawdown: rsiLen 14 to 6.
-Smart Trail + POC Delta Combined: attempts 24, best profit 10786.0, drawdown 7334.0, trades 124
 ICT Unicorn + POC Overnight [Profit]: attempts 200, best profit 10888.5, drawdown 2540.5, trail not cleared
 EMA RSI Volume Shift: attempts 30, best profit 10915.0, drawdown 6756.0, trades 294. Single changes that beat the original on profit and drawdown: several settings.
 EMA 5/50/200 — SMA-VWMA Crossover: attempts 200, best profit 10959.0, drawdown 1822.0, trail cleared
+Delta Volume Breakout Redesign 2: attempts 20, best profit 10963.0, drawdown 2588.5, trades 7. Single changes that beat the original on profit and drawdown: several settings.
 BOS Breakout Evening ES 2min: attempts 200, best profit 11014.25, drawdown 3647.0, trail not cleared
 ES Trend Breakout: attempts 200, best profit 11440.0, drawdown 1665.0, trail cleared
 Day Shift Delta Volume Breakout Redesign 3: attempts 19, best profit 11544.0, drawdown 2358.5, trades 6. Single changes that beat the original on profit and drawdown: several settings.
 Day Shift 9k Smart Trail + POC Delta Combined dual time Redesign 1: attempts 20, best profit 11643.0, drawdown 8104.5, trades 147. Single changes that beat the original on profit and drawdown: several settings.
-Day shift BOS Profitable 17k Delta Volume Breakout: attempts 200, best profit 11866.0, drawdown 1481.5, trail cleared
 Untitled strategy: attempts 200, best profit 12224.0, drawdown 1692.0, trail cleared
 EMA Trend RSI Reversion: attempts 7, best profit 12493.0, drawdown 24366.5, trades 507. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Night Shift: attempts 30, best profit 12550.0, drawdown 2025.0, trades 18. Single changes that beat the original on profit and drawdown: several settings.
+POC RSI Momentum Pullback: attempts 20, best profit 12580.0, drawdown 3120.0, trades 71. Single changes that beat the original on profit and drawdown: rsiLen 7 to 2.
 VWMA RSI Volume Momentum: attempts 7, best profit 12738.0, drawdown 25141.5, trades 532. Single changes that beat the original on profit and drawdown: several settings.
-Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure: attempts 5, best profit 13036.0, drawdown 1717.5, trades 4.
 MACD EMA Pullback: attempts 200, best profit 13481.0, drawdown 1784.0, trail cleared
 POC Base Color + Pullback: attempts 200, best profit 13552.0, drawdown 1593.0, trail cleared
 POC Pullback Night [Profit]: attempts 200, best profit 13851.0, drawdown 4267.5, trail not cleared
+Delta Volume Breakout Redesign 3: attempts 10, best profit 13901.0, drawdown 11123.5, trades 139. Single changes that beat the original on profit and drawdown: several settings.
 EMA 200 + EMA 55 + SMA 25 Pivot Structure: attempts 200, best profit 13903.0, drawdown 5.5, trail cleared
 VWMA RSI Night Pulse: attempts 1, best profit 13903.0, drawdown 5522.5, trades 252.
 POC RSI Reversal v14: attempts 176, best profit 14012.5, drawdown 2012.5, trades 96
@@ -268,21 +269,25 @@ EMA Pullback: attempts 200, best profit 14576.028, drawdown 7475.191999999997, t
 POC Momentum Pullback 15m: attempts 12, best profit 14580.0, drawdown 6910.0, trades 77. Single changes that beat the original on profit and drawdown: several settings.
 RSI ATR Pivot Momentum v5: attempts 200, best profit 15060.0, drawdown 10415.0, trades 65
 EMA Pivot Volume Filter: attempts 3, best profit 15137.5, drawdown 1300.0, trail cleared
+Day Shift Delta Volume Breakout Redesign 2: attempts 20, best profit 15222.0, drawdown 4531.5, trades 18. Single changes that beat the original on profit and drawdown: several settings.
 POC RSI Momentum v25: attempts 19, best profit 15262.5, drawdown 14612.5, trades 174
 Overnight VWMA Pullback: attempts 200, best profit 15418.0, drawdown 2161.0, trail cleared
+Day shift BOS Profitable 23k Delta Volume Breakout NQ 2min reversals two sessions: attempts 100, best profit 15505.0, drawdown 9829.5, trades 185. Single changes that beat the original on profit and drawdown: several settings.
 Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals: attempts 18, best profit 15606.0, drawdown 9999.5, trades 204. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Pullback Night: attempts 6, best profit 15617.0, drawdown 5618.5, trades 83. Single changes that beat the original on profit and drawdown: several settings.
 EMA SMA Pivot Filter v3: attempts 50, best profit 16090.0, drawdown 390.0, trades 1
 RSI+MACD Reversal v3: attempts 200, best profit 16970.0, drawdown 1951.0, trail cleared
+Day shift BOS Profitable 17k Delta Volume Breakout: attempts 20, best profit 17023.0, drawdown 3324.5, trades 32. Single changes that beat the original on profit and drawdown: several settings.
 2min NQ Day Shift Delta Volume Breakout colored Back ground Good Copy: attempts 20, best profit 17071.0, drawdown 12903.5, trades 139. Single changes that beat the original on profit and drawdown: several settings.
 VWAP RSI Momentum Breakout: attempts 12, best profit 17075.0, drawdown 5250.0, trades 63. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Momentum Breakout: attempts 100, best profit 17075.0, drawdown 10200.0, trades 436. Single changes that beat the original on profit and drawdown: several settings.
+Day Shift Delta Volume Breakout Redesign 1: attempts 20, best profit 17437.0, drawdown 8561.5, trades 88. Single changes that beat the original on profit and drawdown: several settings.
 Engine4_NewPivotTrend_v32: attempts 3, best profit 17700.0, drawdown 5775.0, trades 184. Single changes that beat the original on profit and drawdown: several settings.
 Night Shift Delta Volume Breakout: attempts 200, best profit 17716.5, drawdown 1908.0, trail cleared
 SMC Order Block: attempts 200, best profit 17758.0, drawdown 5792.5, trades 47
 POC Momentum Reversal 15m: attempts 100, best profit 17950.0, drawdown 17662.5, trades 1682. Single changes that beat the original on profit and drawdown: tp_mult 2.0 to 5.0.
-Delta Volume Breakout with background: attempts 20, best profit 18588.0, drawdown 7941.5, trades 72. Single changes that beat the original on profit and drawdown: several settings.
 Delta Vol BOS 2min v1: attempts 1, best profit 18910.0, drawdown 12220.0, trades 1472.
+Day Shift Delta Volume Breakout colored Back ground Good Copy Redesign 2: attempts 20, best profit 19320.0, drawdown 4862.5, trades 30. Single changes that beat the original on profit and drawdown: several settings.
 Hull MA Cross Redesign 1: attempts 20, best profit 19334.0, drawdown 2813.5, trades 11. Single changes that beat the original on profit and drawdown: several settings.
 EMA Slope RSI Pullback: attempts 7, best profit 19387.5, drawdown 18512.5, trades 418. Single changes that beat the original on profit and drawdown: several settings.
 VWMA Volume Breakout 15m: attempts 2, best profit 19690.0, drawdown 50250.0, trades 457. Single changes that beat the original on profit and drawdown: several settings.
@@ -296,6 +301,7 @@ VWAP Pivot Reversal v1: attempts 17, best profit 21150.0, drawdown 6450.0, trade
 Delta VWMA BOS 2min: attempts 2, best profit 21425.0, drawdown 845.0, trades 1232.
 Delta POC Momentum v1: attempts 5, best profit 21465.0, drawdown 17245.0, trades 244. Single changes that beat the original on profit and drawdown: several settings.
 Engine4_DeltaVWMA_BOS_v1: attempts 16, best profit 22350.0, drawdown 5000.0, trades 190. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 1500.0.
+Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure: attempts 100, best profit 22589.0, drawdown 5690.5, trades 146.
 Day Shift Delta Volume Breakout colored Back ground Good Copy: attempts 20, best profit 22740.5, drawdown 7547.5, trades 127. Single changes that beat the original on profit and drawdown: several settings.
 Volume RSI Momentum Shift: attempts 6, best profit 22856.0, drawdown 7863.5, trades 139. Single changes that beat the original on profit and drawdown: several settings.
 Delta Volume Breakout Redesign 1: attempts 20, best profit 24076.0, drawdown 4457.5, trades 34. Single changes that beat the original on profit and drawdown: several settings.
@@ -306,22 +312,26 @@ POC RSI Momentum v24: attempts 12, best profit 24620.0, drawdown 7025.0, trades 
 Engine4_NewPivotTrend_v20: attempts 25, best profit 24970.0, drawdown 30590.0, trades 590
 Engine4_NewPivotTrend_v28: attempts 200, best profit 25370.0, drawdown 9420.0, trades 114
 EMA BB Mean Reversion: attempts 200, best profit 25516.0, drawdown 8847.0, trail not cleared
+Smart Trail + POC Delta Combined: attempts 20, best profit 26071.0, drawdown 6295.5, trades 14. Single changes that beat the original on profit and drawdown: several settings.
 VWMA RSI Breakout: attempts 18, best profit 26112.5, drawdown 9775.0, trades 413. Single changes that beat the original on profit and drawdown: several settings.
 Vwap Rsi Pullback: attempts 24, best profit 26260.0, drawdown 10610.0, trades 131
 DeltaVWMA_BOS_Trend_v1: attempts 16, best profit 26270.0, drawdown 7960.0, trades 273. Single changes that beat the original on profit and drawdown: stop_cash 0.0 to 1400.0.
+Day shift BOS Profitable 17k Delta Volume Breakout Redesign 1: attempts 59, best profit 26279.0, drawdown 6212.5, trades 281. Single changes that beat the original on profit and drawdown: several settings.
 Delta BOS RSI Reversal: attempts 14, best profit 26715.0, drawdown 17790.0, trades 580. Single changes that beat the original on profit and drawdown: several settings.
 Engine4_NightShift_BOS_VWMA_v1: attempts 17, best profit 27150.0, drawdown 3912.5, trades 404.
 Delta Momentum BOS v1: attempts 10, best profit 27235.0, drawdown 19960.0, trades 371. Single changes that beat the original on profit and drawdown: several settings.
-Delta Volume Breakout Night Shift: attempts 7, best profit 27303.0, drawdown 12712.5, trades 182. Single changes that beat the original on profit and drawdown: several settings.
 Engine4_NewPivotTrend_v22: attempts 18, best profit 27530.0, drawdown 17480.0, trades 206
 VWMA Slope RSI Vol Surge: attempts 7, best profit 27978.0, drawdown 39094.5, trades 402. Single changes that beat the original on profit and drawdown: several settings.
 ES RSI Pullback BOS: attempts 3, best profit 28170.0, drawdown 9810.0, trades 268. Single changes that beat the original on profit and drawdown: stop_mult 1.5 to 3.0.
 VWMA Vol Breakout ES 5m: attempts 12, best profit 28387.5, drawdown 5200.0, trades 288. Single changes that beat the original on profit and drawdown: tp_mult 2.5 to 5.0.
+Delta Volume Breakout Night Shift: attempts 20, best profit 28442.0, drawdown 7263.5, trades 98.
 VWMA Momentum Reversal: attempts 2, best profit 28480.0, drawdown 23170.0, trades 433. Single changes that beat the original on profit and drawdown: several settings.
 POC RSI Momentum v16: attempts 28, best profit 28485.0, drawdown 11235.0, trades 194
 Day Shift Delta Volume Breakout: attempts 20, best profit 28657.0, drawdown 7547.0, trades 68. Single changes that beat the original on profit and drawdown: several settings.
 EMA Structure RSI Shift: attempts 7, best profit 28930.0, drawdown 21200.5, trades 210. Single changes that beat the original on profit and drawdown: several settings.
+Day Shift Delta Volume Breakout colored Back ground Good Copy Redesign 3: attempts 55, best profit 29017.0, drawdown 5710.5, trades 163. Single changes that beat the original on profit and drawdown: several settings.
 EMA Slope RSI Pullback Vol: attempts 100, best profit 29112.5, drawdown 8762.5, trades 271. Single changes that beat the original on profit and drawdown: several settings.
+Delta Volume Breakout with background: attempts 28, best profit 29175.0, drawdown 7159.5, trades 115. Single changes that beat the original on profit and drawdown: several settings.
 Night BOS VWMA Momentum: attempts 2, best profit 29210.0, drawdown 26900.0, trades 408. Single changes that beat the original on profit and drawdown: several settings.
 Delta Volume Breakout: attempts 93, best profit 29308.0, drawdown 14159.5, trades 222. Single changes that beat the original on profit and drawdown: several settings.
 EMA Trend RSI Momentum Flip: attempts 7, best profit 29451.0, drawdown 27853.5, trades 579. Single changes that beat the original on profit and drawdown: several settings.
@@ -387,6 +397,7 @@ POC Momentum Pullback: attempts 38, best profit 48750.0, drawdown 11530.0, trade
 RSI ATR Momentum Reversal: attempts 100, best profit 48995.0, drawdown 42060.0, trades 165. Single changes that beat the original on profit and drawdown: several settings.
 Delta VWMA BOS Breakout v1: attempts 22, best profit 49135.0, drawdown 17105.0, trades 574. Single changes that beat the original on profit and drawdown: cooldown_bars 2 to 19.
 NightShift_Momentum_Pullback_v1: attempts 100, best profit 49490.0, drawdown 31620.0, trades 1423. Single changes that beat the original on profit and drawdown: several settings.
+NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure: attempts 100, best profit 49502.0, drawdown 6443.0, trades 143. Single changes that beat the original on profit and drawdown: several settings.
 DeltaBOS_Trend_v1: attempts 49, best profit 50200.0, drawdown 46475.0, trades 737. Single changes that beat the original on profit and drawdown: atr_mult 1.5 to 1.9446.
 EMA Structure RSI Pullback Night: attempts 6, best profit 51030.0, drawdown 11876.5, trades 180. Single changes that beat the original on profit and drawdown: several settings.
 ICT Unicorn + ORB 100k: attempts 23, best profit 51605.0, drawdown 42651.5, trades 455. The change that beat the original: i_tp 500.0 to 5525.8788.

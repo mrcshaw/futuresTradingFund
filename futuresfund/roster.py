@@ -20,12 +20,14 @@ ROSTER = [
         "id": "portfolio",
         "name": "Portfolio Manager",
         "team": "Core Trading",
-        "role": "Weighs each desk's vote and recommends one rule that cleared the prop account. The user turns it live. Emails the address for viewing this desk on a phone, and emails the new address when the old one expires.",
+        "role": "Weighs each desk's vote and recommends one rule that cleared the prop account. The user turns it live. Emails the address for viewing this desk on a phone, and emails the new address when the old one expires. Carries the researchers' questions to the owner: collects the open questions, adds them to one email (a digest when several wait), reads the replies, and passes each answer to the researcher who asked.",
         "responsibilities": [
             "Weighs each desk's vote",
             "Recommends one rule that cleared the prop account",
             "The user turns that rule live",
             "Emails the phone address, and a new one when the old one expires",
+            "Emails the researchers' questions to the owner, at most one email a minute",
+            "Reads the owner's replies and passes each answer to the researcher who asked",
         ],
         "report": "fund_meeting",
         "model": "desk-portfolio",
@@ -62,12 +64,14 @@ ROSTER = [
         "id": "researcher",
         "name": "Chart researcher",
         "team": "Research",
-        "role": "Reads every chart study and chooses the next setting. The objective is to hit the profit target set on headquarters inside the trailing drawdown set there, with the lowest drawdown and then the profit: a change that moves toward the target, or lowers the drawdown once there, is continued; a change that moves away is reversed. The 2-minute, 5-minute, and 15-minute developers bring the results here.",
+        "role": "Reads every chart study and chooses the next setting. The objective is to hit the profit target set on headquarters inside the trailing drawdown set there, with the lowest drawdown and then the profit: a change that moves toward the target, or lowers the drawdown once there, is continued; a change that moves away is reversed. The 2-minute, 5-minute, and 15-minute developers bring the results here. While researching a script it converts an ATR exit to the dollar stop, cuts the trades of a script over the trade cap, and writes the question for the owner when a script cannot go on (no compile, no entry rule, a PineTS stop, no trades, or too many trades after the cut). When the owner answers, it makes the change to the script and the chart developer reruns the backtests.",
         "responsibilities": [
             "Reads every chart study and chooses the next setting",
             "Keeps a change that moves toward the profit target or lowers the drawdown",
             "Reverses a change that moves away",
             "The 2-minute, 5-minute, and 15-minute developers bring the results here",
+            "Converts an ATR exit to the dollar stop and cuts the trades of a script over the trade cap",
+            "Writes the question for the owner when a script cannot go on, and applies the owner's answer",
         ],
         "report": "market_report",
         "model": "desk-researcher",
@@ -198,9 +202,9 @@ ROSTER = [
         "id": "developer",
         "name": "2min chart developer",
         "team": "Technology & Operations",
-        "role": "Runs the 2-minute chart on engine 1, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
+        "role": "Runs the 2-minute chart of every instrument, on engines 1, 5, 8, 11, 14, 17 and 20, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
         "responsibilities": [
-            "Runs the 2-minute chart on engine 1",
+            "Runs the 2-minute chart of every instrument, on engines 1, 5, 8, 11, 14, 17 and 20",
             "Looks for the profit target inside the trailing drawdown, with the lowest drawdown",
             "Adds a script's entry rule when that rule is missing",
         ],
@@ -211,9 +215,9 @@ ROSTER = [
         "id": "developer_2",
         "name": "5 min chart developer",
         "team": "Technology & Operations",
-        "role": "Runs the 5-minute chart on engines 2 and 5, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
+        "role": "Runs the 5-minute chart of every instrument, on engines 2, 6, 9, 12, 15, 18 and 21, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
         "responsibilities": [
-            "Runs the 5-minute chart on engines 2 and 5",
+            "Runs the 5-minute chart of every instrument, on engines 2, 6, 9, 12, 15, 18 and 21",
             "Looks for the profit target inside the trailing drawdown, with the lowest drawdown",
             "Adds a script's entry rule when that rule is missing",
         ],
@@ -224,9 +228,9 @@ ROSTER = [
         "id": "developer_15",
         "name": "15 min chart developer",
         "team": "Technology & Operations",
-        "role": "Runs the 15-minute chart on engines 3 and 6, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
+        "role": "Runs the 15-minute chart of every instrument, on engines 3, 7, 10, 13, 16, 19 and 22, looking for the profit target inside the trailing drawdown with the lowest drawdown. Adds a script's entry rule to the engine when that rule is missing.",
         "responsibilities": [
-            "Runs the 15-minute chart on engines 3 and 6",
+            "Runs the 15-minute chart of every instrument, on engines 3, 7, 10, 13, 16, 19 and 22",
             "Looks for the profit target inside the trailing drawdown, with the lowest drawdown",
             "Adds a script's entry rule when that rule is missing",
         ],
@@ -271,16 +275,75 @@ CHART_DESKS = (
     {"timeframe": "15m", "label": "15-minute", "developer": "15 min chart developer", "strategy_developer": "15 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 3},
 )
 
-# A second process for the 5-minute and 15-minute developers, so those charts backtest two scripts at once.
-EXTRA_CHART_ENGINES = (
-    {"timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer", "strategy_developer": "5 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 5},
-    {"timeframe": "15m", "label": "15-minute", "developer": "15 min chart developer", "strategy_developer": "15 min strategy developer", "researcher": CHART_RESEARCHER, "engine": 6},
-)
+# Every research instrument has its own three chart engines (2m, 5m, 15m). The list is fixed, in the
+# order research_instruments() gives today, so engine numbers never shift while the desk runs.
+ENGINE_ROOTS = ("ES", "GC", "NQ", "MNQ", "MES", "M2K", "YM")
+ENGINE_TIMEFRAMES = ("2m", "5m", "15m")
+# The creation engine keeps id 4 (slot 3). Chart engines 1-3 are ES; every other instrument follows from 5.
+CREATION_ENGINE_ID = 4
+CREATION_DEVELOPER = "Creation tester"
+
+
+def _engine_table() -> tuple[dict, ...]:
+    rows = []
+    number = 1
+    for root in ENGINE_ROOTS:
+        for timeframe in ENGINE_TIMEFRAMES:
+            if number == CREATION_ENGINE_ID:
+                number += 1
+            desk = next(item for item in CHART_DESKS if item["timeframe"] == timeframe)
+            rows.append({**desk, "root": root, "engine": number})
+            number += 1
+    return tuple(rows)
+
+
+# One row per chart engine: 21 today. The 3 chart developers keep their timeframe, so each owns 7 engines.
+ENGINE_DESKS = _engine_table()
+ENGINE_COUNT = len(ENGINE_DESKS) + 1
 
 
 def chart_engine(engine_id: int) -> dict | None:
-    """The chart desk that owns this engine number, including the second 5-minute and 15-minute engines."""
-    return next((item for item in (*CHART_DESKS, *EXTRA_CHART_ENGINES) if item["engine"] == int(engine_id)), None)
+    """The chart engine with this number: its instrument, chart and developer. None for the creation engine."""
+    try:
+        number = int(engine_id)
+    except (TypeError, ValueError):
+        return None
+    return next((item for item in ENGINE_DESKS if item["engine"] == number), None)
+
+
+def engine_for(root: str, timeframe: str) -> dict | None:
+    """The chart engine that runs this instrument's chart."""
+    root = str(root or "").upper()
+    return next((item for item in ENGINE_DESKS if item["root"] == root and item["timeframe"] == timeframe), None)
+
+
+def engine_name(engine_id: int) -> str:
+    """'Engine 8 (NQ 2m)', or 'Engine 4 (creation)'."""
+    desk = chart_engine(engine_id)
+    if desk is not None:
+        return f"Engine {desk['engine']} ({desk['root']} {desk['timeframe']})"
+    if int(engine_id) == CREATION_ENGINE_ID:
+        return f"Engine {CREATION_ENGINE_ID} (creation)"
+    return f"Engine {engine_id}"
+
+
+def engines_of(developer: str) -> list[int]:
+    """The chart engine numbers one chart developer owns."""
+    return [item["engine"] for item in ENGINE_DESKS if item["developer"] == developer]
+
+
+def engine_layout() -> str:
+    """The engine layout in one sentence, for the desk's posts and the page."""
+    first = ENGINE_DESKS[:3]
+    rest = []
+    for root in ENGINE_ROOTS[1:]:
+        numbers = [item["engine"] for item in ENGINE_DESKS if item["root"] == root]
+        rest.append(f"{numbers[0]}-{numbers[-1]} {root}")
+    return (
+        f"Each instrument has three chart engines, the 2-minute, 5-minute and 15-minute charts: "
+        f"engines {first[0]['engine']}-{first[-1]['engine']} are {first[0]['root']}, {', '.join(rest)}. "
+        f"Engine {CREATION_ENGINE_ID} is the creation engine."
+    )
 
 
 def chart_desk(timeframe: str) -> dict:
@@ -293,10 +356,10 @@ def chart_desk(timeframe: str) -> dict:
 
 TASKS = {
     "Quantitative Trader": "Proposing a rule the engine can backtest",
-    "Portfolio Manager": "Choosing which proven rule to arm",
+    "Portfolio Manager": "Choosing which proven rule to arm, and emailing the researchers' questions",
     "Ingestion": "Adding the TradingView alert to the chart",
     "Floor Trader": "Placing and managing the armed order",
-    "Chart researcher": "Reading the 2-minute, 5-minute, and 15-minute studies",
+    "Chart researcher": "Reading the 2-minute, 5-minute, and 15-minute studies, and asking the owner when a script cannot go on",
     "Card keeper": "Writing a card from each measured change",
     "2min strategy developer": "Writing a new Pine script from scratch for engine 4",
     "5 min strategy developer": "Writing a new Pine script from scratch for engine 4",
@@ -306,9 +369,9 @@ TASKS = {
     "Lesson writer": "Recording how the created script did so the next one learns from it",
     "Risk Manager": "Checking drawdown against the account",
     "Trading Analyst": "Reading the script before the backtest, then confirming the fill",
-    "2min chart developer": "Adding the entry rule, then running the 2-minute chart on engine 1",
-    "5 min chart developer": "Adding the entry rule, then running the 5-minute chart on engines 2 and 5",
-    "15 min chart developer": "Adding the entry rule, then running the 15-minute chart on engines 3 and 6",
+    "2min chart developer": "Adding the entry rule, then running every instrument's 2-minute chart on its own engine",
+    "5 min chart developer": "Adding the entry rule, then running every instrument's 5-minute chart on its own engine",
+    "15 min chart developer": "Adding the entry rule, then running every instrument's 15-minute chart on its own engine",
     "Systems Administrator": "Serving desk requests and keeping the error journal",
     "Compliance & Operations": "Enforcing the prop-account rules",
 }

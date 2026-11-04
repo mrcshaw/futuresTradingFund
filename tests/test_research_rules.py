@@ -98,12 +98,14 @@ class ResearchRuleTests(unittest.TestCase):
         self.assertEqual(dollars["stop_dollars"], 250.0)
         self.assertEqual(dollars["tp_dollars"], 500.0)
 
-    def test_a_1000_stop_and_1500_target_starts_at_250_and_500(self):
+    def test_a_1000_stop_starts_at_the_700_cap_and_the_script_target_stays(self):
         from futuresfund.learn import _raise_stop_hundred, _search, _start_on_the_ladder
 
         opened = _start_on_the_ladder({"stop_dollars": 1000.0, "tp_dollars": 1500.0, "length": 20})
-        self.assertEqual(opened["stop_dollars"], 250.0)
-        self.assertEqual(opened["tp_dollars"], 500.0)
+        self.assertEqual(opened["stop_dollars"], 700.0)
+        self.assertEqual(opened["tp_dollars"], 1500.0)
+        kept = _start_on_the_ladder({"stop_dollars": 500.0, "tp_dollars": 1100.0})
+        self.assertEqual(kept, {"stop_dollars": 500.0, "tp_dollars": 1100.0})
         self.assertEqual(opened["length"], 20)
         landed = _raise_stop_hundred({"stop_dollars": 250.0, "tp_dollars": 500.0}, "stop_dollars", set(), 50000)
         self.assertEqual(landed["stop_dollars"], 500.0)
@@ -119,12 +121,17 @@ class ResearchRuleTests(unittest.TestCase):
         seen = []
 
         def execute(params):
-            seen.append(params.get("stop_dollars"))
+            seen.append((params.get("stop_dollars"), params.get("tp_dollars"), params.get("length")))
             return {"net_profit": -float(params["stop_dollars"]), "max_drawdown": 200.0, "trades": 8, "days": 20}
 
-        _search({"stop_dollars": 1000, "tp_dollars": 1500, "length": 20}, execute, 50000, 6, None, None, None, extras=False)
-        self.assertEqual(seen[:3], [250, 500, 700])
-        self.assertTrue(all(value == 700 for value in seen[3:]))
+        _search({"stop_dollars": 250, "tp_dollars": 1500, "length": 20}, execute, 50000, 6, None, None, None, extras=False)
+        self.assertEqual([stop for stop, _tp, _length in seen[:3]], [250, 500, 700])
+        # Here only the stop moves the result. The take profit and the length are each moved
+        # at most once each way, then left alone while the search keeps working on the stop.
+        tp_moves = [(before[1], after[1]) for before, after in zip(seen, seen[1:]) if before[1] != after[1] and before[0] == after[0] and before[2] == after[2]]
+        length_moves = [(before[2], after[2]) for before, after in zip(seen, seen[1:]) if before[2] != after[2] and before[0] == after[0] and before[1] == after[1]]
+        self.assertLessEqual(len([move for move in tp_moves if move[1] > move[0]]), 1)
+        self.assertLessEqual(len(length_moves), 2)
 
     def test_a_daily_limit_is_a_normal_input_and_a_gain_keeps_it(self):
         import tempfile

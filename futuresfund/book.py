@@ -104,7 +104,37 @@ def _write(path: Path, text: str) -> None:
             temp.unlink(missing_ok=True)
 
 
+_HELD = threading.local()
+
+
+class held_reads:
+    """Inside this block, this thread reads the book file once and reuses that copy.
+
+    A report that judges many rows calls strategy_acceptance a few hundred times. On the desk's bind
+    mount every read costs a file stat and a parse. Other threads still read the file every time.
+    """
+
+    def __enter__(self):
+        self._previous = getattr(_HELD, "book", None), getattr(_HELD, "active", False)
+        _HELD.book, _HELD.active = None, True
+        return self
+
+    def __exit__(self, *exc):
+        _HELD.book, _HELD.active = self._previous
+        return False
+
+
 def load() -> dict:
+    if getattr(_HELD, "active", False):
+        import copy
+
+        if _HELD.book is None:
+            _HELD.book = _load_file()
+        return copy.deepcopy(_HELD.book)
+    return _load_file()
+
+
+def _load_file() -> dict:
     found = _read(BOOK_PATH)
     if found is None:
         return _fresh()
@@ -264,6 +294,7 @@ def snapshot() -> dict:
         "trades": list(reversed((book.get("trades") or [])[-20:])),
         "account_rules": _account_rules(book),
         "strategy_acceptance": strategy_acceptance(book),
+        **acceptance_view(book),
         "next_meeting": "8:00am ET Monday through Friday, and 5:00pm ET Sunday through Friday. Saturday has no meeting.",
     }
 
@@ -746,6 +777,35 @@ def acceptance_goal(limits: dict | None = None) -> str:
     return ""
 
 
+ACCEPTANCE_STAGE_DAYS = (7, 30, 90, 365)
+
+
+def acceptance_view(book: dict | None = None) -> dict:
+    """What each test needs, for the strategy library page: objective.stage_bars on 7, 30, 90, and 365 days,
+    and the numbers the page uses to recompute them while the owner types (the same formula)."""
+    from futuresfund import objective
+
+    limits = strategy_acceptance(book)
+    try:
+        stages = [objective.stage_bars(days, limits) for days in ACCEPTANCE_STAGE_DAYS]
+        first = stages[0]
+        rules = {
+            "stage_sessions": {str(days): objective.stage_sessions(days) for days in ACCEPTANCE_STAGE_DAYS},
+            "research_sessions": objective.RESEARCH_SESSIONS,
+            "weeks_per_year": objective.WEEKS_PER_YEAR,
+            "trades_year_max": objective.TRADES_YEAR_MAX,
+            "min_trades_floor": objective.MIN_TRADES,
+            "trades_per_week_floor": first["floor_week"],
+            "drawdown_start": first["drawdown_start"],
+            "drawdown_target": first["drawdown_target"],
+            "drawdown_share": first["drawdown_share"],
+            "trade_loss": first["trade_loss"],
+        }
+    except Exception:
+        stages, rules = [], {}
+    return {"acceptance_stages": stages, "acceptance_rules": rules}
+
+
 def save_strategy_acceptance(row: dict) -> dict:
     """Store the numbers a strategy-team result must clear before it is filed."""
     try:
@@ -847,7 +907,7 @@ def firm_record(view: dict | None = None) -> str:
         "Futures desk record. Chat does not place an order.",
         _rules_line(view),
         "Headquarters shows live P&L, the open trade, the three lowest-drawdown profitable strategies, and the lead script. Click a strategy name to copy its Pine script.",
-        "Strategy library is its own tab. " + acceptance_line() + " A run also makes more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it. The run has 130 to 600 trades a year. Fewer than 130 is too quiet and more than 600 is too many trades. Three trades a week still files inside that band when the profit factor is 3 or more, or when the profit and drawdown are near $50,000 and $22,000. Two trades is not filed. Each name keeps its most profitable run on that contract and timeframe, and another chart stays on its own row. ES, Nasdaq, and gold are separate. Click a row to copy the script.",
+        "Strategy library is its own tab. " + acceptance_line() + " The 7, 30, and 90-day tests need the same boxes pro-rated to their sessions; the drawdown rule, the stop, the profit factor, and the win rate are not scaled. More than 600 trades a year is not filed, and two or three trades is not a strategy. Each name keeps its most profitable run on that contract and timeframe, and another chart stays on its own row. ES, Nasdaq, and gold are separate. Click a row to copy the script.",
         "Two strategies can run at once, including on the same account.",
         "A price alert with id desk-bar records the candle. TradingView does not send a buy or sell.",
         "The floor trader and the quantitative trader run an executing strategy on those candles. The entry, the stop, the take profit, and the exit are the ones in the script.",

@@ -1,0 +1,215 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 62,
+   "net_profit": -3139.5,
+   "max_drawdown": 3139.5,
+   "trades": 32
+  },
+  "tp_dollars": {
+   "value": 125,
+   "net_profit": -1952.0,
+   "max_drawdown": 2540.0,
+   "trades": 32
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -983.0,
+   "max_drawdown": 4492.5,
+   "trades": 78
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -2943.5,
+   "max_drawdown": 3534.0,
+   "trades": 21
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -4351.0,
+   "max_drawdown": 4870.5,
+   "trades": 41
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "confirm_candles": {
+   "value": 1,
+   "net_profit": -3609.5,
+   "max_drawdown": 3890.5,
+   "trades": 77
+  },
+  "cooldown_bars": {
+   "value": 40,
+   "net_profit": -3164.0,
+   "max_drawdown": 3168.5,
+   "trades": 24
+  },
+  "use_breakeven": {
+   "value": true,
+   "net_profit": -3692.5,
+   "max_drawdown": 3972.0,
+   "trades": 30
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -3300.5,
+   "max_drawdown": 3400.0,
+   "trades": 58
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": -2952.5,
+   "max_drawdown": 2952.5,
+   "trades": 15
+  },
+  "sess_start_mn": {
+   "value": 10,
+   "net_profit": -4344.0,
+   "max_drawdown": 4348.5,
+   "trades": 29
+  },
+  "sess_end_hr": {
+   "value": 2,
+   "net_profit": -883.5,
+   "max_drawdown": 1503.0,
+   "trades": 11
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": -3891.0,
+   "max_drawdown": 3895.5,
+   "trades": 31
+  },
+  "use_skip": {
+   "value": false,
+   "net_profit": -5568.0,
+   "max_drawdown": 5568.0,
+   "trades": 38
+  },
+  "skip_start_hr": {
+   "value": 5,
+   "net_profit": -1126.0,
+   "max_drawdown": 1936.0,
+   "trades": 16
+  },
+  "skip_start_mn": {
+   "value": 59,
+   "net_profit": -4069.5,
+   "max_drawdown": 4069.5,
+   "trades": 37
+  },
+  "skip_end_hr": {
+   "value": 6,
+   "net_profit": -911.5,
+   "max_drawdown": 911.5,
+   "trades": 9
+  },
+  "skip_end_mn": {
+   "value": 59,
+   "net_profit": -2437.5,
+   "max_drawdown": 2442.0,
+   "trades": 25
+  }
+ },
+ "flat": [
+  "ema_len",
+  "ema_slope_len",
+  "be_trigger_dollars"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 50,
+   "ema_slope_len": 5,
+   "min_slope": 0.0,
+   "confirm_candles": 3,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 21,
+   "skip_start_mn": 0,
+   "skip_end_hr": 23,
+   "skip_end_mn": 0,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": -3867.5,
+  "max_drawdown": 3872.0,
+  "trades": 30,
+  "win_rate": 20.0,
+  "profit_factor": 0.385,
+  "biggest_winner": 476.5,
+  "biggest_loser": -286.0,
+  "held_loser": -286.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 19,
+    "pnl": -3146.5,
+    "favorable": 186.61,
+    "adverse": -262.74
+   },
+   {
+    "exit": "XS",
+    "trades": 7,
+    "pnl": -477.0,
+    "favorable": 189.14,
+    "adverse": -239.43
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 2,
+    "pnl": -247.0,
+    "favorable": 182.0,
+    "adverse": -199.25
+   },
+   {
+    "exit": "Session Close",
+    "trades": 2,
+    "pnl": 3.0,
+    "favorable": 207.0,
+    "adverse": -124.25
+   }
+  ]
+ },
+ "reviewed": [
+  "30 MNQ 15m",
+  "30 MNQ 5m",
+  "7 GC 15m",
+  "7 NQ 5m",
+  "90 ES 15m",
+  "90 ES 2m",
+  "90 GC 5m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "asks": 1,
+ "read": true
+}

@@ -1,0 +1,45 @@
+{
+ "stalled": true,
+ "answer": {
+  "because": "The last run's 3 trades all closed by EOD for a -$10 result because the flatten hour is set to 11 instead of the required 16:00 session end.",
+  "script": null,
+  "params": {
+   "stop_dollars": 50,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "gather_min": 22,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "eod_hr": 16,
+   "i_margin": 1.0,
+   "i_or_min": 0.0,
+   "i_or_max": 50.0,
+   "max_attempts": 2,
+   "i_tp": 1000.0,
+   "i_trail_act": 350.0,
+   "i_trail_pct": 45.0,
+   "i_be_trigger": 150.0,
+   "max_stop": 50.0
+  },
+  "settings": {
+   "stop_dollars": 50,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "gather_min": 22,
+   "entry_end_hr": 11,
+   "entry_end_mn": 0,
+   "eod_hr": 11,
+   "i_margin": 1.0,
+   "i_or_min": 0.0,
+   "i_or_max": 50.0,
+   "max_attempts": 2,
+   "i_tp": 1000.0,
+   "i_trail_act": 350.0,
+   "i_trail_pct": 45.0,
+   "i_be_trigger": 150.0,
+   "max_stop": 50.0
+  },
+  "redesign": false
+ },
+ "version": 3
+}

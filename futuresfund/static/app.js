@@ -148,9 +148,10 @@ function renderChannels() {
     { name: "Indicator library", id: "indicators", role: "Indicators every desk can build and test strategies from.", responsibilities: ["Indicators every desk can build from", "Strategies are tested from these indicators"] },
     { name: "Proving stages", id: "proving", role: "Each script's 7, 30, 90 and 365 day backtests.", responsibilities: ["A script moves to the next stage only after it passes this one", "Passed scripts can be opened and copied"] },
     { name: "Golden strategy", id: "golden", role: "How this desk trades.", responsibilities: ["The idea every researcher and strategy developer builds on", "The engine checks the script against its TradingView export"] },
+    { name: "Research workflow Design", id: "workflow", role: "Every research step, agent, engine and file, live, with the settings that change how research runs.", responsibilities: ["Every step a script goes through, from the learning folder to the library", "Live engines, agents and proving counts on the map", "What each recent change did to profit, drawdown and trades", "Change the research settings and the queue order"] },
     { name: "Chart", id: "chart", role: "Candles for each futures contract.", responsibilities: ["Candles for each futures contract"] },
     { name: "R&D", id: "rnd", role: "Research ideas, then the developer runs them.", responsibilities: ["Research ideas", "The developer runs them"] },
-    { name: "Under the hood", id: "engine", role: "Six PineTS engines. The 5-minute and 15-minute developers each have two.", responsibilities: ["Six PineTS engines", "The 5-minute developer runs engines 2 and 5", "The 15-minute developer runs engines 3 and 6", "Restart stops a hung engine", "Skip leaves the current script and takes the next one"] },
+    { name: "Under the hood", id: "engine", role: "Three PineTS engines for every instrument, one per chart, and the creation engine.", responsibilities: ["Every instrument has a 2-minute, 5-minute and 15-minute engine", "Engines 1-3 are ES, engine 4 is the creation engine, then 5-7 GC, 8-10 NQ, 11-13 MNQ, 14-16 MES, 17-19 M2K, 20-22 YM", "The engines share a pool of worker processes", "Restart stops a hung engine", "Skip leaves the current script and takes the next one"] },
     { name: "Book", id: "book", role: "Prop positions and the orders the floor trader sent.", responsibilities: ["Prop positions", "Orders the floor trader sent"] },
   ] }];
   for (const agent of state.roster) {
@@ -164,9 +165,9 @@ function renderChannels() {
   channelsEl.innerHTML = groups.map((group) => `
     <div class="team-label">${group.team}</div>
     ${group.agents.map((agent) => {
-      const key = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "chart"].includes(agent.id) ? agent.id : agent.name;
+      const key = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "workflow", "chart"].includes(agent.id) ? agent.id : agent.name;
       const active = state.channel === key;
-      const dot = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "chart"].includes(key) ? "" : `<span class="dot ${statusOf(agent.name)}"></span>`;
+      const dot = ["headquarters", "book", "rnd", "engine", "active", "library", "indicators", "proving", "golden", "workflow", "chart"].includes(key) ? "" : `<span class="dot ${statusOf(agent.name)}"></span>`;
       const lines = state.snapshot.agent_logs?.[agent.name];
       const ownLine = lines && lines.length ? lines[lines.length - 1] : "";
       const taskText = ownLine || state.snapshot.agent_tasks?.[agent.name] || "";
@@ -315,17 +316,49 @@ function renderEngineResults(host, results) {
   host.replaceChildren(table);
 }
 
+// The creation engine says so on its row. An older desk without the flag has it at engine 4.
+function isCreationEngine(engine) {
+  if (!engine) return false;
+  if (engine.creation != null) return Boolean(engine.creation);
+  return Number(engine.id) === 4;
+}
+
+function engineRoot(engine) {
+  return String((engine && (engine.root || (!isCreationEngine(engine) && engine.instrument))) || "").toUpperCase();
+}
+
+// This engine's own instrument and chart: the per-instrument row, or the chart's row from an older desk.
+function progressRow(report, engine) {
+  const root = engineRoot(engine);
+  const charts = report.charts || [];
+  const own = root ? charts.find((item) => item.timeframe === engine.timeframe && String(item.root || "").toUpperCase() === root) : null;
+  return own || (report.rows || []).find((item) => item.timeframe === engine.timeframe) || null;
+}
+
 function progressText(engine) {
   const report = state.lab && state.lab.progress;
   if (!report || !report.ready) return "Counting learning and created strategies.";
   const rows = report.rows || [];
-  if (!engine.timeframe) {
-    return rows.map((row) => `${row.timeframe} Learning ${row.learning_done}/${row.learning_total} · Created ${row.created_done}/${row.created_total}`).join(" · ")
-      || "Counting learning and created strategies.";
+  const attempt = attemptText(engine);
+  if (!engine.timeframe || isCreationEngine(engine)) {
+    // The creation engine shows every chart's progress, then the attempt of the draft or script it runs.
+    const charts = rows.map((row) => `${row.timeframe} Learning ${row.learning_done}/${row.learning_total} · Created ${row.created_done}/${row.created_total}`).join(" · ");
+    return charts ? `${charts}${attempt ? ` · ${attempt}` : ""}` : "Counting learning and created strategies.";
   }
-  const row = rows.find((item) => item.timeframe === engine.timeframe);
+  const row = progressRow(report, engine);
   if (!row) return "Counting learning and created strategies.";
-  return `Learning ${row.learning_done}/${row.learning_total} · Created ${row.created_done}/${row.created_total}${Number(engine.attempt) ? ` · attempt ${engine.attempt}` : ""}`;
+  return `Learning ${row.learning_done}/${row.learning_total} · Created ${row.created_done}/${row.created_total}${attempt ? ` · ${attempt}` : ""}`;
+}
+
+// "attempt 12 of 100 · 7-day test": the attempt, the budget of the search it is in, and which test that search is.
+function attemptText(engine) {
+  const attempt = Number(engine.attempt) || 0;
+  const limit = Number(engine.attempt_limit) || 0;
+  const stage = Number(engine.stage) || 0;
+  const test = stage === 365 ? "year" : stage ? `${stage}-day test` : "";
+  if (!attempt && !test) return "";
+  if (!attempt) return `${test}${limit ? ` · ${limit} attempts` : ""}`;
+  return `attempt ${attempt}${limit ? ` of ${limit}` : ""}${test ? ` · ${test}` : ""}`;
 }
 
 function researcherText(engine) {
@@ -338,8 +371,8 @@ function researcherText(engine) {
 
 function sourceText(engine) {
   const report = state.lab && state.lab.progress;
-  if (!report || !report.ready || !engine.timeframe) return "";
-  const row = (report.rows || []).find((item) => item.timeframe === engine.timeframe);
+  if (!report || !report.ready || !engine.timeframe || isCreationEngine(engine)) return "";
+  const row = progressRow(report, engine);
   if (!row) return "";
   const learningLeft = Number(row.learning_open ?? (row.learning_total - row.learning_done));
   const createdLeft = Number(row.created_open ?? (row.created_total - row.created_done));
@@ -367,23 +400,66 @@ function goalLabel(acceptance) {
   return Number.isFinite(rate) && rate > 0 ? `Win rate ${rate}%` : "Win rate";
 }
 
+// Before the first /api/lab read: three engines per instrument (engines 1-3 ES, 4 creation, then 5-22), as roster.ENGINE_DESKS lays them out.
+const ENGINE_ROOTS = ["ES", "GC", "NQ", "MNQ", "MES", "M2K", "YM"];
+const ENGINE_DEVELOPERS = { "2m": "2min chart developer", "5m": "5 min chart developer", "15m": "15 min chart developer" };
+
+function fallbackEngines() {
+  const rows = [];
+  let id = 1;
+  ENGINE_ROOTS.forEach((root) => {
+    ["2m", "5m", "15m"].forEach((timeframe) => {
+      if (id === 4) {
+        rows.push({ id, developer: "Creation tester", timeframe: "", root: "", instrument: "", creation: true, system: "PineTS", busy: false, successes: 0, goal: 10, studying: false, study: "", logs: [] });
+        id += 1;
+      }
+      rows.push({ id, developer: ENGINE_DEVELOPERS[timeframe], timeframe, root, instrument: root, creation: false, system: "PineTS", busy: false, logs: [] });
+      id += 1;
+    });
+  });
+  return rows;
+}
+
+// One row per instrument (its 2m, 5m and 15m engines), in engine order, and the creation engine last.
+function hoodGroup(grid, engine) {
+  // The fixed root only: an older desk's rows have none, and their cards stay in one "Charts" row instead of moving with each run.
+  const key = isCreationEngine(engine) ? "creation" : (String(engine.root || "").toUpperCase() || "chart");
+  let group = grid.querySelector(`[data-group="${key}"]`);
+  if (!group) {
+    group = document.createElement("section");
+    group.className = "hood-group";
+    group.dataset.group = key;
+    const title = document.createElement("h3");
+    title.className = "hood-group-title";
+    title.textContent = key === "creation" ? "Creation engine" : key === "chart" ? "Charts" : key;
+    const row = document.createElement("div");
+    row.className = "hood-row";
+    group.append(title, row);
+    grid.append(group);
+  }
+  return group.querySelector(".hood-row");
+}
+
+function engineHeading(engine) {
+  if (isCreationEngine(engine)) return `Engine ${engine.id} · creation${engine.busy && engine.instrument ? ` · ${engine.instrument} ${engine.timeframe || ""}`.trimEnd() : ""}`;
+  const root = engineRoot(engine);
+  return `Engine ${engine.id}${root ? ` · ${root}` : ""}${engine.timeframe ? ` ${engine.timeframe}` : ""}`;
+}
+
 function renderUnderTheHood() {
   const grid = document.querySelector("#hood-grid");
   if (!grid || state.channel !== "engine") return;
   const charts = { "2m": "2-minute", "5m": "5-minute", "15m": "15-minute" };
-  const fallback = [
-    { id: 1, developer: "2min chart developer", timeframe: "2m", system: "PineTS", busy: false, logs: [] },
-    { id: 2, developer: "5 min chart developer", timeframe: "5m", system: "PineTS", busy: false, logs: [] },
-    { id: 3, developer: "15 min chart developer", timeframe: "15m", system: "PineTS", busy: false, logs: [] },
-    { id: 4, developer: "Creation tester", timeframe: "", system: "PineTS", busy: false, successes: 0, goal: 10, studying: false, study: "", logs: [] },
-    { id: 5, developer: "5 min chart developer", timeframe: "5m", system: "PineTS", busy: false, logs: [] },
-    { id: 6, developer: "15 min chart developer", timeframe: "15m", system: "PineTS", busy: false, logs: [] },
-  ];
-  const engines = (state.lab && state.lab.engines && state.lab.engines.length) ? state.lab.engines : fallback;
+  const engines = (state.lab && state.lab.engines && state.lab.engines.length) ? state.lab.engines : fallbackEngines();
+  const ordered = engines.slice().sort((a, b) => (isCreationEngine(a) - isCreationEngine(b)) || (Number(a.id) - Number(b.id)));
   const seen = new Set();
-  engines.forEach((engine) => {
+  const groups = new Set();
+  ordered.forEach((engine) => {
     seen.add(String(engine.id));
+    const row = hoodGroup(grid, engine);
+    groups.add(row.parentElement.dataset.group);
     let card = grid.querySelector(`[data-engine="${engine.id}"]`);
+    if (card && card.parentElement !== row) row.append(card);
     if (!card) {
       card = document.createElement("article");
       card.className = "hood-card";
@@ -426,7 +502,7 @@ function renderUnderTheHood() {
       const results = document.createElement("div");
       results.className = "hood-results";
       card.append(header, who, scale, tools, results);
-      grid.append(card);
+      row.append(card);
     }
     const notice = String(engine.notice || "").trim();
     let alert = card.querySelector(".hood-alert");
@@ -440,11 +516,11 @@ function renderUnderTheHood() {
     } else if (alert) {
       alert.remove();
     }
-    card.querySelector("h3").textContent = `Engine ${engine.id}`;
+    card.querySelector("h3").textContent = engineHeading(engine);
     const stateLabel = card.querySelector("header span");
     stateLabel.className = engine.busy ? "hood-state busy" : (notice ? "hood-state blocked" : "hood-state");
     stateLabel.textContent = engine.busy ? "Running" : (notice ? "Not backtesting" : (engine.studying ? "Studying" : "Idle"));
-    const chart = charts[engine.timeframe] || (engine.id === 4 ? "creation" : "chart");
+    const chart = isCreationEngine(engine) ? "creation" : (charts[engine.timeframe] || "chart");
     const script = engine.busy && engine.script ? ` · ${engine.script}` : "";
     card.querySelector(".hood-who").textContent = `${engine.system || "PineTS"} · ${engine.developer || "Developer"} · ${chart}${sourceText(engine)}${script}`;
     let progress = card.querySelector(".hood-progress");
@@ -485,22 +561,26 @@ function renderUnderTheHood() {
   grid.querySelectorAll("[data-engine]").forEach((card) => {
     if (!seen.has(card.dataset.engine)) card.remove();
   });
+  grid.querySelectorAll("[data-group]").forEach((group) => {
+    if (!groups.has(group.dataset.group)) group.remove();
+  });
 }
 
 function renderFeed() {
   const pages = {
     headquarters: { name: "headquarters", team: "Floor", role: "Every desk, in one feed." },
     book: { name: "book", team: "Core Trading", role: "Prop positions and the orders the floor trader sent." },
-    engine: { name: "under the hood", team: "Technology & Operations", role: "Six PineTS engines. The 5-minute and 15-minute developers each have two." },
+    engine: { name: "under the hood", team: "Technology & Operations", role: "Three PineTS engines for every instrument, one per chart, and the creation engine. They share a pool of worker processes." },
     rnd: { name: "rnd", team: "Research", role: "Research ideas, then the developer runs them." },
     active: { name: "active", team: "Floor", role: "The strategies the floor trader and the quantitative trader execute." },
     library: { name: "strategy library", team: "Research", role: "A strategy is filed when the checked boxes are met. The pro account drawdown rule and the trade count start on." },
     indicators: { name: "indicator library", team: "Research", role: "Indicators every desk can build and test strategies from." },
     proving: { name: "proving stages", team: "Research", role: "Each script's 7, 30, 90 and 365 day backtests." },
+    workflow: { name: "research workflow design", team: "Research", role: "Every research step, agent, engine and file, live. Click a step to see what really happens and change its settings." },
     chart: { name: "chart", team: "Floor", role: "Candles for each futures contract." },
   };
   const current = pages[state.channel] || state.roster.find((agent) => agent.name === state.channel);
-  const deskPage = ["book", "engine", "rnd", "active", "library", "indicators", "proving", "golden", "chart"].includes(state.channel);
+  const deskPage = ["book", "engine", "rnd", "active", "library", "indicators", "proving", "golden", "workflow", "chart"].includes(state.channel);
   document.querySelector("#feed").hidden = deskPage;
   const callMeeting = document.querySelector("#call-meeting");
   if (callMeeting) callMeeting.hidden = state.channel !== "headquarters";
@@ -523,6 +603,9 @@ function renderFeed() {
   if (state.channel === "proving") ensureProving();
   document.querySelector("#golden").hidden = state.channel !== "golden";
   if (state.channel === "golden") ensureGolden();
+  document.querySelector("#workflow").hidden = state.channel !== "workflow";
+  if (state.channel === "workflow") ensureWorkflow();
+  else window.workflowDesign?.hide();
   document.querySelector("#chart").hidden = state.channel !== "chart";
   if (state.channel === "chart") ensureChart();
   if (state.channel === "library") ensureLibrary().then(() => renderLibrary());
@@ -876,7 +959,7 @@ function paintKey() {
     mode: state.book.trading_mode,
     executing: (state.book.executing || []).map((slot) => `${slot.id}:${slot.trader}:${slot.feed}:${slot.last_bar}:${slot.note}:${slot.trades}:${slot.position?.pnl ?? ""}:${slot.position?.stop ?? ""}:${slot.engine?.runs ?? ""}:${slot.engine?.pid ?? ""}`).join("|"),
     cards: (state.book.active_strategies || []).map((row) => `${row.id}:${row.locked}:${row.title}:${(row.text || "").length}`).join(","),
-    acceptance: `${state.book.strategy_acceptance?.goal || ""}:${state.book.strategy_acceptance?.min_profit ?? ""}:${state.book.strategy_acceptance?.profit_factor ?? ""}:${state.book.strategy_acceptance?.win_rate ?? ""}:${state.book.strategy_acceptance?.min_trades ?? ""}:${state.book.strategy_acceptance?.drawdown_pct ?? ""}:${state.book.strategy_acceptance?.use_drawdown}:${state.book.strategy_acceptance?.use_trades}:${state.book.strategy_acceptance?.use_profit}:${state.book.strategy_acceptance?.use_factor}:${state.book.strategy_acceptance?.use_win_rate}`,
+    acceptance: `${state.book.strategy_acceptance?.goal || ""}:${state.book.strategy_acceptance?.min_profit ?? ""}:${state.book.strategy_acceptance?.profit_factor ?? ""}:${state.book.strategy_acceptance?.win_rate ?? ""}:${state.book.strategy_acceptance?.min_trades ?? ""}:${state.book.strategy_acceptance?.drawdown_pct ?? ""}:${state.book.strategy_acceptance?.use_drawdown}:${state.book.strategy_acceptance?.use_trades}:${state.book.strategy_acceptance?.use_profit}:${state.book.strategy_acceptance?.use_factor}:${state.book.strategy_acceptance?.use_win_rate}:${state.book.acceptance_rules?.trades_per_week_floor ?? ""}:${state.book.acceptance_rules?.drawdown_target ?? ""}`,
   });
 }
 
@@ -920,6 +1003,7 @@ async function refreshOnce() {
   if (state.channel === "indicators") ensureIndicators();
   if (state.channel === "proving") ensureProving();
   if (state.channel === "golden") ensureGolden();
+  if (state.channel === "workflow") ensureWorkflow();
   if (libraryTask) await libraryTask;
   const key = paintKey();
   if (key === state.paint) return;
@@ -1455,21 +1539,110 @@ function renderAcceptance() {
   const form = document.querySelector("#acceptance-rules");
   if (!form) return;
   const rules = state.book.strategy_acceptance;
-  if (!rules || form.dataset.editing === "1") return;
-  const stamp = acceptanceStamp(rules);
-  if (form.dataset.stamp === stamp) return;
-  form.dataset.stamp = stamp;
-  form.min_profit.value = rules.min_profit ?? 20000;
-  form.profit_factor.value = rules.profit_factor ?? 1.1;
-  form.win_rate.value = rules.win_rate ?? 53;
-  form.min_trades.value = rules.min_trades ?? 100;
-  form.drawdown_pct.value = rules.drawdown_pct ?? 1.5;
-  form.goal.value = rules.goal || "min_trades";
-  form.use_drawdown.checked = rules.use_drawdown !== false;
-  form.use_trades.checked = rules.use_trades !== false;
-  form.use_profit.checked = rules.use_profit === true;
-  form.use_factor.checked = rules.use_factor === true;
-  form.use_win_rate.checked = rules.use_win_rate === true;
+  if (rules && form.dataset.editing !== "1") {
+    const stamp = acceptanceStamp(rules);
+    if (form.dataset.stamp !== stamp) {
+      form.dataset.stamp = stamp;
+      form.min_profit.value = rules.min_profit ?? 20000;
+      form.profit_factor.value = rules.profit_factor ?? 1.1;
+      form.win_rate.value = rules.win_rate ?? 53;
+      form.min_trades.value = rules.min_trades ?? 100;
+      form.drawdown_pct.value = rules.drawdown_pct ?? 1.5;
+      form.goal.value = rules.goal || "min_trades";
+      form.use_drawdown.checked = rules.use_drawdown !== false;
+      form.use_trades.checked = rules.use_trades !== false;
+      form.use_profit.checked = rules.use_profit === true;
+      form.use_factor.checked = rules.use_factor === true;
+      form.use_win_rate.checked = rules.use_win_rate === true;
+    }
+  }
+  // The pace line and the table read the form, so they follow the owner's typing even while editing.
+  renderAcceptancePace(form);
+}
+
+const ACCEPTANCE_STAGE_DAYS = [7, 30, 90, 365];
+
+function wholeDollars(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "$0";
+  const sign = number < 0 ? "-" : "";
+  return `${sign}$${Math.abs(Math.round(number)).toLocaleString("en-US")}`;
+}
+
+function oneDecimal(value) {
+  const shown = Number(value).toFixed(1);
+  return shown.endsWith(".0") ? shown.slice(0, -2) : shown;
+}
+
+// The same formula as objective.stage_bars, on the values in the form: each test needs the library
+// numbers times its sessions out of a 260-session year. The constants come from /api/book (acceptance_rules).
+function acceptanceBars(form, constants = {}) {
+  const sessions = constants.stage_sessions || { 7: 5, 30: 21, 90: 64, 365: 260 };
+  const yearSessions = Number(constants.research_sessions) || 260;
+  const most = Number(constants.trades_year_max) || 600;
+  const least = Number(constants.min_trades_floor) || 4;
+  const floorWeek = Math.max(0, Number(constants.trades_per_week_floor) || 0);
+  const minProfit = Math.max(0, Number(form.min_profit.value) || 0);
+  const minTrades = Math.max(0, Math.trunc(Number(form.min_trades.value) || 0));
+  const useProfit = form.use_profit.checked;
+  const useTrades = form.use_trades.checked;
+  return ACCEPTANCE_STAGE_DAYS.map((days) => {
+    const count = Number(sessions[days] ?? sessions[String(days)]) || (days * 5) / 7;
+    const share = count / yearSessions;
+    const library = useTrades ? Math.ceil(minTrades * share - 1e-9) : 0;
+    const floorTrades = floorWeek > 0 ? Math.ceil(floorWeek * count / 5 - 1e-9) : 0;
+    return {
+      days,
+      share,
+      use_profit: useProfit,
+      profit: useProfit ? minProfit * share : 0,
+      min_trades: Math.max(library, Math.ceil(least * share - 1e-9), floorTrades),
+      max_trades: Math.floor(most * share + 1e-9),
+    };
+  });
+}
+
+function renderAcceptancePace(form) {
+  if (!form) return;
+  const constants = state.book.acceptance_rules || {};
+  const weeks = Number(constants.weeks_per_year) || 52;
+  const bars = acceptanceBars(form, constants);
+  const [stage7, stage30, stage90, year] = bars;
+  const minProfit = Math.max(0, Number(form.min_profit.value) || 0);
+  const minTrades = Math.max(0, Math.trunc(Number(form.min_trades.value) || 0));
+  const profitLine = form.querySelector('[data-pace="min_profit"]');
+  if (profitLine) {
+    const steady = `${wholeDollars(minProfit)} a year is ${wholeDollars(minProfit / weeks)} a week at a steady pace · 7-day test ${wholeDollars(minProfit * stage7.share)} · 30-day ${wholeDollars(minProfit * stage30.share)} · 90-day ${wholeDollars(minProfit * stage90.share)}`;
+    profitLine.textContent = form.use_profit.checked ? steady : `Box off: every test needs a profit above $0. Checked, ${steady}`;
+    profitLine.classList.toggle("is-off", !form.use_profit.checked);
+  }
+  const tradeLine = form.querySelector('[data-pace="min_trades"]');
+  if (tradeLine) {
+    const steady = `${minTrades} a year is about ${oneDecimal(minTrades / weeks)} a week · 7-day test ${stage7.min_trades} · 30-day ${stage30.min_trades} · 90-day ${stage90.min_trades}`;
+    tradeLine.textContent = form.use_trades.checked ? steady : `Box off: the fewest trades are ${stage7.min_trades}, ${stage30.min_trades}, ${stage90.min_trades} and ${year.min_trades}.`;
+    tradeLine.classList.toggle("is-off", !form.use_trades.checked);
+  }
+  const body = document.querySelector("#acceptance-stages tbody");
+  if (!body) return;
+  const start = Number(constants.drawdown_start) || 2500;
+  const target = Number(constants.drawdown_target) || 3000;
+  const sharePct = Math.round((Number(constants.drawdown_share) || 0.3) * 100);
+  const stop = Number(constants.trade_loss) || 750;
+  const cells = (pick) => bars.map((bar) => `<td>${escapeHtml(pick(bar))}</td>`).join("");
+  const same = (text) => `<td colspan="4" class="acceptance-same">${escapeHtml(text)}</td>`;
+  const factor = Number(form.profit_factor.value);
+  const rate = Number(form.win_rate.value);
+  const rows = [
+    ["Profit", cells((bar) => (bar.use_profit ? `above ${wholeDollars(bar.profit)}` : "above $0"))],
+    ["Fewest trades", cells((bar) => String(bar.min_trades))],
+    ["Most trades", cells((bar) => String(bar.max_trades))],
+    ["Drawdown", same(form.use_drawdown.checked ? `${wholeDollars(start)} until the profit passes ${wholeDollars(target)}, then ${wholeDollars(start)} plus ${sharePct}% of the profit above it. The same on every test: a short window's drawdown is never larger than the year that holds it.` : "Box off: no drawdown limit.")],
+    ["One trade's loss", same(`The stop is set at no more than ${wholeDollars(stop)} on every test. A fill past it on a gap or thin volume still counts.`)],
+    ["Profit factor", same(form.use_factor.checked ? `above ${Number.isFinite(factor) ? factor : "—"} on every test` : "Box off")],
+    ["Win rate", same(form.use_win_rate.checked ? `above ${Number.isFinite(rate) ? rate : "—"}% on every test` : "Box off")],
+  ];
+  const html = rows.map(([name, row]) => `<tr><th scope="row">${escapeHtml(name)}</th>${row}</tr>`).join("");
+  if (body.innerHTML !== html) body.innerHTML = html;
 }
 
 function renderLeaders() {
@@ -1652,6 +1825,15 @@ function strategyAlert(title, account) {
 let indicatorsFetched = 0;
 let indicatorRows = [];
 
+// The Research workflow Design page lives in workflow.js. It reuses the data this loop already
+// fetched, so the tab adds no /api/state, /api/lab or /api/book requests of its own.
+function ensureWorkflow() {
+  const design = window.workflowDesign;
+  if (!design) return;
+  design.feed({ snapshot: state.snapshot, lab: state.lab, book: state.book });
+  design.show();
+}
+
 // The ledger keeps this many rows. A script still running a stage stays on the table.
 const PROVING_LIMIT = 100;
 let provingRows = [];
@@ -1671,16 +1853,30 @@ async function ensureProving() {
   renderProving();
 }
 
+// The attempts a stage used of its budget: "37 of 100 attempts, best #12" on a pass, "100 attempts allowed" while testing.
+function provingAttempts(row, days) {
+  const passed = (row.passed || {})[String(days)] || {};
+  const noted = (row.attempts || {})[String(days)] || {};
+  const used = Number(passed.attempts_used ?? noted.used) || 0;
+  const budget = Number(passed.attempt_budget ?? noted.budget) || 0;
+  const best = Number(passed.best_attempt) || 0;
+  if (!used && !budget) return "";
+  if (!used) return `${budget} attempts allowed`;
+  return `${used}${budget ? ` of ${budget}` : ""} attempts${best ? `, best #${best}` : ""}`;
+}
+
 function provingCell(row, days) {
   const passed = (row.passed || {})[String(days)];
+  const attempts = provingAttempts(row, days);
+  const spent = attempts ? `<small>${escapeHtml(attempts)}</small>` : "";
   if (passed) {
     const profit = Number(passed.net_profit);
     const money = Number.isFinite(profit) ? `$${Math.round(profit).toLocaleString()}` : "Passed";
     const detail = `${passed.trades ?? "?"} trades · drawdown ${passed.max_drawdown ?? "?"}`;
-    return `<td><button type="button" class="proving-pass" data-proving="${escapeHtml(row.id)}" data-days="${days}" title="Open the script that passed">${escapeHtml(money)}</button><small>${escapeHtml(detail)}</small></td>`;
+    return `<td><button type="button" class="proving-pass" data-proving="${escapeHtml(row.id)}" data-days="${days}" title="Open the best passing script">${escapeHtml(money)}</button><small>${escapeHtml(detail)}</small>${spent}</td>`;
   }
-  if (row.stage === days && row.status === "testing") return `<td class="proving-now">Testing</td>`;
-  if (row.stage === days && row.status === "failed") return `<td class="proving-fail">Failed</td>`;
+  if (row.stage === days && row.status === "testing") return `<td class="proving-now">Testing${spent}</td>`;
+  if (row.stage === days && row.status === "failed") return `<td class="proving-fail">Failed${spent}</td>`;
   if (row.stage === days && row.status === "stopped") return `<td class="proving-stop" title="${escapeHtml(row.reason || "")}">Stopped</td>`;
   return `<td class="proving-wait">—</td>`;
 }
@@ -1952,7 +2148,7 @@ function renderLibrary() {
   body.innerHTML = rows.map(libraryRow).join("");
   if (empty) {
     const label = document.querySelector("#library-contract")?.selectedOptions?.[0]?.textContent || "this contract";
-    empty.textContent = rows.length ? "" : `No strategy trading at least 4 times a week is filed under ${label}.`;
+    empty.textContent = rows.length ? "" : `No strategy that meets the acceptance boxes is filed under ${label}.`;
   }
   renderUntested();
 }
@@ -2766,15 +2962,22 @@ const acceptanceForm = document.querySelector("#acceptance-rules");
 acceptanceForm.addEventListener("focusin", () => {
   acceptanceForm.dataset.editing = "1";
 });
+// renderAcceptance returns early while the owner edits, so the pace line and the table listen here.
+acceptanceForm.addEventListener("input", () => renderAcceptancePace(acceptanceForm));
+acceptanceForm.addEventListener("change", () => renderAcceptancePace(acceptanceForm));
 function acceptanceSaved(rules) {
   const on = [];
-  if (rules.use_drawdown !== false) on.push("drawdown inside 30% of the profit once the profit reaches 5% of the account");
+  if (rules.use_drawdown !== false) on.push("drawdown inside $2,500 plus 30% of the profit above $3,000");
   if (rules.use_trades !== false) on.push(`at least ${rules.min_trades} trades`);
   if (rules.use_profit) on.push(`profit above $${Number(rules.min_profit).toLocaleString("en-US")}`);
   if (rules.use_factor) on.push(`profit factor ${rules.profit_factor}`);
   if (rules.use_win_rate) on.push(`win rate ${rules.win_rate}%`);
   const goal = goalLabel(rules);
-  return `Saved. A strategy is filed when ${on.join(", ") || "no number box is turned on"}. The scale goal is ${goal}.`;
+  const week = [];
+  if (rules.use_profit) week.push(`${wholeDollars(Number(rules.min_profit) / 52)} a week`);
+  if (rules.use_trades !== false) week.push(`about ${oneDecimal(Number(rules.min_trades) / 52)} trades a week`);
+  const pace = week.length ? ` That is ${week.join(" and ")} at a steady pace, and each test needs its share, as the table shows.` : "";
+  return `Saved. A strategy is filed when ${on.join(", ") || "no number box is turned on"}.${pace} The scale goal is ${goal}.`;
 }
 
 acceptanceForm.addEventListener("invalid", (event) => {
@@ -2833,6 +3036,7 @@ acceptanceForm.addEventListener("submit", async (event) => {
     form.use_profit.checked = saved.use_profit === true;
     form.use_factor.checked = saved.use_factor === true;
     form.use_win_rate.checked = saved.use_win_rate === true;
+    renderAcceptancePace(form);
     if (note) {
       note.classList.add("saved");
       note.textContent = acceptanceSaved(saved);

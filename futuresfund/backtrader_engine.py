@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import threading
 import time
-from collections import deque
+from bisect import bisect_left
+from collections import OrderedDict, deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from itertools import count
@@ -555,17 +557,23 @@ def run_backtrader(bars: list[Bar] | None = None) -> list[dict]:
     return run_poc(bars)
 
 
-_ENGINE_SLOTS = 6
-_CREATION_SLOT = 3
-_CHART_FOR_SLOT = ("2m", "5m", "15m", "", "5m", "15m")
-_OWNER_FOR_SLOT = (
-    "2min chart developer",
-    "5 min chart developer",
-    "15 min chart developer",
-    "Creation tester",
-    "5 min chart developer",
-    "15 min chart developer",
-)
+def _slot_table() -> tuple[int, int, tuple, tuple, tuple]:
+    """Every slot from roster.ENGINE_DESKS: three chart engines per instrument, and the creation engine at slot 3."""
+    from futuresfund.roster import CREATION_DEVELOPER, CREATION_ENGINE_ID, ENGINE_DESKS
+
+    count_ = len(ENGINE_DESKS) + 1
+    creation = CREATION_ENGINE_ID - 1
+    charts, roots, owners = [""] * count_, [""] * count_, [CREATION_DEVELOPER] * count_
+    for desk in ENGINE_DESKS:
+        index = desk["engine"] - 1
+        charts[index] = desk["timeframe"]
+        roots[index] = desk["root"]
+        owners[index] = desk["developer"]
+    return count_, creation, tuple(charts), tuple(roots), tuple(owners)
+
+
+# 22 slots today: engines 1-3 ES 2m/5m/15m, 4 creation, then 5-7 GC, 8-10 NQ, 11-13 MNQ, 14-16 MES, 17-19 M2K, 20-22 YM.
+_ENGINE_SLOTS, _CREATION_SLOT, _CHART_FOR_SLOT, _ROOT_FOR_SLOT, _OWNER_FOR_SLOT = _slot_table()
 _ENGINE_LOCKS = [threading.Lock() for _ in range(_ENGINE_SLOTS)]
 _ENGINE_GATE = threading.Condition()
 _SKIP = [threading.Event() for _ in range(_ENGINE_SLOTS)]
@@ -579,7 +587,10 @@ _ENGINE_STATUS = [
         "busy": False,
         "script": "",
         "timeframe": _CHART_FOR_SLOT[index],
-        "instrument": "",
+        # A chart engine always runs its own instrument. The creation engine names the draft's while it runs.
+        "root": _ROOT_FOR_SLOT[index],
+        "instrument": _ROOT_FOR_SLOT[index],
+        "creation": index == _CREATION_SLOT,
         "developer": _OWNER_FOR_SLOT[index],
         "study": "",
         "studying": False,
@@ -622,12 +633,20 @@ def warm_engines() -> None:
     start_engines()
 
 
-def slot_for(timeframe: str) -> int:
-    """Engine 1 is the 2-minute chart. Engines 2 and 5 are the 5-minute chart. Engines 3 and 6 are the 15-minute chart. Anything else is the creation engine."""
-    try:
-        return _CHART_FOR_SLOT.index(timeframe)
-    except ValueError:
-        return _CREATION_SLOT
+def slot_for(timeframe: str, root: str | None = None) -> int:
+    """The slot of the chart engine for this instrument's chart. Without a root it is the ES chart (engines 1-3).
+
+    Anything that is not a chart engine's chart is the creation engine.
+    """
+    wanted = str(root or "ES").upper()
+    for index, (chart, owner_root) in enumerate(zip(_CHART_FOR_SLOT, _ROOT_FOR_SLOT)):
+        if chart and chart == timeframe and owner_root == wanted:
+            return index
+    return _CREATION_SLOT
+
+
+def _valid(index) -> bool:
+    return index is not None and 0 <= int(index) < _ENGINE_SLOTS
 
 
 def set_engine_notice(index: int, text: str) -> None:
@@ -638,8 +657,14 @@ def set_engine_notice(index: int, text: str) -> None:
         _ENGINE_STATUS[index]["notice"] = str(text or "")
 
 
-def begin_study(index: int, script: str, goal: int = 10) -> None:
-    """The script now running on this engine. A different script starts its success count over."""
+def begin_study(index: int, script: str, goal: int = 10, *, limit: int = 0, stage: int = 0) -> None:
+    """The script now running on this engine. A different script starts its success count over.
+
+    limit is the attempts the search that starts now has, and stage is its test in days (7, 30, 90, or
+    365 for the year), so the page can show "attempt N of M · 7-day test". 0 means not known yet.
+    """
+    if not _valid(index):
+        return
     with _ENGINE_GATE:
         row = _ENGINE_STATUS[index]
         if row.get("study") != script:
@@ -651,6 +676,8 @@ def begin_study(index: int, script: str, goal: int = 10) -> None:
         row["studying"] = True
         row["goal"] = int(goal)
         row["attempt"] = 0
+        row["attempt_limit"] = int(limit or 0)
+        row["stage"] = int(stage or 0)
 
 
 def record_attempt(index: int, number: int) -> None:
@@ -691,6 +718,8 @@ def set_engine_thinking(index: int | None, text: str) -> None:
 
 def record_success(index: int) -> int:
     """One more profitable run inside the one-year drawdown cap on the script this engine is studying."""
+    if not _valid(index):
+        return 0
     with _ENGINE_GATE:
         row = _ENGINE_STATUS[index]
         row["successes"] = int(row.get("successes") or 0) + 1
@@ -720,11 +749,15 @@ def clear_idle_engine(index: int) -> bool:
 
 def finish_study(index: int) -> None:
     """The engine is between scripts. The count belongs to the script that is actually running."""
+    if not _valid(index):
+        return
     with _ENGINE_GATE:
         row = _ENGINE_STATUS[index]
         row["studying"] = False
         row["study"] = ""
         row["attempt"] = 0
+        row["attempt_limit"] = 0
+        row["stage"] = 0
         row["successes"] = 0
         row["scale"] = 0.0
         row["scale_move"] = ""
@@ -802,9 +835,11 @@ def request_restart(engine_id: int) -> dict:
     with _ENGINE_GATE:
         row = _ENGINE_STATUS[index]
         busy = bool(row.get("busy"))
+        # An engine waiting for a free worker has no worker to end yet. Its queued job is dropped instead.
+        waiting = str(row.get("notice") or "").startswith("Waiting for a free worker")
         script = row.get("study") or row.get("script") or "the current script"
     _RESTART[index].set()
-    if busy:
+    if busy or waiting:
         _SKIP[index].set()
     from futuresfund.engine_workers import active_desk
 
@@ -938,26 +973,210 @@ def script_as_run(source: str, inputs: dict | None, root: str = "ES", *, as_writ
 
     inputs = input_names(source, inputs)
     if not as_written:
-        from futuresfund.risk_style import merge_risk
-        from futuresfund.strategy_team import prepare_backtest
+        from futuresfund.risk_style import merge_risk, point_value
+        from futuresfund.strategy_team import convert_atr_exit, prepare_backtest
 
-        written = source
+        # An ATR exit is converted before the run, so its stop_dollars counts as written: merge_risk
+        # keeps the converted default instead of filling in RISK_DEFAULTS.
+        written, _note = convert_atr_exit(source, point_value(root), root=root)
         source = prepare_backtest(source, root)
         inputs = merge_risk(inputs, root, written)
     return _apply_inputs(source, inputs) if inputs else source
 
 
-def script_trades(source: str, series: list[Bar], inputs: dict | None, root: str = "ES", timeframe: str = "2m", *, as_written: bool = False) -> list[dict]:
+def script_trades(source: str, series: list[Bar], inputs: dict | None, root: str = "ES", timeframe: str = "2m", *, as_written: bool = False, candles_key: str | None = None) -> list[dict]:
     """The closed trades one script takes on these bars.
 
     PineTS runs the script. Research rewrites the session and arms the dollar
     stop before that run. A stop or target the script declares keeps its own
     default unless the attempt moves it. A TradingView comparison passes
-    as_written so the script's own orders are what fill.
+    as_written so the script's own orders are what fill. candles_key names this
+    exact window of bars, so the next attempt on it reuses its candles.
     """
     from futuresfund.pinets_engine import run_pinets
 
-    return run_pinets(script_as_run(source, inputs, root, as_written=as_written), series, timeframe, root)
+    return run_pinets(script_as_run(source, inputs, root, as_written=as_written), series, timeframe, root, candles_key=candles_key)
+
+
+_chart_tokens = count(1)
+
+
+class _Chart:
+    """One chart's bars with their times read once, so a backtest does not read every bar again.
+
+    A backtest builds Bar objects only for its own window. The chart is the same while the
+    engine holds the same list of rows; a new list is a new chart.
+    """
+
+    KEEP = 2
+
+    def __init__(self, rows: list[dict]) -> None:
+        from futuresfund.chart_feed import _epoch_ms
+
+        self.rows = rows
+        self.count = len(rows)
+        self.last = rows[-1] if rows else None
+        pairs = []
+        for position, row in enumerate(rows):
+            stamp = _epoch_ms(row.get("t"))
+            if stamp is None:
+                continue
+            pairs.append((int(stamp // 1000) if abs(stamp) > 10_000_000_000 else int(stamp), position))
+        # The same order _bars_from gives: by time, and rows with the same time in file order.
+        pairs.sort(key=lambda pair: pair[0])
+        self.epochs = [pair[0] for pair in pairs]
+        self.positions = [pair[1] for pair in pairs]
+        self.token = f"{os.getpid()}-{next(_chart_tokens)}"
+        self.starts: dict = {}
+        self.windows: OrderedDict = OrderedDict()
+        self.days: dict = {}
+        self.jumps: OrderedDict = OrderedDict()
+        self.lock = threading.Lock()
+
+    def same(self, rows: list[dict]) -> bool:
+        return rows is self.rows and len(rows) == self.count and (not rows or rows[-1] is self.last)
+
+    def first(self, sessions: int | None) -> int:
+        """Index of the first bar of the window: the last year, or the last that many sessions."""
+        with self.lock:
+            if sessions not in self.starts:
+                from futuresfund.objective import window_start
+
+                start = window_start(self.epochs, sessions)
+                self.starts[sessions] = 0 if start is None else bisect_left(self.epochs, start)
+            return self.starts[sessions]
+
+    def bars(self, start: int) -> list[Bar]:
+        """The bars from this index to the last bar."""
+        with self.lock:
+            found = self.windows.get(start)
+            if found is not None:
+                self.windows.move_to_end(start)
+                return found
+        rows = self.rows
+        found = []
+        for epoch, position in zip(self.epochs[start:], self.positions[start:]):
+            row = rows[position]
+            found.append(Bar(
+                epoch,
+                float(row.get("o") or 0),
+                float(row.get("h") or 0),
+                float(row.get("l") or 0),
+                float(row.get("c") or 0),
+                float(row.get("v") or 0),
+            ))
+        with self.lock:
+            self.windows[start] = found
+            while len(self.windows) > self.KEEP:
+                self.windows.popitem(last=False)
+        return found
+
+    def session_count(self, start: int, series: list[Bar]) -> int:
+        from futuresfund.objective import session_days
+
+        with self.lock:
+            if start not in self.days:
+                self.days[start] = session_days(bar.epoch for bar in series)
+            return self.days[start]
+
+    def minutes(self, start: int, run: list[Bar]) -> dict:
+        """Each bar's New York minute to its index in this run, for the price jump check."""
+        with self.lock:
+            found = self.jumps.get(start)
+            if found is not None:
+                return found
+        found = {bar.when.strftime("%Y-%m-%d %H:%M"): index for index, bar in enumerate(run)}
+        with self.lock:
+            self.jumps[start] = found
+            while len(self.jumps) > 1:
+                self.jumps.popitem(last=False)
+        return found
+
+
+_charts: list[_Chart] = []
+_charts_lock = threading.Lock()
+
+
+# A pool worker runs jobs for more than one chart, so it keeps the last two (engine_workers.CHARTS_PER_WORKER).
+_CHARTS_KEPT = 2
+
+
+def _chart_of(rows: list[dict]) -> _Chart:
+    """This list of rows as a chart, read once. The two charts used last are kept."""
+    with _charts_lock:
+        for chart in _charts:
+            if chart.same(rows):
+                _charts.remove(chart)
+                _charts.append(chart)
+                return chart
+    chart = _Chart(rows)
+    with _charts_lock:
+        _charts.append(chart)
+        del _charts[:-_CHARTS_KEPT]
+    return chart
+
+
+_window_starts: OrderedDict = OrderedDict()
+_window_lock = threading.Lock()
+
+
+def _epoch_of(stamp: int) -> int:
+    """The bar time in seconds, the way _Chart reads an integer t."""
+    return stamp // 1000 if abs(stamp) > 10_000_000_000 else stamp
+
+
+def window_start_index(rows: list[dict]) -> int:
+    """Index of the first row a chart engine's backtest can use: the year's first bar, less WARMUP_BARS.
+
+    execute_script with full=False starts at the last RESEARCH_SESSIONS sessions (the year) and a
+    proving stage starts WARMUP_BARS before its own, shorter window, so nothing before this row is
+    read. 0 keeps the whole series: a chart of a year or less, or one whose times are not whole
+    numbers in time order (then _Chart's own sort could place an older row inside the window).
+    """
+    from futuresfund import objective
+
+    total = len(rows or [])
+    if total <= WARMUP_BARS:
+        return 0
+    sessions = int(objective.RESEARCH_SESSIONS)
+    key = (total, rows[0].get("t"), rows[-1].get("t"), rows[total // 2].get("t"), sessions, WARMUP_BARS)
+    with _window_lock:
+        if key in _window_starts:
+            _window_starts.move_to_end(key)
+            return _window_starts[key]
+    stamps = [row.get("t") for row in rows]
+    start = 0
+    if all(type(stamp) is int for stamp in stamps) and all(a <= b for a, b in zip(stamps, stamps[1:])):
+        days = 0
+        current = None
+        for index in range(total - 1, -1, -1):
+            day = objective._session_day(_epoch_of(stamps[index]))
+            if day != current:
+                current = day
+                days += 1
+                if days > sessions:
+                    # index + 1 is the first bar of the year's oldest session, the bar window_start picks.
+                    start = max(0, index + 1 - WARMUP_BARS)
+                    break
+    with _window_lock:
+        _window_starts[key] = start
+        while len(_window_starts) > 64:
+            _window_starts.popitem(last=False)
+    return start
+
+
+def research_window(rows: list[dict], sessions: int | None = None) -> list[dict]:
+    """The rows a chart engine's run reads (the last year and WARMUP_BARS before it), for sending to a worker.
+
+    A run on these rows gives the same result as a run on the whole series
+    (tests/test_engine_pool.py proves it). A stage longer than a year gets the whole series.
+    """
+    from futuresfund import objective
+
+    if sessions is not None and int(sessions) > int(objective.RESEARCH_SESSIONS):
+        return rows
+    start = window_start_index(rows)
+    return rows[start:] if start else rows
 
 
 def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict | None, instrument: str, label: str, index: int, full: bool = False, sessions: int | None = None) -> dict:
@@ -967,30 +1186,29 @@ def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict |
     starts WARMUP_BARS earlier so the indicators are settled, and only trades that enter
     inside the window count.
     """
-    from futuresfund.pinets_engine import PineTSError, PineTSScriptError
+    from futuresfund.pinets_engine import PineTSError, PineTSScriptError, run_pinets
 
     title = _strategy_title(source)
-    every = _bars_from(bars)
-    if full:
-        series = every
-        start_epoch = every[0].epoch if every else None
-    else:
-        from futuresfund.objective import window_start
-
-        start_epoch = window_start((bar.epoch for bar in every), sessions)
-        series = every if start_epoch is None else [bar for bar in every if bar.epoch >= start_epoch]
+    chart = _chart_of(bars)
+    total = len(chart.epochs)
+    first = 0 if full else chart.first(sessions)
+    start_epoch = chart.epochs[first] if total else None
     start = ""
     if start_epoch is not None:
         start = datetime.fromtimestamp(start_epoch, timezone.utc).astimezone(ET).strftime("%Y-%m-%d %H:%M")
-    run = series
-    if sessions is not None and series and len(series) < len(every):
-        first = len(every) - len(series)
-        run = every[max(0, first - WARMUP_BARS):]
+    begin = first
+    if sessions is not None and not full and 0 < first < total:
+        begin = max(0, first - WARMUP_BARS)
+    run = chart.bars(begin)
+    warmed = begin < first
+    series = run[first - begin:] if warmed else run
     name = label or title or "script"
     logs: list[str] = []
+    root_name = str(instrument or "ES").upper()
     try:
-        trades = script_trades(source, run, inputs, str(instrument or "ES").upper(), timeframe)
-        if run is not series:
+        as_run = script_as_run(source, inputs, root_name)
+        trades = run_pinets(as_run, run, timeframe, root_name, candles_key=f"{chart.token}:{begin}")
+        if warmed:
             trades = [trade for trade in trades if str(trade.get("entry_time") or "") >= start]
     except PineTSError as exc:
         logs.append(f"STOP   PineTS  {name}  the script stopped: {exc}")
@@ -1012,13 +1230,14 @@ def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict |
 
     root = root_of(str(instrument or "ES"))
     point, tick = POINT_VALUE.get(root), TICK_SIZE.get(root)
-    if point and tick:
-        mark_price_jumps(trades, run, point, tick)
+    if point and tick and trades:
+        mark_price_jumps(trades, run, point, tick, where=chart.minutes(begin, run))
     measured = _metrics(trades)
     from futuresfund.objective import stop_in_script
 
     # The stop the run was set to. A fill past a stop set inside the limit is not the script's fault.
-    measured["stop_dollars"] = stop_in_script(script_as_run(source, inputs, root.upper() if root else "ES"))
+    stop_root = root.upper() if root else "ES"
+    measured["stop_dollars"] = stop_in_script(as_run if stop_root == root_name else script_as_run(source, inputs, stop_root))
     from futuresfund.script_diagnosis import exit_summary
 
     measured["exits"] = exit_summary(trades)
@@ -1026,9 +1245,9 @@ def execute_script(source: str, bars: list[dict], timeframe: str, inputs: dict |
 
     # Profit by the half hour each trade entered, so a researcher can find the time of day that keeps losing.
     measured["clock"] = clock(trades)
-    from futuresfund.objective import session_days, trade_spans
+    from futuresfund.objective import trade_spans
 
-    days = session_days(bar.epoch for bar in series)
+    days = chart.session_count(first, series)
     end = ""
     if series:
         end = datetime.fromtimestamp(series[-1].epoch, timezone.utc).astimezone(ET).strftime("%Y-%m-%d %H:%M")
@@ -1090,8 +1309,9 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
     title = _strategy_title(source)
     index = slot if slot is not None else slot_for(timeframe)
     name = label or title or "script"
-    series = _bars_from(bars)
-    if "volume" in (source or "").lower() and not any(bar.v > 0 for bar in series):
+    # The engine reads the bars. Here they are only counted, so the desk does not read every bar before each run.
+    rows = bars or []
+    if "volume" in (source or "").lower() and not any(float(row.get("v") or 0) > 0 for row in rows):
         _engine_log(index, f"BLOCK  PineTS  {name}  {timeframe} {instrument}  no volume column")
         return {
             "engine": ENGINE,
@@ -1104,7 +1324,7 @@ def run_script(source: str, bars: list[dict], timeframe: str, inputs: dict | Non
             "timeframe": timeframe,
             "instrument": instrument,
         }
-    start_line = f"START  PineTS  {name}  {timeframe} {instrument}  {len(series):,} bars  {_settings_line(inputs)}"
+    start_line = f"START  PineTS  {name}  {timeframe} {instrument}  {len(rows):,} bars  {_settings_line(inputs)}"
     from futuresfund.engine_workers import active_desk
 
     desk = active_desk()
@@ -1206,7 +1426,7 @@ def _acquire_engine(script: str, timeframe: str, instrument: str, index: int) ->
             "busy": True,
             "script": script,
             "timeframe": timeframe or _CHART_FOR_SLOT[index],
-            "instrument": instrument,
+            "instrument": instrument or _ROOT_FOR_SLOT[index],
             "developer": _OWNER_FOR_SLOT[index],
             "notice": "",
         })
@@ -1217,7 +1437,8 @@ def _release_engine(index: int) -> None:
         "busy": False,
         "script": "",
         "timeframe": _CHART_FOR_SLOT[index],
-        "instrument": "",
+        # A chart engine keeps its instrument between runs. The creation engine has none until the next draft.
+        "instrument": _ROOT_FOR_SLOT[index],
         "developer": _OWNER_FOR_SLOT[index],
     })
     _ENGINE_LOCKS[index].release()

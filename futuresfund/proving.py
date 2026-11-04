@@ -18,7 +18,11 @@ from pathlib import Path
 STAGES = (7, 30, 90, 365)
 LIMIT = 100
 _LOCK = threading.Lock()
-_METRICS = ("net_profit", "max_drawdown", "trades", "win_rate", "profit_factor", "biggest_loser", "held_loser", "stop_dollars", "spans")
+_METRICS = (
+    "net_profit", "max_drawdown", "trades", "win_rate", "profit_factor", "biggest_loser", "held_loser", "stop_dollars", "spans",
+    # The attempts the stage used, the attempts it had, and which attempt was its best pass.
+    "attempts_used", "attempt_budget", "best_attempt",
+)
 
 
 def _home() -> Path:
@@ -108,19 +112,44 @@ def _trim(data: dict) -> list[str]:
     return dropped
 
 
-def mark(file: str, root: str, timeframe: str, days: int, status: str, row: dict | None = None, source: str = "", reason: str = "") -> None:
+def _attempts(row: dict | None) -> dict:
+    """{"used": n, "budget": m} from a row's attempts_used and attempt_budget. Used is None while the stage is testing."""
+    if not isinstance(row, dict):
+        return {}
+    budget, used = row.get("attempt_budget"), row.get("attempts_used")
+    if budget is None and used is None:
+        return {}
+    try:
+        return {
+            "used": None if used is None else int(used),
+            "budget": None if budget is None else int(budget),
+        }
+    except (TypeError, ValueError):
+        return {}
+
+
+def mark(file: str, root: str, timeframe: str, days: int, status: str, row: dict | None = None, source: str = "", reason: str = "", fresh: bool = False) -> None:
     """Record that a script is testing, passed, failed, or stopped on the stage of `days`.
 
     A pass keeps the run's numbers and saves the script with its passing inputs.
-    Starting the 7-day stage again clears the passes from an earlier study.
+    Starting the 7-day stage again clears the passes from an earlier study. So does `fresh`, which
+    research passes for the first stage that runs when the owner turned the 7-day stage off.
     A stopped stage ended without a result, and `reason` says why.
+    A row with attempt_budget (and attempts_used) records the attempts that stage had (and used) under
+    entry["attempts"][days], for any status, so a testing or failed stage shows them too.
     """
     root = str(root or "ES").upper()
     with _LOCK:
         data = _load()
         entry = _entry(data, file, root, timeframe)
-        if status == "testing" and int(days) == STAGES[0]:
+        if status == "testing" and (int(days) == STAGES[0] or fresh):
             entry["passed"] = {}
+            entry["attempts"] = {}
+        counted = _attempts(row)
+        if counted:
+            attempts = entry.get("attempts") if isinstance(entry.get("attempts"), dict) else {}
+            attempts[str(int(days))] = counted
+            entry["attempts"] = attempts
         entry["stage"] = int(days)
         entry["status"] = status
         entry["updated"] = _now()
@@ -145,12 +174,14 @@ def mark(file: str, root: str, timeframe: str, days: int, status: str, row: dict
         _write(data)
 
 
-def stop_testing(reason: str, file: str | None = None, timeframe: str | None = None, since: str = "") -> list[str]:
+def stop_testing(reason: str, file: str | None = None, timeframe: str | None = None, since: str = "", root: str | None = None) -> list[str]:
     """Mark the stages still testing as stopped and return their keys.
 
-    `file` and `timeframe` narrow it to one script on one chart, and `since` to
-    stages marked at or after that time. With neither, every testing row stops:
-    research is starting, so nothing is running them.
+    `file`, `timeframe` and `root` narrow it to one script on one instrument's chart, and
+    `since` to stages marked at or after that time. Each instrument has its own engines, so one
+    instrument's study ending does not stop another instrument's stage on the same file and
+    chart. With none of them, every testing row stops: research is starting, so nothing is
+    running them.
     """
     stopped = []
     with _LOCK:
@@ -161,6 +192,8 @@ def stop_testing(reason: str, file: str | None = None, timeframe: str | None = N
             if file is not None and entry.get("file") != file:
                 continue
             if timeframe is not None and entry.get("timeframe") != timeframe:
+                continue
+            if root is not None and str(entry.get("root") or "").upper() != str(root).upper():
                 continue
             if since and str(entry.get("updated") or "") < since:
                 continue

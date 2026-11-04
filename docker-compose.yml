@@ -20,8 +20,10 @@ services:
   # The public address belongs to this service, so restarting the desk does not change it.
   # Do not tie it to the desk with depends_on. Restarting this service opens a new address,
   # and the desk reads it from /quicktunnel and emails it.
+  # docker/tunnel/watch.py stops cloudflared when Cloudflare has deleted the address, so a dead
+  # address is replaced on its own instead of being retried forever.
   tunnel:
-    image: cloudflare/cloudflared:2026.9.3
+    build: ./docker/tunnel
+    image: futures-tunnel
     container_name: futures-tunnel
     restart: unless-stopped
-    command: tunnel --url http://desk:8788 --proxy-keepalive-timeout 60s --metrics 0.0.0.0:2000

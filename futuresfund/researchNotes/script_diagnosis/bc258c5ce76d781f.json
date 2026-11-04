@@ -1,0 +1,59 @@
+{
+ "sessions": 21,
+ "unread": [
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {},
+ "flat": [],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "ema_len": 200,
+   "ema_slope_bars": 10,
+   "ema_min_angle": 6.75,
+   "lookback": 300,
+   "break_buffer": 0.75,
+   "hard_tp_dollars": 0.0,
+   "ny_start_hr": 9,
+   "ny_start_mn": 0,
+   "ny_end_hr": 13,
+   "ny_end_mn": 0,
+   "use_fut_sess": true,
+   "fut_start_hr": 20,
+   "fut_end_hr": 8,
+   "max_trades_day": 3,
+   "cool_bars": 3,
+   "loss_cool_bars": 30,
+   "daily_loss_lim": 500.0
+  },
+  "net_profit": 0.0,
+  "max_drawdown": 0.0,
+  "trades": 0,
+  "win_rate": null,
+  "profit_factor": null,
+  "biggest_winner": null,
+  "biggest_loser": null,
+  "held_loser": null,
+  "exits": []
+ },
+ "empty_charts": [
+  "ES 15m",
+  "GC 15m",
+  "NQ 15m",
+  "MNQ 15m",
+  "MES 15m",
+  "M2K 15m",
+  "YM 15m"
+ ],
+ "version": 3
+}

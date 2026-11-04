@@ -1,0 +1,1 @@
+DeltaVolumeBreakOutBigGainsRiskyNQ1Min.txt took 960 trades. A script with more than 900 trades cannot be saved, so every chart is skipping it.

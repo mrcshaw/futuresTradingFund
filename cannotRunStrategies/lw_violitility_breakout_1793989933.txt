@@ -1,0 +1,107 @@
+// How this script works
+// The script is a volatility breakout strategy that requests daily open, high, low, and close values and builds levels from the daily range using the k input.
+// It opens a Long entry when the computed lp level is below the current high, it is inside the session, no trade is open, and the optional trend filter is not blocking the trade.
+// It opens a Short entry only when shortopen is enabled, the computed sp level is above the current low, it is inside the session, no trade is open, and the optional trend filter is not blocking the trade.
+// It exits with a dollar stop when open profit is at or below -stop_dollars, and it also closes the Long when close falls below sl or the Short when close rises above sl2, on a new day, or outside the session.
+
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Dicargo_Beam
+
+//@version=5
+strategy("Volatility Breakout Strategy", overlay=true, default_qty_type= strategy.percent_of_equity, default_qty_value=100)
+// ===== RISK =====
+pv                = input.float(50, "Point Value ($)")
+stop_dollars      = input.int(250, "Stop ($)", minval=50, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=50)
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_step_pct    = input.float(50, "Trail step (%)", minval=0, maxval=100)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+// ===== SESSION =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(16,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+sess_bar_hr = hour(time, "America/New_York")
+sess_bar_mn = minute(time, "America/New_York")
+sess_bar_t = sess_bar_hr * 100 + sess_bar_mn
+sess_clock_start = sess_start_hr * 100 + sess_start_mn
+sess_clock_end = sess_end_hr * 100 + sess_end_mn
+in_session = not use_session or (sess_clock_start > sess_clock_end ? (sess_bar_t >= sess_clock_start or sess_bar_t < sess_clock_end) : (sess_bar_t >= sess_clock_start and sess_bar_t < sess_clock_end))
+if not in_session
+    strategy.close_all(comment="Session")
+
+k = input.float(0.6)
+f_security(_sym, _res, _src) => 
+    request.security(_sym, _res, _src[barstate.isrealtime ? 1 : 0])[barstate.isrealtime ? 0 : 1]
+o = f_security(syminfo.tickerid,"D",open)
+h = f_security(syminfo.tickerid,"D",high)
+l = f_security(syminfo.tickerid,"D",low)
+c = f_security(syminfo.tickerid,"D",close)
+
+
+var lp = 0.0
+var sl = 0.0
+var sp = 0.0
+var sl2 = 0.0
+
+if hour[1]-hour>1
+    lp := c+(h-l)*k
+    sl := (l+lp)/2
+    sp := c-(h-l)*k
+    sl2 := (h+sp)/2
+
+longcond = lp < high
+exit = hour[1]-hour>1 or  close < sl
+
+plot(lp,"Long Entry",color=color.yellow)
+plot(sl,"Long StopLoss",color=color.red)
+
+ 
+exit2 = hour[1]-hour>1 or close > sl2
+
+shortcond = sp > low
+
+shortopen = input.bool(false,"Short Postion Open??")
+
+plot(shortopen? sp : na,"Short Entry",color=color.new(color.yellow,50))
+plot(shortopen? sl2 : na,"Short StopLoss",color=color.new(color.red,50))
+
+
+
+
+trend = input.bool(false,"Trend Following?")
+
+longtrend = trend? lp/sl > sl2/sp : true
+shorttrend = trend? lp/sl < sl2/sp : true
+
+
+if in_session
+    strategy.entry("Long", strategy.long,comment = "Long", when = longcond and strategy.opentrades == 0 and longtrend)
+strategy.close("Long", comment="Long Exit", when = exit)
+
+if shortopen
+    if in_session
+        strategy.entry("Short", strategy.short,comment = "Short", when = shortcond and strategy.opentrades == 0 and shorttrend)
+    strategy.close("Short", comment="Short Exit", when = exit2)
+    
+
+var bg = 0
+if hour[1]-hour>1
+    bg := bg + 1
+
+
+bgcolor(bg/2== math.floor(bg/2) ? color.new(color.blue,95):na)
+
+
+
+

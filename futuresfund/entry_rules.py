@@ -33,10 +33,11 @@ _FILE_LOCKS: dict[str, threading.Lock] = {}
 _FILE_LOCKS_GUARD = threading.Lock()
 
 
-def ensure_entry_rule(board, developer: str, source: str, bars: list, *, wait: bool = False) -> bool | None:
+def ensure_entry_rule(board, developer: str, source: str, bars, *, wait: bool = False) -> bool | None:
     """True when this script can enter. The developer writes the rule on this agent's own thread.
 
     None means another agent is already writing this rule. The caller does not wait.
+    bars is the list of bars, or a function that returns it when a rule has to be written.
     """
     title = _title(source)
     if _ready(source):
@@ -54,16 +55,15 @@ def ensure_entry_rule(board, developer: str, source: str, bars: list, *, wait: b
         if board is not None:
             board.log(developer, f"Adding the entry rule for {title}")
         try:
-            added = bool(_write_rule(developer, source, bars))
+            # The bars are read only when a rule has to be written: most scripts already have one.
+            added = bool(_write_rule(developer, source, bars() if callable(bars) else bars))
         except Exception as exc:
             board.post(developer, f"The entry rule for {title} was not added: {exc}", kind="error", channel=developer)
             return False
         if added:
-            from futuresfund.learn import ATTEMPT_LIMIT
-
             board.post(
                 developer,
-                f"The entry rule for {title} is on the engine. The {ATTEMPT_LIMIT} attempts use that rule.",
+                f"The entry rule for {title} is on the engine. Every attempt on the 7, 30 and 90-day stages and the year uses that rule.",
                 kind="report",
                 channel=developer,
             )

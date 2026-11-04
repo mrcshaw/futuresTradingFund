@@ -1,0 +1,215 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 162.75,
+   "max_drawdown": 551.5,
+   "trades": 21
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -846.5,
+   "max_drawdown": 1379.0,
+   "trades": 24
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": -104.0,
+   "max_drawdown": 957.0,
+   "trades": 19
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": 575.0,
+   "max_drawdown": 527.0,
+   "trades": 15
+  },
+  "min_delta_pct": {
+   "value": 2.5,
+   "net_profit": -498.5,
+   "max_drawdown": 978.5,
+   "trades": 26
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 204.5,
+   "max_drawdown": 466.5,
+   "trades": 13
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "pivot_left": {
+   "value": 2,
+   "net_profit": -304.0,
+   "max_drawdown": 917.25,
+   "trades": 24
+  },
+  "pivot_right": {
+   "value": 2,
+   "net_profit": 473.75,
+   "max_drawdown": 516.0,
+   "trades": 20
+  },
+  "disarm_only_inside_poc": {
+   "value": false,
+   "net_profit": 178.25,
+   "max_drawdown": 773.0,
+   "trades": 13
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": -58.0,
+   "max_drawdown": 716.75,
+   "trades": 23
+  },
+  "vol_ma_len": {
+   "value": 5,
+   "net_profit": -470.5,
+   "max_drawdown": 858.5,
+   "trades": 18
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": -571.75,
+   "max_drawdown": 1217.75,
+   "trades": 33
+  },
+  "use_breakeven": {
+   "value": false,
+   "net_profit": -430.25,
+   "max_drawdown": 1078.5,
+   "trades": 24
+  },
+  "be_trigger_dollars": {
+   "value": 50.0,
+   "net_profit": -581.75,
+   "max_drawdown": 975.5,
+   "trades": 23
+  }
+ },
+ "flat": [
+  "reduced_stop_dollars",
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars",
+  "vwma_slope_len",
+  "cooldown_bars",
+  "use_reduced_risk",
+  "reduced_start_hr",
+  "reduced_start_mn",
+  "reduced_end_hr",
+  "reduced_end_mn",
+  "reduced_tp_dollars",
+  "rev_on_any_loss"
+ ],
+ "untested": [
+  "use_session",
+  "sess_start_hr",
+  "sess_start_mn",
+  "sess_end_hr",
+  "sess_end_mn"
+ ],
+ "baseline": {
+  "params": {
+   "pv": 5.0,
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "vwma_len": 50,
+   "vwma_slope_len": 5,
+   "min_slope": 0.0,
+   "pivot_left": 3,
+   "pivot_right": 3,
+   "disarm_only_inside_poc": true,
+   "cooldown_bars": 5,
+   "use_price_vwma": true,
+   "vol_ma_len": 20,
+   "use_vol_filter": true,
+   "use_session": true,
+   "sess_start_hr": 8,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_reduced_risk": true,
+   "reduced_start_hr": 12,
+   "reduced_start_mn": 0,
+   "reduced_end_hr": 16,
+   "reduced_end_mn": 0,
+   "reduced_stop_dollars": 500.0,
+   "reduced_tp_dollars": 450.0,
+   "use_breakeven": true,
+   "be_trigger_dollars": 150.0,
+   "rev_on_any_loss": false
+  },
+  "net_profit": -736.5,
+  "max_drawdown": 1130.25,
+  "trades": 24,
+  "win_rate": 29.17,
+  "profit_factor": 0.642,
+  "biggest_winner": 487.75,
+  "biggest_loser": -263.5,
+  "held_loser": -263.5,
+  "exits": [
+   {
+    "exit": "Session Close",
+    "trades": 13,
+    "pnl": 394.5,
+    "favorable": 127.67,
+    "adverse": -89.44
+   },
+   {
+    "exit": "Long",
+    "trades": 3,
+    "pnl": -368.0,
+    "favorable": 40.33,
+    "adverse": -150.5
+   },
+   {
+    "exit": "Short",
+    "trades": 3,
+    "pnl": -196.75,
+    "favorable": 51.58,
+    "adverse": -118.42
+   },
+   {
+    "exit": "XL",
+    "trades": 2,
+    "pnl": -527.0,
+    "favorable": 65.75,
+    "adverse": -258.0
+   },
+   {
+    "exit": "XS",
+    "trades": 2,
+    "pnl": -527.0,
+    "favorable": 22.62,
+    "adverse": -258.0
+   },
+   {
+    "exit": "XRS",
+    "trades": 1,
+    "pnl": 487.75,
+    "favorable": 493.25,
+    "adverse": -43.0
+   }
+  ]
+ },
+ "reviewed": [],
+ "empty_charts": [],
+ "version": 3
+}

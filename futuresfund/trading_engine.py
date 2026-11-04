@@ -2,7 +2,7 @@
 
 The floor trader's engine and the quantitative trader's engine read the chart
 and run the active strategy's Pine script there, apart from the desk and from
-the four research engines. The trader's thread in the desk sends the card's
+the research engines. The trader's thread in the desk sends the card's
 script, waits on that trader's engine only, and then books what the script
 did, on paper or live. An engine starts the first time its trader checks a
 script, and it stops when the desk that started it is gone.

@@ -1,376 +1,5 @@
 [
  {
-  "time": "2026-10-19 08:03 AM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-19 05:04 PM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-19 05:05 PM ET",
-  "subject": "Futures desk error report: 99 errors",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-19 05:31 PM ET",
-  "subject": "Futures desk address",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 07:04 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 07:05 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 07:05 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 07:05 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 07:18 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:05 AM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 08:21 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 08:21 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 08:21 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:22 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 08:23 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:23 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 08:23 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-20 05:03 PM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 05:05 PM ET",
-  "subject": "Futures desk error report: 285 errors",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-20 05:35 PM ET",
-  "subject": "Futures desk address",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 03:09 AM ET",
-  "subject": "Trade closed: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-21 03:09 AM ET",
-  "subject": "Trade opened: SELL 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-21 03:09 AM ET",
-  "subject": "Trade opened: BUY 1 ES1!",
-  "sent": false,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
- },
- {
-  "time": "2026-10-21 04:34 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 04:42 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 04:46 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 04:59 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:08 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:14 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:22 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:31 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:39 AM ET",
-  "subject": "Futures fund library: Smart Trail + POC Delta Combined",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 06:03 AM ET",
-  "subject": "Futures fund research report: Smart Trail + POC Delta Combined on MNQ 15-minute",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 08:03 AM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 02:45 PM ET",
-  "subject": "Futures fund library: Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 02:49 PM ET",
-  "subject": "Futures fund research report: Day shift BOS Profitable 23k Delta Volume Breakout ES 2min reversals on GC 15-minute",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:00 PM ET",
-  "subject": "Futures desk report",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:05 PM ET",
-  "subject": "Futures desk error report: 80 errors",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-21 05:55 PM ET",
-  "subject": "Futures desk address changed",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-22 02:55 AM ET",
-  "subject": "Futures fund library: Delta Volume Breakout",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-22 02:58 AM ET",
-  "subject": "Futures fund research report: Delta Volume Breakout on MNQ 5-minute",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-22 05:30 AM ET",
-  "subject": "Futures fund library: EMA VWMA Cross",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-22 05:31 AM ET",
-  "subject": "Futures fund research report: EMA VWMA Cross on NQ 5-minute",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
-  "time": "2026-10-22 05:31 AM ET",
-  "subject": "Futures fund library: EMA VWMA Cross",
-  "sent": true,
-  "to": "thefutureoffuturestrading@gmail.com",
-  "reason": "sent"
- },
- {
   "time": "2026-10-22 05:32 AM ET",
   "subject": "Futures fund research report: EMA VWMA Cross on MNQ 5-minute",
   "sent": true,
@@ -1398,5 +1027,376 @@
   "sent": false,
   "to": "thefutureoffuturestrading@gmail.com",
   "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 06:52 PM ET",
+  "subject": "Lessons learned are too large",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-04 08:29 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:36 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:43 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:45 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:47 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:49 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-04 08:58 PM ET",
+  "subject": "Futures desk address changed",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-05 03:48 AM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 03:51 AM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 03:55 AM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 06:12 AM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 08:20 AM ET",
+  "subject": "Futures desk report",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-05 04:28 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 04:32 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 05:18 PM ET",
+  "subject": "Futures desk report",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-05 05:18 PM ET",
+  "subject": "Futures desk error report: 14 errors",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-05 06:03 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 07:46 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 07:49 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 07:51 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 08:25 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 08:28 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 08:41 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-05 09:15 PM ET",
+  "subject": "Lessons learned are too large",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-05 11:02 PM ET",
+  "subject": "Futures fund research report: Delta Volume Breakout Night Shift on YM 5-minute",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 08:21 AM ET",
+  "subject": "Futures desk report",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 12:34 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 03:37 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 03:39 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 04:55 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 05:19 PM ET",
+  "subject": "Futures desk report",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 05:19 PM ET",
+  "subject": "Futures desk error report: 7 errors",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 08:06 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 08:08 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 08:11 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 08:13 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 08:13 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 08:35 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 08:38 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 08:59 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 09:06 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "Email is off in this process (a test run or FUTURES_MAIL_OFF), so nothing was sent."
+ },
+ {
+  "time": "2026-11-06 09:08 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "Email is off in this process (a test run or FUTURES_MAIL_OFF), so nothing was sent."
+ },
+ {
+  "time": "2026-11-06 09:25 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 09:27 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 09:34 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 09:36 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 09:37 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 09:58 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 10:08 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 10:14 PM ET",
+  "subject": "Futures fund library: Kept Run",
+  "sent": false,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to thefutureoffuturestrading@gmail.com."
+ },
+ {
+  "time": "2026-11-06 10:18 PM ET",
+  "subject": "Lessons learned are too large",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
+ },
+ {
+  "time": "2026-11-06 11:11 PM ET",
+  "subject": "[FFQ-7e1c98] StochasticRSIDoubleStrategy.txt: a compile repair started",
+  "sent": true,
+  "to": "thefutureoffuturestrading@gmail.com",
+  "reason": "sent"
  }
 ]

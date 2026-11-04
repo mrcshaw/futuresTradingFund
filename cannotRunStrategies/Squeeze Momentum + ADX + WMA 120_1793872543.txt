@@ -1,0 +1,82 @@
+//@version=5
+strategy("Squeeze Momentum + ADX + WMA 120", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false)
+
+// ===== SQUEEZE MOMENTUM =====
+bb_len     = input.int(20, "BB Length", minval=1, group="Squeeze Momentum")
+kc_len     = input.int(20, "KC Length", minval=1, group="Squeeze Momentum")
+kc_mult    = input.float(1.5, "KC Multiplier", minval=0.1, step=0.1, group="Squeeze Momentum")
+use_tr     = input.bool(true, "Use True Range for KC", group="Squeeze Momentum")
+
+// ===== FIX 1: ADX =====
+use_adx    = input.bool(true, "Fix 1: Require ADX Above Level", group="Fix 1: ADX")
+adx_len    = input.int(14, "ADX Length", minval=1, group="Fix 1: ADX")
+adx_smooth = input.int(14, "ADX Smoothing", minval=1, group="Fix 1: ADX")
+adx_level  = input.float(20, "ADX Level", minval=0, group="Fix 1: ADX")
+
+// ===== FIX 2: BASELINE =====
+use_wma    = input.bool(true, "Fix 2: Trade With The WMA", group="Fix 2: Baseline")
+wma_len    = input.int(120, "WMA Length", minval=1, group="Fix 2: Baseline")
+
+// ===== RISK =====
+atr_len    = input.int(14, "ATR Length", minval=1, group="Risk")
+stop_atr   = input.float(2.0, "Stop (x ATR)", minval=0.1, step=0.1, group="Risk")
+tp_atr     = input.float(3.0, "Take Profit (x ATR)", minval=0.1, step=0.1, group="Risk")
+max_loss   = input.float(700, "Max Stop Per Trade ($)", minval=1, group="Risk")
+
+// ===== SQUEEZE =====
+// The original indicator uses the KC multiplier for the bands too, so the signals match it.
+bb_basis = ta.sma(close, bb_len)
+bb_dev   = kc_mult * ta.stdev(close, bb_len)
+bb_upper = bb_basis + bb_dev
+bb_lower = bb_basis - bb_dev
+
+kc_basis = ta.sma(close, kc_len)
+kc_range = ta.sma(use_tr ? ta.tr(true) : high - low, kc_len)
+kc_upper = kc_basis + kc_range * kc_mult
+kc_lower = kc_basis - kc_range * kc_mult
+
+sqz_on  = bb_lower > kc_lower and bb_upper < kc_upper
+sqz_off = bb_lower < kc_lower and bb_upper > kc_upper
+
+// ===== MOMENTUM HISTOGRAM =====
+mid = math.avg(math.avg(ta.highest(high, kc_len), ta.lowest(low, kc_len)), ta.sma(close, kc_len))
+momentum = ta.linreg(close - mid, kc_len, 0)
+
+// ===== SIGNAL: the first gray cross after a black cross =====
+var bool squeezed = false
+fired = sqz_off and squeezed
+if sqz_on
+    squeezed := true
+else if sqz_off
+    squeezed := false
+
+// ===== FILTERS =====
+[di_plus, di_minus, adx] = ta.dmi(adx_len, adx_smooth)
+wma_line = ta.wma(close, wma_len)
+adx_ok   = not use_adx or adx > adx_level
+long_ok  = not use_wma or close > wma_line
+short_ok = not use_wma or close < wma_line
+
+long_sig  = fired and momentum > 0 and adx_ok and long_ok
+short_sig = fired and momentum < 0 and adx_ok and short_ok
+
+// ===== ENTRIES AND EXITS =====
+// The stop and take profit are set once at entry and stay there for the whole trade.
+// The stop is the ATR stop or the dollar cap, whichever is closer.
+atr       = ta.atr(atr_len)
+stop_dist = math.min(stop_atr * atr, max_loss / (syminfo.pointvalue * default_qty_value))
+tp_dist   = tp_atr * atr
+if strategy.position_size == 0
+    if long_sig
+        strategy.entry("Long", strategy.long)
+        strategy.exit("XL", "Long", stop=close - stop_dist, limit=close + tp_dist)
+    else if short_sig
+        strategy.entry("Short", strategy.short)
+        strategy.exit("XS", "Short", stop=close + stop_dist, limit=close - tp_dist)
+
+// ===== PLOT =====
+plot(use_wma ? wma_line : na, "WMA", color.orange, linewidth=2)
+plotshape(long_sig, "Buy", shape.labelup, location.belowbar, color.lime, text="BUY", textcolor=color.black)
+plotshape(short_sig, "Sell", shape.labeldown, location.abovebar, color.red, text="SELL", textcolor=color.white)

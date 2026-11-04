@@ -170,26 +170,6 @@ function arm(source) {
   return source;
 }
 
-const request = JSON.parse(fs.readFileSync(0, "utf8"));
-const { PineTS } = await import(pathToFileURL(deskBundle(pinets)).href);
-const candles = request.candles || [];
-const pine = new PineTS(candles, request.symbol || "ES", String(request.timeframe || "1"));
-const mintick = Number(request.mintick) || 0.25;
-pine._syminfo = {
-  ticker: request.symbol || "ES",
-  tickerid: request.symbol || "ES",
-  root: request.symbol || "ES",
-  description: request.symbol || "ES",
-  type: "futures",
-  currency: "USD",
-  basecurrency: "USD",
-  timezone: "America/New_York",
-  mintick,
-  minmove: 1,
-  pricescale: Math.max(1, Math.round(1 / mintick)),
-  pointvalue: Number(request.pointvalue) || 1,
-  mincontract: 1,
-};
 function writeAside(...args) {
   process.stderr.write(`${args.map((item) => String(item)).join(" ")}\n`);
 }
@@ -197,12 +177,92 @@ console.log = writeAside;
 console.info = writeAside;
 console.warn = writeAside;
 console.error = writeAside;
-try {
+
+const { PineTS } = await import(pathToFileURL(deskBundle(pinets)).href);
+
+// The closed trades of one script on these candles. Every run gets its own PineTS, so
+// nothing one script sets is seen by the next. PineTS reads the candles and does not change them.
+async function closedTrades(request, candles) {
+  const pine = new PineTS(candles.slice(), request.symbol || "ES", String(request.timeframe || "1"));
+  const mintick = Number(request.mintick) || 0.25;
+  pine._syminfo = {
+    ticker: request.symbol || "ES",
+    tickerid: request.symbol || "ES",
+    root: request.symbol || "ES",
+    description: request.symbol || "ES",
+    type: "futures",
+    currency: "USD",
+    basecurrency: "USD",
+    timezone: "America/New_York",
+    mintick,
+    minmove: 1,
+    pricescale: Math.max(1, Math.round(1 / mintick)),
+    pointvalue: Number(request.pointvalue) || 1,
+    mincontract: 1,
+  };
   const context = await pine.run(arm(String(request.source || "")));
   const strategy = context.strategy || {};
-  const trades = (strategy.closedtrades || []).filter((trade) => trade && trade.exit_time);
-  process.stdout.write(JSON.stringify({ trades }));
-} catch (error) {
-  process.stdout.write(JSON.stringify({ error: String(error && error.message ? error.message : error) }));
-  process.exitCode = 1;
+  return (strategy.closedtrades || []).filter((trade) => trade && trade.exit_time);
+}
+
+function reason(error) {
+  return String(error && error.message ? error.message : error);
+}
+
+if (process.argv.includes("--serve")) {
+  // One process for many backtests: Node and PineTS load once. Each request is one line
+  // of JSON on stdin and each answer one line on stdout behind the marker. The candles of a
+  // window are kept by key, so the next attempt on the same window sends only the script.
+  const { createInterface } = await import("node:readline");
+  const KEEP = 3;
+  const kept = new Map();
+  const answer = (value) => process.stdout.write(`@@desk ${JSON.stringify(value)}\n`);
+  let queue = Promise.resolve();
+  const serve = async (line) => {
+    let request;
+    try {
+      request = JSON.parse(line);
+    } catch (error) {
+      process.stderr.write(`The desk sent a line that is not JSON: ${reason(error)}\n`);
+      return;
+    }
+    const id = request.id;
+    const key = request.key ? String(request.key) : "";
+    let candles = Array.isArray(request.candles) ? request.candles : null;
+    if (candles && key) {
+      kept.delete(key);
+      kept.set(key, candles);
+      while (kept.size > KEEP) kept.delete(kept.keys().next().value);
+    } else if (!candles && key && kept.has(key)) {
+      candles = kept.get(key);
+      kept.delete(key);
+      kept.set(key, candles);
+    }
+    if (!candles) {
+      answer({ id, need: "candles" });
+      return;
+    }
+    try {
+      answer({ id, trades: await closedTrades(request, candles) });
+    } catch (error) {
+      answer({ id, error: reason(error) });
+    }
+  };
+  const lines = createInterface({ input: process.stdin, crlfDelay: Infinity });
+  lines.on("line", (line) => {
+    if (!line.trim()) return;
+    queue = queue.then(() => serve(line)).catch((error) => process.stderr.write(`${reason(error)}\n`));
+  });
+  // The desk is gone when stdin closes. The run in progress finishes first.
+  lines.on("close", () => queue.finally(() => process.exit(0)));
+  process.on("unhandledRejection", (error) => process.stderr.write(`Unhandled in PineTS: ${reason(error)}\n`));
+} else {
+  const request = JSON.parse(fs.readFileSync(0, "utf8"));
+  try {
+    const trades = await closedTrades(request, request.candles || []);
+    process.stdout.write(JSON.stringify({ trades }));
+  } catch (error) {
+    process.stdout.write(JSON.stringify({ error: reason(error) }));
+    process.exitCode = 1;
+  }
 }

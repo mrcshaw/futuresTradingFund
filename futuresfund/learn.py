@@ -14,6 +14,7 @@ import traceback
 from pathlib import Path
 from queue import Empty, PriorityQueue
 
+from futuresfund import input_effects
 from futuresfund.pine_report import pine_facts
 ROOT = Path(__file__).resolve().parent
 LEARNING = ROOT / "learningStrategies"
@@ -24,15 +25,17 @@ DRAFTS = ROOT / "draftStrategies"
 # A created script that never had a run clear the acceptance. Kept, never studied again.
 UNPROVEN = ROOT / "unprovenStrategies"
 CANNOT_RUN = ROOT.parent / "cannotRunStrategies"
+# A script whose researcher asked the owner a blocking question waits here (questions.py), next to cannotRunStrategies.
+AWAITING = ROOT.parent / "awaitingAnswerStrategies"
 NOTES = ROOT / "researchNotes"
 ENGINE_ROOT = ROOT.parent.parent / "tradingEngine"
 ENGINE_CHART = "5m"
 RESEARCH_CHARTS = ("5m", "2m", "15m")
-ATTEMPT_LIMIT = 100
-LOSS_LOOK = 40            # chart engines leave a script whose best result is still a loss after this many different results
+ATTEMPT_LIMIT = 300       # different results the one-year search gets on one chart (learn.stage_attempts(None))
+LOSS_LOOK = 40           # chart engines leave a script whose best result is still a loss after this many different results
 CREATED_PROFIT_ATTEMPTS = 20  # the researcher who wrote a script scraps it after this many results with no profit
 SUCCESS_COUNT = 10        # stop after this many counted runs: a profit with the drawdown inside the pro account rule
-FLAT_RUNS = 20            # this many no-profit, no-trade results in a row, and the script is moved to cannotRunStrategies
+FLAT_RUNS = 20            # this many no-profit, no-trade results in a row, and the researcher asks the owner (awaitingAnswerStrategies)
 IMPACT_PERCENT = 0.05     # a profit drop of this share, or more, ends a climb on that input
 ACCOUNT_SIZE = 50000
 PROFIT_TARGET = 3000.0
@@ -392,8 +395,10 @@ def _open_roots(path: Path, timeframe: str, views: dict | None = None) -> list[s
 
 
 _held_lock = threading.Lock()
-_held_back: set[tuple[str, str]] = set()
-_engine_parked: set[tuple[str, str]] = set()
+# Keys are (file, timeframe, root). A blank timeframe and root hold the file on every chart of every
+# instrument: a compile failure is the file's, not one chart's.
+_held_back: set[tuple[str, str, str]] = set()
+_engine_parked: set[tuple[str, str, str]] = set()
 
 
 def clear_holds() -> None:
@@ -402,31 +407,59 @@ def clear_holds() -> None:
         _engine_parked.clear()
 
 
-def hold_script(path: Path | str, timeframe: str) -> None:
-    """Leave this script out of the chart's queue until it is released or the run ends."""
+def _hold_key(path: Path | str, timeframe: str = "", root: str = "") -> tuple[str, str, str]:
+    return (str(path), str(timeframe or ""), str(root or "").upper())
+
+
+def is_held(held, path: Path | str, timeframe: str, root: str | None = None) -> bool:
+    """True when this file is held on this instrument's chart: by its own key, its chart's, or the whole file's.
+
+    held is a set of (file, timeframe) or (file, timeframe, root) keys. Without a root any hold on the chart counts.
+    """
+    if not held:
+        return False
+    key = str(path)
+    if (key, timeframe) in held or (key, timeframe, "") in held or (key, "", "") in held:
+        return True
+    if root is None:
+        return any(isinstance(item, tuple) and len(item) == 3 and item[0] == key and item[1] == timeframe for item in held)
+    return (key, timeframe, str(root).upper()) in held
+
+
+def hold_script(path: Path | str, timeframe: str = "", root: str = "") -> bool:
+    """Leave this script out of the queue until it is released or the run ends. True when the hold is new.
+
+    A timeframe and root hold it on one instrument's chart; leave them blank to hold it on every chart.
+    """
+    key = _hold_key(path, timeframe, root)
     with _held_lock:
-        _held_back.add((str(path), timeframe))
+        new = key not in _held_back
+        _held_back.add(key)
+        return new
 
 
-def park_engine_script(path: Path | str, timeframe: str) -> None:
-    """A script PineTS could not finish stays out of the queue for this research run."""
-    key = (str(path), timeframe)
+def park_engine_script(path: Path | str, timeframe: str = "", root: str = "") -> None:
+    """A script PineTS could not finish stays out of that instrument's chart queue for this research run."""
+    key = _hold_key(path, timeframe, root)
     with _held_lock:
         _held_back.add(key)
         _engine_parked.add(key)
 
 
-def release_script(path: Path | str, timeframe: str) -> None:
-    """The chart may study this script again."""
+def release_script(path: Path | str, timeframe: str = "", root: str = "") -> None:
+    """The chart (or, with a blank timeframe and root, every chart) may study this script again."""
     with _held_lock:
-        _held_back.discard((str(path), timeframe))
+        _held_back.discard(_hold_key(path, timeframe, root))
 
 
 _repair_gate = threading.Lock()
+# One repair per file, whichever engine found the compile error. Keyed by str(path).
 _repairs: dict[str, dict] = {}
 
 
-REPAIR_TRIES = 3
+# Developer repairs of a script that does not compile, before its researcher asks the owner (awaitingAnswerStrategies).
+# REPAIR_TRIES further down is a different count: the researcher's repair asks on a script that runs.
+COMPILE_REPAIR_TRIES = 3
 _repair_tries: dict[str, int] = {}
 
 
@@ -448,10 +481,11 @@ def compile_problem(error) -> bool:
 
 
 def send_to_repair(board, path: Path, developer: str, timeframe: str, source: str, error: str, slot: int, researcher: str = "") -> str:
-    """Repair a script that does not compile. One that still fails after REPAIR_TRIES leaves the folder, so it stops coming back."""
-    if _repair_tries.get(str(path), 0) >= REPAIR_TRIES:
+    """Repair a script that does not compile. One that still fails after COMPILE_REPAIR_TRIES waits for the owner's answer."""
+    if _repair_tries.get(str(path), 0) >= COMPILE_REPAIR_TRIES:
         _repair_tries.pop(str(path), None)
-        return leave_unrunnable(board, path, developer, f"{REPAIR_TRIES} repairs did not make it compile. {error}")
+        tried = f"{COMPILE_REPAIR_TRIES} repairs did not make it compile." if COMPILE_REPAIR_TRIES else "Compile repairs are turned off, so it was not sent for a repair."
+        return _ask_owner(board, path, researcher or developer, f"{tried} {error}", "compile", developer)
     start_compile_repair(board, path, developer, timeframe, source, error, slot, researcher)
     return "repairing"
 
@@ -471,38 +505,68 @@ def start_compile_repair(board, path: Path, developer: str, timeframe: str, sour
             kind="log",
             channel=developer,
         )
+    # The researcher emails the error while the repair runs. A fixed script or a note from the owner is used.
+    _ask_owner(
+        board, path, researcher or developer,
+        f"{path.name} did not compile: {error} The {developer} is repairing it now. A fixed script or a hint helps the next try.",
+        "repair", developer,
+    )
     with _repair_gate:
-        current = _repairs.get(developer)
+        current = _repairs.get(str(path))
         if current and current.get("thread") is not None and current["thread"].is_alive():
             return
 
     def work() -> None:
         from futuresfund.attempt_reason import keep_original
+        from futuresfund.questions import repair_hint
         from futuresfund.strategy import _legal_defaults
         from futuresfund.strategy_team import CREATION_TESTER, compile_error, engine_problem, repair_for_pine, repair_with_developer
 
         _repair_tries[str(path)] = _repair_tries.get(str(path), 0) + 1
+        # The file as the repair found it. A script the owner emails meanwhile replaces the file, and then
+        # this repair of the old text is dropped instead of written over the owner's fix.
+        try:
+            started = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            started = None
         text = source or ""
         fixed, _notes = repair_for_pine(text)
         if fixed:
             text = fixed
         problem = compile_error(text)
         if problem:
-            rewritten = repair_with_developer(board, developer, text, problem)
+            # The owner's emailed note for this repair, when one came in.
+            hint = repair_hint(path)
+            rewritten = repair_with_developer(board, developer, text, f"{problem} {hint}".strip())
             if rewritten:
                 text = rewritten
         text = _legal_defaults(text)
         # Validated means TradingView's rules hold and the engine runs it, not only that the desk's own parser took it.
         problem = compile_error(text) or engine_problem(text)
         ready = not problem
+        replaced = False
         if ready:
             try:
-                keep_original(path)
-                path.write_text(text, encoding="utf-8")
+                now = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else None
+                if started is not None and now != started:
+                    replaced = True
+                    ready = False
+                else:
+                    keep_original(path)
+                    path.write_text(text, encoding="utf-8")
             except OSError:
                 ready = False
                 problem = "The repaired script could not be saved."
-        if board is not None:
+        if replaced:
+            if board is not None:
+                board.post(
+                    CREATION_TESTER,
+                    f"{path.name} changed while the {developer} was repairing it, as when the owner sends a fixed script. "
+                    "The repair of the old script is dropped, and the new one stays as it is.",
+                    kind="log",
+                    channel=CREATION_TESTER,
+                )
+        elif board is not None:
             if ready:
                 board.post(
                     CREATION_TESTER,
@@ -518,16 +582,19 @@ def start_compile_repair(board, path: Path, developer: str, timeframe: str, sour
                     channel=CREATION_TESTER,
                 )
         with _repair_gate:
-            job = _repairs.get(developer)
+            job = _repairs.get(str(path))
             if job is not None and job.get("path") == path:
                 job["ready"] = ready
                 job["done"] = True
 
-    thread = threading.Thread(target=work, daemon=True, name=f"repair-{developer}")
+    thread = threading.Thread(target=work, daemon=True, name=f"repair-{path.stem[:40]}")
     with _repair_gate:
-        _repairs[developer] = {
+        _repairs[str(path)] = {
             "path": path,
             "timeframe": timeframe,
+            "root": str((_chart_context() or {}).get("root") or ""),
+            "developer": developer,
+            "slot": slot,
             "researcher": researcher or developer,
             "thread": thread,
             "ready": False,
@@ -536,36 +603,52 @@ def start_compile_repair(board, path: Path, developer: str, timeframe: str, sour
     thread.start()
 
 
-def collect_validated(developer: str):
-    """The validated script after the next backtest. Pending while the tester is still checking."""
+def _repair_jobs(developer: str, slot: int | None = None) -> list[tuple[str, dict]]:
+    """This developer's repairs. With a slot, only the ones that engine started."""
     with _repair_gate:
-        job = _repairs.get(developer)
-    if not job:
+        jobs = [(key, job) for key, job in _repairs.items() if job.get("developer") == developer]
+    if slot is not None:
+        jobs = [(key, job) for key, job in jobs if job.get("slot") == slot]
+    return jobs
+
+
+def collect_validated(developer: str, slot: int | None = None):
+    """The validated script after the next backtest. Pending while the tester is still checking.
+
+    A repair is the file's, not one engine's. Each chart developer owns seven engines, so slot
+    narrows it to the repairs this engine started.
+    """
+    jobs = _repair_jobs(developer, slot)
+    if not jobs:
         return "none", None
-    thread = job.get("thread")
-    if thread is not None and thread.is_alive():
+    finished = [
+        (key, job) for key, job in jobs
+        if job.get("done") and not (job.get("thread") is not None and job["thread"].is_alive())
+    ]
+    if not finished:
         return "pending", None
+    key, job = finished[0]
     with _repair_gate:
-        job = _repairs.get(developer)
-        if not job:
+        if _repairs.get(key) is not job:
             return "none", None
-        if not job.get("done"):
-            return "pending", None
-        _repairs.pop(developer, None)
+        _repairs.pop(key, None)
     if job.get("ready"):
         return "ready", job
     return "rejected", None
 
 
-def pickup_validated(board, developer: str, frames: dict, pause, engine_slot: int | None = None) -> str | None:
-    """Backtest the script the creation tester validated."""
-    status, job = collect_validated(developer)
+def pickup_validated(board, developer: str, frames: dict, pause, engine_slot: int | None = None, root: str | None = None) -> str | None:
+    """Backtest the script the creation tester validated, on this engine's instrument."""
+    status, job = collect_validated(developer, engine_slot)
     if status == "pending":
         return "pending"
     if status != "ready" or not job:
         return None
     path = job["path"]
     timeframe = job["timeframe"]
+    root = root or job.get("root") or None
+    # The repair was the file's, so every chart may take the fixed script again.
+    release_script(path)
     release_script(path, timeframe)
     if not path.is_file():
         return None
@@ -585,11 +668,12 @@ def pickup_validated(board, developer: str, frames: dict, pause, engine_slot: in
         timeframe,
         job.get("researcher") or developer,
         engine_slot,
+        root=root,
     )
     if studied == "engine":
-        park_engine_script(path, timeframe)
+        park_engine_script(path, timeframe, root or "")
     elif studied == "repairing":
-        hold_script(path, timeframe)
+        hold_script(path)
     return studied
 
 
@@ -609,35 +693,42 @@ def _tell_administrator(board, slot: int, path: Path, reason: str) -> None:
     )
 
 
-def release_retries(timeframe: str, failed: dict) -> bool:
+def release_retries(timeframe: str, failed: dict, root: str | None = None) -> bool:
     """Give a script that failed once another turn after the other scripts have been tried.
 
-    A script PineTS could not finish stays parked. The other engine on this
-    chart must not put it back while slower copies are still waiting.
+    A script PineTS could not finish stays parked. Another engine must not put it back while
+    slower copies are still waiting. failed counts compile failures per file (str(path)); a hold
+    on the whole file (a compile failure) is released by any chart's engine.
     """
+    wanted = str(root or "").upper()
     with _held_lock:
         keys = [
             key for key in _held_back
-            if key[1] == timeframe and key not in _engine_parked and failed.get(key, 0) < 2
+            if key[1] in (timeframe, "")
+            and (root is None or key[2] in ("", wanted))
+            and key not in _engine_parked
+            and failed.get(key[0], 0) < 2
         ]
         for key in keys:
             _held_back.discard(key)
         return bool(keys)
 
 
-def chart_needs_a_script(timeframe: str, learning: Path | None = None) -> bool:
-    """True when this chart has no Pine file it can study. A parked script does not count."""
+def chart_needs_a_script(timeframe: str, learning: Path | None = None, root: str | None = None) -> bool:
+    """True when this chart (one instrument's, with a root) has no Pine file it can study. A parked script does not count."""
     from futuresfund.charts import charts_have_volume
 
     skip_volume = not charts_have_volume()
     with _held_lock:
         held = set(_held_back) | set(_engine_parked)
-    paths = queue(learning, skip_volume=skip_volume) if learning is not None else jobs_for_chart(timeframe, skip_volume=skip_volume)
+    paths = queue(learning, skip_volume=skip_volume) if learning is not None else jobs_for_chart(timeframe, skip_volume=skip_volume, root=root)
     for path in paths:
-        if (str(path), timeframe) in held:
+        if is_held(held, path, timeframe, root):
             continue
-        if learning is not None and not _open_roots(path, timeframe):
-            continue
+        if learning is not None:
+            roots = _open_roots(path, timeframe)
+            if not roots or (root is not None and str(root).upper() not in roots):
+                continue
         return False
     return True
 
@@ -728,7 +819,9 @@ def set_unproven(path: Path, reason: str) -> Path:
 
 
 def leave_unrunnable(board, path: Path, developer: str, reason: str) -> str:
-    """The agent that found the script cannot run moves it out of the learning folder."""
+    """Park the script in cannotRunStrategies. Only the owner's "park" answer, questions by email turned off,
+    or an engine 4 draft comes here. Everything that used to park a script on its own now asks the owner (_ask_owner).
+    """
     _stage_end.reason = f"It cannot be run. {reason}"
     if _in_learning(path) or _in_created(path):
         set_aside(path, reason)
@@ -757,13 +850,124 @@ def set_aside(path: Path, reason: str) -> Path:
     return target
 
 
-def _place_aside(path: Path) -> Path:
-    target = CANNOT_RUN / path.name
+def _place_aside(path: Path, folder: Path | None = None) -> Path:
+    """Move one file into a folder (cannotRunStrategies unless another is named). A name already there gets a time suffix."""
+    folder = Path(folder) if folder is not None else CANNOT_RUN
+    folder.mkdir(parents=True, exist_ok=True)
+    target = folder / path.name
     if target.exists() and target.resolve() != path.resolve():
-        target = CANNOT_RUN / f"{path.stem}_{int(time.time())}{path.suffix}"
+        target = folder / f"{path.stem}_{int(time.time())}{path.suffix}"
     if path.resolve() != target.resolve():
         shutil.move(str(path), str(target))
     return target
+
+
+def _ask_owner(board, path: Path, author: str, reason: str, kind: str, developer: str = "") -> str:
+    """The chart researcher asks the owner (questions.ask_owner). A blocking kind returns "awaiting".
+
+    With questions by email off, or when the questions module fails, a blocking kind parks the script the old way.
+    """
+    try:
+        from futuresfund import questions
+
+        chart = dict(_chart_context() or {})
+        if developer:
+            chart["developer"] = developer
+        return questions.ask_owner(board, path, author or developer, reason, kind, chart=chart)
+    except Exception:
+        traceback.print_exc()
+    if kind != "repair":
+        # Every kind but a starting repair blocks the script, so it must leave the queue.
+        return leave_unrunnable(board, path, developer or author, reason)
+    return ""
+
+
+def _chart_context() -> dict:
+    """The chart this thread is studying: root, timeframe, engine, developer and researcher (set in _study_chart)."""
+    return dict(getattr(_stage_end, "chart", None) or {})
+
+
+def _left_text(path: Path, label: str = "") -> str:
+    """What a chart posts when the file it was studying left the folder: parked, waiting for the owner, or filed."""
+    where = f"The {label} chart" if label else "This chart"
+    if (CANNOT_RUN / path.name).is_file():
+        return f"{path.name} is in cannotRunStrategies. {where} left it."
+    try:
+        from futuresfund.questions import awaiting_dir
+
+        if (awaiting_dir() / path.name).is_file():
+            return f"{path.name} waits in awaitingAnswerStrategies for the owner's answer. {where} left it."
+    except Exception:
+        pass
+    if (LEARNED / path.name).is_file():
+        return f"{path.name} was filed in learnedStrategies. {where} left it."
+    return f"{path.name} is no longer in its folder. {where} left it."
+
+
+def release_file(path: Path | str) -> None:
+    """Every chart may take this script again: holds, parked engines, repair counts and zero-trade counts are cleared."""
+    key = str(path)
+    with _held_lock:
+        for held in [item for item in _held_back if item[0] == key]:
+            _held_back.discard(held)
+        for held in [item for item in _engine_parked if item[0] == key]:
+            _engine_parked.discard(held)
+    _repair_tries.pop(key, None)
+    try:
+        base = str(Path(path).resolve())
+    except OSError:
+        base = key
+    with _flat_lock:
+        for name in [name for name in _flat_runs if name == base or name.startswith(base + "|")]:
+            _flat_runs.pop(name, None)
+
+
+def researcher_job(key: str, work, urgent: bool = False) -> bool:
+    """Run work on the chart researcher's decision worker, one job per key at a time. Never on a chart thread.
+
+    A test run does not start the worker for these jobs (tests that drain the decision queue would see it
+    take their questions): the job runs where it was asked.
+    """
+    from futuresfund.mailer import test_run
+
+    if test_run():
+        try:
+            work()
+        except Exception:
+            traceback.print_exc()
+        return True
+    with _decisions_lock:
+        if key in _decisions_open:
+            return False
+        _decisions_open.add(key)
+    _decisions.put((0 if urgent else 1, next(_decisions_turn), {"key": key, "call": work}))
+    _ensure_worker()
+    return True
+
+
+def _reopen_for_owner(board, path: Path, researcher: str) -> bool:
+    """The owner's answer runs the script's charts again. The old notes go to researchNotes/before_repair.
+
+    Unlike _reopen_for_answer it does not count against REOPEN_LIMIT and works with REOPEN_FOR_ANSWERS
+    or READ_BEFORE_TESTING off: an owner's answer is not a researcher's answer.
+    """
+    with _notes_lock:
+        notes = _read_notes(path)
+        if not notes.get("instruments") and not notes.get("trials"):
+            return False
+        if not path.is_file() and (LEARNED / path.name).is_file():
+            shutil.move(str(LEARNED / path.name), str(path))
+        slug = path.stem.replace(" ", "_")
+        keep = NOTES / "before_repair"
+        keep.mkdir(parents=True, exist_ok=True)
+        number = len(list(keep.glob(f"{slug}_owner_*.json"))) + 1
+        (keep / f"{slug}_owner_{number}.json").write_text(_notes_json(notes), encoding="utf-8")
+        dropped = {"instruments", "trials", "best", "over_trade_charts", "over_trade_cap"}
+        fresh = {key: value for key, value in notes.items() if key not in dropped}
+        (NOTES / f"{slug}.json").write_text(_notes_json(fresh), encoding="utf-8")
+    if board is not None:
+        board.post(researcher, f"{path.name} has the owner's answer, so its charts run again.", kind="report", channel=researcher)
+    return True
 
 
 def queue(learning: Path | None = None, *, skip_volume: bool = False) -> list[Path]:
@@ -785,19 +989,28 @@ def queue(learning: Path | None = None, *, skip_volume: bool = False) -> list[Pa
     ]
 
 
-def jobs_for_chart(timeframe: str, *, skip_volume: bool = False, held: set | None = None) -> list[Path]:
-    """Scripts this chart can open now.
+def _needs(path: Path, timeframe: str, views: dict, root: str | None) -> bool:
+    """True when this file still needs this chart: on this instrument with a root, or on any instrument without one."""
+    roots = _open_roots(path, timeframe, views)
+    if root is None:
+        return bool(roots)
+    return str(root).upper() in roots
 
-    Learning scripts that still need this chart come first. When every learning
-    script is finished on this chart, the chart studies createdStrategies. A
-    learning script held out of this run, such as one that still does not
+
+def jobs_for_chart(timeframe: str, *, skip_volume: bool = False, held: set | None = None, root: str | None = None) -> list[Path]:
+    """Scripts this chart can open now. With a root, only scripts that still need that instrument's chart.
+
+    Every instrument has its own engine for each chart, so an engine keeps a script only while its
+    own root is still pending on its timeframe. Learning scripts that still need this chart come
+    first. When every learning script is finished on this chart, the chart studies
+    createdStrategies. A learning script held out of this run, such as one that still does not
     compile, does not keep the chart from createdStrategies.
     """
     learning_files = _pine_files(LEARNING, skip_volume)
     learning_views = _folder_views(LEARNING)
     learning = [
         path for path in learning_files
-        if _open_roots(path, timeframe, learning_views) and (str(path), timeframe) not in (held or set())
+        if _needs(path, timeframe, learning_views, root) and not is_held(held, path, timeframe, root)
     ]
     if learning:
         return learning
@@ -805,7 +1018,7 @@ def jobs_for_chart(timeframe: str, *, skip_volume: bool = False, held: set | Non
     return [
         path
         for path in _pine_files(CREATED, skip_volume)
-        if path.name not in _developing_now() and _created_passed(path) and _open_roots(path, timeframe, created_views)
+        if path.name not in _developing_now() and _created_passed(path) and _needs(path, timeframe, created_views, root)
     ]
 
 
@@ -906,33 +1119,69 @@ def _counted_pairs(views: dict, skip_volume: bool) -> list[tuple[Path, dict]]:
     return pairs
 
 
+def _ran_root(notes: dict, root: str, timeframe: str) -> bool:
+    """True when this instrument's chart has a measured run in these notes."""
+    instruments = notes.get("instruments") if isinstance(notes, dict) else None
+    record = instruments.get(root) if isinstance(instruments, dict) else None
+    charts = record.get("charts") if isinstance(record, dict) else None
+    return isinstance(charts, dict) and _record_ran(charts.get(timeframe))
+
+
+def _folder_counts(skip_volume: bool, by_root: bool) -> tuple[list[dict], list[dict]]:
+    """The chart rows and, with by_root, one row per instrument's chart, from one read of the notes."""
+    learning_views = _direct_views(LEARNING)
+    created_views = _direct_views(CREATED)
+    learning = _counted_pairs(learning_views, skip_volume)
+    created = _counted_pairs(created_views, skip_volume)
+    rows = []
+    open_learning = {}
+    open_created = {}
+    for timeframe in ("2m", "5m", "15m"):
+        open_learning[timeframe] = [_open_from_notes(path, timeframe, notes, learning_views) for path, notes in learning]
+        open_created[timeframe] = [_open_from_notes(path, timeframe, notes, created_views) for path, notes in created]
+        rows.append({
+            "timeframe": timeframe,
+            "learning_done": sum(_ran_notes(notes, timeframe) for _path, notes in learning),
+            "learning_total": len(learning),
+            "learning_open": sum(bool(roots) for roots in open_learning[timeframe]),
+            "created_done": sum(_ran_notes(notes, timeframe) for _path, notes in created),
+            "created_total": len(created),
+            "created_open": sum(bool(roots) for roots in open_created[timeframe]),
+        })
+    charts = []
+    if by_root:
+        from futuresfund.roster import ENGINE_DESKS
+
+        for desk in ENGINE_DESKS:
+            root, timeframe = desk["root"], desk["timeframe"]
+            charts.append({
+                "root": root,
+                "timeframe": timeframe,
+                "engine": desk["engine"],
+                "learning_done": sum(_ran_root(notes, root, timeframe) for _path, notes in learning),
+                "learning_total": len(learning),
+                "learning_open": sum(root in roots for roots in open_learning[timeframe]),
+                "created_done": sum(_ran_root(notes, root, timeframe) for _path, notes in created),
+                "created_total": len(created),
+                "created_open": sum(root in roots for roots in open_created[timeframe]),
+            })
+    return rows, charts
+
+
+def chart_root_counts(*, skip_volume: bool = False) -> list[dict]:
+    """The same counts for each instrument's chart, one row per chart engine: {root, timeframe, engine, ...}."""
+    return _folder_counts(skip_volume, True)[1]
+
+
 def chart_folder_counts(*, skip_volume: bool = False) -> list[dict]:
     """How many scripts still in each folder this chart has already run.
 
     The total is the files in the folder now. A file counts once it has a run
     on this chart, even when another instrument on that chart is still open.
     Notes are read directly so a stuck engine scan cannot keep the old totals on the cards.
+    chart_root_counts gives the same counts for each instrument's chart.
     """
-    learning_views = _direct_views(LEARNING)
-    created_views = _direct_views(CREATED)
-    learning = _counted_pairs(learning_views, skip_volume)
-    created = _counted_pairs(created_views, skip_volume)
-    rows = []
-    for timeframe in ("2m", "5m", "15m"):
-        rows.append({
-            "timeframe": timeframe,
-            "learning_done": sum(_ran_notes(notes, timeframe) for _path, notes in learning),
-            "learning_total": len(learning),
-            "learning_open": sum(
-                bool(_open_from_notes(path, timeframe, notes, learning_views)) for path, notes in learning
-            ),
-            "created_done": sum(_ran_notes(notes, timeframe) for _path, notes in created),
-            "created_total": len(created),
-            "created_open": sum(
-                bool(_open_from_notes(path, timeframe, notes, created_views)) for path, notes in created
-            ),
-        })
-    return rows
+    return _folder_counts(skip_volume, False)[0]
 
 
 def chart_progress() -> dict:
@@ -942,22 +1191,26 @@ def chart_progress() -> dict:
     now = time.monotonic()
     with _progress_lock:
         rows = _progress_state["rows"]
+        charts = _progress_state.get("charts") or []
         if rows is not None and now - float(_progress_state["at"]) <= 15:
-            return {"ready": True, "rows": list(rows)}
+            return {"ready": True, "rows": list(rows), "charts": list(charts)}
         if _progress_state["running"]:
-            return {"ready": rows is not None, "rows": list(rows or [])}
+            return {"ready": rows is not None, "rows": list(rows or []), "charts": list(charts)}
         _progress_state["running"] = True
     try:
-        rows = chart_folder_counts(skip_volume=not charts_have_volume())
+        # One row per instrument's chart too, so each engine card shows its own instrument's counts.
+        rows, charts = _folder_counts(not charts_have_volume(), True)
     except Exception:
         traceback.print_exc()
         with _progress_lock:
             rows = list(_progress_state["rows"] or [])
+            charts = list(_progress_state.get("charts") or [])
     with _progress_lock:
         _progress_state["rows"] = rows
+        _progress_state["charts"] = charts
         _progress_state["at"] = time.monotonic()
         _progress_state["running"] = False
-    return {"ready": True, "rows": list(rows)}
+    return {"ready": True, "rows": list(rows), "charts": list(charts)}
 
 
 def _refresh_chart_progress(skip_volume: bool) -> None:
@@ -1040,10 +1293,36 @@ def _pine_files(folder: Path, skip_volume: bool) -> list[Path]:
 
     from futuresfund.delta_core import is_core_file
 
-    # Delta volume breakout scripts go first: the desk is looking for one that clears the acceptance on every instrument.
+    # Scripts the owner named in researchNotes/queue_first.json go before everything else, in that order.
+    # Delta volume breakout scripts go next: the desk is looking for one that clears the acceptance on every instrument.
     # Inside each group a researcher's redesign goes first, so the answer to a failed script is measured soon.
     # Scripts the creation team wrote wait behind the other learning scripts.
-    return sorted(pines, key=lambda path: (not is_core_file(path), not is_redesign(path), path.name.startswith("created_"), path.name.lower()))
+    first = _queue_first()
+    return sorted(pines, key=lambda path: (
+        first.index(path.name) if path.name in first else len(first),
+        not is_core_file(path), not is_redesign(path), path.name.startswith("created_"), path.name.lower(),
+    ))
+
+
+_QUEUE_FIRST: dict = {}
+
+
+def _queue_first() -> list[str]:
+    """File names to study before the rest, from researchNotes/queue_first.json. Read again only when it changes."""
+    path = NOTES / "queue_first.json"
+    try:
+        stamp = path.stat().st_mtime_ns
+    except OSError:
+        return []
+    if _QUEUE_FIRST.get("stamp") != stamp:
+        try:
+            names = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            names = []
+        _QUEUE_FIRST["names"] = [str(name) for name in names] if isinstance(names, list) else []
+        _QUEUE_FIRST["stamp"] = stamp
+    # The design page can clear this cache from another thread, so a missing entry reads as empty.
+    return list(_QUEUE_FIRST.get("names") or [])
 
 
 _developing_lock = threading.Lock()
@@ -1201,17 +1480,30 @@ def engine4_should_study_learning() -> bool:
     return _engine4_learning
 
 
+def _spare_charts() -> list[tuple[str, dict]]:
+    """Every (instrument, chart) engine 4 may help with: each research instrument's three charts.
+
+    An instrument in research_instruments() that has no chart engines of its own (a new chart
+    folder) comes first, since no other engine studies it.
+    """
+    from futuresfund.roster import CHART_DESKS, ENGINE_ROOTS
+
+    roots = [str(root).upper() for root in research_instruments()]
+    ordered = [root for root in roots if root not in ENGINE_ROOTS] + [root for root in roots if root in ENGINE_ROOTS]
+    return [(root, desk) for root in ordered for desk in CHART_DESKS]
+
+
 def study_learning_on_engine_4(board, pause) -> str:
-    """Take the next learning script the chart engines have not claimed and run it on engine 4."""
+    """Take the next learning script no chart engine has claimed and run it on engine 4."""
     take = _job_take
     release = _job_release
     if take is None or release is None:
         return "none"
-    from futuresfund.roster import CHART_DESKS
     from futuresfund.strategy_team import CREATION_ENGINE, CREATION_TESTER
 
-    for desk in CHART_DESKS:
-        path = take(desk["timeframe"])
+    engine = CREATION_ENGINE + 1
+    for root, desk in _spare_charts():
+        path = take(root, desk["timeframe"])
         if path is None:
             continue
         from futuresfund.backtrader_engine import begin_study
@@ -1219,11 +1511,11 @@ def study_learning_on_engine_4(board, pause) -> str:
         begin_study(CREATION_ENGINE, path.name)
         board.post(
             CREATION_TESTER,
-            f"Engine 4 is studying the learning folder. Taking {path.name} on the {desk['label']} chart.",
+            f"Engine {engine} is studying the learning folder. Taking {path.name} on the {root} {desk['label']} chart.",
             kind="log",
             channel=CREATION_TESTER,
         )
-        board.set_activity(CREATION_TESTER, f"Studying {path.name} on the {desk['label']} chart.")
+        board.set_activity(CREATION_TESTER, f"Studying {path.name} on the {root} {desk['label']} chart.")
         try:
             studied = _study(
                 board,
@@ -1234,6 +1526,7 @@ def study_learning_on_engine_4(board, pause) -> str:
                 desk["timeframe"],
                 CREATION_TESTER,
                 engine_slot=CREATION_ENGINE,
+                root=root,
             )
         except Exception as exc:
             board.post(
@@ -1244,7 +1537,7 @@ def study_learning_on_engine_4(board, pause) -> str:
             )
             studied = "error"
         finally:
-            release(path, desk["timeframe"])
+            release(path, root, desk["timeframe"])
         return studied or "studied"
     board.set_task(CREATION_TESTER, "Not developing a new script.", working=False)
     return "none"
@@ -1254,15 +1547,15 @@ def restart_research_engine(engine_id: int, board) -> dict:
     """Restart one engine. A hung backtest stops. Engine 4 then takes a learning script."""
     global _engine4_learning
     from futuresfund.backtrader_engine import request_restart
-    from futuresfund.roster import chart_engine
+    from futuresfund.roster import CREATION_ENGINE_ID, chart_engine
 
     result = request_restart(engine_id)
     engine_id = int(engine_id)
-    if engine_id == 4:
+    if engine_id == CREATION_ENGINE_ID:
         _engine4_learning = True
         board.post(
             "Creation tester",
-            "Engine 4 restarted. It will take the next script from the learning folder.",
+            f"Engine {CREATION_ENGINE_ID} restarted. It will take the next script from the learning folder.",
             kind="log",
             channel="Creation tester",
         )
@@ -1271,7 +1564,7 @@ def restart_research_engine(engine_id: int, board) -> dict:
         if desk is not None:
             board.post(
                 desk["developer"],
-                f"Engine {engine_id} restarted. The hung backtest was stopped.",
+                f"Engine {engine_id} ({desk['root']} {desk['label']}) restarted. The hung backtest was stopped.",
                 kind="log",
                 channel=desk["developer"],
             )
@@ -1325,9 +1618,19 @@ def run_learning(board) -> None:
 
 
 def _run_learning(board) -> None:
+    # The settings the owner saved on the Research workflow Design page apply from here, when research
+    # starts, and never when this module is imported, so every test sees the values written in the code.
+    try:
+        from futuresfund.workflow_design import apply_saved, describe
+
+        changed = apply_saved()
+        if changed and board is not None:
+            board.post("System", describe(changed), kind="log", channel="headquarters")
+    except Exception:
+        traceback.print_exc()
     from futuresfund.session import learning_pause
     from futuresfund.backtrader_engine import warm_engines
-    from futuresfund.roster import CHART_DESKS, EXTRA_CHART_ENGINES
+    from futuresfund.roster import CHART_DESKS, CREATION_ENGINE_ID, ENGINE_DESKS, engine_layout, engines_of
 
     LEARNED.mkdir(parents=True, exist_ok=True)
     NOTES.mkdir(parents=True, exist_ok=True)
@@ -1347,20 +1650,18 @@ def _run_learning(board) -> None:
         pass
     instruments = ", ".join(research_instruments())
     warm_engines()
+    from futuresfund.engine_workers import at_once
+
+    pool = at_once()
     for desk in CHART_DESKS:
-        extras = [item["engine"] for item in EXTRA_CHART_ENGINES if item["developer"] == desk["developer"]]
-        numbers = [desk["engine"], *extras]
-        if extras:
-            named = "Engines " + " and ".join(str(number) for number in numbers)
-            warm = f"{named} are warm for the {desk['label']} chart"
-            line = f"{named} stay running. This desk runs only the {desk['label']} chart. The bar file is written once and reused."
-        else:
-            warm = f"Engine {desk['engine']} is warm for the {desk['label']} chart"
-            line = f"Engine {desk['engine']} stays running. This desk runs only the {desk['label']} chart. The bar file is written once and reused."
-        board.set_activity(desk["developer"], warm)
+        mine = [item for item in ENGINE_DESKS if item["developer"] == desk["developer"]]
+        named = ", ".join(f"{item['engine']} {item['root']}" for item in mine)
+        board.set_activity(desk["developer"], f"Engines {', '.join(str(number) for number in engines_of(desk['developer']))} are ready for the {desk['label']} charts")
         board.post(
             desk["developer"],
-            line,
+            f"This desk runs the {desk['label']} chart of every instrument, each on its own engine: {named}. "
+            f"The backtests share {pool} worker processes, so at most {pool} run at once and an engine waits for a free worker. "
+            "Each engine sends a worker only the last year of its chart.",
             kind="log",
             channel=desk["developer"],
         )
@@ -1392,11 +1693,13 @@ def _run_learning(board) -> None:
         f"{acceptance_line()} That is the bar for every agent on this desk. Move the next input toward those four numbers. "
         "Two or three trades is not a strategy. "
         f"{goal_line()} The take profit is larger than the stop. Set the stop at no more than 1.5 percent of the account. A fill past a stop set there does not fail the run. "
-        "PineTS runs each chart in its own process. Engine 1 is the 2-minute chart, engines 2 and 5 are the 5-minute chart, and engines 3 and 6 are the 15-minute chart. "
-        "Engine 4 is the creation engine. The strategy developers write new scripts from scratch at all times, and engine 4 develops each one. "
+        f"{engine_layout()} Each engine studies only its own instrument's chart, so two instruments can test the same script at once. "
+        f"The backtests run on {pool} PineTS worker processes at once; an engine waits for a free worker. "
+        f"The strategy developers write new scripts from scratch at all times, and engine {CREATION_ENGINE_ID} develops each one. "
         "A new strategy in the library is read before the next script. A profitable run inside the one-year drawdown cap is filed for the chart engines so the next script can improve on it. "
         "Each chart studies on its own thread. It does not wait while another chart writes a rule or runs a backtest. "
-        "A script the engine cannot run is moved to cannotRunStrategies at the project root by the agent that found it. "
+        "A script the engine cannot run is not parked by the desk. The chart researcher asks the owner by email, the script waits in "
+        "awaitingAnswerStrategies at the project root, and the engine takes the next script. Only the owner's park answer moves a script to cannotRunStrategies. "
         "When a chart has finished every script in the learning folder, that chart studies createdStrategies. It does not wait while another chart is still in the learning folder. "
         "A backtest uses a year of the chart, the last 260 futures sessions. The Databento file on disk is the five years from 2021-10-04 through 2026-10-03, and TradingView exports in each chart folder continue it. "
         "The chart teams stay on that one-year chart. They do not switch it to the five-year download. "
@@ -1407,20 +1710,30 @@ def _run_learning(board) -> None:
         "A result under the acceptance line is not filed. The researcher reads that script and changes one input toward the four numbers on the strategy library page. The guideline is researchNotes/how_to_research.md. "
         "A result that already clears that line still moves one input. A change that ranks lower under the objective is reversed, and a change that ranks higher is continued. "
         "A run that repeats an earlier profit, drawdown, and trade count is not counted. "
-        "On engines 1, 2, and 3, three of those in a row ends that chart and the next script is taken. Engine 4 keeps searching. "
+        f"On a chart engine, three of those in a row ends that chart and the next script is taken. Engine {CREATION_ENGINE_ID} keeps searching. "
         "A second copy of a script this chart already finished is skipped. "
         "The next setting starts from the best result so far. A higher win rate is kept when the profit factor stays above the profit factor on the strategy library page and no trade loses more than 1.5 percent of the account. "
         "A research report is emailed when that chart finishes, after its successful runs or after all of its different results. "
-        "The search stops after 10 successful runs. A run counts when it passes acceptance. "
-        f"If those 10 do not appear, it stops at {ATTEMPT_LIMIT} different results. "
-        f"On engines 1, 2, and 3, a best result that is still a loss after {LOSS_LOOK} different results ends that chart and the next script is taken. "
-        "A result that clears the acceptance line ends that chart as well."
+        f"Each chart proves a script in stages: the last 7 days gets up to {STAGE_7_ATTEMPTS} different results, 30 days {STAGE_30_ATTEMPTS}, "
+        f"90 days {STAGE_90_ATTEMPTS}, and the year {ATTEMPT_LIMIT}. "
+        "A stage does not stop at its first pass. It keeps searching for more profit with less drawdown, "
+        f"and stops when its attempts are spent or {STAGE_PATIENCE} attempts in a row found no better pass. "
+        "The next stage starts from the best pass. A stage with no pass spends all of its attempts. "
+        "The year search does not stop at 10 successful runs. A run counts when it passes acceptance. "
+        f"On a chart engine, a year whose best result is still a loss after {LOSS_LOOK} different results ends that chart and the next script is taken."
     )
     board.post(CHART_DESKS[0]["researcher"], intro, kind="report", channel=CHART_DESKS[0]["researcher"])
     import os
     from futuresfund.config import load_env
 
     load_env()
+    try:
+        from futuresfund.questions import start as start_questions
+
+        # The Portfolio Manager's outbox and inbox threads. A test run or FUTURES_MAIL_OFF never starts them.
+        start_questions(board)
+    except Exception:
+        traceback.print_exc()
     if not os.environ.get("SMTP_PASSWORD", "").strip():
         board.post(
             "Portfolio Manager",
@@ -1428,32 +1741,22 @@ def _run_learning(board) -> None:
             kind="report",
             channel="Portfolio Manager",
         )
-    claimed: set[tuple[str, str]] = set()
-    # Shared by both engines on a chart, so a script that does not compile is not retried once per engine.
-    failed: dict[tuple[str, str], int] = {}
-    claim_lock = threading.Lock()
-
-    def take_job(timeframe: str) -> Path | None:
-        with _held_lock:
-            held = set(_held_back) | set(_engine_parked)
-        with claim_lock:
-            # A script held out, or already open on the chart's other engine, does not keep this engine from createdStrategies.
-            for path in jobs_for_chart(timeframe, skip_volume=not volume_ready, held=held | claimed):
-                key = (str(path), timeframe)
-                if key in held or key in claimed:
-                    continue
-                claimed.add(key)
-                return path
-            return None
-
-    def release_job(path: Path, timeframe: str) -> None:
-        with claim_lock:
-            claimed.discard((str(path), timeframe))
+    claims = JobClaims(skip_volume=not volume_ready)
+    # Compile failures are the file's, shared by every engine, so a script that does not compile is not retried once per engine.
+    failed: dict[str, int] = {}
+    take_job = claims.take
+    release_job = claims.release
 
     def developer_loop(desk: dict) -> None:
         developer = desk["developer"]
         researcher = desk["researcher"]
         timeframe = desk["timeframe"]
+        root = desk["root"]
+        engine = desk["engine"]
+        index = engine - 1
+        # "Engine 8 (NQ 2-minute)": every post names the engine and its instrument.
+        where = f"the {root} {desk['label']} chart"
+        name = f"Engine {engine} ({root} {desk['label']})"
         announced = False
         waiting_repair = False
         while not board.cancel.is_set():
@@ -1461,39 +1764,39 @@ def _run_learning(board) -> None:
                 return
             from futuresfund.backtrader_engine import clear_restart, restarted
 
-            index = desk["engine"] - 1
             if restarted(index):
                 clear_restart(index)
                 board.post(
                     developer,
-                    f"Engine {desk['engine']} restarted. Taking the next script.",
+                    f"{name} restarted. Taking the next script.",
                     kind="log",
                     channel=developer,
                 )
-            file_completed_scripts(board)
-            path = take_job(timeframe)
+            # At most once a minute across every engine, not once per engine per pass.
+            file_completed_soon(board)
+            path = take_job(root, timeframe)
             if path is None:
                 if waiting_repair:
-                    follow = pickup_validated(board, developer, frames, learning_pause, desk["engine"] - 1)
+                    follow = pickup_validated(board, developer, frames, learning_pause, index, root=root)
                     if follow == "pending":
                         if not _sleep(board, learning_pause, 5):
                             return
                         continue
                     waiting_repair = follow == "repairing"
                     continue
-                if release_retries(timeframe, failed):
+                if release_retries(timeframe, failed, root):
                     if not _sleep(board, learning_pause, 5):
                         return
                     continue
                 if not announced:
                     if board.holding_new_scripts():
                         waiting = (
-                            f"The {desk['label']} chart has finished the learning folder and createdStrategies. "
+                            f"{name} has finished the learning folder and createdStrategies on {where}. "
                             "The strategy team is not writing a new strategy."
                         )
                     else:
                         waiting = (
-                            f"The {desk['label']} chart has finished the learning folder and createdStrategies. "
+                            f"{name} has finished the learning folder and createdStrategies on {where}. "
                             "Its strategy developer writes the next one."
                         )
                     board.post(developer, waiting, kind="log", channel=developer)
@@ -1502,32 +1805,32 @@ def _run_learning(board) -> None:
                     return
                 continue
             announced = False
-            board.post(developer, f"Taking {path.name} from {_study_home(path)} on the {desk['label']} chart.", kind="log", channel=developer)
+            board.post(developer, f"{name} is taking {path.name} from {_study_home(path)}.", kind="log", channel=developer)
             board.post(
                 researcher,
-                f"{developer} is studying {path.name} on the {desk['label']} chart.",
+                f"{developer} is studying {path.name} on {where}, engine {engine}.",
                 kind="log",
                 channel=researcher,
             )
             try:
-                studied = _study(board, path, frames, learning_pause, developer, timeframe, researcher, desk["engine"] - 1)
+                studied = _study(board, path, frames, learning_pause, developer, timeframe, researcher, index, root=root)
                 error = None
             except Exception as exc:
                 studied, error = "error", exc
             finally:
-                release_job(path, timeframe)
+                release_job(path, root, timeframe)
             if studied == "repairing":
                 # A script that still does not compile gets one more turn this run, not a turn every few seconds.
-                key = (str(path), timeframe)
-                failed[key] = failed.get(key, 0) + 1
-                hold_script(path, timeframe)
+                # The hold is the whole file's; only the engine that placed it counts the failure.
+                if hold_script(path):
+                    failed[str(path)] = failed.get(str(path), 0) + 1
                 waiting_repair = True
                 continue
             if studied == "engine":
-                park_engine_script(path, timeframe)
+                park_engine_script(path, timeframe, root)
                 continue
             if waiting_repair:
-                follow = pickup_validated(board, developer, frames, learning_pause, desk["engine"] - 1)
+                follow = pickup_validated(board, developer, frames, learning_pause, index, root=root)
                 if follow == "pending":
                     pass
                 else:
@@ -1536,31 +1839,32 @@ def _run_learning(board) -> None:
                 if board.cancel.is_set():
                     return
                 traceback.print_exc()
-                park_engine_script(path, timeframe)
+                park_engine_script(path, timeframe, root)
                 detail = str(error).rstrip(".")
                 board.post(
                     developer,
-                    f"{path.name} stopped on an engine error: {detail}. It was not marked finished.",
+                    f"{path.name} stopped on an engine error on {name}: {detail}. It was not marked finished.",
                     kind="error",
                     channel=developer,
                 )
                 board.post(
                     researcher,
-                    f"{path.name} stopped on an engine error on the {desk['label']} chart: {error}. It stays in {_study_home(path)}.",
+                    f"{path.name} stopped on an engine error on {where}: {error}. It stays in {_study_home(path)}.",
                     kind="report",
                     channel=researcher,
                 )
                 continue
-            if studied == "cannot_run":
+            if studied in ("cannot_run", "awaiting"):
+                # The file left the queue: parked, or waiting in awaitingAnswerStrategies for the owner's answer.
                 continue
             if studied == "busy":
-                hold_script(path, timeframe)
+                hold_script(path, timeframe, root)
                 continue
             if studied == "failed":
-                park_engine_script(path, timeframe)
+                park_engine_script(path, timeframe, root)
                 board.post(
                     developer,
-                    f"{path.name} did not finish a backtest on the {desk['label']} chart. Taking the next script.",
+                    f"{path.name} did not finish a backtest on {where}. {name} is taking the next script.",
                     kind="log",
                     channel=developer,
                 )
@@ -1568,19 +1872,19 @@ def _run_learning(board) -> None:
             if studied == "held":
                 continue
             if studied == "skipped":
-                park_engine_script(path, timeframe)
+                park_engine_script(path, timeframe, root)
                 continue
             elif studied == "blocked":
-                park_engine_script(path, timeframe)
+                park_engine_script(path, timeframe, root)
                 board.post(
                     researcher,
-                    f"{path.name} needs volume on the {desk['label']} chart bars. It stays in {_study_home(path)}.",
+                    f"{path.name} needs volume on the {root} {desk['label']} chart bars. It stays in {_study_home(path)}.",
                     kind="report",
                     channel=researcher,
                 )
                 board.post(
                     developer,
-                    f"{path.name} needs volume on the chart bars. Taking the next script.",
+                    f"{path.name} needs volume on the chart bars. {name} is taking the next script.",
                     kind="log",
                     channel=developer,
                 )
@@ -1594,18 +1898,19 @@ def _run_learning(board) -> None:
     _job_release = release_job
 
     def start_chart(desk: dict) -> threading.Thread:
-        thread = threading.Thread(target=developer_loop, args=(desk,), daemon=True, name=desk["developer"])
+        thread = threading.Thread(target=developer_loop, args=(desk,), daemon=True, name=f"engine-{desk['engine']}-{desk['root']}-{desk['timeframe']}")
         _engine_threads[desk["engine"]] = thread
         return thread
 
     def start_creation() -> threading.Thread:
         thread = threading.Thread(target=run_creation_engine, args=(board, learning_pause), daemon=True, name="creation-engine")
-        _engine_threads[4] = thread
+        _engine_threads[CREATION_ENGINE_ID] = thread
         return thread
 
-    chart_desks = (*CHART_DESKS, *EXTRA_CHART_ENGINES)
+    # One developer loop per chart engine: three per instrument. Each developer owns seven of them.
+    chart_desks = ENGINE_DESKS
     _engine_starters = {desk["engine"]: (lambda desk=desk: start_chart(desk)) for desk in chart_desks}
-    _engine_starters[4] = start_creation
+    _engine_starters[CREATION_ENGINE_ID] = start_creation
     workers = [start_chart(desk) for desk in chart_desks]
     workers.extend(
         threading.Thread(target=run_chart_creation, args=(board, learning_pause, desk), daemon=True, name=desk["strategy_developer"])
@@ -1616,6 +1921,45 @@ def _run_learning(board) -> None:
         worker.start()
     for worker in workers:
         worker.join()
+
+
+class JobClaims:
+    """Which engine has which script open, keyed (file, timeframe, root).
+
+    One instrument's engine holds a script on its own chart only, so another instrument's engine
+    on the same timeframe can study the same file at the same time. Engine 4's spare-time study
+    claims through the same object, so it never opens a chart an engine already has.
+    """
+
+    def __init__(self, *, skip_volume: bool = False) -> None:
+        self.skip_volume = skip_volume
+        self.claimed: set[tuple[str, str, str]] = set()
+        self.lock = threading.Lock()
+
+    def take(self, root: str, timeframe: str) -> Path | None:
+        """The next script this instrument's chart still needs, claimed for this engine. None when there is none."""
+        root = str(root or "ES").upper()
+        with _held_lock:
+            held = set(_held_back) | set(_engine_parked)
+        with self.lock:
+            # A script held out, or already open on this chart's engine, does not keep this engine from createdStrategies.
+            busy = held | {key for key in self.claimed if key[2] == root}
+        # The folder scan stats every file, which is slow on the desk's bind mount, so it runs outside the
+        # lock: 22 engines would otherwise queue behind each other's scans. The claim is checked again under it.
+        candidates = [path for path in jobs_for_chart(timeframe, skip_volume=self.skip_volume, held=busy, root=root)
+                      if not is_held(held, path, timeframe, root)]
+        with self.lock:
+            for path in candidates:
+                key = (str(path), timeframe, root)
+                if key in self.claimed:
+                    continue
+                self.claimed.add(key)
+                return path
+            return None
+
+    def release(self, path: Path, root: str, timeframe: str) -> None:
+        with self.lock:
+            self.claimed.discard((str(path), timeframe, str(root or "ES").upper()))
 
 
 def study_parameters(base: dict, execute, account_size: float = ACCOUNT_SIZE, limit: int = ATTEMPT_LIMIT) -> list[dict]:
@@ -1758,7 +2102,7 @@ def _lower_exit(anchor: dict, name: str, seen: set[str]) -> dict | None:
     plan = dict(anchor)
     plan[name] = nxt
     plan = hold_reward(plan)
-    if plan is None or plan.get(name) == current or _key(plan) in seen:
+    if plan is None or plan.get(name) == current or _key(plan) in seen or _dead_move(name, current, plan.get(name)):
         return None
     return plan
 
@@ -1798,7 +2142,7 @@ def _raise_exit(anchor: dict, name: str, seen: set[str]) -> dict | None:
     plan = dict(anchor)
     plan[name] = nxt
     plan = hold_reward(plan)
-    if plan is None or plan.get(name) == current or _key(plan) in seen:
+    if plan is None or plan.get(name) == current or _key(plan) in seen or _dead_move(name, current, plan.get(name)):
         return None
     return plan
 
@@ -1871,7 +2215,7 @@ def _typed_exit(current, nxt: float, step: float):
 
 
 def _start_on_the_ladder(params: dict, account_size: float = ACCOUNT_SIZE) -> dict:
-    """A script written with only a $1,000 stop and a $1,500 target starts at $250 and $500."""
+    """A script written with only a $1,000 stop and a $1,500 target starts at $250 and $500. A micro starts at $50 and $100."""
     from futuresfund.research_rules import hold_reward, opening_stop_value
 
     updated = dict(params or {})
@@ -1883,7 +2227,7 @@ def _start_on_the_ladder(params: dict, account_size: float = ACCOUNT_SIZE) -> di
 
 
 def _raise_stop_hundred(anchor: dict, name: str, seen: set[str], account_size: float) -> dict | None:
-    """Raise one stop to the next of $250, $500, and $700."""
+    """Raise one stop to the next of $250, $500, and $700, or of $50, $100, and $150 on a micro."""
     from futuresfund.research_rules import exit_cap, exit_step, hold_reward, next_rung
 
     if not _is_stop_name(name):
@@ -1906,7 +2250,7 @@ def _raise_stop_hundred(anchor: dict, name: str, seen: set[str], account_size: f
     plan = dict(anchor)
     plan[name] = nxt
     plan = hold_reward(plan)
-    if plan is None or plan.get(name) == current:
+    if plan is None or plan.get(name) == current or _dead_move(name, current, plan.get(name)):
         return None
     if _key(plan) in seen:
         return _raise_stop_hundred(plan, name, seen, account_size)
@@ -1941,7 +2285,7 @@ def _raise_target_hundred(anchor: dict, name: str, seen: set[str], account_size:
     plan = dict(anchor)
     plan[name] = nxt
     plan = hold_reward(plan)
-    if plan is None or plan.get(name) == current:
+    if plan is None or plan.get(name) == current or _dead_move(name, current, plan.get(name)):
         return None
     if _key(plan) in seen:
         return _raise_target_hundred(plan, name, seen, account_size)
@@ -2006,8 +2350,10 @@ def _exit_phase_reason(trials: list[dict], plan: dict) -> str:
     changed = [key for key in plan if plan.get(key) != current.get(key)]
     name = changed[0] if len(changed) == 1 else ""
     if name and _is_stop_name(name):
+        from futuresfund.research_rules import dollar_list, stop_ladder
+
         return (
-            "The opening run is under the library profit. The stop rises through $250, $500, and $700. "
+            f"The opening run is under the library profit. The stop rises through {dollar_list(stop_ladder())}. "
             "The take profit stays larger than the stop."
         )
     if name and _is_target_name(name):
@@ -2059,7 +2405,8 @@ def _scale_plan(base: dict, trials: list[dict], seen: set[str], choices: dict | 
         done.add(focus)
 
     if focus and move == "farther" and focus not in done and not _failed_reversal(trials, len(trials) - 1, focus):
-        anchor = dict(previous.get("params") or current)
+        # Stepping back means stepping from the row before, unless that row never entered.
+        anchor = dict(previous.get("params") or current) if _traded(previous) or not _traded(last) else dict(current)
         plan = _step_one(anchor, focus, old, new, -1, seen, choices, seeds)
         proposed = plan.get(focus) if plan else None
         if plan and _same_direction(old, new, proposed) is False:
@@ -2140,6 +2487,16 @@ def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, e
 
     last = trials[-1]
     previous = trials[-2] if len(trials) > 1 else None
+    if not _traded(last):
+        revived = _best_trading_row(trials)
+        if revived is not None:
+            # The last run never entered, and every later zero repeats it, so stepping from it only repeats the zero.
+            # The climb starts again from the best run that traded.
+            last = revived
+            previous = None
+    if previous is not None and not _traded(previous) and _traded(last):
+        # The row before never entered. The climb starts from this trading row, not from that dead setting.
+        previous = None
     current = dict(last.get("params") or base)
     focus = None
     direction = 1
@@ -2199,9 +2556,18 @@ def next_plan(origin: dict, trials: list[dict], limit: int = ATTEMPT_LIMIT, *, e
 
 
 class _Trials(list):
-    """The different results, plus how many times the engine actually ran."""
+    """The different results, plus how many times the engine actually ran.
+
+    attempt_budget is the limit the search had. A stage search also keeps best_pass, its passing run
+    with the most profit after drawdown, and patience_stop when it ended for finding no better pass.
+    """
 
     engine_runs = 0
+    attempt_budget = 0
+    best_pass = None
+    patience_stop = False
+    # Set when the trade cut ran out of steps or attempts: the chart researcher's question for the owner.
+    over_trades = ""
 
 
 def _from_best(trials: list, bounds: dict, seen: set, choices: dict | None = None, hold_exits: bool = False) -> dict | None:
@@ -2324,6 +2690,10 @@ def drain_decisions() -> None:
 
 def _run_decision(job: dict) -> None:
     try:
+        if callable(job.get("call")):
+            # A researcher job from questions.py: wording a question for the owner, or applying the owner's answer.
+            job["call"]()
+            return
         _decide(job)
     except Exception:
         traceback.print_exc()
@@ -2370,9 +2740,26 @@ def _decide(job: dict) -> None:
     if board.cancel.is_set():
         return
     # A redesign answers a measured failure. A first read or a repair has not measured one.
-    can_redesign = (job["kind"] == "stall" or job["kind"].startswith("stage")) and redesigns.room(job["path"])
+    # A repair answer may rewrite the script only while ALLOW_REPAIR_REWRITES is on. Off, it keeps
+    # new input values only, like the other answers under VALUES_ONLY.
+    values_only = (not ALLOW_REPAIR_REWRITES) if job["kind"] == "repair" else VALUES_ONLY
+    can_redesign = (job["kind"] == "stall" or job["kind"].startswith("stage")) and redesigns.room(job["path"]) and not values_only
     why = " ".join([job["why"], *redesigns.earlier_lines(job["path"])]) if can_redesign else job["why"]
+    # What each input did when the search moved it, so the answer works on the inputs that matter.
+    why = " ".join([why, *input_effects.script_lines(job["path"])])
+    if values_only:
+        why = " ".join([why, VALUES_ONLY_LINE])
     answer = _reasoned_next(board, job["path"], job["script"], job["trials"], job["bounds"], job["choices"], why, job["response"], can_redesign)
+    if answer and values_only:
+        # A changed script is not used. Only new input values are kept.
+        answer.pop("redesigned", None)
+        answer.pop("script", None)
+    if answer and answer.get("redesigned"):
+        # The redesign replaces this script on its next chart, measured like any rewrite and taken back when it does worse.
+        if redesigns.note_redesign(job["path"], str(answer.get("because") or ""), str(answer.get("redesign") or "")):
+            answer["script"] = redesigns.keep_title(answer["redesigned"], job["script"])
+            answer["in_place"] = True
+        answer.pop("redesigned", None)
     with diagnosis.turn(job["script"]):
         record = diagnosis.load(job["script"])
         if job["kind"] == "read":
@@ -2391,15 +2778,16 @@ def _decide(job: dict) -> None:
                 "script": answer.get("script"),
                 "params": answer.get("params"),
                 "settings": dict(job["trials"][-1].get("params") or {}),
+                "redesign": bool(answer.get("in_place")),
             }
         diagnosis.save(job["script"], record)
     if answer:
         board.post(job["researcher"], f"{job['path'].name}: {answer.get('because')}", kind="report", channel=job["researcher"])
-        if answer.get("redesigned"):
-            filed = redesigns.file_redesign(job["path"], job["script"], answer["redesigned"], str(answer.get("because") or ""), str(answer.get("redesign") or ""))
-            if filed is not None:
-                board.post(job["researcher"], f"{job['path'].name} was redesigned as {filed.name}. The original stays as it was, and the charts take the new script next.", kind="report", channel=job["researcher"])
-        if answer.get("script") or answer.get("params"):
+        if answer.get("in_place"):
+            board.post(job["researcher"], f"{job['path'].name} has a redesign waiting. Its next chart measures it against this script and keeps it only when it does better.", kind="report", channel=job["researcher"])
+        if (answer.get("script") or answer.get("params")) and REOPEN_FOR_ANSWERS and READ_BEFORE_TESTING:
+            # Off, the answer waits in the script's record for the next chart that opens it. With the read
+            # before testing off, no chart would use the answer, so reopening would rerun every chart for nothing.
             _reopen_for_answer(board, job["path"], job["researcher"])
 
 
@@ -2421,9 +2809,9 @@ def _reopen_for_answer(board, path: Path, researcher: str) -> bool:
         slug = path.stem.replace(" ", "_")
         keep = NOTES / "before_repair"
         keep.mkdir(parents=True, exist_ok=True)
-        (keep / f"{slug}_{count + 1}.json").write_text(json.dumps(notes, indent=2, default=str), encoding="utf-8")
+        (keep / f"{slug}_{count + 1}.json").write_text(_notes_json(notes), encoding="utf-8")
         fresh = {key: value for key, value in notes.items() if key not in {"instruments", "trials", "best"}}
-        (NOTES / f"{slug}.json").write_text(json.dumps({**fresh, "reopened": count + 1}, indent=2, default=str), encoding="utf-8")
+        (NOTES / f"{slug}.json").write_text(_notes_json({**fresh, "reopened": count + 1}), encoding="utf-8")
     board.post(researcher, f"{path.name} has the researcher's repair waiting, so its charts run again.", kind="report", channel=researcher)
     return True
 
@@ -2436,12 +2824,67 @@ def _plan_mark(raw: dict, bounds: dict, execute) -> str:
     return key if stamp == 0 else f"{stamp}:{key}"
 
 
-def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher", until_profitable: bool = False, accept=None, slot: int | None = None, source: str = "", stage_days: int | None = None):
+def _search(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher", until_profitable: bool = False, accept=None, slot: int | None = None, source: str = "", stage_days: int | None = None, year: bool = False):
+    """The search below, with a record of what each input did.
+
+    An input whose moves changed nothing is taken out of this search (input_effects), and what every
+    move did is written on the script's input file once, when the search ends. year marks the
+    chart's one-year search, the only search with the loss stop.
+    """
+    holder = getattr(execute, "source", None)
+    chart = ""
+    text = source or ""
+    if isinstance(holder, dict):
+        chart = f"{holder.get('root') or ''} {holder.get('timeframe') or ''}".strip()
+        text = text or str(holder.get("text") or "")
+    window = f"{stage_days}-day stage" if stage_days else "one-year search"
+    try:
+        from futuresfund.delta_core import has_core
+
+        core = has_core(text)
+    except Exception:
+        core = False
+    # Like the research notes, the record is written for a search the desk runs, the one with a board.
+    tracker = input_effects.Tracker(path if board is not None else None, chart, window, core=core)
+    previous = input_effects.begin(tracker)
+    from futuresfund.research_rules import chart_root
+
+    root = str(holder.get("root") or "") if isinstance(holder, dict) else ""
+    try:
+        with chart_root(root):
+            trials = _search_inputs(
+                base, execute, account_size, limit, board, path, pause, facts, extras=extras, developer=developer,
+                researcher=researcher, until_profitable=until_profitable, accept=accept, slot=slot, source=source, stage_days=stage_days,
+                year=year,
+            )
+    finally:
+        input_effects.end(previous)
+    tracker.finish()
+    if tracker.removed and board is not None and path is not None:
+        names = ", ".join(sorted(tracker.removed))
+        where = f" on {chart}" if chart else ""
+        board.post(
+            researcher,
+            f"{path.name}: moving {names} changed nothing in the {window}{where}, so that search left "
+            f"{'it' if len(tracker.removed) == 1 else 'them'} where {'it was' if len(tracker.removed) == 1 else 'they were'} "
+            "and spent its attempts on the inputs that change the result.",
+            kind="log",
+            channel=researcher,
+        )
+    return trials
+
+
+def _search_inputs(base, execute, account_size, limit, board, path, pause, facts=None, extras: bool = True, developer: str = "2min chart developer", researcher: str = "Chart researcher", until_profitable: bool = False, accept=None, slot: int | None = None, source: str = "", stage_days: int | None = None, year: bool = False):
     """Move one input at a time. `accept` is the result the search stops at; `until_profitable` stops at the first profit.
 
-    stage_days is a proving stage on the last that many days. Its search stops at the first run that
-    passes objective.stage_passed. A stage run is not documented, counted, or offered to the library:
-    those read a one-year result.
+    stage_days is a proving stage on the last that many days. A run that passes objective.stage_passed
+    does not end it: the stage keeps searching for a pass with more profit and less drawdown
+    (_pass_score), and stops when its `limit` is spent or STAGE_PATIENCE runs in a row found no better
+    pass. trials.best_pass is that pass. A stage that never passes spends its whole limit. A stage run
+    is not documented, counted, or offered to the library: those read a one-year result.
+
+    year marks the chart's one-year search. Only that search leaves a script that is still a loss
+    after LOSS_LOOK results, whatever the limit is set to.
     """
     if accept is None and until_profitable:
         accept = _row_profitable
@@ -2449,11 +2892,33 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
     from futuresfund.research_rules import is_daily_limit, prepare_research
 
     original_daily = {key: value for key, value in base.items() if is_daily_limit(key)}
-    base = prepare_research(base)
+    # The trade cut on this chart (kept on the executor, so it carries from stage to stage).
+    cut = _cut_state(execute)
+    if cut.get("active"):
+        # A cut still on when the last search ended (or started from the notes) goes on from this search's
+        # own start, the settings the stage before passed with, not from that search's over-cap settings.
+        # Each search gets its own TRADE_CUT_ATTEMPTS. The steps already taken stay taken.
+        cut["used"] = 0
+        cut["anchor"] = None
+    holder_start = getattr(execute, "source", None)
+    if isinstance(holder_start, dict) and int(holder_start.get("stamp") or 0) > 0 and holder_start.get("text"):
+        # The copy this chart runs was changed (a wider cooldown maxval, the desk trade limits, a rewrite).
+        # Its bounds come from that copy, so the clamps do not snap a widened value back at the next stage.
+        facts = pine_facts(str(holder_start["text"]))
+        if source:
+            source = str(holder_start["text"])
+    # A daily limit the trade cut turned on stays on: zeroing it would bring the trades back.
+    kept_daily = dict(original_daily) if cut.get("touched") else {}
+    base = {**prepare_research(base), **kept_daily}
     base = _start_on_the_ladder(base, account_size)
+    # The owner's emailed answers (questions.owner_settings) start every chart's search, after prepare_research,
+    # so a daily limit the owner turned on is not zeroed. Applied once per chart study, not again at each stage.
+    base, facts, source = _with_owner_answers(base, execute, path, facts, source, cut, board, researcher)
     choices = _input_choices(facts)
     # The search does not spend attempts on an input the script was measured to ignore.
     known = getattr(execute, "source", None)
+    # The zero-trade count is kept per chart and instrument, so one chart cannot park the file for all.
+    chart_key = f"{known.get('root') or ''}|{known.get('timeframe') or ''}" if isinstance(known, dict) else ""
     ignored = set(known.get("flat") or ()) if isinstance(known, dict) else set()
     responsive = {key: value for key, value in base.items() if key not in ignored}
     if any(_searchable(key, value, choices) for key, value in responsive.items()):
@@ -2464,12 +2929,18 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
     if slot is not None:
         from futuresfund.backtrader_engine import begin_study
 
-        begin_study(slot, study_name, SUCCESS_COUNT)
+        # The engine card shows "attempt N of M" and which test this search is.
+        begin_study(slot, study_name, SUCCESS_COUNT, limit=limit, stage=int(stage_days) if stage_days else (365 if year else 0))
+    # A stage keeps its best pass so far, and counts the runs since that pass that did not beat it.
+    best_pass = None
+    since_best = 0
     seen = set()
     seen_results = set()
     blocked = set()
     carried = None
     spent: set[str] = set()
+    # For each input, the moves from a trading setting that stopped every entry: (from, to).
+    dead_edges: dict[str, list[tuple]] = {}
     repeats = 0
     runs = 0
     bounds = _input_bounds(facts)
@@ -2479,6 +2950,11 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             script = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             script = ""
+    # A session or plain text input the owner set is not searched, so every plan carries its value.
+    from futuresfund.pine_report import text_inputs
+
+    text_named = text_inputs(str(_holder_text(execute) or script or ""))
+    pinned_text = {name: value for name, value in base.items() if isinstance(value, str) and name in text_named}
     if script and board is not None and path is not None:
         from futuresfund.frequency import script_reading
 
@@ -2486,6 +2962,9 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
     script_errors = 0
     stall_asked = False
     no_effect: list[str] = []
+    tracker = input_effects.current()
+    # Plans in a direction this search found does nothing are skipped. This many in a row ends the search.
+    skipped_dead = 0
     while len(trials) < limit:
         if board is not None and board.cancel.is_set():
             break
@@ -2519,10 +2998,12 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             if board is not None:
                 board.post(
                     developer,
-                    f"{path.name} is in cannotRunStrategies. This chart left it.",
+                    _left_text(path),
                     kind="log",
                     channel=developer,
                 )
+            # Another chart moved the file. This search was cut off, so it did not fail.
+            trials.skipped = True
             break
         if pause is not None and not _wait(board, pause):
             break
@@ -2535,16 +3016,49 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
         choices = _input_choices(facts)
         from futuresfund.frequency import frequency_plan, frequency_reason
 
+        if carried is None and trials and not _traded(trials[-1]):
+            # The last run never entered. The next change starts from the best run that traded, not from that setting.
+            revived = _best_trading_row(trials)
+            if revived is not None:
+                carried = dict(revived.get("params") or {}) or None
         anchor = carried or ((trials[-1].get("params") if trials else None) or origin)
-        phase = _exit_phase_plan(trials, seen | blocked, choices, original_daily, account_size) if trials else None
+        cut_text = None
+        cut_attempt = False
+        if cut.get("active"):
+            if int(cut.get("used") or 0) >= TRADE_CUT_ATTEMPTS:
+                trials.over_trades = _over_trades_question(label, cut, stage_days, known)
+                _post_cut(board, path, researcher, trials.over_trades, kind="report")
+                break
+            picked = _next_cut(cut, anchor, script, bounds, seen, original_daily, trials, holder_text=_holder_text(execute))
+            if picked is None:
+                trials.over_trades = _over_trades_question(label, cut, stage_days, known, spent_steps=True)
+                _post_cut(board, path, researcher, trials.over_trades, kind="report")
+                break
+            cut_plan, cut_text, cut_said = picked
+            cut_attempt = True
+        phase = None if cut_attempt else (_exit_phase_plan(trials, seen | blocked, choices, original_daily, account_size) if trials else None)
         reason = ""
         dead = False
         raw = None
-        if raw is None and phase is not None:
+        if cut_attempt:
+            raw = cut_plan
+            reason = f"To cut trades I {cut_said}"
+            cut["touched"] = True
+            holder_now = getattr(execute, "source", None)
+            if cut_text is not None and isinstance(holder_now, dict) and cut_text != str(holder_now.get("text") or ""):
+                # The desk trade limits, or a wider cooldown maxval, go in the copy this chart runs and files.
+                holder_now["previous"] = str(holder_now.get("text") or "")
+                holder_now["text"] = cut_text
+                holder_now["stamp"] = int(holder_now.get("stamp") or 0) + 1
+                script = cut_text
+                facts = pine_facts(script)
+                bounds = _input_bounds(facts)
+                choices = _input_choices(facts)
+        elif raw is None and phase is not None:
             raw = phase
             reason = _exit_phase_reason(trials, phase)
         elif raw is None:
-            paced_change = frequency_plan(origin, trials, script, bounds, seen | blocked, carried, spent)
+            paced_change = frequency_plan(origin, trials, script, bounds, seen | blocked, carried, spent | set(tracker.removed if tracker is not None else ()))
             if paced_change is not None:
                 raw = paced_change
                 reason = frequency_reason(trials[-1].get("params") if trials else {}, paced_change, script)
@@ -2566,8 +3080,20 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                 if board is not None and path is not None:
                     board.post(developer, f"{label}: {reason}", kind="report", channel=developer)
                     board.post(researcher, f"{label}: {reason}", kind="report", channel=researcher)
+            elif tracker is not None and tracker.removed and not stage_days and developer in _BACKTEST_DEVELOPERS and not _input_order(anchor, choices):
+                # Every input this search could move changed nothing, the way three identical results used to show.
+                trials.repeat_stop = True
+                if board is not None and path is not None:
+                    board.post(
+                        developer,
+                        f"{label}: moving each of its inputs changed nothing. This chart is leaving the script and taking the next one.",
+                        kind="log",
+                        channel=developer,
+                    )
             break
         plan = _clamp_plan(raw, bounds)
+        if pinned_text:
+            plan = {**pinned_text, **plan}
         holder = getattr(execute, "source", None)
         stamp = int(holder.get("stamp") or 0) if isinstance(holder, dict) else 0
         mark = _key(plan) if stamp == 0 else f"{stamp}:{_key(plan)}"
@@ -2575,21 +3101,27 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             blocked.add(_key(raw))
             blocked.add(mark)
             continue
-        seen.add(mark)
-        if path is not None:
-            from futuresfund.objective import trades_already_over_cap
-
-            known = trades_already_over_cap(_read_notes(path))
-            if known:
-                trials.skipped = True
-                note = (
-                    f"{label} already took {known} trades. A script with more than 900 trades cannot be saved, "
-                    "so this chart is skipping it."
-                )
-                if board is not None:
-                    board.post(developer, note, kind="log", channel=developer)
-                    board.post(researcher, note, kind="log", channel=researcher)
+        moved = _changed_keys(anchor, plan)
+        if cut_attempt:
+            # A cut is the researcher's deliberate step. It runs even where a move looked like it did nothing.
+            pass
+        elif tracker is not None and moved and all(tracker.is_removed(name) or tracker.dead_move(name, anchor.get(name), plan.get(name)) for name in moved):
+            blocked.add(_key(raw))
+            blocked.add(mark)
+            skipped_dead += 1
+            if skipped_dead > 40:
                 break
+            continue
+        elif _past_any_dead_edge(dead_edges, plan, trials):
+            # Moving this input this far already stopped every entry, so going further cannot bring trades back.
+            blocked.add(_key(raw))
+            blocked.add(mark)
+            skipped_dead += 1
+            if skipped_dead > 40:
+                break
+            continue
+        skipped_dead = 0
+        seen.add(mark)
         if board is not None and path is not None:
             change = _change_text(trials[-1]["params"] if trials else None, plan)
             if reason:
@@ -2598,13 +3130,13 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                 change = f"{change}. {stage_days}-day stage"
             board.post(
                 researcher,
-                f"Attempt {attempt} on {label}. {change}.",
+                f"Attempt {attempt} of {limit} on {label}. {change}.",
                 kind="log",
                 channel=researcher,
             )
             board.post(
                 developer,
-                f"Attempt {attempt} on {label}. {change}.",
+                f"Attempt {attempt} of {limit} on {label}. {change}.",
                 kind="log",
                 channel=developer,
             )
@@ -2640,36 +3172,48 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             if board is not None:
                 board.post(developer, f"{label} was skipped. Taking the next script.", kind="log", channel=developer)
             break
-        from futuresfund.objective import too_many_to_save
-
-        if too_many_to_save(measured):
-            trials.skipped = True
-            count = int(measured.get("trades") or 0)
-            note = (
-                f"{label} took {count} trades. A script with more than 900 trades cannot be saved, "
-                "so this chart is skipping it."
-            )
-            if path is not None and (_in_learning(path) or _in_created(path)):
-                _mark_over_cap(path, count)
-                set_aside(path, note)
-            if board is not None:
-                board.post(developer, note, kind="log", channel=developer)
-                board.post(researcher, note, kind="log", channel=researcher)
-            break
+        # A run over the trade cap is kept, flagged over_cap, and the trade cut starts or goes on.
+        if stage_days and best_pass is not None and not cut.get("active"):
+            # The stage already has a pass. A run over the cap does not start the trade cut: it is not a better
+            # pass, and the next attempt starts again from the best pass.
+            over = _over_after_pass(measured, stage_days, board, path, researcher, label, trials, best_pass)
+        else:
+            over = _track_trade_cut(cut, measured, plan, stage_days, cut_attempt, board, path, researcher, label, chart_key)
         runs += 1
+        if _no_trades(measured):
+            _record_dead_edges(dead_edges, plan, trials)
+        learned = tracker.observe(stamp, plan, measured) if tracker is not None else []
         if stage_days and runs > 2 * limit:
             # A stage skips the repeat stop below, so its engine runs are capped here instead.
             break
-        if not stage_days and _zero_streak(path, measured) >= FLAT_RUNS:
-            _park_flat(board, path, developer, trials, label)
+        if not stage_days and _zero_streak(path, measured, chart_key) >= FLAT_RUNS:
+            if any(_traded(row) for row in trials) or (isinstance(holder, dict) and holder.get("stage_runs")):
+                # This script traded in this search or passed a proving stage, so it can run. The
+                # settings walked into ones that never enter. This chart ends its search and keeps its
+                # best result, and the file stays for the other charts.
+                with _flat_lock:
+                    _flat_runs.pop(_flat_key(path, chart_key), None)
+                if board is not None and path is not None:
+                    board.post(
+                        developer,
+                        f"{label} took no trades {FLAT_RUNS} times in a row on these settings, but it traded earlier in this search. "
+                        "This chart keeps its best result and leaves the search. The script stays for the other charts.",
+                        kind="log",
+                        channel=developer,
+                    )
+                break
+            _park_flat(board, path, developer, trials, label, chart_key, researcher)
             break
         signature = _result_key(measured)
         if signature in seen_results and not measured.get("error") and not measured.get("fatal"):
-            repeats += 1
+            # A repeat that showed an input does nothing taught the search where not to look.
+            # That input is out of the search now, so it does not count toward leaving the script.
+            if not learned:
+                repeats += 1
             for name in _changed_keys(anchor, plan):
                 if name not in no_effect:
                     no_effect.append(name)
-            if repeats >= 3 and not stall_asked and not _no_trades(measured) and board is not None and path is not None:
+            if repeats >= 3 and not cut.get("active") and not stall_asked and not _no_trades(measured) and board is not None and path is not None:
                 stall_asked = True
                 moved = ", ".join(no_effect[-12:]) or "the settings"
                 _ask_about_stall(
@@ -2684,7 +3228,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                     trials[-1]["skipped"] = True
                 break
             # On a short window a stop or target often changes no trade. A stage moves on to another input instead of leaving.
-            elif not _no_trades(measured) and developer in _BACKTEST_DEVELOPERS and repeats >= 3 and not stage_days:
+            elif not _no_trades(measured) and developer in _BACKTEST_DEVELOPERS and repeats >= 3 and not stage_days and not cut.get("active"):
                 trials.repeat_stop = True
                 if board is not None:
                     board.post(
@@ -2700,12 +3244,21 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                 changed = _changed_keys(anchor, plan)
                 if len(changed) == 1:
                     spent.add(changed[0])
-                carried = dict(plan)
+                # A script that never entered keeps loosening from here. One that traded goes back to its best trading run.
+                revived = _best_trading_row(trials)
+                carried = dict(revived.get("params") or plan) if revived is not None else dict(plan)
             if board is not None and path is not None:
                 if _no_trades(measured):
                     note = (
                         f"{label} still took no trades. Profit, drawdown, and the trade count did not change, "
                         "so this run is not counted."
+                    )
+                elif learned:
+                    gone = [name for name in learned if tracker is not None and tracker.is_removed(name)]
+                    note = (
+                        f"{label} repeated an earlier result, so this run is not counted. "
+                        f"Moving {', '.join(learned)} that way changed nothing, so this search does not move it that way again."
+                        + (f" {', '.join(gone)} changed nothing either way and is out of this search." if gone else "")
                     )
                 else:
                     note = (
@@ -2713,6 +3266,13 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                         "The same variable will be moved further."
                     )
                 board.post(researcher, note, kind="log", channel=researcher)
+            if stage_days and best_pass is not None:
+                # A repeat cannot beat the best pass, so it counts toward the stage's patience.
+                since_best += 1
+                if since_best >= STAGE_PATIENCE:
+                    trials.patience_stop = True
+                    _post_patience(board, path, researcher, label, stage_days, trials, best_pass, limit)
+                    break
             continue
         repeats = 0
         carried = None
@@ -2721,6 +3281,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
             "params": plan,
             "net_profit": measured.get("net_profit"),
             "max_drawdown": measured.get("max_drawdown"),
+            "dips": measured.get("dips") or [],
             "trades": measured.get("trades"),
             "win_rate": measured.get("win_rate"),
             "sharpe": measured.get("sharpe"),
@@ -2756,6 +3317,10 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
 
             row["source_sha"] = keep_version(path, str(holder.get("text") or ""))
         row["passed"] = _passed(row, account_size)
+        if over:
+            # Kept so the cut starts from these settings, but a run over the trade cap never passes or is filed.
+            row["over_cap"] = True
+            row["passed"] = False
         row["change"] = _change_text(trials[-1]["params"] if trials else None, plan)
         row["impact"] = _impact(trials[-1] if trials else None, row)
         if (row.get("error") or row.get("fatal")) and not _rejected_setting(row.get("error")):
@@ -2800,24 +3365,57 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
 
         if stage_days:
             row["stage_days"] = int(stage_days)
-            passed = stage_passed(row, stage_days, account_size)
+            passed = stage_passed(row, stage_days, account_size) and not row.get("over_cap")
             row["stage_passed"] = passed
+            # A pass does not end the stage. It keeps searching for more profit with less drawdown.
+            first_pass = passed and best_pass is None
+            better = passed and (best_pass is None or _pass_score(row) > _pass_score(best_pass))
+            if better:
+                best_pass = row
+                since_best = 0
+            elif best_pass is not None:
+                since_best += 1
+                if row.get("over_cap"):
+                    carried = dict(best_pass.get("params") or {}) or None
             if board is not None and path is not None:
                 verdict = "passed" if passed else "did not pass"
+                from futuresfund.objective import stage_miss_lines
+
+                # Which bar was missed, with this stage's pro-rated numbers.
+                bar_text = "" if passed else " ".join(stage_miss_lines(row, stage_days))
+                if first_pass:
+                    after = (
+                        f"The stage keeps searching for more profit with less drawdown. It stops after {STAGE_PATIENCE} "
+                        f"attempts in a row without a better pass, or at {limit} attempts."
+                    )
+                elif better:
+                    after = "This is the best pass so far: more profit after its drawdown than any pass before it."
+                elif best_pass is not None:
+                    after = (
+                        f"The best pass is still attempt {_attempt_number(trials, best_pass)} ({_pass_text(best_pass)}). "
+                        f"{since_best} of {STAGE_PATIENCE} attempts without a better pass."
+                    )
+                else:
+                    after = ""
+                head = (
+                    f"{label} {verdict} the {stage_days}-day stage on attempt {len(trials)} of {limit}. Profit {row.get('net_profit')}, "
+                    f"drawdown {row.get('max_drawdown')}, trades {row.get('trades')}."
+                )
                 board.post(
                     researcher,
-                    f"{label} {verdict} the {stage_days}-day stage on attempt {len(trials)}. Profit {row.get('net_profit')}, "
-                    f"drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.",
+                    " ".join(part for part in (head, bar_text, after) if part),
                     kind="log",
                     channel=researcher,
                 )
-            if passed:
-                break
             if row.get("blocked") or row.get("fatal"):
                 break
+            if best_pass is not None and since_best >= STAGE_PATIENCE:
+                trials.patience_stop = True
+                _post_patience(board, path, researcher, label, stage_days, trials, best_pass, limit)
+                break
             continue
-        if counted_success(row, account_size):
-            won = sum(1 for item in trials if counted_success(item, account_size))
+        if not row.get("over_cap") and counted_success(row, account_size):
+            won = sum(1 for item in trials if not item.get("over_cap") and counted_success(item, account_size))
             if slot is not None:
                 from futuresfund.backtrader_engine import record_success
 
@@ -2838,7 +3436,7 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                     kind="log",
                     channel=researcher,
                 )
-        if accept is not None and developer not in _BACKTEST_DEVELOPERS and accept(row):
+        if accept is not None and developer not in _BACKTEST_DEVELOPERS and not row.get("over_cap") and accept(row):
             if board is not None and path is not None:
                 board.post(
                     developer,
@@ -2848,15 +3446,17 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                     channel=developer,
                 )
             if board is not None and path is not None:
-                _document(board, facts or {}, path, row, len(trials), developer, researcher)
+                _document(board, facts or {}, path, row, len(trials), developer, researcher, limit=limit)
             break
         if board is not None and path is not None:
-            _document(board, facts or {}, path, row, len(trials), developer, researcher)
+            _document(board, facts or {}, path, row, len(trials), developer, researcher, limit=limit)
         if len(trials) == 1 and _opening_is_best(trials) and developer in _BACKTEST_DEVELOPERS and path is not None:
             _offer_library(board, facts or {}, path, row, developer, opening=True)
         if row.get("blocked") or row.get("fatal"):
             break
-        if developer in _BACKTEST_DEVELOPERS and limit == ATTEMPT_LIMIT and len(trials) >= LOSS_LOOK and _best_profit(trials) <= 0:
+        # Only the chart's one-year search has the loss stop. It is marked by the caller, not by its limit,
+        # so changing the year search attempts never turns this stop off.
+        if developer in _BACKTEST_DEVELOPERS and year and len(trials) >= LOSS_LOOK and _best_profit(trials) <= 0:
             trials.loss_stop = True
             if board is not None and path is not None:
                 board.post(
@@ -2889,7 +3489,271 @@ def _search(base, execute, account_size, limit, board, path, pause, facts=None, 
                 board.post(developer, reason, kind="log", channel=developer)
             break
     trials.engine_runs = runs
+    trials.attempt_budget = int(limit)
+    if stage_days:
+        trials.best_pass = best_pass
     return trials
+
+
+def _with_owner_answers(base: dict, execute, path, facts, source: str, cut: dict, board, researcher: str):
+    """Put the owner's values into this chart's first search. Returns (base, facts, source).
+
+    A desk_ trade limit installs the desk trade-limit block in the copy this chart runs (and files). The
+    script's own daily limits the owner set stay on at the later stages, like the trade cut's.
+    """
+    if path is None:
+        return base, facts, source
+    holder = getattr(execute, "source", None)
+    if isinstance(holder, dict):
+        if holder.get("owner_applied"):
+            return base, facts, source
+    elif getattr(execute, "_owner_applied", False):
+        return base, facts, source
+    try:
+        from futuresfund.questions import owner_settings
+
+        owner = owner_settings(path)
+    except Exception:
+        traceback.print_exc()
+        owner = {}
+    if not owner:
+        return base, facts, source
+    if isinstance(holder, dict):
+        holder["owner_applied"] = True
+    else:
+        try:
+            execute._owner_applied = True
+        except (AttributeError, TypeError):
+            pass
+    desk = {name: value for name, value in owner.items() if str(name).startswith("desk_")}
+    if desk and isinstance(holder, dict):
+        from futuresfund.strategy_team import ensure_trade_limits, has_trade_limits
+
+        text = str(holder.get("text") or "")
+        if text and not has_trade_limits(text):
+            installed = ensure_trade_limits(text)
+            if installed != text:
+                holder["previous"] = text
+                holder["text"] = installed
+                holder["stamp"] = int(holder.get("stamp") or 0) + 1
+                facts = pine_facts(installed)
+                if source:
+                    source = installed
+    from futuresfund.pine_report import text_inputs
+
+    known = set(_pine_params(facts or {})) | set(base)
+    # A session or plain text input the owner set is not searched, but the engine still gets its value.
+    script_text = str(holder.get("text") or "") if isinstance(holder, dict) else (source or "")
+    if not script_text:
+        try:
+            script_text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            script_text = ""
+    known |= {name for name, value in owner.items() if isinstance(value, str) and name in text_inputs(script_text)}
+    used = {name: value for name, value in owner.items() if name in known or (name in desk and isinstance(holder, dict))}
+    if not used:
+        return base, facts, source
+    from futuresfund.research_rules import is_daily_limit
+
+    if desk or any(is_daily_limit(name) for name in used):
+        # Like the trade cut: a limit turned on stays on at the next stage instead of being zeroed again.
+        cut["touched"] = True
+    if board is not None:
+        shown = ", ".join(f"{name} = {value}" for name, value in used.items())
+        board.post(researcher, f"{path.name} starts this chart with the owner's values: {shown}.", kind="log", channel=researcher)
+    return {**base, **used}, facts, source
+
+
+def _cut_state(execute) -> dict:
+    """This chart's trade cut (trade_cut.new_state), kept on the executor so it carries from stage to stage."""
+    from futuresfund.trade_cut import new_state
+
+    holder = getattr(execute, "source", None)
+    if isinstance(holder, dict):
+        state = holder.get("trade_cut")
+        if not isinstance(state, dict):
+            state = new_state()
+            holder["trade_cut"] = state
+        return state
+    state = getattr(execute, "_trade_cut", None)
+    if not isinstance(state, dict):
+        state = new_state()
+        try:
+            execute._trade_cut = state
+        except (AttributeError, TypeError):
+            pass
+    return state
+
+
+def _holder_text(execute) -> str | None:
+    """The script copy this chart runs, or None for an executor with no copy (then only inputs can move)."""
+    holder = getattr(execute, "source", None)
+    if isinstance(holder, dict):
+        return str(holder.get("text") or "")
+    return None
+
+
+def _next_cut(cut: dict, anchor: dict, script: str, bounds: dict, seen: set, seeds: dict, trials, holder_text: str | None = None):
+    """The next trade-cut step that was not run yet: (settings, script text or None, what the researcher did)."""
+    from futuresfund.objective import stage_bars
+    from futuresfund.trade_cut import plan_step
+
+    start = dict(cut.get("anchor") or anchor or {})
+    try:
+        weekly = float(stage_bars(None).get("weekly_profit") or 0)
+    except Exception:
+        weekly = 0.0
+    text = holder_text if holder_text is not None else (script or "")
+    last = trials[-1] if trials else None
+    for _ in range(40):
+        picked = plan_step(start, text, bounds, cut, seeds=seeds, row=last, weekly_profit=weekly, can_rewrite=holder_text is not None)
+        if picked is None:
+            return None
+        plan, text_out, said = picked
+        if _key(plan) in seen and text_out == text:
+            # Already run with these settings. The cut moves on to its next step from here.
+            start = plan
+            continue
+        cut["anchor"] = dict(plan)
+        return plan, (text_out if holder_text is not None else None), said
+    return None
+
+
+def _track_trade_cut(cut: dict, measured: dict, plan: dict, stage_days, cut_attempt: bool, board, path, researcher: str, label: str, chart_key: str) -> bool:
+    """Count one run toward this chart's trade cut. True when the run is over the trade cap."""
+    from futuresfund.objective import TRADE_SAVE_MAX, over_trade_cap, trade_cap_text
+
+    if measured.get("error") or measured.get("fatal") or measured.get("stopped"):
+        return False
+    over = over_trade_cap(measured, stage_days)
+    count = int(measured.get("trades") or 0)
+    if over:
+        cut["anchor"] = dict(plan)
+        cut["count"] = count
+        if cut_attempt:
+            cut["used"] = int(cut.get("used") or 0) + 1
+        if count > TRADE_SAVE_MAX and path is not None and (_in_learning(path) or _in_created(path)):
+            _mark_over_cap(path, count, chart_key)
+        if not cut.get("active"):
+            cut["active"] = True
+            cut["used"] = 0
+            _post_cut(
+                board, path, researcher,
+                f"{label[:1].upper()}{label[1:]} {trade_cap_text(measured, stage_days)}. I am cutting its trades on this chart, one step per attempt: "
+                "its own daily limits on, a longer cooldown, the desk daily loss and profit limits, then most trades a day. "
+                f"After {TRADE_CUT_ATTEMPTS} attempts still over the cap I ask the owner.",
+            )
+        elif cut_attempt:
+            _post_cut(
+                board, path, researcher,
+                f"{label} still took {count:,} trades after that cut ({cut['used']} of {TRADE_CUT_ATTEMPTS} cut attempts).",
+            )
+        return True
+    if cut.get("active") and cut_attempt:
+        cut["active"] = False
+        cut["used"] = 0
+        cut["anchor"] = None
+        steps = "; ".join(cut.get("steps") or []) or "cut its trades"
+        _post_cut(
+            board, path, researcher,
+            f"{label} took {count:,} trades after I {steps}. That is under the trade cap, so the search goes on from these settings.",
+            kind="report",
+        )
+    return False
+
+
+def _over_after_pass(measured: dict, stage_days, board, path, researcher: str, label: str, trials, best_pass: dict) -> bool:
+    """A run over the trade cap after the stage already passed. True when it is over the cap.
+
+    The trade cut is not started: the stage keeps its best pass, the run counts toward the stage's
+    patience, and the next attempt starts from the best pass's settings.
+    """
+    from futuresfund.objective import over_trade_cap, trade_cap_text
+
+    if measured.get("error") or measured.get("fatal") or measured.get("stopped"):
+        return False
+    if not over_trade_cap(measured, stage_days):
+        return False
+    _post_cut(
+        board, path, researcher,
+        f"{label[:1].upper()}{label[1:]} {trade_cap_text(measured, stage_days)}. The stage already passed, so I am not cutting "
+        f"its trades. It keeps its best pass, attempt {_attempt_number(trials, best_pass)}, and the next attempt starts from those settings.",
+    )
+    return True
+
+
+def _post_cut(board, path, researcher: str, text: str, kind: str = "log") -> None:
+    """The trade cut is the chart researcher's work, so its posts are the researcher's."""
+    if board is None or path is None or not text:
+        return
+    board.post(researcher, text, kind=kind, channel=researcher)
+
+
+def _over_trades_question(label: str, cut: dict, stage_days, source, spent_steps: bool = False) -> str:
+    """The chart researcher's question for the owner when the trade cut did not get under the cap."""
+    from futuresfund.objective import TRADE_SAVE_MAX, TRADES_YEAR_MAX
+
+    chart = ""
+    if isinstance(source, dict) and (source.get("root") or source.get("timeframe")):
+        chart = f" on the {source.get('root') or ''} {source.get('timeframe') or ''}".rstrip() + " chart"
+    window = f"the {stage_days}-day test" if stage_days else "the year"
+    tried = "; ".join(cut.get("steps") or []) or "nothing, because the script has no input the desk could use to cut trades"
+    why = "I ran out of cuts to try" if spent_steps else f"{TRADE_CUT_ATTEMPTS} cut attempts in a row were still over the cap"
+    count = int(cut.get("count") or 0)
+    return (
+        f"{label[:1].upper()}{label[1:]} still takes too many trades{chart}: {count:,} in {window}. A run is filed only with at most "
+        f"{TRADE_SAVE_MAX:,} trades and {TRADES_YEAR_MAX:,} a year. I tried: {tried}. {why}. "
+        "What should the desk do? Reply with settings such as desk_max_trades_day = 2 or desk_daily_loss = 300, "
+        "or park, or retry."
+    )
+
+
+def _start_cut_from_notes(board, path, execute, notes: dict, root: str, timeframe: str, researcher: str) -> None:
+    """A chart that already measured a run over the trade cap starts this study in the trade cut."""
+    from futuresfund.objective import chart_over_cap
+
+    known = chart_over_cap(notes, root, timeframe)
+    if not known:
+        return
+    cut = _cut_state(execute)
+    cut["active"] = True
+    cut["count"] = known
+    _post_cut(
+        board, path, researcher,
+        f"{path.name} already took {known:,} trades on the {root} {timeframe} chart. I start this study by cutting its trades.",
+    )
+
+
+def _ask_over_trades(board, path: Path, researcher: str, question: str) -> str:
+    """The trade cut did not get under the cap. The chart researcher asks the owner (questions kind over_trades).
+
+    The researcher wrote the question. If the questions module fails, the script is set aside the old way
+    with the question as its reason, so the chart does not take it again and again.
+    """
+    try:
+        from futuresfund.questions import ask_owner
+    except ImportError:
+        ask_owner = None
+    if ask_owner is not None:
+        try:
+            return ask_owner(board, path, researcher, question, "over_trades") or "awaiting"
+        except Exception:
+            traceback.print_exc()
+    return leave_unrunnable(board, path, researcher, question) or "over_trades"
+
+
+def _post_patience(board, path, researcher: str, label: str, stage_days: int, trials, best_pass: dict, limit: int) -> None:
+    """The stage found no better pass in STAGE_PATIENCE runs in a row, so it ends with its best pass."""
+    if board is None or path is None:
+        return
+    board.post(
+        researcher,
+        f"{label}: {STAGE_PATIENCE} attempts in a row found no better pass on the {stage_days}-day stage, so the stage ends "
+        f"after {len(trials)} of its {limit} attempts. It keeps the best pass, attempt {_attempt_number(trials, best_pass)} "
+        f"({_pass_text(best_pass)}).",
+        kind="log",
+        channel=researcher,
+    )
 
 
 def _journal_engine_error(developer: str, path, label: str, attempt: int, row: dict) -> None:
@@ -2946,22 +3810,87 @@ def _zero_result(measured: dict) -> bool:
         return False
 
 
-def _flat_key(path: Path) -> str:
+def _traded(row) -> bool:
+    """A finished run that entered at least once. An error row is not a trading run."""
+    if not isinstance(row, dict) or row.get("error") or row.get("fatal") or row.get("blocked"):
+        return False
     try:
-        return str(path.resolve())
+        return int(row.get("trades") or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _best_trading_row(trials) -> dict | None:
+    """The highest-ranked run of this search that took trades, or None when none did."""
+    traded = [row for row in trials or [] if _traded(row)]
+    return max(traded, key=_rank) if traded else None
+
+
+def _past_dead_edge(edges: dict, name: str, start, value) -> bool:
+    """True when value for name is as far as, or past, a move that stopped every entry.
+
+    start is where the move begins. None means only the value is checked.
+    """
+    for origin, dead in edges.get(name, ()):
+        if any(isinstance(item, bool) for item in (origin, dead, start, value)):
+            continue
+        try:
+            origin, dead, value = float(origin), float(dead), float(value)
+            begin = origin if start is None else float(start)
+        except (TypeError, ValueError):
+            continue
+        if dead > origin and begin < dead and value >= dead:
+            return True
+        if dead < origin and begin > dead and value <= dead:
+            return True
+    return False
+
+
+def _record_dead_edges(edges: dict, plan: dict, trials) -> None:
+    """A run that took no trades, one input away from a run that traded: that move stopped every entry."""
+    for row in trials or []:
+        if not _traded(row):
+            continue
+        params = row.get("params") or {}
+        changed = _changed_keys(params, plan)
+        if len(changed) == 1 and (params.get(changed[0]), plan.get(changed[0])) not in edges.get(changed[0], []):
+            edges.setdefault(changed[0], []).append((params.get(changed[0]), plan.get(changed[0])))
+
+
+def _past_any_dead_edge(edges: dict, plan: dict, trials) -> bool:
+    """True when some input in this plan is as far as, or past, a move that stopped every entry.
+
+    A value a trading run already used is never blocked, so the search can always return to it.
+    """
+    if not edges:
+        return False
+    for name, value in plan.items():
+        if name not in edges:
+            continue
+        if any(_traded(row) and (row.get("params") or {}).get(name) == value for row in trials or []):
+            continue
+        if _past_dead_edge({name: edges[name]}, name, None, value):
+            return True
+    return False
+
+
+def _flat_key(path: Path, chart: str = "") -> str:
+    try:
+        base = str(path.resolve())
     except OSError:
-        return str(path)
+        base = str(path)
+    return f"{base}|{chart}" if chart else base
 
 
-def _zero_streak(path: Path | None, measured: dict) -> int:
-    """How many finished runs of this script in a row made no profit and took no trades.
+def _zero_streak(path: Path | None, measured: dict, chart: str = "") -> int:
+    """How many finished runs of this script on this chart in a row made no profit and took no trades.
 
-    A trade or a profit clears the count. The count stays with the script, so the next
-    chart does not start again at zero.
+    A trade or a profit clears the count. Each chart and instrument keeps its own count, so one
+    chart's settings that never enter do not count against another chart.
     """
     if path is None:
         return 0
-    key = _flat_key(path)
+    key = _flat_key(path, chart)
     with _flat_lock:
         if not _zero_result(measured):
             _flat_runs.pop(key, None)
@@ -2971,16 +3900,25 @@ def _zero_streak(path: Path | None, measured: dict) -> int:
         return count
 
 
-def _park_flat(board, path: Path | None, developer: str, trials, label: str) -> None:
-    """Stop a script that cannot enter and move it out of the learning folder."""
+def _park_flat(board, path: Path | None, developer: str, trials, label: str, chart: str = "", researcher: str = "") -> None:
+    """Stop a script that cannot enter. Its researcher asks the owner, and it waits in awaitingAnswerStrategies.
+
+    An engine 4 draft is not asked about: it goes to cannotRunStrategies the old way, and the team writes another.
+    trials.flat_outcome is the study outcome: "awaiting", or "cannot_run" for a parked draft.
+    """
     reason = f"{label} took no trades and made no profit {FLAT_RUNS} times in a row."
     trials.flat_stop = True
+    trials.flat_outcome = "cannot_run"
     if trials:
         trials[-1]["note"] = reason
         trials[-1]["skipped"] = True
-    key = _flat_key(path) if path is not None else ""
+    key = _flat_key(path, chart) if path is not None else ""
     if path is not None and (_in_learning(path) or _in_created(path)):
-        leave_unrunnable(board, path, developer, reason)
+        if _in_drafts(path):
+            leave_unrunnable(board, path, developer, reason)
+        else:
+            asked = _ask_owner(board, path, researcher or developer, f"{reason} {_flat_reason(path)}", "no_trades", developer)
+            trials.flat_outcome = asked or "cannot_run"
     if key:
         with _flat_lock:
             _flat_runs.pop(key, None)
@@ -3038,7 +3976,8 @@ def adjustment_notes(trials: list[dict]) -> tuple[str, str]:
     loser = min(lost, key=lambda row: float(row["net_profit"])) if lost else None
     lines = [
         "Attempt results. Each row builds on the prior result, not a fresh copy of the original script. "
-        "Rows are in objective order: at least 4 trades a week first, then the lower drawdown, then the larger profit. More than 7 a week still counts.",
+        "Rows are in search order: 130 to 600 trades a year first (an aim of the search, not a pass rule), then the drawdown rule, then the win rate, the profit factor, and the profit. "
+        "Acceptance needs the library trade count, pro-rated to each test, and no more than 600 trades a year.",
         "",
         f"{'Change':<44} {'Profit':>14} {'Drawdown':>14} {'Trades':>8} {'Trail':>7}",
         f"{'-' * 44} {'-' * 14} {'-' * 14} {'-' * 8} {'-' * 7}",
@@ -3452,21 +4391,95 @@ def _email_lesson_size(size: int) -> None:
 EMPTY_CHARTS = 3         # charts with no trades before the researcher is asked why the script never enters
 REPAIR_TRIES = 3         # times the researcher is asked to repair a stop, take profit, or input that does not work
 REOPEN_LIMIT = 3         # times a finished script's charts run again for a researcher's answer
-STAGE_ATTEMPTS = 20      # attempts a proving stage gets before the script stops on that stage
-STAGE_REVIEWS = 6        # failed charts the researcher reviews on one script
+# Research changes input values only: no researcher rewrite, no added indicator, no redesign, and no
+# added skip window. The script's logic stays as written. A repair that lets a script compile still runs.
+VALUES_ONLY = True
+VALUES_ONLY_LINE = (
+    "Only a SETTING line or KEEP is used for this script. Its logic stays as written, so a REWRITE, an INDICATOR, "
+    "or a REDESIGN is not used. Change the value of one existing input."
+)
+# Different results each proving stage gets on one chart. The year gets ATTEMPT_LIMIT. Read through
+# stage_attempts(days) when a stage starts, so a value the owner saved on the Design page applies.
+STAGE_7_ATTEMPTS = 100
+STAGE_30_ATTEMPTS = 150
+STAGE_90_ATTEMPTS = 200
+# A stage keeps searching after its first pass for more profit with less drawdown. It stops when this many
+# runs in a row, repeats included, found no better pass, or when its attempts are spent.
+STAGE_PATIENCE = 25
+# A run over the trade cap (objective.over_trade_cap) starts the trade cut on that chart. After this many cut
+# attempts in a row still over the cap, the chart researcher asks the owner (kind over_trades).
+TRADE_CUT_ATTEMPTS = 12
+STAGE_REVIEWS = 6       # failed charts the researcher reviews on one script
 REVIEW_BACKLOG = 12      # failed-stage reviews waiting on the one model before another is left out
+# Switches the owner can change on the Research workflow Design page (futuresfund/workflow_design.py).
+# The values here are the defaults. Saved changes are applied when research starts, never at import.
+USE_ALERT_BARS = True         # a study adds the TradingView alert candles after the last Databento download
+READ_BEFORE_TESTING = True    # measure how the script responds and let the researcher read it before the stages
+ALLOW_REPAIR_REWRITES = True  # a researcher's repair answer may rewrite the script, even with VALUES_ONLY on
+STAGES_OFF: frozenset = frozenset()  # proving stages, by days, that are skipped: no search and no ledger mark
+STAGE_REVIEW_ON = True        # a failed stage, or a failed year, goes to the researcher for a review
+REOPEN_FOR_ANSWERS = True     # a researcher's answer runs the script's finished charts again
+RECHECK_BEFORE_FILING = False  # a year run is filed only when the same settings also pass the last 7, 30, and 90 days
 
 
-def _mark_stage(path, root, timeframe, days, status, row=None, source=""):
-    """Write the stage to the proving ledger. A ledger that cannot be written never stops research."""
+def _mark_stage(path, root, timeframe, days, status, row=None, source="", fresh=False):
+    """Write the stage to the proving ledger. A ledger that cannot be written never stops research.
+
+    fresh clears the passes of an earlier study. The 7-day 'testing' mark always does; fresh does it
+    for the first stage that runs when the owner turned the earlier stages off.
+    """
     if path is None or not root:
         return
     from futuresfund.proving import mark
 
     try:
-        mark(path.name, root, timeframe, days, status, row, source)
+        if fresh:
+            mark(path.name, root, timeframe, days, status, row, source, fresh=True)
+        else:
+            mark(path.name, root, timeframe, days, status, row, source)
     except (OSError, ValueError, TypeError):
         pass
+
+
+def stage_attempts(days: int | None) -> int:
+    """The different results a proving stage gets on one chart: 7, 30 and 90 days each have their own, the year has ATTEMPT_LIMIT.
+
+    The module values are read here, when a stage starts, so a value the owner saved on the Design page applies.
+    Another day count gets the budget of the shortest stage at least that long.
+    """
+    if days is None:
+        return int(ATTEMPT_LIMIT)
+    budgets = ((7, STAGE_7_ATTEMPTS), (30, STAGE_30_ATTEMPTS), (90, STAGE_90_ATTEMPTS))
+    for stage, budget in budgets:
+        if int(days) <= stage:
+            return int(budget)
+    return int(ATTEMPT_LIMIT)
+
+
+def _pass_score(row: dict) -> tuple:
+    """How good a passing stage run is: the profit minus the largest drawdown, then the lower drawdown."""
+    try:
+        profit = float(row.get("net_profit") or 0)
+    except (TypeError, ValueError):
+        profit = 0.0
+    try:
+        drawdown = abs(float(row.get("max_drawdown") or 0))
+    except (TypeError, ValueError):
+        drawdown = 0.0
+    return (round(profit - drawdown, 6), -drawdown)
+
+
+def _best_pass(trials) -> dict | None:
+    """The passing stage run with the most profit and the least drawdown. A tie keeps the earlier run."""
+    best = None
+    for row in trials or ():
+        if isinstance(row, dict) and row.get("stage_passed") and (best is None or _pass_score(row) > _pass_score(best)):
+            best = row
+    return best
+
+
+def _pass_text(row: dict) -> str:
+    return f"profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}"
 
 
 def _response_names(params: dict, facts: dict) -> list[str]:
@@ -3501,8 +4514,23 @@ def rewrite_holds(before: dict, after: dict, repaired: list[str], exits_fixed: b
     return _rank(after) > _rank(before) and float(after.get("net_profit") or 0) >= profit
 
 
-def _install_checked(board, path: Path, revised: str, execute, before: dict, researcher: str, slot: int | None, because: str) -> str | None:
-    """Write the researcher's rewrite, measure it at the same settings, and take it back unless it holds."""
+def redesign_holds(before: dict, after: dict) -> bool:
+    """A redesign stays only when it ranks above the script it replaced and makes at least as much profit.
+
+    Anything less is a worse script, so the one before it goes back.
+    """
+    if after.get("error") or after.get("fatal") or after.get("stopped"):
+        return False
+    if not int(after.get("trades") or 0):
+        return False
+    return _rank(after) > _rank(before) and float(after.get("net_profit") or 0) >= float(before.get("net_profit") or 0)
+
+
+def _install_checked(board, path: Path, revised: str, execute, before: dict, researcher: str, slot: int | None, because: str, redesign: bool = False) -> str | None:
+    """Write the researcher's rewrite, measure it at the same settings, and take it back unless it holds.
+
+    A redesign stays only when it does better than the script it replaced (redesign_holds).
+    """
     from futuresfund.attempt_reason import install_script, script_refusal, undo_rewrite
     from futuresfund.backtrader_engine import record_research, set_engine_thinking
     from futuresfund import script_diagnosis as diagnosis
@@ -3527,7 +4555,8 @@ def _install_checked(board, path: Path, revised: str, execute, before: dict, res
         repaired = list(response.get("moved") or {})
         was_broken = diagnosis.exit_faults(str(holder.get("previous") or ""), old) if holder.get("previous") else []
         merged_flat = {**response, "baseline": response.get("baseline") or old.get("baseline")}
-        if rewrite_holds(before, after, repaired, bool(was_broken) and len(diagnosis.exit_faults(installed, merged_flat)) < len(was_broken)):
+        holds = redesign_holds(before, after) if redesign else rewrite_holds(before, after, repaired, bool(was_broken) and len(diagnosis.exit_faults(installed, merged_flat)) < len(was_broken))
+        if holds:
             record_research(slot, "rewrites_kept")
             holder.pop("previous", None)
             merged = {
@@ -3540,9 +4569,10 @@ def _install_checked(board, path: Path, revised: str, execute, before: dict, res
             holder["response"] = merged
             holder["flat"] = diagnosis.ignored_inputs(merged)
             fixed = f" {', '.join(repaired)} now change the result." if repaired else ""
+            kind_done = "redesigned" if redesign else "rewritten"
             board.post(
                 researcher,
-                f"{path.name} was rewritten and kept. {because}{fixed} Profit {before.get('net_profit')} became {after.get('net_profit')}, drawdown {before.get('max_drawdown')} became {after.get('max_drawdown')}.",
+                f"{path.name} was {kind_done} and kept. {because}{fixed} Profit {before.get('net_profit')} became {after.get('net_profit')}, drawdown {before.get('max_drawdown')} became {after.get('max_drawdown')}.",
                 kind="report",
                 channel=researcher,
             )
@@ -3555,7 +4585,7 @@ def _install_checked(board, path: Path, revised: str, execute, before: dict, res
     undo_rewrite(path, execute)
     board.post(
         researcher,
-        f"{path.name}: the rewrite did not hold, so it was taken back. {because} Profit {before.get('net_profit')} became {after.get('net_profit')}, drawdown {before.get('max_drawdown')} became {after.get('max_drawdown')}.",
+        f"{path.name}: the {'redesign did worse, so it' if redesign else 'rewrite did not hold, so it'} was taken back and the script before it is used again. {because} Profit {before.get('net_profit')} became {after.get('net_profit')}, drawdown {before.get('max_drawdown')} became {after.get('max_drawdown')}.",
         kind="log",
         channel=researcher,
     )
@@ -3644,8 +4674,14 @@ def _use_answer(board, path: Path, execute, facts: dict, base: dict, researcher:
         before = {**(record.get("baseline") or {}), "params": settings}
         window = holder.get("sessions")
         holder["sessions"] = diagnosis.RESPONSE_SESSIONS
+        redesign = bool(answer.get("redesign"))
         try:
-            installed = _install_checked(board, path, answer["script"], execute, before, researcher, slot, because)
+            if redesign:
+                # A redesign has to beat this script at the same settings, on the same window, so measure this script there first.
+                measured = execute(settings) or {}
+                if not any(measured.get(name) for name in ("error", "fatal", "stopped")):
+                    before = {**measured, "params": settings}
+            installed = _install_checked(board, path, answer["script"], execute, before, researcher, slot, because, redesign=redesign)
         finally:
             holder["sessions"] = window
         if installed:
@@ -3698,10 +4734,19 @@ def _review_failed_stage(board, path, trials, days: int, execute, facts: dict, r
     best = max(trials, key=_rank)
     shown = [row for row in trials[-5:] if row is not best] + [best]
     where = f" on the {chart} chart" if chart else ""
+    budget = int(getattr(trials, "attempt_budget", 0) or stage_attempts(days))
+    # The year search is judged and described as the year, not as a 365-day stage.
+    bar_days = None if int(days) >= 365 else days
+    test = "year search" if bar_days is None else f"{days}-day stage"
     why = (
-        f"This script failed the {days}-day stage{where} after {len(trials)} different results. The last attempt listed is the best of them. "
-        "Find out why it fails before more settings are tried."
+        f"This script failed the {test}{where} after {len(trials)} different results, of the {budget} that test allows. "
+        "The last attempt listed is the best of them. Find out why it fails before more settings are tried."
     )
+    from futuresfund.objective import stage_bars_text, stage_miss_lines
+
+    # The stage's own bars, pro-rated from the library boxes, and what the best attempt missed.
+    missed = " ".join(stage_miss_lines(best, bar_days))
+    why = f"{why} {stage_bars_text(bar_days)} {missed}".rstrip()
     ask_researcher(board, path, script, shown, facts, why, holder.get("response"), researcher, f"stage{days}", review=review)
 
 
@@ -3712,7 +4757,11 @@ def _try_skip_window(board, path, trials, execute, researcher: str, slot: int | 
     when it holds, like any rewrite. A script that has one only has its window moved. `window`
     names the time to skip instead of reading it from the best run. With must_improve, as after a
     passed stage, a moved window is measured first and used only when the result is better.
+
+    With VALUES_ONLY on, the script's logic is not changed, so no window is added.
     """
+    if VALUES_ONLY:
+        return None
     from futuresfund import skip_window
 
     holder = getattr(execute, "source", None)
@@ -3755,13 +4804,17 @@ def _try_skip_window(board, path, trials, execute, researcher: str, slot: int | 
 
 # The recent-window check of the study running on this thread. Filing reads it.
 def _prove_stages(base, execute, board, path, pause, facts, developer, researcher, slot, root=None, timeframe=""):
-    """Search the last 7 days, then 30, then 90, each from the settings that passed the stage before.
+    """Search the last 7 days, then 30, then 90, each from the settings of the best pass of the stage before.
 
-    A stage passes on objective.stage_passed. The settings that pass all three start the one-year
-    search. Returns those settings and None, or None and the trials of the stage the script stopped
-    at, marked with stage_failed. An executor without a window (a test double) skips the stages.
-    The run that passed each stage is kept in execute.source["stage_runs"], so the end of the study
-    can read the time of day those passed runs keep losing.
+    A stage passes on objective.stage_passed. It keeps searching after its first pass and ends with
+    its best pass, the most profit after drawdown (_pass_score), when its attempts (stage_attempts)
+    are spent or STAGE_PATIENCE runs in a row found no better pass. The best pass of each stage starts
+    the next stage, and the settings that pass all three start the one-year search. Returns those
+    settings and None, or None and the trials of the stage the script stopped at, marked with
+    stage_failed. An executor without a window (a test double) skips the stages. The best pass of
+    each stage is kept in execute.source["stage_runs"], so the end of the study can read the time of
+    day those passed runs keep losing, and the attempts each stage used and had are kept in
+    execute.source["stage_attempts"] for the notes and the proving ledger.
     """
     from futuresfund.objective import PROVING_STAGES
 
@@ -3770,15 +4823,29 @@ def _prove_stages(base, execute, board, path, pause, facts, developer, researche
         return base, None
     settings = dict(base or {})
     holder["stage_runs"] = {}
+    holder["stage_attempts"] = {}
+    # The first stage that runs clears the ledger passes of an earlier study, even when the 7-day stage is off.
+    fresh = True
+    running = [days for days, _sessions in PROVING_STAGES if days not in STAGES_OFF]
     try:
         for days, sessions in PROVING_STAGES:
+            if days in STAGES_OFF:
+                # The owner turned this stage off. The next stage starts from the same settings.
+                continue
+            budget = stage_attempts(days)
             holder["sessions"] = sessions
-            _mark_stage(path, root, timeframe, days, "testing")
+            _mark_stage(path, root, timeframe, days, "testing", {"attempt_budget": budget}, fresh=fresh)
+            fresh = False
             trials = _search(
-                settings, execute, ACCOUNT_SIZE, STAGE_ATTEMPTS, board, path, pause, facts,
+                settings, execute, ACCOUNT_SIZE, budget, board, path, pause, facts,
                 extras=False, developer=developer, researcher=researcher, slot=slot, stage_days=days,
             )
-            passed = next((row for row in trials if row.get("stage_passed")), None)
+            used = len(trials)
+            passed = _best_pass(trials)
+            if _stage_cut_off(trials, board, passed):
+                # The search was cut off (skipped, restarted, the file was moved, research stopped, or the
+                # trade cut needs the owner before any pass). The stage did not fail.
+                return None, trials
             if passed is None:
                 # One more search of this stage when skipping the time of day that lost the most helps.
                 retry = None
@@ -3788,32 +4855,72 @@ def _prove_stages(base, execute, board, path, pause, facts, developer, researche
                     traceback.print_exc()
                 if retry is not None:
                     trials = _search(
-                        retry, execute, ACCOUNT_SIZE, STAGE_ATTEMPTS, board, path, pause, facts,
+                        retry, execute, ACCOUNT_SIZE, budget, board, path, pause, facts,
                         extras=False, developer=developer, researcher=researcher, slot=slot, stage_days=days,
                     )
-                    passed = next((row for row in trials if row.get("stage_passed")), None)
+                    used += len(trials)
+                    # The retry is a second search with its own attempts, so the budget shown counts both.
+                    budget += budget
+                    passed = _best_pass(trials)
+                    if _stage_cut_off(trials, board, passed):
+                        return None, trials
+            spent = {
+                "used": used,
+                "budget": budget,
+                "passed": passed is not None,
+                "engine_runs": int(getattr(trials, "engine_runs", 0) or 0),
+                "patience_stop": bool(getattr(trials, "patience_stop", False)),
+            }
+            if passed is not None:
+                spent["best_attempt"] = _attempt_number(trials, passed)
+            holder["stage_attempts"][days] = spent
+            counts = {"attempts_used": used, "attempt_budget": budget}
             if passed is None:
                 trials.stage_failed = days
-                _mark_stage(path, root, timeframe, days, "failed")
-                try:
-                    _review_failed_stage(board, path, trials, days, execute, facts, researcher)
-                except Exception:
-                    traceback.print_exc()
+                _mark_stage(path, root, timeframe, days, "failed", counts)
+                if STAGE_REVIEW_ON:
+                    try:
+                        _review_failed_stage(board, path, trials, days, execute, facts, researcher)
+                    except Exception:
+                        traceback.print_exc()
                 return None, trials
             settings = {**settings, **dict(passed.get("params") or {})}
             holder["stage_runs"][days] = passed
-            _mark_stage(path, root, timeframe, days, "passed", {**passed, "params": settings}, str(holder.get("text") or ""))
+            _mark_stage(
+                path, root, timeframe, days, "passed",
+                {**passed, "params": settings, **counts, "best_attempt": spent["best_attempt"]},
+                str(holder.get("text") or ""),
+            )
             if board is not None and path is not None:
+                later = [stage for stage in running if stage > days]
+                after = f"The {later[0]}-day stage" if later else "The one-year search"
                 board.post(
                     researcher,
-                    f"{path.name} passed the {days}-day stage. The next stage starts from those settings.",
+                    f"{path.name} passed the {days}-day stage. Its best pass was attempt {spent['best_attempt']} of the "
+                    f"{used} it used ({budget} allowed): {_pass_text(passed)}. {after} starts from those settings.",
                     kind="report",
                     channel=researcher,
                 )
     finally:
         holder["sessions"] = None
-    _mark_stage(path, root, timeframe, 365, "testing")
+    _mark_stage(path, root, timeframe, 365, "testing", {"attempt_budget": stage_attempts(None)}, fresh=fresh)
     return settings, None
+
+
+def _stage_cut_off(trials, board, passed) -> bool:
+    """A stage search that was cut off rather than failed. A trade-cut question after a pass does not cut it off:
+    the stage keeps that pass and the next stage starts from it."""
+    if getattr(trials, "skipped", False) or (board is not None and board.cancel.is_set()):
+        return True
+    return bool(getattr(trials, "over_trades", "")) and passed is None
+
+
+def _attempt_number(trials, row) -> int | None:
+    """Which attempt of the search this row was, counting from 1."""
+    for index, item in enumerate(trials or ()):
+        if item is row:
+            return index + 1
+    return None
 
 
 _stage_gate = threading.local()
@@ -3914,21 +5021,34 @@ _stage_end = threading.local()
 
 _END_REASONS = {
     "held": "It is waiting for the researcher's answer. It starts again at the 7-day stage after that.",
+    "over_trades": "It still took too many trades after the trade cut. The chart researcher asked the owner.",
+    "awaiting": "It waits in awaitingAnswerStrategies for the owner's emailed answer.",
     "skipped": "It was skipped on this chart.",
     "cannot_run": "It cannot be run on this chart.",
     "blocked": "It was not filed.",
 }
 
 
-def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "Chart researcher", engine_slot: int | None = None):
-    """Study one script on one chart. A stage still testing when the study returns is marked stopped, with why."""
+def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "Chart researcher", engine_slot: int | None = None, *, root: str | None = None):
+    """Study one script on one chart. A stage still testing when the study returns is marked stopped, with why.
+
+    root is the instrument of the engine that took the script. Only that instrument's stages are
+    marked stopped, so another instrument's engine on the same file and chart keeps its stage.
+    """
     from futuresfund.proving import _now, stop_testing
 
     since = _now()
     _stage_end.reason = ""
+    _stage_end.chart = {"timeframe": timeframe, "developer": developer, "researcher": researcher,
+                        "engine": (int(engine_slot) + 1) if engine_slot is not None else None}
+    if root:
+        _stage_end.chart["root"] = str(root).upper()
     studied = None
     try:
-        studied = _study_chart(board, path, frames, pause, developer, timeframe, researcher, engine_slot)
+        if root:
+            studied = _study_chart(board, path, frames, pause, developer, timeframe, researcher, engine_slot, root=root)
+        else:
+            studied = _study_chart(board, path, frames, pause, developer, timeframe, researcher, engine_slot)
         return studied
     except Exception:
         _stage_end.reason = _stage_end.reason or "The search stopped on an error."
@@ -3938,27 +5058,29 @@ def _study(board, path: Path, frames: dict, pause, developer: str = "2min chart 
         if not reason:
             cancelled = board is not None and board.cancel.is_set()
             reason = "Research was stopped before this stage finished." if cancelled else "The search ended before this stage had a result."
+        studied_root = (getattr(_stage_end, "chart", None) or {}).get("root") or root
         _stage_end.reason = ""
+        _stage_end.chart = {}
         try:
-            stop_testing(reason, file=path.name, timeframe=timeframe, since=since)
+            stop_testing(reason, file=path.name, timeframe=timeframe, since=since, root=studied_root or None)
         except (OSError, ValueError, TypeError):
             pass
 
 
-def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "Chart researcher", engine_slot: int | None = None) -> None:
+def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min chart developer", timeframe: str = "2m", researcher: str = "Chart researcher", engine_slot: int | None = None, *, root: str | None = None) -> None:
+    """Study one script on one instrument's chart. root is the engine's instrument; without one the first pending instrument.
+
+    A root that is no longer pending (another copy or another run finished it) returns at once.
+    Only this chart's bars are loaded.
+    """
     if not _is_strategy_file(path):
         return
-    from futuresfund.strategy_team import atr_exit
-
-    refused = atr_exit(path.read_text(encoding="utf-8", errors="replace"))
-    if refused:
-        leave_unrunnable(board, path, developer, refused)
-        return
+    # An ATR exit is not refused: prepare_backtest converts it to the dollar stop below.
     if not _in_learning(path) and not _in_created(path):
         if board is not None:
             board.post(
                 developer,
-                f"{path.name} is in cannotRunStrategies. This chart left it.",
+                _left_text(path),
                 kind="log",
                 channel=developer,
             )
@@ -3966,16 +5088,7 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
     from futuresfund.roster import chart_desk
 
     notes = _read_notes(path)
-    from futuresfund.objective import trades_already_over_cap
-
-    known = trades_already_over_cap(notes)
-    if known:
-        return leave_unrunnable(
-            board,
-            path,
-            developer,
-            f"{path.name} took {known} trades. A script with more than 900 trades cannot be saved, so every chart is skipping it.",
-        )
+    # A script over the trade cap is not refused. The chart that measured it cuts its trades (_track_trade_cut).
     pending = pending_for_chart(notes, timeframe)
     if not pending:
         if ready_to_file(notes):
@@ -3986,13 +5099,21 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
         if ready_to_file(_read_notes(path)):
             _file_ready(board, path, _read_notes(path))
         return
-    from futuresfund.delta_core import is_core_file, uncovered_first
+    if root:
+        # Each engine studies its own instrument. Another copy or a run already finished it: nothing to do here.
+        root = str(root).upper()
+        if root not in pending:
+            return
+    else:
+        from futuresfund.delta_core import is_core_file, uncovered_first
 
-    if is_core_file(path):
-        # An instrument that has no delta volume breakout result yet is tried first.
-        pending = uncovered_first(pending)
-    root = pending[0]
+        if is_core_file(path):
+            # An instrument that has no delta volume breakout result yet is tried first.
+            pending = uncovered_first(pending)
+        root = pending[0]
     label = chart_desk(timeframe)["label"]
+    # Which chart a question to the owner comes from (questions.ask_owner reads it through _chart_context).
+    _stage_end.chart = {**_chart_context(), "root": root, "timeframe": timeframe, "developer": developer, "researcher": researcher}
     board.post(
         researcher,
         f"Testing {path.name} on the {label} {root} chart. It stays in {_study_home(path)} until the other charts and instruments are finished.",
@@ -4002,14 +5123,27 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
     text = path.read_text(encoding="utf-8", errors="replace")
     from futuresfund.entry_rules import repair_dead_entry
 
-    from futuresfund.strategy_team import prepare_backtest
+    from futuresfund.risk_style import point_value as contract_point
+    from futuresfund.strategy_team import convert_atr_exit, prepare_backtest
 
     source = text
     repaired = repair_dead_entry(source)
     prepared = promote_fixed_pivots(promote_fixed_exits(repaired))
     opened = prepare_backtest(prepared, root)
+    # prepare_backtest made the same conversion. This tells the board and the notes what it changed.
+    converted, atr_note = convert_atr_exit(prepared, contract_point(root), root=root)
+    if atr_note:
+        # The conversion is the chart researcher's step in this study, so the post and the notes are the researcher's.
+        atr_note = f"{researcher} {atr_note[:1].lower()}{atr_note[1:]}"
+        board.post(
+            researcher,
+            f"{path.name} set its exit with ATR. {atr_note}",
+            kind="report",
+            channel=researcher,
+        )
     if opened != source:
-        path.write_text(opened, encoding="utf-8")
+        # The study runs on this prepared copy. The file stays as it was loaded, and the library keeps
+        # the exact script each result was measured on.
         text = opened
         if repaired != source:
             board.post(
@@ -4033,16 +5167,21 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
                 channel=developer,
             )
         if opened != prepared:
+            from futuresfund.strategy_team import own_exit
+
             board.post(
                 developer,
-                f"{path.name} now uses the shared risk block: a $50 stop, a $500 take profit, and the trail off.",
+                f"{path.name} keeps its own exit, with an open-loss close at its dollar stop."
+                if own_exit(converted)
+                else f"{path.name} runs on the shared risk block: a dollar stop, a dollar take profit, and the trail off.",
                 kind="log",
                 channel=developer,
             )
     describe_later(board, path, text)
     facts = pine_facts(text) if text else {"title": path.stem, "inputs": [], "named": {}}
     file_indicators(board, path.name, text, researcher)
-    frames = _load_frames(root)
+    # Only this engine's chart: the other two timeframes are not read for this study.
+    frames = _load_frames(root, timeframes=(timeframe,))
     bars = frames.get(timeframe) or []
     if len(bars) < 80:
         board.post(
@@ -4058,11 +5197,12 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
     from futuresfund.pine_runtime import supported
     from futuresfund.strategy_team import compile_error, repair_for_pine
 
-    slot = engine_slot if engine_slot is not None else slot_for(timeframe)
+    slot = engine_slot if engine_slot is not None else slot_for(timeframe, root)
+    _stage_end.chart = {**_chart_context(), "engine": int(slot) + 1}
     fixed, repairs = repair_for_pine(text)
     if fixed != text:
+        # Only the copy this chart runs is repaired. The file stays as it was loaded.
         text = fixed
-        path.write_text(text, encoding="utf-8")
         if board is not None:
             board.post(
                 developer,
@@ -4075,7 +5215,7 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
         return send_to_repair(board, path, developer, timeframe, text, refused or "The script did not compile.", slot, researcher)
     set_engine_notice(slot, "")
     facts = pine_facts(text) if text else {"title": path.stem, "inputs": [], "named": {}}
-    added = ensure_entry_rule(board, developer, text, _bars_from(bars), wait=False)
+    added = ensure_entry_rule(board, developer, text, lambda: _bars_from(bars), wait=False)
     if added is None:
         set_engine_notice(
             slot,
@@ -4087,11 +5227,13 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
             slot,
             f"Engine {slot + 1} is not backtesting {path.name}. The entry rule was not added, so this script never reached PineTS.",
         )
-        return leave_unrunnable(
+        return _ask_owner(
             board,
             path,
+            researcher,
+            "The engine could not add an entry rule, so this script cannot be run as it is.",
+            "entry_rule",
             developer,
-            "The engine could not add an entry rule, so this script cannot be run.",
         )
     execute = _engine_execute(text, frames, facts, board, root, developer, timeframe, slot)
     settings = _with_contract_point(_pine_params(facts), root)
@@ -4102,22 +5244,30 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
             begin_study(slot, path.name, SUCCESS_COUNT)
             execute.source["root"] = root
             execute.source["timeframe"] = timeframe
-            try:
-                settings, facts = _read_before_testing(board, path, execute, facts, settings, researcher, slot)
-                text = str(execute.source.get("text") or text)
-            except Exception:
-                traceback.print_exc()
-        # Prove in stages: the last 7 days, then 30, then 90, each from the settings that passed before.
+            _start_cut_from_notes(board, path, execute, notes, root, timeframe, researcher)
+            if READ_BEFORE_TESTING:
+                try:
+                    settings, facts = _read_before_testing(board, path, execute, facts, settings, researcher, slot)
+                    text = str(execute.source.get("text") or text)
+                except Exception:
+                    traceback.print_exc()
+        # Prove in stages: the last 7 days, then 30, then 90, each from the best pass of the stage before.
+        # Each stage keeps searching after its first pass for more profit with less drawdown.
         # The year is searched only after all three pass, starting from those settings.
         proven, stopped = _prove_stages(
             settings, execute, board, path, pause, facts, developer, researcher, slot,
             root=root, timeframe=timeframe,
         )
+        if stopped is None and RECHECK_BEFORE_FILING:
+            # A year run that meets acceptance is filed only when its settings also pass the last 7, 30, and 90 days.
+            _stage_gate.check = _stage_checks(execute)
+        year_budget = stage_attempts(None)
+        # year=True marks this as the chart's one-year search, the one search with the loss stop.
         trials = stopped if stopped is not None else _search(
             proven,
             execute,
             ACCOUNT_SIZE,
-            ATTEMPT_LIMIT,
+            year_budget,
             board,
             path,
             pause,
@@ -4126,8 +5276,11 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
             developer=developer,
             researcher=researcher,
             slot=slot,
+            year=True,
         )
     finally:
+        # The recent-window check belongs to this study only. The next study on this thread sets its own.
+        _stage_gate.check = None
         finish_study(slot)
     if trials and trials[-1].get("compile"):
         reason = str(trials[-1].get("error") or "The script did not compile.")
@@ -4139,18 +5292,20 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
     if getattr(trials, "held", False):
         return "held"
     if getattr(trials, "flat_stop", False):
-        return "cannot_run"
+        return getattr(trials, "flat_outcome", "") or "cannot_run"
+    if getattr(trials, "over_trades", ""):
+        return _ask_over_trades(board, path, researcher, str(trials.over_trades))
     if getattr(trials, "skipped", False):
         return "skipped"
     if board.cancel.is_set() or (trials and trials[-1].get("stopped")):
         return
     if trials and trials[-1].get("unrunnable"):
-        return leave_unrunnable(board, path, developer, str(trials[-1]["unrunnable"]))
+        return _ask_owner(board, path, researcher, str(trials[-1]["unrunnable"]), "unrunnable", developer)
     if not _in_learning(path) and not _in_created(path):
         if board is not None:
             board.post(
                 developer,
-                f"{path.name} is in cannotRunStrategies. The {label} chart left it.",
+                _left_text(path, label),
                 kind="log",
                 channel=developer,
             )
@@ -4185,11 +5340,21 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
         best["timeframe"] = timeframe
         if failed_stage:
             best["stage"] = f"stopped at the {failed_stage}-day stage"
-    _save_notes(path, facts, trials, quant, indicator, best, root, timeframe)
+    if atr_note:
+        # The notes say the exit this study measured is the converted dollar stop, not the script's ATR distance.
+        facts = {**facts, "exit_conversion": atr_note}
+    # The attempts each test used and had on this chart: the stages from _prove_stages, then the year.
+    stages = {}
+    if isinstance(getattr(execute, "source", None), dict):
+        stages = {int(days): dict(spent) for days, spent in (execute.source.get("stage_attempts") or {}).items()}
+    if stopped is None:
+        stages[365] = {"used": len(trials), "budget": int(getattr(trials, "attempt_budget", 0) or year_budget)}
+    _save_notes(path, facts, trials, quant, indicator, best, root, timeframe, stages=stages)
     if failed_stage:
+        budget = int((stages.get(int(failed_stage)) or {}).get("budget") or stage_attempts(failed_stage))
         board.post(
             researcher,
-            f"{path.name} did not pass the {failed_stage}-day stage on the {label} {root} chart in {len(trials)} attempts. "
+            f"{path.name} did not pass the {failed_stage}-day stage on the {label} {root} chart in {len(trials)} of its {budget} attempts. "
             "It was not run on the full year.",
             kind="report",
             channel=researcher,
@@ -4217,10 +5382,11 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
                         skipped = _try_skip_window(board, path, [shown], execute, researcher, slot, window=habit, must_improve=True)
                 except Exception:
                     traceback.print_exc()
+            counts = {"attempts_used": len(trials), "attempt_budget": (stages.get(365) or {}).get("budget") or year_budget}
             if year is not None:
-                _mark_stage(path, root, timeframe, 365, "passed", year, source)
+                _mark_stage(path, root, timeframe, 365, "passed", {**year, **counts, "best_attempt": _attempt_number(trials, year)}, source)
             else:
-                _mark_stage(path, root, timeframe, 365, "failed", best, source)
+                _mark_stage(path, root, timeframe, 365, "failed", {**best, **counts}, source)
             if year is None:
                 try:
                     # The year is not searched again, but the next chart starts with the losing time skipped.
@@ -4228,10 +5394,11 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
                         _try_skip_window(board, path, trials, execute, researcher, slot)
                 except Exception:
                     traceback.print_exc()
-                try:
-                    _review_failed_stage(board, path, trials, 365, execute, facts, researcher)
-                except Exception:
-                    traceback.print_exc()
+                if STAGE_REVIEW_ON:
+                    try:
+                        _review_failed_stage(board, path, trials, 365, execute, facts, researcher)
+                    except Exception:
+                        traceback.print_exc()
     from futuresfund.contracts import POINT_VALUE
 
     facts = dict(facts)
@@ -4255,6 +5422,33 @@ def _study_chart(board, path: Path, frames: dict, pause, developer: str = "2min 
         )
     board.set_status(researcher, "done")
     board.set_status(developer, "done")
+
+
+# file_completed_soon runs the filing pass at most once a minute across every engine's loop.
+FILE_COMPLETED_EVERY = 60.0
+_file_completed_lock = threading.Lock()
+_file_completed_at = 0.0
+
+
+def file_completed_soon(board) -> bool:
+    """file_completed_scripts, at most once every FILE_COMPLETED_EVERY seconds for all 21 engine loops together.
+
+    Each pass reads every learning script's notes, so it is shared instead of run on every
+    engine's every pass. An engine that finds a pass already running does not wait for it.
+    True when this call ran the pass.
+    """
+    global _file_completed_at
+    if not _file_completed_lock.acquire(blocking=False):
+        return False
+    try:
+        now = time.monotonic()
+        if _file_completed_at and now - _file_completed_at < FILE_COMPLETED_EVERY:
+            return False
+        _file_completed_at = now
+        file_completed_scripts(board)
+        return True
+    finally:
+        _file_completed_lock.release()
 
 
 def file_completed_scripts(board) -> None:
@@ -4516,11 +5710,16 @@ def file_indicators(board, script: str, text: str, by: str) -> list[dict]:
     return added
 
 
-def _load_frames(root: str = "ES") -> dict[str, list]:
-    """TradingView's exports and the alert candles. Yahoo is not part of a backtest."""
+def _load_frames(root: str = "ES", *, timeframes=None) -> dict[str, list]:
+    """TradingView's exports and the alert candles. Yahoo is not part of a backtest.
+
+    timeframes narrows it to those charts: a chart engine studies one chart, so it builds only that one.
+    """
     from futuresfund.research_bars import research_series
 
-    return {name: research_series(root, name) for name in RESEARCH_CHARTS}
+    names = [name for name in RESEARCH_CHARTS if timeframes is None or name in timeframes]
+    # USE_ALERT_BARS off leaves out the alert candles, so a study runs on the downloaded and exported bars only.
+    return {name: research_series(root, name, include_live=USE_ALERT_BARS) for name in names}
 
 
 def _across_charts(path: Path | None, frames: dict, facts: dict):
@@ -4854,9 +6053,11 @@ def _remember_measured_lesson(facts: dict, path: Path, row: dict, researcher: st
         note_result(developer, measured)
 
 
-def _document(board, facts: dict, path: Path, row: dict, number: int, developer: str = "2min chart developer", researcher: str = "Chart researcher") -> None:
+def _document(board, facts: dict, path: Path, row: dict, number: int, developer: str = "2min chart developer", researcher: str = "Chart researcher", limit: int | None = None) -> None:
+    """Post and record one counted year result. limit is the attempts this search has, ATTEMPT_LIMIT when not given."""
     from futuresfund.lab import record_trial
 
+    limit = int(limit or ATTEMPT_LIMIT)
     title = f"{facts.get('title') or path.stem} attempt {number}"
     record_trial({
         "id": f"{path.stem}-{number}",
@@ -4880,14 +6081,14 @@ def _document(board, facts: dict, path: Path, row: dict, number: int, developer:
     if board is not None:
         board.post(
             researcher,
-            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {row.get('impact') or row.get('change')}. "
+            f"Attempt {number} of {limit} on {path.name}. {row.get('impact') or row.get('change')}. "
             f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.",
             kind="report",
             channel=researcher,
         )
         board.post(
             "Risk Manager",
-            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {_attempt_note(row)} "
+            f"Attempt {number} of {limit} on {path.name}. {_attempt_note(row)} "
             f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.",
             kind="report",
             channel="Risk Manager",
@@ -4902,7 +6103,7 @@ def _document(board, facts: dict, path: Path, row: dict, number: int, developer:
             board.post("Risk Manager", suggestion, kind="report", channel="Risk Manager")
         board.post(
             "Trading Analyst",
-            f"Attempt {number} of {ATTEMPT_LIMIT} on {path.name}. {row.get('impact') or row.get('change')}.",
+            f"Attempt {number} of {limit} on {path.name}. {row.get('impact') or row.get('change')}.",
             kind="log",
             channel="Trading Analyst",
         )
@@ -4916,7 +6117,7 @@ def _document(board, facts: dict, path: Path, row: dict, number: int, developer:
     _remember_measured_lesson(facts, path, row, researcher, developer)
     board.post(
         developer,
-        f"Attempt {number} of {ATTEMPT_LIMIT} on the {label} chart: {path.name}. {change}. "
+        f"Attempt {number} of {limit} on the {label} chart: {path.name}. {change}. "
         f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}.{target} "
         f"{_attempt_note(row)}{note}{charts}",
         kind="report",
@@ -4948,13 +6149,14 @@ def _offer_library(board, facts: dict, path: Path, row: dict, developer: str = "
     except (TypeError, ValueError):
         return False
     from futuresfund.library import library_ready
-    from futuresfund.objective import acceptance_reason, consistent_spans, ratio_success, too_many_to_save
+    from futuresfund.objective import acceptance_reason, consistent_spans, ratio_success, too_many_to_save, TRADE_SAVE_MAX
 
     if too_many_to_save(row):
         if board is not None:
             board.post(
                 developer,
-                f"{path.name} took {int(row.get('trades') or 0)} trades. A script with more than 900 trades cannot be saved.",
+                f"{path.name} took {int(row.get('trades') or 0)} trades. A run with more than {TRADE_SAVE_MAX} trades is never filed; "
+                "the desk cuts its trades with daily limits, a longer cooldown and most trades a day.",
                 kind="log",
                 channel=developer,
             )
@@ -5006,6 +6208,7 @@ def _offer_library(board, facts: dict, path: Path, row: dict, developer: str = "
         "timeframe": row.get("timeframe") or "",
         "net_profit": profit,
         "max_drawdown": row.get("max_drawdown"),
+        "dips": row.get("dips") or [],
         "trades": int(row.get("trades") or 0),
         "win_rate": row.get("win_rate"),
         "sharpe": row.get("sharpe"),
@@ -5070,7 +6273,7 @@ def _write_instrument(path: Path, facts: dict, instruments: dict, best: dict) ->
     payload["instruments"] = instruments
     payload["best"] = best
     slug = path.stem.replace(" ", "_")
-    (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    (NOTES / f"{slug}.json").write_text(_notes_json(payload), encoding="utf-8")
 
 
 def _library_notice(board, facts: dict, path: Path, best: dict) -> None:
@@ -5106,15 +6309,28 @@ def _library_notice(board, facts: dict, path: Path, best: dict) -> None:
         board.post("Trading Analyst", note, kind="report", channel="Trading Analyst")
 
 
-def _mark_over_cap(path: Path, count: int) -> None:
-    """Remember that this script is over 900 trades so the other charts skip it before a backtest."""
+def _mark_over_cap(path: Path, count: int, chart_key: str = "") -> None:
+    """Remember the most trades this chart measured over TRADE_SAVE_MAX, under over_trade_charts["ES|2m"].
+
+    Information only, and per chart: the next study of this chart starts with the trade cut. No chart
+    skips the script for it.
+    """
     slug = path.stem.replace(" ", "_")
     with _notes_lock:
         existing = _read_notes(path)
-        existing["over_trade_cap"] = int(count)
+        charts = existing.get("over_trade_charts") if isinstance(existing.get("over_trade_charts"), dict) else {}
+        key = chart_key or "|"
+        charts[key] = max(int(count), int(charts.get(key) or 0))
+        existing["over_trade_charts"] = charts
         existing["file"] = existing.get("file") or path.name
         NOTES.mkdir(parents=True, exist_ok=True)
-        (NOTES / f"{slug}.json").write_text(json.dumps(existing, indent=2, default=str), encoding="utf-8")
+        (NOTES / f"{slug}.json").write_text(_notes_json(existing), encoding="utf-8")
+
+
+def _notes_json(payload: dict) -> str:
+    """A research note as one line of JSON. The C encoder writes even a 3 MB note in a few
+    milliseconds and holds the other engines far less than an indented file did, and the file is half the size."""
+    return json.dumps(payload, default=str)
 
 
 def _read_notes(path: Path) -> dict:
@@ -5189,7 +6405,7 @@ def rerank_notes(store: Path | None = None, *, force: bool = False) -> int:
                 continue
             if not isinstance(data, dict) or _rerank_study(data) == 0:
                 continue
-            path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
+            path.write_text(_notes_json(data), encoding="utf-8")
             changed += 1
         mark.write_text(current, encoding="utf-8")
     return changed
@@ -5293,7 +6509,10 @@ def _remember_chart_attempt(path: Path, facts: dict, row: dict, number: int) -> 
             candidate = record.get("best") if isinstance(record, dict) else None
             if isinstance(candidate, dict) and candidate and _rank(candidate) > _rank(overall or {}):
                 overall = candidate
-        payload = {
+        # Every other key the notes hold stays: the owner's emailed answers, the over-cap charts, the ATR
+        # conversion, the reopened count.
+        payload = dict(existing) if isinstance(existing, dict) else {}
+        payload.update({
             "file": path.name,
             "title": facts.get("title") or existing.get("title") or path.stem,
             "attempts": sum(int(record.get("attempts") or 0) for record in instruments.values() if isinstance(record, dict)),
@@ -5302,12 +6521,17 @@ def _remember_chart_attempt(path: Path, facts: dict, row: dict, number: int) -> 
             "indicator_researcher": existing.get("indicator_researcher") or "",
             "trials": trials,
             "instruments": instruments,
-        }
+        })
         NOTES.mkdir(parents=True, exist_ok=True)
-        (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+        (NOTES / f"{slug}.json").write_text(_notes_json(payload), encoding="utf-8")
 
 
-def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: str, best: dict, instrument: str = "ES", timeframe: str = "") -> None:
+def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: str, best: dict, instrument: str = "ES", timeframe: str = "", *, stages: dict | None = None) -> None:
+    """Write this chart's result into the script's notes.
+
+    stages holds the attempts each test used and had on this chart, {days: {"used", "budget", ...}}.
+    It is kept on the chart record as "stages", keyed "7", "30", "90" and "365".
+    """
     NOTES.mkdir(parents=True, exist_ok=True)
     slug = path.stem.replace(" ", "_")
     with _notes_lock:
@@ -5331,6 +6555,15 @@ def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: st
             "error": (best or {}).get("error") or "",
             "blocked": bool((best or {}).get("blocked")),
         }
+        budget = int(getattr(trials, "attempt_budget", 0) or 0)
+        if budget:
+            # The attempts the search these trials came from had: a failed stage's, or the year's.
+            chart["attempt_budget"] = budget
+        if stages:
+            chart["stages"] = {str(int(days)): dict(spent) for days, spent in sorted(stages.items(), key=lambda item: int(item[0]))}
+        if facts.get("exit_conversion"):
+            # The stop this chart measured: a micro starts at $50, a full contract at $250.
+            chart["exit_conversion"] = facts["exit_conversion"]
         prior = instruments.get(root) if isinstance(instruments.get(root), dict) else {}
         charts = dict(prior.get("charts") or {}) if isinstance(prior.get("charts"), dict) else {}
         if timeframe:
@@ -5376,7 +6609,17 @@ def _save_notes(path: Path, facts: dict, trials: list, quant: str, indicator: st
             "trials": trials,
             "instruments": instruments,
         }
-        (NOTES / f"{slug}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+        if isinstance(existing.get("owner_answers"), dict) and existing["owner_answers"]:
+            # The owner's emailed values start every later chart's search (questions.owner_settings).
+            payload["owner_answers"] = existing["owner_answers"]
+        if isinstance(existing.get("over_trade_charts"), dict) and existing["over_trade_charts"]:
+            # The charts that measured a run over the trade cap start their next study with the trade cut.
+            payload["over_trade_charts"] = existing["over_trade_charts"]
+        # A script whose ATR exit the desk converted keeps that note, so every later chart's save still shows it.
+        conversion = facts.get("exit_conversion") or existing.get("exit_conversion")
+        if conversion:
+            payload["exit_conversion"] = conversion
+        (NOTES / f"{slug}.json").write_text(_notes_json(payload), encoding="utf-8")
         lesson = _saved_lesson(payload["title"], trials, best)
         lessons = NOTES / "LESSONS.md"
         recorded = lessons.read_text(encoding="utf-8") if lessons.is_file() else ""
@@ -5496,6 +6739,31 @@ def _left_off(best: dict, meets: bool, title: str = "", contract: str = "") -> s
     )
 
 
+def _mail_script(path: Path, row: dict) -> str:
+    """The Pine script the email's numbers came from, with the run's inputs written in, ready to paste into TradingView."""
+    from futuresfund.library import _dollars_as_percent, _measured_script
+    from futuresfund.strategy import _apply_inputs, pine_text
+
+    try:
+        pine = _measured_script(row.get("source_sha")) or pine_text(path.name) or ""
+    except (OSError, ValueError, TypeError):
+        pine = ""
+    params = row.get("params") if isinstance(row.get("params"), dict) else {}
+    if pine and params:
+        try:
+            pine = _apply_inputs(pine, _dollars_as_percent(pine, params))
+        except (TypeError, ValueError, re.error):
+            pass
+    if not str(pine).strip():
+        return "The script could not be read, so it is not attached. Open it from the strategy library."
+    return "\n".join([
+        "The script, with the inputs this run used:",
+        "----- Pine script start -----",
+        str(pine).rstrip(),
+        "----- Pine script end -----",
+    ])
+
+
 def _mail_ratio(board, facts: dict, path: Path, row: dict) -> None:
     """The portfolio manager emails a 1.5 profit-to-drawdown run that has not been tested on the full dataset."""
     from futuresfund.objective import acceptance_line, profit_to_drawdown
@@ -5513,6 +6781,8 @@ def _mail_ratio(board, facts: dict, path: Path, row: dict) -> None:
         acceptance_line(),
         "This run used a year of futures sessions. It has not been tested on the full dataset.",
         "On the not-yet-full-dataset list: yes.",
+        "",
+        _mail_script(path, row),
     ])
     _send(board, title, report, subject=f"Futures fund library: {title}", emailed="the library notice")
 
@@ -5538,6 +6808,8 @@ def _mail_firm_ratio(board, facts: dict, path: Path, row: dict) -> None:
         acceptance_line(),
         "This profit and drawdown are near $50,000 of profit and $22,000 of drawdown. "
         "A profit $10,000 lower still counts, and any higher profit counts.",
+        "",
+        _mail_script(path, row),
     ])
     _send(board, title, report, subject=f"Futures fund library: {title}", emailed="the library notice")
 
@@ -5684,10 +6956,18 @@ def _clamp(name: str, value: int) -> int:
 
 
 def _input_bounds(facts) -> dict:
+    """Each input's min and max. A dollar stop or take profit may go down to $50, so a micro search is not pushed back to $250."""
+    from futuresfund.research_rules import EXIT_MINVAL, exit_step
+
     bounds = {}
     for item in (facts or {}).get("inputs") or []:
         if item.get("min") is not None or item.get("max") is not None:
-            bounds[item["name"]] = (item.get("min"), item.get("max"))
+            low = item.get("min")
+            name = str(item["name"])
+            dollars = exit_step(name) is not None and not name.lower().endswith("pct") and "percent" not in name.lower()
+            if dollars and low is not None and float(low) > EXIT_MINVAL:
+                low = EXIT_MINVAL
+            bounds[item["name"]] = (low, item.get("max"))
     return bounds
 
 
@@ -5829,6 +7109,18 @@ def _input_choices(facts) -> dict:
     return choices
 
 
+def _taken_out(name: str) -> bool:
+    """An input the running search took out, because moving it changed nothing in either direction."""
+    tracker = input_effects.current()
+    return tracker is not None and tracker.is_removed(name)
+
+
+def _dead_move(name: str, old, new) -> bool:
+    """A move this search already made in this direction without changing the result."""
+    tracker = input_effects.current()
+    return tracker is not None and tracker.dead_move(name, old, new)
+
+
 def _searchable(key: str, value, choices: dict | None = None) -> bool:
     """An input the search may move. Account size, commission, and quantity stay fixed."""
     if key in FROZEN or key in {"added_indicator", "added_length"}:
@@ -5869,8 +7161,10 @@ def _is_stop_name(name: str) -> bool:
 
 
 def _is_tighten_name(name: str) -> bool:
-    """An input that cuts the trade count when it is moved the strict way."""
+    """An input that cuts the trade count when it is moved the strict way. The desk trade limits are ones."""
     lowered = (name or "").lower()
+    if lowered in {"desk_daily_loss", "desk_daily_profit", "desk_max_trades_day", "desk_cooldown_bars"}:
+        return True
     if "cooldown" in lowered:
         return True
     if "max" in lowered and "trade" in lowered:
@@ -5997,7 +7291,9 @@ def _tighten_order(params: dict, choices: dict | None = None) -> list[str]:
             return (0, lowered)
         if _lowers_trade_cap(name):
             return (1, lowered)
-        return (2, lowered)
+        if lowered.startswith("desk_daily"):
+            return (2, lowered)
+        return (3, lowered)
 
     return sorted(
         (name for name in params if _is_tighten_name(name) and _searchable(name, params.get(name), choices)),
@@ -6007,14 +7303,28 @@ def _tighten_order(params: dict, choices: dict | None = None) -> list[str]:
 
 def _tighten_plan(anchor: dict, seen: set[str], choices: dict | None = None) -> dict | None:
     """One larger step that lets fewer trades through."""
+    from futuresfund.trade_cut import _dollars_up, profit_limit, stop_of, tighten_value
+
     for name in _tighten_order(anchor, choices):
         value = anchor.get(name)
-        nxt = _scaled(value, 0.5 if _lowers_trade_cap(name) else 2)
+        lowered = name.lower()
+        if lowered.startswith("desk_") or value == 0:
+            # 0 is off. Tightening a limit that is off sets its starting value, not a half of nothing.
+            seed = None
+            if lowered == "desk_daily_loss":
+                seed = _dollars_up(2 * stop_of(anchor))
+            elif lowered == "desk_daily_profit":
+                seed = profit_limit(anchor, 0)
+            nxt = tighten_value(name, value, seed)
+            if nxt is None and not lowered.startswith("desk_"):
+                nxt = _scaled(value, 0.5 if _lowers_trade_cap(name) else 2)
+        else:
+            nxt = _scaled(value, 0.5 if _lowers_trade_cap(name) else 2)
         if nxt is None:
             continue
         plan = dict(anchor)
         plan[name] = nxt
-        if plan[name] == value or _key(plan) in seen or len(_changed_keys(anchor, plan)) != 1:
+        if plan[name] == value or _key(plan) in seen or len(_changed_keys(anchor, plan)) != 1 or _dead_move(name, value, nxt):
             continue
         return plan
     return None
@@ -6023,8 +7333,11 @@ def _tighten_plan(anchor: dict, seen: set[str], choices: dict | None = None) -> 
 def _climb_choice(previous: dict, row: dict, others: bool, name: str | None = None, account_size: float = ACCOUNT_SIZE) -> str:
     """continue, reverse, or switch. A profit gain is extended until drawdown rises or profit falls 5 percent.
 
-    A losing stop is left after one widen. A flat profit takes a larger step.
+    A losing stop is left after one widen. A flat profit takes a larger step. A change that
+    stopped every entry is turned back.
     """
+    if _traded(previous) and not _traded(row) and not any(row.get(name) for name in ("error", "fatal", "blocked")):
+        return "reverse"
     if _drawdown_rose(previous, row):
         return "switch" if others else "reverse"
     if _is_stop_name(name or "") and _profit(row) <= 0 and _profit(previous) < 0:
@@ -6045,7 +7358,7 @@ def _input_order(params: dict, choices: dict | None = None) -> list[str]:
         return (0 if exit_name else 1, lowered)
 
     return sorted(
-        (key for key, value in params.items() if _searchable(key, value, choices)),
+        (key for key, value in params.items() if _searchable(key, value, choices) and not _taken_out(key)),
         key=rank,
     )
 
@@ -6078,7 +7391,7 @@ def _step_one(anchor: dict, name: str | None, old, new, direction: int, seen: se
     for nxt in candidates:
         plan = dict(anchor)
         plan[name] = nxt
-        if plan[name] == current:
+        if plan[name] == current or _dead_move(name, current, nxt):
             continue
         if _key(plan) not in seen and len(_changed_keys(anchor, plan)) == 1:
             return plan
@@ -6250,7 +7563,7 @@ def _force_new(anchor: dict, seen: set[str], choices: dict | None = None) -> dic
         else:
             continue
         for nxt in options:
-            if nxt == value:
+            if nxt == value or _dead_move(name, value, nxt):
                 continue
             plan = dict(anchor)
             plan[name] = nxt
@@ -6263,7 +7576,7 @@ def _widen(origin: dict, anchor: dict, seen: set[str], attempt: int, extras: boo
     """Keep producing a new version until the attempt limit is used."""
     keys = [
         key for key, value in origin.items()
-        if key not in FROZEN and key not in {"added_indicator", "added_length"} and _tunable_value(value)
+        if key not in FROZEN and key not in {"added_indicator", "added_length"} and _tunable_value(value) and not _taken_out(key)
     ]
     if not keys and not extras:
         return None
@@ -6273,6 +7586,8 @@ def _widen(origin: dict, anchor: dict, seen: set[str], attempt: int, extras: boo
             name = keys[offset % len(keys)]
             value = origin.get(name, anchor.get(name))
             plan[name] = _widened_value(name, value, offset)
+            if _dead_move(name, anchor.get(name), plan[name]):
+                continue
             if extras and offset % 2 == 0:
                 plan["added_indicator"] = _INDICATORS[(offset // 2) % len(_INDICATORS)]
                 plan["added_length"] = _LENGTHS[(offset // 2) % len(_LENGTHS)]

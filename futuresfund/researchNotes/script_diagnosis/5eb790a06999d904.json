@@ -1,0 +1,154 @@
+{
+ "sessions": 21,
+ "unread": [
+  "sess_start_mn"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 250,
+   "net_profit": -273.5,
+   "max_drawdown": 273.5,
+   "trades": 1
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": 176.5,
+   "max_drawdown": 230.5,
+   "trades": 1
+  },
+  "ema55_len": {
+   "value": 23,
+   "net_profit": 2660.0,
+   "max_drawdown": 3141.0,
+   "trades": 15
+  },
+  "sma_len": {
+   "value": 2,
+   "net_profit": -586.5,
+   "max_drawdown": 1891.0,
+   "trades": 9
+  },
+  "ema55_slope_len": {
+   "value": 4,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "min_slope": {
+   "value": 0.2344,
+   "net_profit": 2870.0,
+   "max_drawdown": 1047.0,
+   "trades": 5
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 1442.0,
+   "max_drawdown": 829.0,
+   "trades": 3
+  },
+  "sess_end_hr": {
+   "value": 23,
+   "net_profit": 1442.0,
+   "max_drawdown": 829.0,
+   "trades": 3
+  }
+ },
+ "flat": [
+  "use_trail",
+  "trail_step_amt",
+  "trail_min_dollars",
+  "trail_pct",
+  "trail_step_pct",
+  "ema_len",
+  "pivot_left",
+  "pivot_right",
+  "cooldown_bars",
+  "use_breakeven",
+  "be_trigger_dollars",
+  "sess_end_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "use_trail": false,
+   "trail_step_amt": 500,
+   "trail_min_dollars": 1000,
+   "trail_pct": 50.0,
+   "trail_step_pct": 50.0,
+   "ema_len": 200,
+   "ema55_len": 92,
+   "sma_len": 6,
+   "ema55_slope_len": 15,
+   "min_slope": 0.9376,
+   "pivot_left": 5,
+   "pivot_right": 5,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "cooldown_bars": 5,
+   "use_breakeven": false,
+   "be_trigger_dollars": 150.0
+  },
+  "net_profit": -523.5,
+  "max_drawdown": 523.5,
+  "trades": 1,
+  "win_rate": 0.0,
+  "profit_factor": 0.0,
+  "biggest_winner": -523.5,
+  "biggest_loser": -523.5,
+  "held_loser": -523.5,
+  "exits": [
+   {
+    "exit": "XS",
+    "trades": 1,
+    "pnl": -523.5,
+    "favorable": 494.5,
+    "adverse": -518.0
+   }
+  ]
+ },
+ "reviewed": [
+  "365 ES 15m"
+ ],
+ "empty_charts": [],
+ "version": 3,
+ "stalled": true,
+ "answer": {
+  "because": "The best 365-day run made $22,787 but its $9,587.5 drawdown exceeds the $8,436.1 allowed, so the next search step after the $700 stop is to raise the take profit and lift profit into the drawdown allowance.",
+  "script": null,
+  "params": {
+   "stop_dollars": 700,
+   "tp_dollars": 1000,
+   "ema55_len": 216,
+   "sma_len": 1,
+   "ema55_slope_len": 20,
+   "min_slope": 0.0102,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 12
+  },
+  "settings": {
+   "stop_dollars": 700,
+   "tp_dollars": 750,
+   "ema55_len": 216,
+   "sma_len": 1,
+   "ema55_slope_len": 20,
+   "min_slope": 0.0102,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 12
+  },
+  "redesign": false
+ }
+}

@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Cache-Control" content="no-store" />
   <title>Futures desk</title>
-  <link rel="stylesheet" href="/static/styles.css?v=79" />
+  <link rel="stylesheet" href="/static/styles.css?v=81" />
+  <link rel="stylesheet" href="/static/workflow.css?v=4" />
 </head>
 <body>
   <div class="app">
@@ -100,8 +101,8 @@
         <div class="book-head">
           <div>
             <p class="kicker">Under the hood</p>
-            <h2>Six engines</h2>
-            <p class="role" id="engine-note">Each PineTS engine is its own process. Engine 1 is the 2-minute chart. Engines 2 and 5 are the 5-minute chart. Engines 3 and 6 are the 15-minute chart. Engine 4 is the creation engine. The scale goal is the acceptance number chosen on the strategy library page. The table is the last 20 results on that engine. Click a result to open the script and settings that run used. Restart stops a hung engine and takes the next learning script. Skip leaves the current script and takes the next one.</p>
+            <h2>Three engines per instrument</h2>
+            <p class="role" id="engine-note">Every instrument has its own 2-minute, 5-minute and 15-minute engine, one row each: engines 1-3 are ES, 5-7 GC, 8-10 NQ, 11-13 MNQ, 14-16 MES, 17-19 M2K and 20-22 YM. Engine 4 is the creation engine. An engine studies only its own instrument's chart, so two instruments can test the same script at once. The engines run their backtests on a shared pool of PineTS worker processes; an engine that shows "Waiting for a free worker" is next in line. The scale goal is the acceptance number chosen on the strategy library page. The table is the last 20 results on that engine. Click a result to open the script and settings that run used. Restart stops a hung engine and takes the next learning script. Skip leaves the current script and takes the next one.</p>
           </div>
           <button type="button" id="lab-run">Run the engine</button>
         </div>
@@ -211,7 +212,7 @@
           <div>
             <p class="kicker">Strategy library</p>
             <h2>Most profitable runs</h2>
-            <p class="role">A run is filed when it has passed the 7, 30, and 90-day stages, the year meets the checked boxes, and its profit grows from each window to the next longer one. It also trades at least 3 times a week, no more than 600 times a year, and makes more than its drawdown. The drawdown box is the pro account rule: there is no drawdown limit until the profit reaches 5 percent of the account, $2,500 on a $50,000 account, and from there the drawdown may not exceed 30 percent of the profit. The stop may never be set above 1.5 percent of the account, $750 on $50,000. A fill past a stop set there is the market, and the strategy still counts. The drawdown box and the trade count start checked. Check another box to require that number too. One version of each name stays on each contract and timeframe. A one-year research run stays in the list below until the longer test.</p>
+            <p class="role">A run is filed when it has passed the 7, 30, and 90-day tests, the year meets the checked boxes, and its profit grows from each window to the next longer one. Each test needs the profit and trade boxes pro-rated to its share of a 260-session year, 5, 21, and 64 sessions: the table under the boxes shows the numbers. The drawdown rule, the stop, the profit factor, and the win rate are the same on every test. Every test and the year allow at most 600 trades a year at the run's pace, and the year must also make more than its drawdown. The drawdown box is the pro account rule: each dip may reach $2,500 on a $50,000 account until the profit passes the $3,000 target, then $2,500 plus 30 percent of the profit above $3,000. The stop may never be set above 1.5 percent of the account, $750 on $50,000. A fill past a stop set there is the market, and the strategy still counts. The drawdown box and the trade count start checked. Check another box to require that number too. One version of each name stays on each contract and timeframe. A one-year research run stays in the list below until the longer test.</p>
           </div>
         </div>
         <div class="library-tools">
@@ -225,16 +226,18 @@
         </div>
         <form id="acceptance-rules" class="rules-form">
           <div class="rule">
-            <label class="rule-name"><input name="use_drawdown" type="checkbox" checked /> Drawdown under 30% of profit, once profit reaches 5% of the account</label>
+            <label class="rule-name"><input name="use_drawdown" type="checkbox" checked /> Drawdown inside $2,500, plus 30% of the profit above $3,000</label>
             <input name="drawdown_pct" type="hidden" value="1.5" />
           </div>
-          <div class="rule">
-            <label class="rule-name"><input name="use_trades" type="checkbox" checked /> Trades at least</label>
+          <div class="rule has-pace">
+            <label class="rule-name"><input name="use_trades" type="checkbox" checked /> Trades at least (a year)</label>
             <input name="min_trades" type="number" min="1" step="1" value="100" required />
+            <small class="rule-pace" data-pace="min_trades" aria-live="polite"></small>
           </div>
-          <div class="rule">
+          <div class="rule has-pace">
             <label class="rule-name"><input name="use_profit" type="checkbox" /> Profit above ($)</label>
             <input name="min_profit" type="number" min="0" step="any" value="20000" required />
+            <small class="rule-pace" data-pace="min_profit" aria-live="polite"></small>
           </div>
           <div class="rule">
             <label class="rule-name"><input name="use_factor" type="checkbox" /> Profit factor above</label>
@@ -254,6 +257,21 @@
           </label>
           <button type="submit">Save acceptance</button>
         </form>
+        <div class="acceptance-stages-wrap">
+          <table id="acceptance-stages" class="acceptance-stages">
+            <caption>What each test needs <small>the boxes above at a steady pace; it changes as you type</small></caption>
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">7 days</th>
+                <th scope="col">30 days</th>
+                <th scope="col">90 days</th>
+                <th scope="col">1 year</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
         <p class="hint" id="acceptance-note"></p>
         <table id="library-table">
           <thead>
@@ -282,7 +300,7 @@
           <div>
             <h2>Not tested on the full dataset</h2>
             <p class="hint" id="untested-counts"></p>
-            <p class="role">Research measures the last year. A run that clears the acceptance numbers above stays here until the five-year test. A run with its stop set above 1.5 percent of the account does not stay. A run with more than 900 trades is not saved. It is not added to the most profitable runs until that full dataset is profitable. A hand-added script stays here too.</p>
+            <p class="role">Research measures the last year. A run that clears the acceptance numbers above stays here until the five-year test. A run with its stop set above 1.5 percent of the account does not stay. A run with more than 900 trades, or more than 600 trades a year, is never filed. The desk does not refuse a script like that: the chart researcher cuts its trades with daily loss and profit limits, a longer cooldown and most trades a day, and asks you when 12 cuts in a row are still over. It is not added to the most profitable runs until that full dataset is profitable. A hand-added script stays here too.</p>
           </div>
           <button type="button" id="untested-add">Add strategy</button>
         </div>
@@ -350,7 +368,7 @@
           <div>
             <p class="kicker">Proving stages</p>
             <h2>7, 30, 90 and 365 day backtests</h2>
-            <p class="role">Each script is backtested on the last 7 days first, then 30, then 90, then the full year. It moves to the next stage only after it passes the one it is on, starting from the settings that passed, and a failed stage ends the study there. Each row is one script on one contract and timeframe, and the table keeps the latest 100 rows. A window it passed shows that run's profit. Click a passed stage to open the script with the inputs that passed, and copy it.</p>
+            <p class="role">Each script is backtested on the last 7 days first, then 30, then 90, then the full year. Each test has its own number of attempts, set on the Research workflow page (100 for 7 days, 150 for 30, 200 for 90 and 300 for the year in the code). A pass does not end a test: it keeps searching for more profit with less drawdown, and stops when its attempts are spent or 25 attempts in a row found no better pass. The next test starts from the best pass, and a test with no pass ends the study there. Each row is one script on one contract and timeframe, and the table keeps the latest 100 rows. A window it passed shows its best pass's profit and the attempts that test used. Click a passed stage to open the script with the inputs of that best pass, and copy it.</p>
           </div>
         </div>
         <div class="library-tools">
@@ -419,6 +437,9 @@
           <tbody></tbody>
         </table>
         <p class="hint" id="golden-empty"></p>
+      </section>
+      <section class="book" id="workflow" hidden aria-label="Research workflow Design">
+        <p class="hint">Loading the research workflow…</p>
       </section>
       <section class="book" id="rnd" hidden>
         <div class="book-head">
@@ -510,6 +531,7 @@
     </div>
   </div>
   <div id="agent-tip" class="agent-tip" hidden></div>
-  <script type="module" src="/static/app.js?v=161"></script>
+  <script type="module" src="/static/workflow.js?v=10"></script>
+  <script type="module" src="/static/app.js?v=165"></script>
 </body>
 </html>

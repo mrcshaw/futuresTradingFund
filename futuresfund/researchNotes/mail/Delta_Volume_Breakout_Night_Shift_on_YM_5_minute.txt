@@ -1,0 +1,12 @@
+Taken from the application just now.
+A strategy is filed when the drawdown stays inside $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000, the run has at least 60 trades, profit is above $6,000, the profit factor is above 1.1, and the win rate is above 40 percent. Those are the boxes turned on at the strategy library page. It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it.
+Strategy: Delta Volume Breakout Night Shift.
+Chart tested: 5-minute Dow (YM1!).
+Profit 12015.0. Drawdown 3883.5. Trades 165.
+Trades a week: 3.15 over 260 trading days.
+Bars in this test: 70,842 from 2025-10-30 18:00 through 2026-11-01 18:55.
+The acceptance line above is the only bar for filing on this desk. Every agent and this report use those four numbers. The headquarters profit target and trailing drawdown are not used to accept or reject a run.
+On the strategy library: yes, on the not-tested list for Dow. It has not been run on the five-year dataset.
+Settings of this version: stop_dollars=500, tp_dollars=750, profile_lookback=120, profile_rows=10, min_delta_pct=20.0, min_slope=0.0, confirm_candles=1, cooldown_bars=10, use_session=True, sess_start_hr=18, sess_start_mn=0, sess_end_hr=8.
+Different results on this chart: 67.
+Engine runs on this chart: 95.

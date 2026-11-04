@@ -106,59 +106,85 @@ class ReplyTests(unittest.TestCase):
         self.assertIn("strategy.close_all", written)
         self.assertIn("maxval=700", written)
 
-    def test_a_placeholder_and_an_atr_stop_are_sent_back_and_then_dropped(self):
-        for bad in (NEW + "// the rest of the script is omitted\n", NEW + "stop_mult = input.float(2.0)\natr = ta.atr(14)\nlong_stop := close - atr * stop_mult\n"):
-            sent = []
+    def test_a_placeholder_is_sent_back_and_then_dropped(self):
+        bad = NEW + "// the rest of the script is omitted\n"
+        sent = []
 
-            def post(model, messages, **kwargs):
-                sent.append(messages)
-                return f"SCRIPT:\n{bad}\nEND"
+        def post(model, messages, **kwargs):
+            sent.append(messages)
+            return f"SCRIPT:\n{bad}\nEND"
 
-            with mock.patch("futuresfund.llm._post", post), mock.patch("futuresfund.strategy_team.engine_problem", lambda source: ""):
-                self.assertIsNone(attempt_reason._write_redesign(OLD, "Plan.", "Why."))
-            self.assertEqual(len(sent), 2)
-            self.assertIn("was refused", sent[1][-1]["content"])
+        with mock.patch("futuresfund.llm._post", post), mock.patch("futuresfund.strategy_team.engine_problem", lambda source: ""):
+            self.assertIsNone(attempt_reason._write_redesign(OLD, "Plan.", "Why."))
+        self.assertEqual(len(sent), 2)
+        self.assertIn("was refused", sent[1][-1]["content"])
+
+    def test_an_atr_stop_in_a_redesign_is_converted_not_sent_back(self):
+        from futuresfund.strategy_team import atr_exit
+
+        atr_stop = NEW + "stop_mult = input.float(2.0)\natr = ta.atr(14)\nlong_stop := close - atr * stop_mult\n"
+        sent = []
+
+        def post(model, messages, **kwargs):
+            sent.append(messages)
+            return f"SCRIPT:\n{atr_stop}\nEND"
+
+        with mock.patch("futuresfund.llm._post", post), mock.patch("futuresfund.strategy_team.engine_problem", lambda source: ""):
+            written = attempt_reason._write_redesign(OLD, "Plan.", "Why.")
+        self.assertEqual(len(sent), 1)
+        self.assertIsNotNone(written)
+        self.assertEqual(atr_exit(written), "")
+        self.assertIn("long_stop := close - stop_dollars / pv", written)
+        self.assertNotIn("stop_mult", written)
+        self.assertNotIn("ta.atr", written)
 
 
-class FilingTests(unittest.TestCase):
-    def test_the_original_is_untouched_and_the_redesign_has_its_own_name_and_title(self):
+class InPlaceTests(unittest.TestCase):
+    """A redesign replaces the script it answers. No new script is filed, and a worse one is taken back."""
+
+    def setUp(self):
+        # These check the logic changes themselves. The desk runs with VALUES_ONLY on, which turns them off.
+        from futuresfund import learn
+
+        patcher = mock.patch.object(learn, "VALUES_ONLY", False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_a_redesign_is_noted_on_the_ledger_and_files_no_script(self):
         with _Folders() as folders:
             path = folders.script()
-            filed = redesign.file_redesign(path, OLD, NEW, "The idea loses.", "Use an EMA cross.")
-            self.assertEqual(path.read_text(encoding="utf-8"), OLD)
-            self.assertEqual(filed.name, "Old Idea_redesign1.pine")
-            self.assertEqual(filed.parent, folders.learning)
-            self.assertIn('strategy("Old Idea Redesign 1"', filed.read_text(encoding="utf-8"))
-            ledger = json.loads((folders.notes / "redesigns" / "ledger.json").read_text(encoding="utf-8"))
-            row = ledger["Old Idea"][0]
-            self.assertEqual((row["from"], row["because"], row["plan"]), ("Old Idea.txt", "The idea loses.", "Use an EMA cross."))
-            versions = folders.notes / "script_versions"
-            self.assertEqual((versions / f"{row['from_sha']}.pine").read_text(encoding="utf-8"), OLD)
-            self.assertEqual((versions / f"{row['source_sha']}.pine").read_text(encoding="utf-8"), filed.read_text(encoding="utf-8"))
+            self.assertTrue(redesign.note_redesign(path, "The idea loses.", "Use an EMA cross."))
+            self.assertEqual(sorted(item.name for item in folders.learning.iterdir()), ["Old Idea.txt"])
+            row = json.loads((folders.notes / "redesigns" / "ledger.json").read_text(encoding="utf-8"))["Old Idea"][0]
+            self.assertEqual((row["file"], row["in_place"], row["because"], row["plan"]), ("Old Idea.txt", True, "The idea loses.", "Use an EMA cross."))
+            self.assertIn("Use an EMA cross.", redesign.earlier_lines(path)[0])
 
-    def test_a_redesign_of_a_redesign_counts_against_the_same_original(self):
+    def test_the_limit_counts_only_in_place_redesigns(self):
         with _Folders() as folders:
             path = folders.script()
-            first = redesign.file_redesign(path, OLD, NEW, "One.")
-            second = redesign.file_redesign(first, first.read_text(encoding="utf-8"), NEW, "Two.")
-            self.assertEqual(second.name, "Old Idea_redesign2.pine")
-            self.assertIn('strategy("Old Idea Redesign 2"', second.read_text(encoding="utf-8"))
-            self.assertIn("One.", redesign.earlier_lines(second)[0])
-            self.assertTrue(redesign.room(second))
-            third = redesign.file_redesign(second, OLD, NEW, "Three.")
+            ledger = folders.notes / "redesigns" / "ledger.json"
+            ledger.parent.mkdir(parents=True)
+            old_rows = [{"file": f"Old Idea_redesign{number}.pine", "because": f"Old {number}."} for number in (1, 2, 3)]
+            ledger.write_text(json.dumps({"Old Idea": old_rows}), encoding="utf-8")
+            self.assertTrue(redesign.room(path))
+            self.assertEqual(len(redesign.earlier_lines(path)), 3)
+            for number in range(redesign.LIMIT):
+                self.assertTrue(redesign.note_redesign(path, f"Try {number}."))
             self.assertFalse(redesign.room(path))
-            self.assertIsNone(redesign.file_redesign(third, OLD, NEW, "Four."))
-            self.assertFalse((folders.learning / "Old Idea_redesign4.pine").exists())
+            self.assertFalse(redesign.note_redesign(path, "One more."))
 
-    def test_a_redesign_is_the_next_script_a_chart_takes(self):
+    def test_the_redesign_keeps_the_title_of_the_script_it_replaces(self):
+        self.assertIn('strategy("Old Idea", overlay=true, initial_capital=50000)', redesign.keep_title(NEW, OLD))
+
+    def test_a_redesign_already_filed_is_still_the_next_script_a_chart_takes(self):
         with _Folders() as folders:
             folders.script("Aaa.txt")
             (folders.learning / "created_x.pine").write_text(OLD, encoding="utf-8")
-            filed = redesign.file_redesign(folders.script("Zzz.txt"), OLD, NEW, "Why.")
+            folders.script("Zzz_redesign1.pine", NEW)
             names = [path.name for path in learn._pine_files(folders.learning, False)]
-            self.assertEqual(names, [filed.name, "Aaa.txt", "Zzz.txt", "created_x.pine"])
+            self.assertEqual(names, ["Zzz_redesign1.pine", "Aaa.txt", "created_x.pine"])
 
-    def test_an_answer_with_a_redesign_files_it_and_leaves_nothing_for_the_next_chart(self):
+    def test_an_answer_with_a_redesign_waits_for_the_next_chart_as_this_scripts_rewrite(self):
         with _Folders() as folders:
             path = folders.script()
             seen = []
@@ -172,11 +198,40 @@ class FilingTests(unittest.TestCase):
                 learn.ask_researcher(Board(), path, OLD, trials, {}, "It failed.", None, "Chart researcher", "stage7", review="7 ES 2m")
                 learn.drain_decisions()
             self.assertEqual(seen, [True])
-            self.assertTrue((folders.learning / "Old Idea_redesign1.pine").is_file())
+            self.assertEqual(sorted(item.name for item in folders.learning.iterdir()), ["Old Idea.txt"])
             self.assertEqual(path.read_text(encoding="utf-8"), OLD)
-            self.assertNotIn("answer", diagnosis.load(OLD))
+            answer = diagnosis.load(OLD)["answer"]
+            self.assertTrue(answer["redesign"])
+            self.assertIn('strategy("Old Idea"', answer["script"])
+            self.assertEqual(answer["settings"], {"length": 20})
             self.assertEqual(diagnosis.load(OLD)["reviewed"], ["7 ES 2m"])
 
+    def test_a_redesign_stays_only_when_it_does_better(self):
+        before = {"net_profit": 1200.0, "max_drawdown": 600.0, "trades": 40, "days": 30}
+        self.assertFalse(learn.redesign_holds(before, {**before, "net_profit": 900.0}))
+        self.assertFalse(learn.redesign_holds(before, {**before, "trades": 0, "net_profit": 0.0}))
+        self.assertFalse(learn.redesign_holds(before, {**before, "error": "boom", "net_profit": 5000.0}))
+        better = {**before, "net_profit": 1800.0, "max_drawdown": 500.0}
+        self.assertEqual(learn.redesign_holds(before, better), learn._rank(better) > learn._rank(before))
+
+    def test_a_worse_redesign_puts_the_script_before_it_back(self):
+        with _Folders() as folders:
+            path = folders.script()
+            runs = []
+
+            def execute(params):
+                runs.append(execute.source["text"])
+                worse = "fast = input.int" in execute.source["text"]
+                return {"net_profit": -400.0 if worse else 300.0, "max_drawdown": 500.0, "trades": 12, "params": params}
+
+            execute.source = {"text": OLD, "stamp": 0, "root": "ES", "timeframe": "2m"}
+            with mock.patch("futuresfund.strategy_team.engine_problem", lambda source: ""),                     mock.patch.object(diagnosis, "measure_response", lambda *a, **k: {"moved": {}}):
+                kept = learn._install_checked(Board(), path, redesign.keep_title(NEW, OLD), execute, {"net_profit": 300.0, "max_drawdown": 500.0, "trades": 12, "params": {"length": 20}}, "Chart researcher", None, "Why.", redesign=True)
+            self.assertIsNone(kept)
+            self.assertEqual(path.read_text(encoding="utf-8"), OLD)
+            self.assertEqual(execute.source["text"], OLD)
+
+class OfferTests(unittest.TestCase):
     def test_a_first_read_is_not_offered_a_redesign(self):
         with _Folders() as folders:
             path = folders.script()
@@ -195,7 +250,7 @@ class FilingTests(unittest.TestCase):
         with _Folders() as folders:
             path = folders.script()
             for number in range(redesign.LIMIT):
-                redesign.file_redesign(path, OLD, NEW, f"Try {number}.")
+                redesign.note_redesign(path, f"Try {number}.")
             seen = []
 
             def reasoned(script, rows, bounds, choices, why, response, can_redesign):
@@ -238,6 +293,34 @@ class ReviewTests(unittest.TestCase):
                     self._review(chart)
                     learn.drain_decisions()
             self.assertEqual(len(asked), learn.STAGE_REVIEWS)
+
+    def test_the_year_review_is_judged_as_the_year_not_as_a_stage(self):
+        limits = {
+            "min_profit": 6000.0, "profit_factor": 1.1, "win_rate": 40.0, "min_trades": 60, "drawdown_pct": 2.0,
+            "use_drawdown": True, "use_trades": True, "use_profit": True, "use_factor": False, "use_win_rate": False,
+        }
+        row = {"params": {"length": 20}, "net_profit": 7000.0, "max_drawdown": 8000.0, "trades": 100, "days": 260, "biggest_loser": -150.0,
+               "spans": {"7": {"net_profit": 500.0}, "30": {"net_profit": 400.0}, "90": {"net_profit": 3000.0}, "365": {"net_profit": 7000.0}}}
+        with _Folders(), mock.patch("futuresfund.book.strategy_acceptance", lambda *args, **kwargs: dict(limits)):
+            self.assertEqual(set(objective.acceptance_misses(row, days=365, limits=limits)), set(objective.acceptance_misses(row, limits=limits)))
+            asked = []
+
+            def reasoned(script, rows, bounds, choices, why, response, can_redesign):
+                asked.append(why)
+                return None
+
+            with mock.patch("futuresfund.attempt_reason.reasoned_change", reasoned):
+                self._review("ES 5m", days=365, trials=[row])
+                learn.drain_decisions()
+        self.assertEqual(len(asked), 1)
+        why = asked[0]
+        self.assertNotIn("the same limit as the year", why)
+        self.assertNotIn("the same as the year", why)
+        self.assertIn("The year needs more profit than drawdown. This run made $7,000 with a drawdown of $8,000.", why)
+        self.assertIn("This run's profit did not grow that way.", why)
+        self.assertIn("so it did not pass the year.", why)
+        self.assertIn("This script failed the year search on the ES 5m chart", why)
+        self.assertNotIn("365-day stage", why)
 
     def test_another_stage_on_the_same_chart_is_its_own_review(self):
         with _Folders():
@@ -322,10 +405,15 @@ class WholeChartTests(unittest.TestCase):
             self.assertEqual(set(objective.acceptance_misses({**row, "spans": shrunk})), {"growth"})
         self.assertIn("did not grow", objective.acceptance_reason({**row, "spans": {**growing, "7": {"net_profit": -50.0}}}))
 
-    def test_the_year_needs_3_trades_a_week_and_no_ratio(self):
-        row = {"net_profit": 9000.0, "max_drawdown": 200.0, "trades": 156, "days": 260, "biggest_loser": -150.0, "win_rate": 50.0, "profit_factor": 1.5, "profit_ratio": 0.8}
+    def test_the_year_needs_the_library_trade_count_and_no_ratio(self):
+        # The default book asks for 100 trades a year. The old 3-a-week floor (156) is off unless it is set.
+        row = {"net_profit": 9000.0, "max_drawdown": 200.0, "trades": 100, "days": 260, "biggest_loser": -150.0, "win_rate": 50.0, "profit_factor": 1.5, "profit_ratio": 0.8}
         self.assertTrue(objective.passes_acceptance(row))
-        self.assertIn("trades", objective.acceptance_misses({**row, "trades": 150}))
+        self.assertTrue(objective.passes_acceptance({**row, "trades": 150}))
+        self.assertIn("trades", objective.acceptance_misses({**row, "trades": 99}))
+        with mock.patch.object(objective, "STAGE_TRADES_PER_WEEK", 3):
+            self.assertIn("trades", objective.acceptance_misses({**row, "trades": 150}))
+            self.assertTrue(objective.passes_acceptance({**row, "trades": 156}))
 
 
 class ReportTests(unittest.TestCase):

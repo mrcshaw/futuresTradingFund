@@ -1,0 +1,278 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 62,
+   "net_profit": 454.5,
+   "max_drawdown": 1495.5,
+   "trades": 28
+  },
+  "tp_dollars": {
+   "value": 125,
+   "net_profit": 179.5,
+   "max_drawdown": 1315.5,
+   "trades": 28
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 626.0,
+   "max_drawdown": 3788.0,
+   "trades": 34
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -634.0,
+   "max_drawdown": 2381.0,
+   "trades": 19
+  },
+  "min_delta_pct": {
+   "value": 1.25,
+   "net_profit": 374.5,
+   "max_drawdown": 3458.0,
+   "trades": 33
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 1970.0,
+   "max_drawdown": 3458.0,
+   "trades": 30
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "fractal_len": {
+   "value": 3,
+   "net_profit": 1866.0,
+   "max_drawdown": 3803.5,
+   "trades": 44
+  },
+  "cooldown_bars": {
+   "value": 40,
+   "net_profit": 544.0,
+   "max_drawdown": 2023.5,
+   "trades": 21
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": 1970.0,
+   "max_drawdown": 3458.0,
+   "trades": 30
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": 2532.0,
+   "max_drawdown": 2719.0,
+   "trades": 38
+  },
+  "vol_ma_len": {
+   "value": 12,
+   "net_profit": 3201.0,
+   "max_drawdown": 2634.5,
+   "trades": 34
+  },
+  "use_breakeven": {
+   "value": false,
+   "net_profit": 1204.5,
+   "max_drawdown": 1765.5,
+   "trades": 28
+  },
+  "be_trigger_dollars": {
+   "value": 50.0,
+   "net_profit": 1729.5,
+   "max_drawdown": 2478.0,
+   "trades": 28
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -3103.0,
+   "max_drawdown": 7009.5,
+   "trades": 73
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": -919.0,
+   "max_drawdown": 4827.5,
+   "trades": 54
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -2721.0,
+   "max_drawdown": 5623.5,
+   "trades": 61
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 1745.0,
+   "max_drawdown": 3206.5,
+   "trades": 30
+  },
+  "use_skip": {
+   "value": false,
+   "net_profit": 726.5,
+   "max_drawdown": 4729.5,
+   "trades": 51
+  },
+  "skip_start_mn": {
+   "value": 59,
+   "net_profit": 429.0,
+   "max_drawdown": 4003.5,
+   "trades": 36
+  },
+  "skip_end_hr": {
+   "value": 2,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "skip_end_mn": {
+   "value": 59,
+   "net_profit": 594.0,
+   "max_drawdown": 2404.5,
+   "trades": 21
+  },
+  "skip_start_hr": {
+   "value": 2,
+   "net_profit": -1742.5,
+   "max_drawdown": 1774.5,
+   "trades": 5
+  }
+ },
+ "flat": [
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 700,
+   "tp_dollars": 750,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 50,
+   "fractal_len": 5,
+   "cooldown_bars": 10,
+   "use_vol_filter": true,
+   "vol_ma_len": 12,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 8,
+   "skip_start_mn": 30,
+   "skip_end_hr": 10,
+   "skip_end_mn": 30
+  },
+  "net_profit": 2950.0,
+  "max_drawdown": 2684.0,
+  "trades": 25,
+  "win_rate": 40.0,
+  "profit_factor": 1.435,
+  "biggest_winner": 2476.5,
+  "biggest_loser": -723.5,
+  "held_loser": -723.5,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 8,
+    "pnl": -3700.5,
+    "favorable": 449.19,
+    "adverse": -652.38
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 8,
+    "pnl": 4237.0,
+    "favorable": 811.69,
+    "adverse": -196.12
+   },
+   {
+    "exit": "Session Close",
+    "trades": 7,
+    "pnl": 660.5,
+    "favorable": 673.07,
+    "adverse": -389.43
+   },
+   {
+    "exit": "XS",
+    "trades": 2,
+    "pnl": 1753.0,
+    "favorable": 1425.75,
+    "adverse": -455.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "30 NQ 5m",
+  "7 ES 2m",
+  "7 GC 2m",
+  "7 YM 5m",
+  "90 ES 15m"
+ ],
+ "answer": {
+  "because": "The 7-day run lost $3,385 with a 13.33% win rate and 0.5 profit factor, so the fractal confirmation is too slow.",
+  "script": null,
+  "params": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 50,
+   "fractal_len": 3,
+   "cooldown_bars": 80,
+   "use_vol_filter": true,
+   "vol_ma_len": 12,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 8,
+   "skip_start_mn": 30,
+   "skip_end_hr": 10,
+   "skip_end_mn": 30
+  },
+  "settings": {
+   "stop_dollars": 500,
+   "tp_dollars": 750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 50,
+   "fractal_len": 5,
+   "cooldown_bars": 80,
+   "use_vol_filter": true,
+   "vol_ma_len": 12,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 8,
+   "skip_start_mn": 30,
+   "skip_end_hr": 10,
+   "skip_end_mn": 30
+  },
+  "redesign": false
+ }
+}

@@ -28,6 +28,48 @@ def input_calls(text: str) -> list[dict]:
     return found
 
 
+_TEXT_INPUT_OPEN = re.compile(r"(?P<name>[A-Za-z_]\w*)\s*=\s*input\.(?P<kind>session|string)\s*\(")
+SESSION_VALUE = re.compile(r"^\d{4}-\d{4}(?::[1-7]+)?$")
+
+
+def text_inputs(text: str) -> dict[str, dict]:
+    """The input.session inputs and the input.string inputs with no option list, by name.
+
+    The search does not move these, so they are not in the tunable inputs; the owner can still set
+    one in an emailed answer. Each entry has its kind, its default, and where that default is written.
+    """
+    found: dict[str, dict] = {}
+    for match in _TEXT_INPUT_OPEN.finditer(text or ""):
+        close = _call_end(text, match.end() - 1)
+        if close is None:
+            continue
+        body = text[match.end():close]
+        if match.group("kind") == "string" and _options(body):
+            continue
+        default = re.match(r"""\s*(["'])(.*?)\1""", body)
+        if default is None:
+            continue
+        found.setdefault(match.group("name"), {
+            "kind": match.group("kind"),
+            "default": default.group(2),
+            "at": (match.end() + default.start(), match.end() + default.end()),
+        })
+    return found
+
+
+def set_text_input(text: str, name: str, value: str) -> str:
+    """The script with this session or plain string input's default set to value."""
+    item = text_inputs(text).get(name)
+    if item is None:
+        return text
+    shown = str(value).strip().strip("\"'").replace('"', "")
+    if item["kind"] == "session" and not SESSION_VALUE.match(shown):
+        return text
+    start, end = item["at"]
+    lead = len(text[start:end]) - len(text[start:end].lstrip())
+    return text[:start + lead] + f'"{shown}"' + text[end:]
+
+
 def _call_end(text: str, open_at: int) -> int | None:
     """Index of the closing parenthesis. Quotes and nested calls do not close it early."""
     depth = 0
@@ -155,7 +197,7 @@ def ceo_report(facts: dict, best: dict | None, quant_note: str, indicator_note: 
         "The script is only the starting point. Settings after that follow what made or lost money.",
         "Prepared by the Portfolio Manager from the researcher for this chart.",
         f"Engine attempts used: {attempts} of {ATTEMPT_LIMIT}.",
-        "Engine 1 runs the 2-minute chart, engine 2 runs the 5-minute chart, and engine 3 runs the 15-minute chart.",
+        "Each instrument has its own 2-minute, 5-minute and 15-minute engines. ES runs on engines 1, 2 and 3.",
         f"This version was tested on the {_chart_name(measured.get('timeframe'))} chart.",
         _chart_lines(measured.get("frames")),
         f"Best version: profit {profit}, drawdown {drawdown}, trades {trades}, win rate {win}.",

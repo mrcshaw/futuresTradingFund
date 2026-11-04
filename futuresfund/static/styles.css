@@ -332,11 +332,33 @@ h1 { margin: 0; font-size: 22px; font-weight: 650; }
 .leader-card h3 { margin: 0; font-size: 15px; }
 .leader-card p { margin: 0; color: var(--muted); font-size: 13px; }
 .leader-card label { display: grid; gap: 4px; }
-.rules-form { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 8px 0 12px; }
+.rules-form { display: flex; gap: 12px; align-items: start; flex-wrap: wrap; margin: 8px 0 12px; }
 .rules-form label.check { display: flex; gap: 6px; align-items: center; }
-.rules-form .rule { display: grid; gap: 4px; }
-.rules-form .rule .rule-name { display: flex; gap: 6px; align-items: center; }
+.rules-form .rule { display: grid; gap: 4px; align-content: start; }
+.rules-form .rule .rule-name { display: flex; gap: 6px; align-items: center; min-height: 18px; }
 .rules-form .rule .rule-name input { width: auto; }
+/* The submit button lines up with the inputs, under the one-line labels. */
+.rules-form > button[type="submit"] { margin-top: 22px; }
+/* The trade and profit boxes carry a live line: the number at a steady pace, a week and each test. */
+.rules-form .rule.has-pace { flex: 1 1 17rem; max-width: 28rem; }
+.rules-form .rule.has-pace input:not([type="checkbox"]) { justify-self: start; width: 9rem; }
+.rules-form .rule-pace { font-size: 12px; line-height: 1.4; color: var(--muted); }
+.rules-form .rule-pace.is-off { opacity: 0.7; }
+.acceptance-stages-wrap { overflow-x: auto; margin: 0 0 10px; }
+.acceptance-stages { width: 100%; margin: 0; font-size: 12.5px; }
+.acceptance-stages caption { caption-side: top; text-align: left; font-weight: 600; padding: 0 0 6px; }
+.acceptance-stages caption small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.acceptance-stages thead th { white-space: nowrap; }
+.acceptance-stages th[scope="row"] { color: var(--muted); font-weight: 600; white-space: nowrap; width: 1%; }
+.acceptance-stages td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.acceptance-stages td.acceptance-same { color: var(--muted); white-space: normal; }
+@media (max-width: 640px) {
+  .rules-form .rule.has-pace { flex-basis: 100%; max-width: none; }
+  .acceptance-stages { font-size: 12px; }
+  .acceptance-stages th, .acceptance-stages td { padding: 5px 6px; }
+  .acceptance-stages td, .acceptance-stages thead th, .acceptance-stages th[scope="row"] { white-space: normal; }
+  .acceptance-stages caption small { display: block; margin: 2px 0 0; }
+}
 .chart-browser { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .chart-browser label.chart-frame {
   display: flex;
@@ -591,9 +613,27 @@ button.chart-tab-close {
 .hood-grid {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   margin: 8px 0 16px;
 }
+/* One row per instrument: its 2m, 5m and 15m engines side by side. The creation engine has its own row. */
+.hood-group { display: grid; gap: 8px; min-width: 0; }
+.hood-group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #9fb0c3);
+}
+/* Three columns when the row is wide enough, fewer as it narrows: never more than 3, never under 240px each. */
+.hood-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(240px, (100% - 24px) / 3)), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.hood-row > .hood-card { min-width: 0; }
 .hood-card {
   width: 100%;
   display: grid;

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import unittest
 from pathlib import Path
+from unittest import mock
 from tempfile import TemporaryDirectory
 
 # A one-year run that clears every acceptance box in ACCEPTANCE_LIMITS. A created script moves on only after one of these.
@@ -231,14 +232,26 @@ class CandidateTests(unittest.TestCase):
         self.assertFalse(getattr(trials, "success_stop", False))
 
     def test_a_script_with_more_than_900_trades_is_skipped(self):
+        # A run over 900 trades is no longer refused: it is kept, flagged over_cap, and the trade cut starts.
+        # This script has no input the desk can use to cut trades and no copy to write the desk limits into,
+        # so the cut has nothing to try and the chart researcher's question for the owner is set.
+        from unittest import mock
+
+        from futuresfund import learn
         from futuresfund.learn import _search
 
         def execute(params):
             return {"net_profit": 100.0, "max_drawdown": 10.0, "trades": 901, "days": 20}
 
-        trials = _search({"length": 10}, execute, 50000, 4, None, None, None, extras=False)
-        self.assertTrue(getattr(trials, "skipped", False))
-        self.assertEqual(len(trials), 0)
+        with mock.patch.object(learn, "set_aside") as set_aside:
+            trials = _search({"length": 10}, execute, 50000, 4, None, None, None, extras=False)
+        self.assertFalse(getattr(trials, "skipped", False))
+        set_aside.assert_not_called()
+        self.assertEqual(len(trials), 1)
+        self.assertTrue(trials[0]["over_cap"])
+        self.assertFalse(trials[0]["passed"])
+        self.assertIn("901 in the year", trials.over_trades)
+        self.assertIn("What should the desk do?", trials.over_trades)
 
     def test_the_stop_keeps_moving_while_it_approaches_the_goal(self):
         from futuresfund.learn import next_plan
@@ -383,7 +396,7 @@ class CandidateTests(unittest.TestCase):
     def test_a_drawdown_above_twenty_percent_of_the_account_does_not_pass(self):
         from futuresfund.learn import _passed
 
-        crossed = {"net_profit": 4000, "max_drawdown": 1200.01, "trades": 4, "stop_reason": ""}
+        crossed = {"net_profit": 4000, "max_drawdown": 2800.01, "trades": 4, "stop_reason": ""}
         inside = {"net_profit": 4000, "max_drawdown": 1200, "trades": 4, "stop_reason": "Trailing DD breached", "breached": True}
         short = {"net_profit": 500, "max_drawdown": 400, "trades": 4, "stop_reason": ""}
         kept = {"net_profit": 3000, "max_drawdown": 800, "trades": 4, "stop_reason": "Profit target reached"}
@@ -512,7 +525,7 @@ class ReportShapeTests(unittest.TestCase):
         self.assertIn("not used to accept or reject a run", facts)
         self.assertIn("Trades a week: 16.9", facts)
         self.assertIn("strategy library page", facts)
-        self.assertIn("The drawdown of 5626.0 is not less than the profit of 744.0", facts)
+        self.assertIn("The drawdown is past the limit, $2,500 until the profit passes $3,000", facts)
         self.assertNotIn("Meets the profit target", facts)
         self.assertNotIn("Filed in the", facts)
         self.assertNotIn("1. The bet", facts)
@@ -884,6 +897,8 @@ class RatioLibraryTests(unittest.TestCase):
                 "futuresfund.learn.NOTES", Path(tmp)
             ), mock.patch("futuresfund.library.record_profitable", lambda entry: False), mock.patch(
                 "futuresfund.strategy.pine_text", return_value='strategy("Kept Run")\n'
+            ), mock.patch("futuresfund.mailer.send_report", lambda *args, **kwargs: {"sent": False}), mock.patch(
+                "futuresfund.mailer.MAIL_LOG", Path(tmp) / "_sent.json"
             ):
                 bookmod.BOOK_PATH = Path(tmp) / "book.json"
                 save_strategy_acceptance({
@@ -1023,6 +1038,7 @@ class QueueTests(unittest.TestCase):
             None,
             extras=False,
             developer="15 min chart developer",
+            year=True,
         )
         self.assertTrue(getattr(trials, "loss_stop", False))
         self.assertEqual(len(trials), LOSS_LOOK)
@@ -1122,7 +1138,8 @@ class QueueTests(unittest.TestCase):
             developer="15 min chart developer",
         )
         self.assertTrue(getattr(trials, "repeat_stop", False))
-        self.assertEqual(len(calls), 4)
+        # length moved up and then down without changing anything, so nothing is left to move.
+        self.assertEqual(calls, [{"length": 10}, {"length": 20}, {"length": 5}])
 
     def test_a_text_file_that_holds_a_pine_script_joins_the_queue(self):
         from futuresfund import learn
@@ -1326,6 +1343,11 @@ class QueueTests(unittest.TestCase):
             def execute(_params):
                 return {"net_profit": 0.0, "max_drawdown": 0.0, "trades": 0}
 
+            from futuresfund import questions
+
+            store = mock.patch.object(questions, "STORE", root / "questions")
+            store.start()
+            questions.clear_memory()
             try:
                 for _ in range(learn.FLAT_RUNS - 1):
                     trials = learn._search(
@@ -1339,15 +1361,22 @@ class QueueTests(unittest.TestCase):
                     developer="2min chart developer",
                 )
                 self.assertTrue(trials.flat_stop)
+                self.assertEqual(trials.flat_outcome, "awaiting")
                 self.assertFalse(script.is_file())
-                parked = aside / "es_delta_bos_rsi.pine"
-                self.assertTrue(parked.is_file())
-                reason = (aside / "es_delta_bos_rsi.reason.txt").read_text(encoding="utf-8")
-                self.assertIn("no trades", reason)
-                self.assertIn("no profit", reason)
-                self.assertIn("20", reason)
+                # The researcher asked the owner. The script waits for the answer instead of being parked.
+                waiting = root / "awaitingAnswerStrategies"
+                self.assertTrue((waiting / "es_delta_bos_rsi.pine").is_file())
+                self.assertFalse(aside.exists() and any(aside.glob("*.pine")))
+                question = (waiting / "es_delta_bos_rsi.question.txt").read_text(encoding="utf-8")
+                self.assertIn("no trades", question)
+                self.assertIn("no profit", question)
+                self.assertIn("20", question)
+                self.assertIn("FFQ-", question)
                 self.assertEqual(learn.queue(learning), [])
+                self.assertEqual([row["kind"] for row in questions.open_questions()], ["no_trades"])
             finally:
+                store.stop()
+                questions.clear_memory()
                 learn._flat_runs.clear()
                 learn.LEARNING = previous_learning
                 learn.CANNOT_RUN = previous_aside
@@ -1387,6 +1416,11 @@ class QueueTests(unittest.TestCase):
             def execute(_params):
                 return {"net_profit": 0.0, "max_drawdown": 0.0, "trades": 0}
 
+            from futuresfund import questions
+
+            store = mock.patch.object(questions, "STORE", root / "questions")
+            store.start()
+            questions.clear_memory()
             try:
                 trials = learn._search(
                     {"length": 10}, execute, 50000, 30, None, script, None, extras=False,
@@ -1394,13 +1428,16 @@ class QueueTests(unittest.TestCase):
                 )
                 self.assertTrue(trials.flat_stop)
                 self.assertFalse(script.is_file())
-                self.assertTrue((aside / "created_es_delta_bos_5m.pine").is_file())
+                waiting = root / "awaitingAnswerStrategies"
+                self.assertTrue((waiting / "created_es_delta_bos_5m.pine").is_file())
                 self.assertEqual(learn.queue(learning), [])
-                reason = (aside / "created_es_delta_bos_5m.reason.txt").read_text(encoding="utf-8")
+                reason = (waiting / "created_es_delta_bos_5m.question.txt").read_text(encoding="utf-8")
                 self.assertIn("created_es_delta_bos_5m.pine", reason)
                 self.assertIn("no trades", reason)
                 self.assertIn("no profit", reason)
             finally:
+                store.stop()
+                questions.clear_memory()
                 learn._flat_runs.clear()
                 learn.LEARNING = previous_learning
                 learn.CANNOT_RUN = previous_aside
@@ -1470,6 +1507,11 @@ class QueueTests(unittest.TestCase):
                 calls["n"] += 1
                 return {"net_profit": 0.0, "max_drawdown": 0.0, "trades": 0}
 
+            from futuresfund import questions
+
+            store = mock.patch.object(questions, "STORE", root / "questions")
+            store.start()
+            questions.clear_memory()
             try:
                 trials = learn._search(
                     {"length": 10, "zone": 1.5, "fast": 5, "slow": 8},
@@ -1485,8 +1527,10 @@ class QueueTests(unittest.TestCase):
                 self.assertTrue(trials.flat_stop)
                 self.assertEqual(calls["n"], learn.FLAT_RUNS)
                 self.assertFalse(script.is_file())
-                self.assertTrue((aside / "flat.pine").is_file())
+                self.assertTrue((root / "awaitingAnswerStrategies" / "flat.pine").is_file())
             finally:
+                store.stop()
+                questions.clear_memory()
                 learn._flat_runs.clear()
                 learn.LEARNING = previous_learning
                 learn.CANNOT_RUN = previous_aside
@@ -1528,3 +1572,30 @@ class ChartCountTests(unittest.TestCase):
             finally:
                 learn.NOTES = previous
                 learn._view_cache.clear()
+
+
+class QueueFirstTests(unittest.TestCase):
+    def test_scripts_named_in_queue_first_are_studied_first(self):
+        import json as _json
+        from pathlib import Path as _Path
+        from tempfile import TemporaryDirectory as _Tmp
+
+        from futuresfund import learn as _learn
+
+        with _Tmp() as tmp:
+            root = _Path(tmp)
+            folder, notes = root / "learning", root / "notes"
+            folder.mkdir()
+            notes.mkdir()
+            for name in ("a_delta_volume_breakout.pine", "b_other.pine", "c_new.pine"):
+                (folder / name).write_text('strategy("x")\nstrategy.entry("L", strategy.long)\n', encoding="utf-8")
+            saved = _learn.NOTES
+            _learn.NOTES = notes
+            _learn._QUEUE_FIRST.clear()
+            try:
+                (notes / "queue_first.json").write_text(_json.dumps(["c_new.pine"]), encoding="utf-8")
+                names = [path.name for path in _learn._pine_files(folder, False)]
+            finally:
+                _learn.NOTES = saved
+                _learn._QUEUE_FIRST.clear()
+        self.assertEqual(names[0], "c_new.pine")

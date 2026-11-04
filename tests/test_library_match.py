@@ -149,6 +149,16 @@ class LibraryMatchTests(unittest.TestCase):
         again = library._load_untested()
         self.assertEqual(again[0]["added_at"], kept)
 
+    def test_a_hand_added_script_stays_on_the_waiting_list_once(self):
+        added = Path(self.tmp.name) / "added"
+        with mock.patch.object(library, "_ADDED_DIR", added):
+            row = library.add_strategy("Gold Night", "GC1!", '//@version=5\nstrategy("Gold Night")\n', "5m")
+        for _ in range(3):
+            library._untested_rows()
+        waiting = library._load_untested()
+        self.assertEqual([item["id"] for item in waiting], [row["id"]])
+        self.assertEqual([item["id"] for item in library._load_index_rows()], [row["id"]])
+
 
 class PointValueTests(unittest.TestCase):
     SCRIPT = 'pv                = input.float(2, "Point Value ($)")\nstop = close - 700 / pv\n'

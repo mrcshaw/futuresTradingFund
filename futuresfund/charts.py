@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 from futuresfund.config import ROOT
@@ -12,8 +14,28 @@ _FRAMES = (("15m", ", 15_"), ("5m", ", 5_"), ("2m", ", 2_"), ("1m", ", 1_"))
 NOT_INSTRUMENTS = {"DATAUPDATES", "HISTORICALDATA"}
 
 
+_ROOTS_SECONDS = 60.0
+_roots_seen: dict = {"at": 0.0, "roots": None}
+_roots_lock = threading.Lock()
+
+
 def chart_roots() -> list[str]:
-    """Instruments that have a chart folder. A strategy is tested on each of these once."""
+    """Instruments that have a chart folder. A strategy is tested on each of these once.
+
+    The folder scan is kept for a minute. Picking a study asks for every script, and each
+    scan of chartData took a quarter of a second on the desk's mounted folder.
+    """
+    with _roots_lock:
+        roots = _roots_seen["roots"]
+        if roots is not None and time.monotonic() - _roots_seen["at"] < _ROOTS_SECONDS:
+            return list(roots)
+    roots = _scan_roots()
+    with _roots_lock:
+        _roots_seen.update(at=time.monotonic(), roots=list(roots))
+    return roots
+
+
+def _scan_roots() -> list[str]:
     folder = ROOT / "chartData"
     found = []
     if folder.is_dir():

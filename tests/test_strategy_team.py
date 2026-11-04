@@ -169,8 +169,8 @@ class StrategyTeamTests(unittest.TestCase):
         self.assertIn("// ===== RISK =====", fixed)
         self.assertNotIn("// ===== RISK Management=====", fixed)
         self.assertIn('pv                = input.float(50, "Point Value ($)")', fixed)
-        self.assertIn('stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)', fixed)
-        self.assertIn('tp_dollars        = input.int(500, "Take Profit ($)", minval=250)', fixed)
+        self.assertIn('stop_dollars      = input.int(250, "Stop ($)", minval=50, maxval=700)', fixed)
+        self.assertIn('tp_dollars        = input.int(500, "Take Profit ($)", minval=50)', fixed)
         self.assertNotIn("stop_pct", fixed)
         self.assertNotIn("tp_pct", fixed)
         self.assertIn("initial_capital=50000", fixed)
@@ -198,20 +198,33 @@ class StrategyTeamTests(unittest.TestCase):
         self.assertEqual(ensure_risk_management(fixed), fixed)
         compile_pine(fixed)
         self.assertEqual(pine_problems(fixed), [])
+        # An ATR exit is converted, never refused. A multiplier input that no exit reads is not an ATR exit.
         atr = fixed.replace(
-            'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)',
+            'stop_dollars      = input.int(250, "Stop ($)", minval=50, maxval=700)',
             'atr_mult_sl = input.float(5, "SL Multiplier", minval=1.0, maxval=5.0)\n'
             'atr_mult_tp = input.float(2.5, "TP Multiplier", minval=1.0, maxval=10.0)',
         )
-        self.assertTrue(any("not accepted" in problem for problem in pine_problems(atr)))
+        self.assertFalse(any("ATR" in problem for problem in pine_problems(atr)))
+        from futuresfund.strategy_team import atr_exit
+        self.assertEqual(atr_exit(atr), "")
         pasted = "\n".join([
+            "//@version=5",
+            'strategy("Pasted", overlay=true)',
             'atr_len = input.int(14, "ATR Length", minval=5, maxval=50)',
             'stop_mult = input.float(3, "Stop Mult", minval=1.0, maxval=10.0)',
             'tp_mult = input.float(4, "TP Mult", minval=1.0, maxval=10.0)',
+            "atr = ta.atr(atr_len)",
             "stop_price = close - (atr * stop_mult)",
+            'strategy.entry("L", strategy.long)',
+            'strategy.exit("XL", "L", stop=stop_price, limit=close + atr * tp_mult)',
         ])
-        from futuresfund.strategy_team import atr_exit
         self.assertIn("atr * stop_mult", atr_exit(pasted))
+        self.assertFalse(any("ATR" in problem for problem in pine_problems(pasted)))
+        repaired = repair_pine(pasted)
+        self.assertEqual(atr_exit(repaired), "")
+        for gone in ("stop_mult", "tp_mult", "atr_len", "ta.atr"):
+            self.assertNotIn(gone, repaired)
+        self.assertIn('stop_dollars = input.int(250, "Stop ($)", minval=50, maxval=700, step=10)', repaired)
 
     def test_a_script_that_already_stops_on_dollars_is_not_given_a_second_block(self):
         source = "\n".join([
@@ -233,17 +246,18 @@ class StrategyTeamTests(unittest.TestCase):
         fixed = ensure_risk_management(source, 50)
         self.assertEqual(fixed.count('comment="Open P&L > SL Risk"'), 1)
         self.assertEqual(fixed.count('input.int(250, "Stop ($)"'), 0)
-        self.assertIn('stop_dollars = input.int(750, "Stop ($)", minval=250, maxval=700)', fixed)
-        self.assertIn('tp_dollars = input.int(1250, "Take Profit ($)", minval=250)', fixed)
+        self.assertIn('stop_dollars = input.int(750, "Stop ($)", minval=50, maxval=700)', fixed)
+        self.assertIn('tp_dollars = input.int(1250, "Take Profit ($)", minval=50)', fixed)
         self.assertNotIn("stop_pct", fixed)
         self.assertNotIn("strategy.initial_capital *", fixed)
         self.assertIn("initial_capital=50000", fixed)
         self.assertIn('pv = input.float(50, "Point Value ($)")', fixed)
         self.assertEqual(fixed.count('input.float(50, "Point Value ($)")'), 1)
-        self.assertIn("long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv", fixed)
-        self.assertIn("short_limit = close - tp_dollars / pv", fixed)
-        self.assertIn('strategy.exit("X", "L", stop=long_stop, limit=long_limit)', fixed)
-        self.assertNotIn("stop=close - stop_dollars / pv", fixed)
+        # The script's own exit stays as written, so it fills where TradingView fills it.
+        self.assertIn('strategy.exit("X", "L", stop=close - stop_dollars / pv, limit=close + tp_dollars / pv)', fixed)
+        self.assertNotIn("position_avg_price", fixed)
+        self.assertNotIn("long_stop", fixed)
+        self.assertEqual(fixed.count("strategy.exit("), 1)
         self.assertEqual(ensure_risk_management(fixed, 50), fixed)
         short = "\n".join([
             "//@version=5",
@@ -258,8 +272,8 @@ class StrategyTeamTests(unittest.TestCase):
             "",
         ])
         wired = ensure_risk_management(short, 20)
-        self.assertIn('stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=700)', wired)
-        self.assertIn('strategy.exit("ExitShort", "Short", stop=short_stop, limit=short_limit)', wired)
+        self.assertIn('stop_dollars = input.int(500, "Stop ($)", minval=50, maxval=700)', wired)
+        self.assertIn('strategy.exit("ExitShort", "Short", stop=close + 4, limit=close - 8)', wired)
         self.assertEqual(wired.count('comment="Open P&L > SL Risk"'), 1)
         self.assertEqual(ensure_risk_management(wired, 20), wired)
 
@@ -449,7 +463,7 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertGreater(target, 0)
         good = {"net_profit": target, "max_drawdown": cap, "trades": 24, "days": 20}
         self.assertTrue(meets_target(good))
-        self.assertFalse(meets_target({**good, "max_drawdown": target * 0.3 + 1}))
+        self.assertFalse(meets_target({**good, "max_drawdown": 2501}))
         self.assertTrue(meets_target({**good, "trades": 40}))
         self.assertFalse(meets_target({**good, "trades": 60}))
         self.assertFalse(meets_target({**good, "trades": 61}))
@@ -675,6 +689,51 @@ class CreationPipelineTests(unittest.TestCase):
             self.assertIn("write this script for MES on the 5-minute chart", prompts[0])
             self.assertIn("delta volume breakout", prompts[0])
 
+    def test_a_micro_draft_with_an_atr_exit_is_saved_with_the_micro_50_dollar_stop(self):
+        import re as _re
+        from unittest import mock
+
+        from futuresfund import strategy_team
+        from futuresfund.board import Board
+
+        script = CORE_SCRIPT.replace(
+            "strategy.exit(\"XL\", from_entry=\"L\", stop=close - 8, limit=close + 16)\n",
+            "atr_val = ta.atr(14)\n"
+            "sl_mult = input.float(2.0, \"SL Mult\")\n"
+            "tp_mult = input.float(4.0, \"TP Mult\")\n"
+            "strategy.exit(\"XL\", from_entry=\"L\", stop=close - atr_val * sl_mult, limit=close + atr_val * tp_mult)\n",
+        )
+        desk = {
+            "timeframe": "5m", "label": "5-minute", "developer": "5 min chart developer",
+            "strategy_developer": "5 min strategy developer", "researcher": "Chart researcher", "engine": 2,
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with mock.patch.object(strategy_team, "CREATED", root / "created"), \
+                    mock.patch.object(strategy_team, "DRAFTS", root / "drafts"), \
+                    mock.patch.object(strategy_team, "UNPROVEN", root / "unproven"), \
+                    mock.patch.object(strategy_team, "LEARNING", root / "learning"), \
+                    mock.patch.object(strategy_team, "LESSONS_PATH", root / "creation_lessons.json"), \
+                    mock.patch.object(strategy_team, "QUEUE_PATH", root / "queue.json"), \
+                    mock.patch.object(strategy_team, "TARGETS_PATH", root / "targets.json"), \
+                    mock.patch.object(strategy_team, "_ask", lambda *args, **kwargs: "```pine\n" + script + "```"), \
+                    mock.patch("futuresfund.delta_core.coverage", return_value={}), \
+                    mock.patch("futuresfund.learn.file_indicators", lambda *args, **kwargs: []), \
+                    mock.patch("futuresfund.exemplars.NOTES", root / "researchNotes"):
+                board = Board()
+                outcome = strategy_team.handoff(board, [], "Created EMA Band", desk, target="MES")
+                drafts = list((root / "drafts").glob("*.pine"))
+                saved = drafts[0].read_text(encoding="utf-8") if drafts else ""
+        self.assertEqual(outcome, "queued")
+        self.assertNotIn("ta.atr", saved)
+        self.assertRegex(saved, _re.compile(r"stop_dollars\s*=\s*input\.int\(50\b"))
+        self.assertRegex(saved, _re.compile(r"tp_dollars\s*=\s*input\.int\(100\b"))
+        prepared = strategy_team.prepare_backtest(saved, "MES")
+        self.assertRegex(prepared, _re.compile(r"stop_dollars\s*=\s*input\.int\(50\b"))
+        checker = " ".join(message["text"] for message in board.messages if "set its exit with ATR" in message["text"])
+        self.assertIn("$50", checker)
+        self.assertNotIn("$250", checker)
+
     def test_a_new_script_without_the_delta_volume_breakout_core_is_sent_back(self):
         from unittest import mock
 
@@ -822,7 +881,7 @@ class CreationPipelineTests(unittest.TestCase):
             return lambda params: {}
 
         def fake_search(*args, **kwargs):
-            calls.append({"search_slot": kwargs.get("slot"), "accept": kwargs.get("accept")})
+            calls.append({"search_slot": kwargs.get("slot"), "accept": kwargs.get("accept"), "limit": args[3], "year": kwargs.get("year", False)})
             return _Trials([dict(row) for row in rows])
 
         tmp = tempfile.TemporaryDirectory()
@@ -860,6 +919,19 @@ class CreationPipelineTests(unittest.TestCase):
         self.assertFalse((folders["draftStrategies"] / "created_fresh.pine").exists())
         self.assertFalse(folders["learning"].exists() and list(folders["learning"].glob("*.pine")))
         self.assertEqual(left, "")
+
+    def test_engine_4_searches_a_draft_with_its_own_attempt_count(self):
+        from unittest import mock
+
+        from futuresfund import learn, strategy_team
+
+        # The chart year search got longer. A draft keeps the creation count, and it is not the chart's year search.
+        with mock.patch.object(strategy_team, "CREATION_ATTEMPTS", 37), mock.patch.object(learn, "ATTEMPT_LIMIT", 900):
+            _outcome, _folders, calls, _left = self._develop([{**PASSING, "params": {}}])
+        search = next(call for call in calls if "search_slot" in call)
+        self.assertEqual(search["limit"], 37)
+        self.assertFalse(search["year"])
+        self.assertEqual(strategy_team.CREATION_ATTEMPTS, 100)
 
     def test_engine_4_keeps_a_draft_with_no_passing_run_out_of_created(self):
         profitable = {**PASSING, "net_profit": 700, "spans": {}, "params": {}}

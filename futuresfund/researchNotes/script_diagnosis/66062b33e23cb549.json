@@ -1,0 +1,260 @@
+{
+ "sessions": 21,
+ "unread": [
+  "use_trail",
+  "trail_pct",
+  "trail_step_amt",
+  "trail_step_pct",
+  "trail_min_dollars"
+ ],
+ "moved": {
+  "stop_dollars": {
+   "value": 62,
+   "net_profit": 454.5,
+   "max_drawdown": 1495.5,
+   "trades": 28
+  },
+  "tp_dollars": {
+   "value": 125,
+   "net_profit": 179.5,
+   "max_drawdown": 1315.5,
+   "trades": 28
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 626.0,
+   "max_drawdown": 3788.0,
+   "trades": 34
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -634.0,
+   "max_drawdown": 2381.0,
+   "trades": 19
+  },
+  "min_delta_pct": {
+   "value": 1.25,
+   "net_profit": 374.5,
+   "max_drawdown": 3458.0,
+   "trades": 33
+  },
+  "vwma_len": {
+   "value": 12,
+   "net_profit": 1970.0,
+   "max_drawdown": 3458.0,
+   "trades": 30
+  },
+  "min_slope": {
+   "value": 10.0,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "fractal_len": {
+   "value": 3,
+   "net_profit": 1866.0,
+   "max_drawdown": 3803.5,
+   "trades": 44
+  },
+  "cooldown_bars": {
+   "value": 40,
+   "net_profit": 544.0,
+   "max_drawdown": 2023.5,
+   "trades": 21
+  },
+  "use_price_vwma": {
+   "value": false,
+   "net_profit": 1970.0,
+   "max_drawdown": 3458.0,
+   "trades": 30
+  },
+  "use_vol_filter": {
+   "value": false,
+   "net_profit": 2532.0,
+   "max_drawdown": 2719.0,
+   "trades": 38
+  },
+  "vol_ma_len": {
+   "value": 12,
+   "net_profit": 3201.0,
+   "max_drawdown": 2634.5,
+   "trades": 34
+  },
+  "use_breakeven": {
+   "value": false,
+   "net_profit": 1204.5,
+   "max_drawdown": 1765.5,
+   "trades": 28
+  },
+  "be_trigger_dollars": {
+   "value": 50.0,
+   "net_profit": 1729.5,
+   "max_drawdown": 2478.0,
+   "trades": 28
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": -3103.0,
+   "max_drawdown": 7009.5,
+   "trades": 73
+  },
+  "sess_start_hr": {
+   "value": 2,
+   "net_profit": -919.0,
+   "max_drawdown": 4827.5,
+   "trades": 54
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -2721.0,
+   "max_drawdown": 5623.5,
+   "trades": 61
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 1745.0,
+   "max_drawdown": 3206.5,
+   "trades": 30
+  },
+  "use_skip": {
+   "value": false,
+   "net_profit": 726.5,
+   "max_drawdown": 4729.5,
+   "trades": 51
+  },
+  "skip_start_mn": {
+   "value": 59,
+   "net_profit": 429.0,
+   "max_drawdown": 4003.5,
+   "trades": 36
+  },
+  "skip_end_hr": {
+   "value": 2,
+   "net_profit": 0.0,
+   "max_drawdown": 0.0,
+   "trades": 0
+  },
+  "skip_end_mn": {
+   "value": 59,
+   "net_profit": 594.0,
+   "max_drawdown": 2404.5,
+   "trades": 21
+  },
+  "skip_start_hr": {
+   "value": 2,
+   "net_profit": -1742.5,
+   "max_drawdown": 1774.5,
+   "trades": 5
+  }
+ },
+ "flat": [
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 50.0,
+   "stop_dollars": 700,
+   "tp_dollars": 750,
+   "use_trail": false,
+   "trail_pct": 50.0,
+   "trail_step_amt": 500,
+   "trail_step_pct": 50.0,
+   "trail_min_dollars": 1000,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 50,
+   "fractal_len": 5,
+   "cooldown_bars": 40,
+   "use_vol_filter": true,
+   "vol_ma_len": 50,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 8,
+   "skip_start_mn": 30,
+   "skip_end_hr": 14,
+   "skip_end_mn": 30,
+   "min_slope": 0.0,
+   "use_price_vwma": true,
+   "use_breakeven": true,
+   "be_trigger_dollars": 800.0
+  },
+  "net_profit": -863.0,
+  "max_drawdown": 2410.5,
+  "trades": 8,
+  "win_rate": 37.5,
+  "profit_factor": 0.592,
+  "biggest_winner": 726.5,
+  "biggest_loser": -736.0,
+  "held_loser": -736.0,
+  "exits": [
+   {
+    "exit": "Session Close",
+    "trades": 3,
+    "pnl": -645.5,
+    "favorable": 144.5,
+    "adverse": -363.83
+   },
+   {
+    "exit": "XS",
+    "trades": 2,
+    "pnl": -1472.0,
+    "favorable": 169.5,
+    "adverse": -730.5
+   },
+   {
+    "exit": "Skip Window",
+    "trades": 2,
+    "pnl": 528.0,
+    "favorable": 413.25,
+    "adverse": -449.25
+   },
+   {
+    "exit": "XL",
+    "trades": 1,
+    "pnl": 726.5,
+    "favorable": 732.0,
+    "adverse": -230.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3,
+ "reviewed": [
+  "30 GC 5m",
+  "7 ES 15m",
+  "7 GC 15m"
+ ],
+ "answer": {
+  "because": "The script declares five trailing stop inputs that no code reads, and it locks the take profit to the entry price instead of resending the exit to let winners run past the target as the desk requires.",
+  "script": "//@version=5\nstrategy(\"Day Shift Delta Volume Breakout\", overlay=true,\n  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,\n  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,\n  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,\n  max_bars_back=5000)\n// ===== RISK =====\npv                = input.float(100, \"Point Value ($)\")\nstop_dollars      = input.int(250, \"Stop ($)\", minval=50, maxval=700)\ntp_dollars        = input.int(500, \"Take Profit ($)\", minval=50)\nlong_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv\nlong_limit = close + tp_dollars / pv\nshort_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv\nshort_limit = close - tp_dollars / pv\nif strategy.position_size != 0 and not na(stop_dollars)\n    if strategy.openprofit <= -stop_dollars\n        strategy.close_all(comment=\"Open P&L > SL Risk\")\n\n// Fixed dollar stops and moving take profit\n\n// ===== VOLUME PROFILE =====\nprofile_lookback = input.int(120, \"Profile Lookback (bars)\", minval=20, maxval=2000, step=10)\nprofile_rows     = input.int(10, \"Price Levels (rows)\", minval=5, maxval=100, step=5, tooltip=\"More rows = finer resolution but slower.\")\n\n// ===== DELTA VOLUME =====\nmin_delta_pct = input.float(5.0, \"Min Delta Imbalance (%)\", minval=0, maxval=80, step=5, tooltip=\"Net delta at POC must exceed this % of total POC volume to confirm direction. 0 = disabled.\")\n\n// ===== TREND FILTER =====\nvwma_len = input.int(50, \"Trend VWMA Length\", minval=1)\n\n// ===== ENTRY =====\nfractal_len   = input.int(5, \"Fractal Length (BOS)\", minval=3, maxval=21, step=2, tooltip=\"LuxAlgo fractal length for BOS detection.\")\ncooldown_bars = input.int(10, \"Cooldown (bars)\", minval=0, maxval=100, step=1)\n\n// ===== FILTERS =====\nuse_vol_filter = input.bool(true, \"High Volume on BOS\", group=\"Filters\", tooltip=\"BOS bar must have above-average volume.\")\nvol_ma_len     = input.int(12, \"Volume MA Length\", minval=5, maxval=100, group=\"Filters\")\n\n// ===== SESSION =====\nuse_session   = input.bool(true, \"Use Session Filter\")\nsess_start_hr = input.int(18, \"Session Start Hour (ET)\")\nsess_start_mn = input.int(0,  \"Session Start Minute\")\nsess_end_hr   = input.int(16, \"Session End Hour (ET)\")\nsess_end_mn   = input.int(0,  \"Session End Minute\")\n\n// ===== SKIP WINDOW =====\nuse_skip      = input.bool(true, \"Skip This Time Of Day\", group=\"Skip Window\", tooltip=\"No trade opens inside this window, and an open trade is closed when it starts.\")\nskip_start_hr = input.int(8, \"Skip Start Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_start_mn = input.int(30, \"Skip Start Minute\", minval=0, maxval=59, group=\"Skip Window\")\nskip_end_hr   = input.int(10, \"Skip End Hour (ET)\", minval=0, maxval=23, group=\"Skip Window\")\nskip_end_mn   = input.int(30, \"Skip End Minute\", minval=0, maxval=59, group=\"Skip Window\")\n\nskip_bar_t = hour(time, \"America/New_York\") * 100 + minute(time, \"America/New_York\")\nskip_from  = skip_start_hr * 100 + skip_start_mn\nskip_to    = skip_end_hr * 100 + skip_end_mn\nin_skip_window = use_skip and (skip_from > skip_to ? (skip_bar_t >= skip_from or skip_bar_t < skip_to) : (skip_bar_t >= skip_from and skip_bar_t < skip_to))\nskip_window_open = not in_skip_window\n\nif in_skip_window and strategy.position_size != 0\n    strategy.close_all(comment=\"Skip Window\")\n\n// ===== COMPUTED =====\nfloat stop_pts = stop_dollars / pv\nfloat tp_pts   = tp_dollars / pv\n\n// ===== SESSION LOGIC =====\nbar_hr = hour(time, \"America/New_York\")\nbar_mn = minute(time, \"America/New_York\")\nbar_t  = bar_hr * 100 + bar_mn\nint s_start = sess_start_hr * 100 + sess_start_mn\nint s_end   = sess_end_hr * 100 + sess_end_mn\n\nbool in_session = not use_session or (s_start > s_end ? (bar_t >= s_start or bar_t < s_end) : (bar_t >= s_start and bar_t < s_end))\n\nprev_hr = hour(time[1], \"America/New_York\")\nprev_mn = minute(time[1], \"America/New_York\")\nprev_t  = prev_hr * 100 + prev_mn\nbool was_in_session = not use_session or (s_start > s_end ? (prev_t >= s_start or prev_t < s_end) : (prev_t >= s_start and prev_t < s_end))\nbool session_ended = was_in_session and not in_session\n\nif session_ended and strategy.position_size != 0\n    strategy.close_all(comment=\"Session Close\")\n\n// ===== VWMA TREND =====\nfloat vwma_val = ta.vwma(close, vwma_len)\n// Simple slope check: current VWMA vs previous bar's VWMA\nbool vwma_up = vwma_val > vwma_val[1]\nbool vwma_dn = vwma_val < vwma_val[1]\n\n// ===== VOLUME FILTER =====\nfloat vol_ma = ta.sma(volume, vol_ma_len)\nbool high_vol = volume >= vol_ma\n\n// ===== VOLUME PROFILE WITH DELTA =====\nint lb   = math.min(profile_lookback, bar_index)\nint rows = profile_rows\n\nfloat prof_hi   = ta.highest(high, lb > 0 ? lb : 1)\nfloat prof_lo   = ta.lowest(low, lb > 0 ? lb : 1)\nfloat prof_span = prof_hi - prof_lo\nfloat step_size = prof_span > 0 ? prof_span / rows : na\n\nvar array<float> vol_total = array.new_float(100, 0.0)\nvar array<float> vol_up    = array.new_float(100, 0.0)\nvar array<float> vol_dn    = array.new_float(100, 0.0)\n\nfloat poc_price = na\nfloat poc_hi    = na\nfloat poc_lo    = na\nfloat poc_delta_pct = na\nint   poc_row   = 0\n\nif not na(step_size) and prof_span > 0 and lb > 1\n    // Reset arrays\n    if vol_total.size() != rows\n        vol_total.clear()\n        for i = 0 to rows - 1\n            vol_total.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_total.set(i, 0.0)\n            \n    if vol_up.size() != rows\n        vol_up.clear()\n        for i = 0 to rows - 1\n            vol_up.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_up.set(i, 0.0)\n            \n    if vol_dn.size() != rows\n        vol_dn.clear()\n        for i = 0 to rows - 1\n            vol_dn.push(0.0)\n    else\n        for i = 0 to rows - 1\n            vol_dn.set(i, 0.0)\n\n    for iBar = 0 to lb - 1\n        float bar_vol = volume[iBar]\n        if bar_vol <= 0\n            continue\n\n        float bar_lo  = low[iBar]\n        float bar_hi  = high[iBar]\n        bool  bar_up  = close[iBar] >= open[iBar]\n\n        int s_row = math.max(math.floor((bar_lo - prof_lo) / step_size), 0)\n        int e_row = math.min(math.floor((bar_hi - prof_lo) / step_size), rows - 1)\n        int span  = e_row - s_row + 1\n\n        if span <= 0\n            continue\n\n        float per_row = bar_vol / span\n        for k = 0 to span - 1\n            int r = s_row + k\n            if r >= 0 and r < rows\n                vol_total.set(r, vol_total.get(r) + per_row)\n                if bar_up\n                    vol_up.set(r, vol_up.get(r) + per_row)\n                else\n                    vol_dn.set(r, vol_dn.get(r) + per_row)\n\n    float max_vol = 0.0\n    for r = 0 to rows - 1\n        float v = vol_total.get(r)\n        if v > max_vol\n            max_vol := v\n            poc_row := r\n\n    poc_price := prof_lo + (poc_row + 0.5) * step_size\n    poc_lo    := prof_lo + poc_row * step_size\n    poc_hi    := prof_lo + (poc_row + 1) * step_size\n\n    float poc_up  = vol_up.get(poc_row)\n    float poc_dn  = vol_dn.get(poc_row)\n    float poc_tot = vol_total.get(poc_row)\n    poc_delta_pct := poc_tot > 0 ? ((poc_up - poc_dn) / poc_tot) * 100 : 0.0\n\n// ===== BREAKOUT SIGNALS =====\nbool above_poc = not na(poc_hi) and close > poc_hi and close[1] <= poc_hi\nbool below_poc = not na(poc_lo) and close < poc_lo and close[1] >= poc_lo\n\nbool delta_bull = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct > min_delta_pct)\nbool delta_bear = min_delta_pct <= 0 or (not na(poc_delta_pct) and poc_delta_pct < -min_delta_pct)\n\n// ===== LUXALGO FRACTAL BOS (Market Structure) =====\nint p = math.floor(fractal_len / 2.0)\nfloat dh = math.sum(math.sign(high - high[1]), p)\nfloat dl = math.sum(math.sign(low - low[1]), p)\nbool bullf = dh == -p and dh[p] == p and high[p] == ta.highest(high, fractal_len)\nbool bearf = dl == p and dl[p] == -p and low[p] == ta.lowest(low, fractal_len)\n\nvar float upper_value    = na\nvar bool  upper_crossed  = true\nvar float lower_value    = na\nvar bool  lower_crossed  = true\n\nif bullf\n    upper_value   := high[p]\n    upper_crossed := false\nif bearf\n    lower_value   := low[p]\n    lower_crossed := false\n\nbool bos_bull = not na(upper_value) and ta.crossover(close, upper_value) and not upper_crossed\nbool bos_bear = not na(lower_value) and ta.crossunder(close, lower_value) and not lower_crossed\n\nif bos_bull\n    upper_crossed := true\nif bos_bear\n    lower_crossed := true\n\n// ===== ARM ON POC BREAKOUT, ENTER ON FIRST BOS =====\nvar int armed_dir = 0\n\nif above_poc and vwma_up and delta_bull\n    armed_dir := 1\nelse if below_poc and vwma_dn and delta_bear\n    armed_dir := -1\n\n// Disarm if price re-enters POC before BOS\nif armed_dir == 1 and not na(poc_hi) and close <= poc_hi\n    armed_dir := 0\nelse if armed_dir == -1 and not na(poc_lo) and close >= poc_lo\n    armed_dir := 0\n\n// ===== REVERSAL LOGIC =====\n// Track if we just had a stop-out to allow one immediate reversal\nvar bool allow_reversal = false\nvar int last_exit_bar = -9999\nvar int last_exit_type = 0 // 1: Long Stop, -1: Short Stop\n\n// Detect stop-out\nbool long_stop_hit = strategy.position_size == 0 and strategy.position_size[1] > 0 and close[1] <= strategy.position_avg_price[1] - stop_dollars / pv\nbool short_stop_hit = strategy.position_size == 0 and strategy.position_size[1] < 0 and close[1] >= strategy.position_avg_price[1] + stop_dollars / pv\n\nif long_stop_hit\n    allow_reversal := true\n    last_exit_bar := bar_index\n    last_exit_type := 1\nelse if short_stop_hit\n    allow_reversal := true\n    last_exit_bar := bar_index\n    last_exit_type := -1\n\n// Reset reversal flag if a trade completes normally or after a long time\nif strategy.position_size == 0 and strategy.position_size[1] != 0 and not long_stop_hit and not short_stop_hit\n    allow_reversal := false\n\n// ===== FILTERS =====\nbool vol_ok = not use_vol_filter or high_vol\n\n// Determine if entry is allowed based on reversal logic\n// Normal entry: armed_dir matches signal\n// Reversal entry: allow_reversal is true, and signal is opposite to last_exit_type, and it's the next bar? \n// Plan: \"allow one opposite-direction reversal trade on the next confirmed breakout\"\n// This implies if we were stopped out long, we can enter short on the next valid short signal without needing to re-arm? \n// Or does it mean we can enter short immediately if the conditions are met? \n// \"on the next confirmed breakout\" suggests we still need the breakout signal (BOS), but maybe we bypass the \"arm\" requirement?\n// The plan says: \"Enter on the next pivot confirmation (BOS) in the armed direction.\" \n// And \"Reversal: After a full stop-out, allow one opposite-direction reversal trade on the next confirmed breakout, then require a normal arm until the next stop-out.\"\n// This implies the \"arm\" state might be bypassed or immediately satisfied for the opposite direction.\n// Let's interpret: If allow_reversal is true, and we get a signal in the opposite direction of the stop-out, we allow it.\n// We must ensure we only use this once.\n\nbool confirmed_long  = armed_dir == 1 and bos_bull and vol_ok\nbool confirmed_short = armed_dir == -1 and bos_bear and vol_ok\n\n// Check reversal conditions\nbool reversal_long_allowed = allow_reversal and last_exit_type == -1 and bos_bull and vol_ok\nbool reversal_short_allowed = allow_reversal and last_exit_type == 1 and bos_bear and vol_ok\n\n// Combine signals\nbool long_sig  = (confirmed_long or reversal_long_allowed) and in_session and skip_window_open and strategy.position_size <= 0\nbool short_sig = (confirmed_short or reversal_short_allowed) and in_session and skip_window_open and strategy.position_size >= 0\n\n// Cooldown\nvar int last_trade_bar = -9999\nbool cooled_down = bar_index - last_trade_bar >= cooldown_bars\n\nif long_sig\n    long_sig := cooled_down\nif short_sig\n    short_sig := cooled_down\n\n// ===== ENTRIES =====\nif long_sig\n    last_trade_bar := bar_index\n    armed_dir := 0\n    allow_reversal := false // Consume the reversal allowance\n    strategy.entry(\"Long\", strategy.long)\n    strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\nelse if short_sig\n    last_trade_bar := bar_index\n    armed_dir := 0\n    allow_reversal := false // Consume the reversal allowance\n    strategy.entry(\"Short\", strategy.short)\n    strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)\n\n// ===== RESET AFTER TRADE =====\nif strategy.position_size == 0 and strategy.position_size[1] != 0\n    armed_dir := 0\n\n// ===== PLOT =====\nplot(vwma_val, \"VWMA\", vwma_up ? color.lime : vwma_dn ? color.red : color.gray, linewidth=2)\nplot(not na(poc_price) ? poc_price : na, \"POC\", color.yellow, style=plot.style_stepline, linewidth=1)\nplot(not na(poc_hi) ? poc_hi : na, \"POC High\", #2962FF, style=plot.style_stepline, linewidth=2)\nplot(not na(poc_lo) ? poc_lo : na, \"POC Low\", #2962FF, style=plot.style_stepline, linewidth=2)\n\nbgcolor(not na(poc_hi) and not na(poc_lo) and close >= poc_lo and close <= poc_hi ? color.new(#2962FF, 90) : na)\n\nplotshape(long_sig, \"Long Signal\", shape.triangleup, location.belowbar, color.lime, size=size.small)\nplotshape(short_sig, \"Short Signal\", shape.triangledown, location.abovebar, color.red, size=size.small)\nplotshape(bos_bull and armed_dir == 1, \"BOS Bull\", shape.flag, location.abovebar, color.new(color.lime, 20), size=size.tiny)\nplotshape(bos_bear and armed_dir == -1, \"BOS Bear\", shape.flag, location.belowbar, color.new(color.red, 20), size=size.tiny)\n\nplot(not na(poc_delta_pct) ? poc_delta_pct : na, \"POC Delta %\", color.orange, display=display.data_window)\n\nif strategy.position_size > 0\n    strategy.exit(\"XL\", \"Long\", stop=long_stop, limit=long_limit)\nelse if strategy.position_size < 0\n    strategy.exit(\"XS\", \"Short\", stop=short_stop, limit=short_limit)",
+  "params": null,
+  "settings": {
+   "stop_dollars": 250,
+   "tp_dollars": 500,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 5.0,
+   "vwma_len": 50,
+   "fractal_len": 5,
+   "cooldown_bars": 10,
+   "use_vol_filter": true,
+   "vol_ma_len": 12,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 8,
+   "skip_start_mn": 30,
+   "skip_end_hr": 10,
+   "skip_end_mn": 30
+  },
+  "redesign": false
+ }
+}

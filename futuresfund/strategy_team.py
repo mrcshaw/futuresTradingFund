@@ -18,9 +18,11 @@ import json
 import re
 import threading
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from futuresfund import atr_exits
 from futuresfund.learn import LEARNED, LEARNING, NOTES
 
 CREATED = LEARNING.parent / "createdStrategies"
@@ -32,7 +34,13 @@ STRATEGY_DEVELOPER = "Strategy developer"
 SCRIPT_CHECKER = "Script checker"
 CREATION_TESTER = "Creation tester"
 LESSON_WRITER = "Lesson writer"
-CREATION_ENGINE = 3
+# The creation engine's slot: engine 4 (roster.CREATION_ENGINE_ID), between ES 15m (3) and GC 2m (5).
+from futuresfund.roster import CREATION_ENGINE_ID as _CREATION_ID  # noqa: E402
+
+CREATION_ENGINE = _CREATION_ID - 1
+# Different results engine 4 gets on one draft. Its own number, so a longer year search on the charts
+# (learn.ATTEMPT_LIMIT) does not make each draft take longer. Read when a draft starts.
+CREATION_ATTEMPTS = 100
 CREATION_CHART = "5m"
 QUEUE_PATH = NOTES / "creation_queue.json"
 TARGETS_PATH = NOTES / "creation_targets.json"   # the instrument and chart each draft was written for
@@ -159,7 +167,8 @@ def repair_pine(source: str) -> str:
 
     maxmax is the parameter maxval. ta.valuewhen takes a condition, then the
     value, then which occurrence. An assignment inside that call is not a condition.
-    A script that can enter also flats at 16:45 New York.
+    A script that can enter also flats at 16:45 New York. An exit set with ATR is converted to the
+    dollar stop (convert_atr_exit), so a rewrite that brings one in is converted, not refused.
     """
     text = source or ""
     text = re.sub(r"\bmaxmax\b", "maxval", text)
@@ -169,7 +178,8 @@ def repair_pine(source: str) -> str:
         r"ta.valuewhen(not na(\1),",
         text,
     )
-    return ensure_risk_management(ensure_session(text))
+    converted, _note = convert_atr_exit(ensure_session(text))
+    return ensure_risk_management(converted)
 
 
 # The session every script is saved with. Hour and minute inputs, 18:00 to 16:00 New York.
@@ -379,8 +389,8 @@ def risk_block(point: float = 50) -> str:
     return "\n".join([
         "// ===== RISK =====",
         f'pv                = input.float({shown}, "Point Value ($)")',
-        'stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=700)',
-        'tp_dollars        = input.int(500, "Take Profit ($)", minval=250)',
+        'stop_dollars      = input.int(250, "Stop ($)", minval=50, maxval=700)',
+        'tp_dollars        = input.int(500, "Take Profit ($)", minval=50)',
         'use_trail         = input.bool(false, "Enable Trailing Stop")',
         'trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)',
         'trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)',
@@ -596,23 +606,162 @@ _DOLLAR_STOP_INPUT = re.compile(r"\bstop_dollars\s*=\s*input\.(?:int|float)\s*\(
 _OPEN_LOSS = re.compile(r"strategy\.openprofit\s*(?:<=|<)\s*-\s*stop_dollars")
 _EXIT_PRICE = re.compile(r"^(?:long_stop|long_limit|short_stop|short_limit)\s*=")
 _PV_INPUT = re.compile(r"(pv\s*=\s*input\.float\(\s*)[\d.]+")
-_ATR_EXIT = re.compile(
-    r"stop_mult|tp_mult|sl_mult|atr_mult_sl|atr_mult_tp|"
-    r"Stop Mult|TP Mult|SL Multiplier|TP Multiplier|"
-    r"\batr\w*\s*\*\s*\w*(?:mult|stop|tp)|\w*(?:mult|stop)\w*\s*\*\s*\batr",
-    re.IGNORECASE,
-)
+# The minval on the dollar stop and take profit. Above $50 it would push a micro search back up.
+_EXIT_MINVAL = re.compile(r"^(\s*(?:stop_dollars|tp_dollars)\s*=\s*input\.(?:int|float)\s*\([^\n]*?\bminval\s*=\s*)(\d+(?:\.\d+)?)", re.MULTILINE)
+_ATR_CONVERTED = "// ===== DOLLAR STOP: the desk converted the ATR exit to this stop ====="
 
 
 def atr_exit(source: str) -> str:
-    """The reason a script is refused when ATR sets the exit distance."""
-    if _ATR_EXIT.search(source or ""):
-        return (
-            "This script exits with ATR times a multiplier. atr_len, stop_mult, and tp_mult are not accepted. "
-            "atr * stop_mult is the loss, and changing the multiplier does not keep the loss inside the dollar stop. "
-            "The exit is the dollar amount. While the trade is open, if that loss reaches the stop, the trade closes."
+    """What sets this script's exit with ATR, or blank.
+
+    Only ATR that feeds a strategy.exit stop, take profit, or trail counts. A signal that reads ATR,
+    such as a SuperTrend band or a Keltner channel, is not an ATR exit. A script is never refused
+    for it: convert_atr_exit swaps the distance for the dollar stop before every backtest.
+    """
+    found = atr_exits.sites(source or "")
+    if not found:
+        return ""
+    where = "; ".join(atr_exits.shown(site) for site in found[:3])
+    return (
+        f"The exit is set with ATR ({where}). "
+        "The desk converts it to a dollar stop that always holds before the backtest. Only the distance changes."
+    )
+
+
+def convert_atr_exit(source: str, point_value: float | None = None, *, root: str | None = None) -> tuple[str, str]:
+    """The script with its ATR exit distance replaced by the desk's dollar stop, and a note on what changed.
+
+    stop_dist = atr * stop_mult becomes stop_dollars / pv, an ATR take profit becomes tp_dollars / pv,
+    and a target that is a ratio of the stop (sl_dist * tp_sl_ratio) stays. The script's own exit
+    stays as written: its break-even, its trail, and exits it sends again. pv, stop_dollars, and, when
+    a target uses it, tp_dollars are declared above their first use, with the desk's opening values
+    for this contract ($250 and $500, or $50 and $100 on a micro), and the open-loss backstop closes
+    the trade at the stop. Multiplier inputs, the ATR length, and ta.atr go only when nothing else
+    reads them. A script with no ATR exit comes back unchanged with a blank note, so running it twice
+    changes nothing.
+    """
+    text = source or ""
+    if "strategy.exit" not in text or not atr_exits.mentions_atr(text):
+        return text, ""
+    from futuresfund.research_rules import opening_target, stop_ladder
+
+    point = float(point_value) if point_value else 50.0
+    return _convert_atr_cached(text, point, int(stop_ladder(root)[0]), int(opening_target(root)))
+
+
+@lru_cache(maxsize=64)
+def _convert_atr_cached(text: str, point: float, stop_default: int, target_default: int) -> tuple[str, str]:
+    body, done, gone = atr_exits.convert_sites(text)
+    if not done:
+        return text, ""
+    body, removed, fixed = atr_exits.drop_dead(body, gone)
+    targets = any(site["role"] == "target" for site in done)
+    body = _declare_dollar_exit(body, point, stop_default, target_default, targets or not _own_stop_exit(body))
+    if text.endswith("\n") and not body.endswith("\n"):
+        body += "\n"
+    return body, _conversion_note(body, removed, fixed, targets)
+
+
+def _own_stop_exit(text: str) -> bool:
+    """A strategy.exit stop is one price the script works out itself, such as stop=current_stop."""
+    for match in re.finditer(r"strategy\.exit\s*\(([^\n]*)", text or ""):
+        found = _EXIT_STOP_ARG.search(match.group(1))
+        if found and found.group(1) not in _DESK_STOPS:
+            return True
+    return False
+
+
+def _declared_at(lines: list[str], name: str) -> tuple[int, bool] | None:
+    """The line that first declares name, and whether it sits at the left margin."""
+    pattern = re.compile(rf"^([ \t]*)(?:(?:var|varip)[ \t]+)?(?:(?:const|simple|series|int|float)[ \t]+)*{name}[ \t]*=(?!=)")
+    for index, line in enumerate(lines):
+        found = pattern.match(line)
+        if found:
+            return index, not found.group(1)
+    return None
+
+
+def _first_read(lines: list[str], name: str) -> int | None:
+    pattern = re.compile(rf"(?<![\w.]){name}\b(?![ \t]*=(?!=))(?![ \t]*:=)")
+    for index, line in enumerate(lines):
+        if pattern.search(atr_exits.plain_code(line)):
+            return index
+    return None
+
+
+def _declare_dollar_exit(text: str, point: float, stop_default: int, target_default: int, needs_target: bool) -> str:
+    """pv, stop_dollars, tp_dollars, and the open-loss backstop, above the first line that reads them."""
+    lines = text.split("\n")
+    block: list[str] = []
+    wanted = [
+        ("pv", f'pv = input.float({_point_literal(point)}, "Point Value ($)")'),
+        ("stop_dollars", f'stop_dollars = input.int({stop_default}, "Stop ($)", minval=50, maxval=700, step=10)'),
+    ]
+    if needs_target:
+        wanted.append(("tp_dollars", f'tp_dollars = input.int({target_default}, "Take Profit ($)", minval=50, step=10)'))
+    stop_in_block = False
+    moved: set[int] = set()
+    for name, line in wanted:
+        found = _declared_at(lines, name)
+        if found is None:
+            block.append(line)
+            stop_in_block = stop_in_block or name == "stop_dollars"
+            continue
+        index, top = found
+        use = _first_read(lines, name)
+        single = atr_exits.depth_change(lines[index]) == 0
+        if top and single and use is not None and use < index:
+            # Declared below the line that reads it: Pine would stop on an undeclared name, so it moves up.
+            block.append(lines[index].strip())
+            moved.add(index)
+            stop_in_block = stop_in_block or name == "stop_dollars"
+    body = "\n".join(line for index, line in enumerate(lines) if index not in moved)
+    if _OPEN_LOSS.search(body) is None:
+        if stop_in_block:
+            block.extend(_OPEN_LOSS_BLOCK.splitlines())
+        else:
+            rows = atr_exits.Script(body).assigns.get("stop_dollars") or []
+            top = next((row for row in rows if not row["lead"][:1].isspace()), None)
+            if top is not None:
+                kept = body.split("\n")
+                kept[top["end"] + 1:top["end"] + 1] = _OPEN_LOSS_BLOCK.splitlines()
+                body = "\n".join(kept)
+    if not block:
+        return body
+    return _insert_after_strategy(body, "\n".join([_ATR_CONVERTED, *block]))
+
+
+def _declared_number(text: str, name: str) -> float | None:
+    found = re.search(rf"(?m)^[ \t]*(?:(?:int|float)[ \t]+)?{name}[ \t]*=[ \t]*input(?:\.(?:int|float))?[ \t]*\([ \t]*(-?\d+(?:\.\d+)?)", text or "")
+    return float(found.group(1)) if found else None
+
+
+def _name_list(names: list[str]) -> str:
+    shown = list(dict.fromkeys(names))
+    if len(shown) == 1:
+        return shown[0]
+    if len(shown) == 2:
+        return f"{shown[0]} and {shown[1]}"
+    return ", ".join(shown[:-1]) + f", and {shown[-1]}"
+
+
+def _conversion_note(body: str, removed: list[str], fixed: list[str], targets: bool) -> str:
+    stop = _declared_number(body, "stop_dollars")
+    target = _declared_number(body, "tp_dollars") if targets else None
+    first = "Converted the ATR exit to " + (f"a ${stop:,.0f} stop" if stop is not None else "the script's own dollar stop") + " that always holds"
+    if targets:
+        first += f", and the ATR take profit to ${target:,.0f}" if target is not None else ", and the ATR take profit to tp_dollars"
+    sentences = [first + ".", "A fill past the stop on a gap or thin volume is accepted."]
+    if _own_stop_exit(body):
+        sentences.append("The script keeps its own exit. Only the distance changed.")
+    if removed:
+        sentences.append(f"Removed {_name_list(removed)}, which nothing reads now.")
+    if fixed:
+        sentences.append(
+            f"{_name_list(fixed)} {'is' if len(fixed) == 1 else 'are'} no longer an input, "
+            f"so the search does not move {'it' if len(fixed) == 1 else 'them'} as a dollar stop."
         )
-    return ""
+    return " ".join(sentences)
 
 
 # The stop holds at the entry price for the whole trade. The take profit stays on the last close on purpose:
@@ -858,6 +1007,18 @@ def _apply_shared_exit(source: str) -> str:
     return _wire_exit_calls(_exit_on_entry_bar(_ensure_open_loss(_exit_prices_below_inputs(_ensure_exit_prices(source)))))
 
 
+def open_exit_floor(source: str) -> str:
+    """Lower the minval on stop_dollars and tp_dollars to $50, so a micro contract can start at a $50 stop and a $100 take profit."""
+    from futuresfund.research_rules import EXIT_MINVAL
+
+    def lower(match: re.Match) -> str:
+        if float(match.group(2)) <= EXIT_MINVAL:
+            return match.group(0)
+        return f"{match.group(1)}{EXIT_MINVAL}"
+
+    return _EXIT_MINVAL.sub(lower, source or "")
+
+
 def _similar_risk(source: str) -> bool:
     """The script already stops out on whole dollars when the open loss reaches stop_dollars."""
     text = source or ""
@@ -896,22 +1057,79 @@ def _without_percent_risk(source: str) -> str:
     return body
 
 
+# A stop that is one named price the script works out, such as stop=current_stop. stop=close - stop_dollars / pv is not one.
+_EXIT_STOP_ARG = re.compile(r"\bstop\s*=\s*([A-Za-z_][\w.]*)\s*(?:,|\)|$)")
+_DESK_STOPS = {"long_stop", "short_stop", "na"}
+
+
+def own_exit(source: str) -> bool:
+    """The script runs its own exit on its stop_dollars input: a break-even, a reduced-risk window, or a reversal stop.
+
+    stop_dollars is an input the script reads, and a strategy.exit stop is a price the script works out
+    itself, not the desk's long_stop or short_stop. That exit is the one the script was proven with, so
+    it is kept as written.
+    """
+    text = source or ""
+    if _DOLLAR_STOP_INPUT.search(text) is None:
+        return False
+    used = any(
+        "stop_dollars" in line and not _DOLLAR_STOP_INPUT.search(line) and not line.strip().startswith("//")
+        and not _OPEN_LOSS.search(line)
+        for line in text.splitlines()
+    )
+    if not used:
+        return False
+    for match in re.finditer(r"strategy\.exit\s*\(([^\n]*)", text):
+        found = _EXIT_STOP_ARG.search(match.group(1))
+        if found and found.group(1) not in _DESK_STOPS:
+            return True
+    return False
+
+
+def _keep_own_exit(text: str, point: float | None) -> str:
+    """The script's own exit stays. Only the point value, the account size, and the open-loss backstop are written."""
+    body = _CAPITAL.sub("initial_capital=50000", text, count=1)
+    if point is not None:
+        body = _set_point(body, point)
+    body = open_exit_floor(body)
+    if _OPEN_LOSS.search(body):
+        return body
+    lines = body.splitlines()
+    at = next((index for index, line in enumerate(lines) if _DOLLAR_STOP_INPUT.search(line) and not line[:1].isspace()), None)
+    if at is None:
+        return _ensure_open_loss(body)
+    lines[at + 1:at + 1] = _OPEN_LOSS_BLOCK.splitlines()
+    out = "\n".join(lines)
+    return out + "\n" if body.endswith("\n") else out
+
+
 def ensure_risk_management(source: str, point: float | None = None) -> str:
-    """Put the shared dollar exit on every script.
+    """Put the shared dollar exit on every script that does not run its own.
 
     point is the contract dollars per point. A script that already has a dollar
-    stop keeps that stop and take profit. Percent inputs are removed either way.
-    Every strategy.exit stop and limit uses the dollar prices.
+    stop keeps that stop and take profit. A script whose strategy.exit uses its
+    own stop price (a break-even, a reduced-risk window) keeps that exit as
+    written, with only the open-loss backstop added. Otherwise percent inputs are
+    removed and every strategy.exit stop and limit uses the dollar prices.
     """
     text = source or ""
     if "strategy(" not in text:
         return text
+    if own_exit(text):
+        return _keep_own_exit(text, point)
     if _similar_risk(text):
         body = _without_percent_risk(text)
         body = _CAPITAL.sub("initial_capital=50000", body, count=1)
         if point is not None:
             body = _set_point(body, point)
-        return _apply_shared_exit(body)
+        if _ATR_CONVERTED in body:
+            # The desk wrote this dollar stop in place of an ATR exit, so it is the desk's stop that always holds.
+            return _apply_shared_exit(open_exit_floor(body))
+        # The script came with its own dollar stop and open-loss close. Its exit prices and strategy.exit
+        # calls stay as written, so the engine takes the trades TradingView takes: the EMA Structure RSI
+        # Pullback MNQ export moves its stop with each close and exits only once the position is open, and
+        # anchoring that stop or sending it on the entry bar changed 5 of its 21 trades.
+        return _exit_prices_below_inputs(open_exit_floor(body))
     kept = []
     for line in text.splitlines():
         stripped = line.strip()
@@ -931,16 +1149,158 @@ def ensure_risk_management(source: str, point: float | None = None) -> str:
 
 
 def prepare_backtest(source: str, root: str) -> str:
-    """The script the engine runs: standard session, and this contract's point value."""
+    """The script the engine runs: standard session, an ATR exit converted to the dollar stop, and this contract's point value.
+
+    Every path goes through here: the chart study's copy, script_as_run on every attempt, the
+    engine_problem dry run, and engine 4's drafts.
+    """
     from futuresfund.risk_style import point_value
 
     try:
         point = point_value(root)
     except ValueError:
         point = 50.0
-    prepared = ensure_risk_management(ensure_session(source), point)
+    converted, _note = convert_atr_exit(ensure_session(source), point, root=root)
+    prepared = ensure_risk_management(converted, point)
     fixed, _notes = repair_for_pine(prepared)
     return fixed
+
+
+# The desk's own trade limits, written only into a script that went over the trade cap.
+TRADE_LIMITS_MARKER = "// ===== DESK TRADE LIMITS ====="
+TRADE_LIMIT_INPUTS = ("desk_daily_loss", "desk_daily_profit", "desk_max_trades_day", "desk_cooldown_bars")
+_OWN_COOLDOWN = re.compile(r"(?im)^[ \t]*(?:[\w.]+[ \t]+)*(?!desk_)(\w*cool_?down\w*)[ \t]*=[ \t]*input(?:\.int|\.float)?[ \t]*\(")
+_DESK_LOCK_GUARD = "if not desk_locked"
+
+
+def own_cooldown(source: str) -> str:
+    """The name of the script's own cooldown input, or ""."""
+    found = _OWN_COOLDOWN.search(source or "")
+    return found.group(1) if found else ""
+
+
+def trade_limits_block(cooldown: bool = True) -> str:
+    """The desk trade limits: a daily loss limit, a daily profit limit, most trades a day, and a cooldown.
+
+    0 turns each limit off. The day starts at 6 pm New York, like a futures session (objective._SESSION_SHIFT).
+    The day's result is the change in strategy.netprofit + strategy.openprofit since the day started, so no
+    loop reads the closed trades. A loss or profit limit closes the open trade and stops entries for the rest
+    of that day; most trades a day and the cooldown only stop new entries. strategy.risk.* is not used: PineTS
+    does not run it the way TradingView does.
+    """
+    lines = [
+        TRADE_LIMITS_MARKER,
+        "// The desk added these limits to cut the trade count. 0 turns a limit off. The day starts at 6 pm New York.",
+        'desk_daily_loss = input.int(0, "Desk Daily Loss Limit ($)", minval=0, maxval=20000, step=50)',
+        'desk_daily_profit = input.int(0, "Desk Daily Profit Limit ($)", minval=0, maxval=50000, step=50)',
+        'desk_max_trades_day = input.int(0, "Desk Max Trades a Day", minval=0, maxval=100, step=1)',
+    ]
+    if cooldown:
+        lines.append('desk_cooldown_bars = input.int(0, "Desk Cooldown (bars)", minval=0, maxval=1000, step=1)')
+    lines += [
+        "desk_shifted = time + 21600000",
+        'desk_session_day = year(desk_shifted, "America/New_York") * 10000 + month(desk_shifted, "America/New_York") * 100 + dayofmonth(desk_shifted, "America/New_York")',
+        "var int desk_day = 0",
+        "var float desk_day_start = 0.0",
+        "var int desk_day_entries = 0",
+        "var int desk_seen_entries = 0",
+        "var int desk_last_entry = -1000000",
+        "var bool desk_halted = false",
+        "desk_entries_now = strategy.closedtrades + strategy.opentrades",
+        "if desk_entries_now > desk_seen_entries",
+        "    desk_last_entry := bar_index",
+        "    desk_seen_entries := desk_entries_now",
+        "if desk_session_day != desk_day",
+        "    desk_day := desk_session_day",
+        "    desk_day_start := strategy.netprofit + strategy.openprofit",
+        "    desk_day_entries := desk_entries_now",
+        "    desk_halted := false",
+        "desk_day_pnl = strategy.netprofit + strategy.openprofit - desk_day_start",
+        "if (desk_daily_loss > 0 and desk_day_pnl <= -desk_daily_loss) or (desk_daily_profit > 0 and desk_day_pnl >= desk_daily_profit)",
+        "    desk_halted := true",
+        "desk_day_full = desk_max_trades_day > 0 and desk_entries_now - desk_day_entries >= desk_max_trades_day",
+        "desk_cooling = desk_cooldown_bars > 0 and bar_index - desk_last_entry < desk_cooldown_bars" if cooldown else "desk_cooling = false",
+        "desk_locked = desk_halted or desk_day_full or desk_cooling",
+        "if desk_halted and strategy.position_size != 0",
+        '    strategy.close_all(comment="Daily Limit")',
+        "// ===== END DESK TRADE LIMITS =====",
+    ]
+    return "\n".join(lines)
+
+
+def _inside_desk_guard(rows: list[str], row: str) -> bool:
+    indent = len(row) - len(row.lstrip(" "))
+    for prev in reversed(rows):
+        if not prev.strip():
+            continue
+        prev_indent = len(prev) - len(prev.lstrip(" "))
+        if prev_indent >= indent:
+            continue
+        if prev.strip() == _DESK_LOCK_GUARD:
+            return True
+        indent = prev_indent
+    return False
+
+
+def _guard_desk_entries(source: str) -> str:
+    """Every strategy.entry( waits while a desk limit is hit. A call that spans lines moves with its first line."""
+    rows = source.splitlines()
+    out: list[str] = []
+    depth = 0
+    for row in rows:
+        if depth > 0:
+            out.append("    " + row if row.strip() else row)
+            depth += row.count("(") - row.count(")")
+            continue
+        stripped = row.lstrip(" ")
+        if stripped.startswith("strategy.entry(") and not _inside_desk_guard(out, row):
+            indent = row[: len(row) - len(stripped)]
+            out.append(f"{indent}{_DESK_LOCK_GUARD}")
+            out.append(f"{indent}    {stripped}")
+            code = stripped.split("//", 1)[0]
+            depth = max(0, code.count("(") - code.count(")"))
+        else:
+            out.append(row)
+    return "\n".join(out) + ("\n" if source.endswith("\n") else "")
+
+
+def has_trade_limits(source: str) -> bool:
+    return TRADE_LIMITS_MARKER in (source or "")
+
+
+def ensure_trade_limits(source: str) -> str:
+    """Write the desk trade limits into a script that went over the trade cap. Idempotent.
+
+    The inputs start at 0 (off), so the script runs as before until the trade cut sets them. The desk
+    cooldown input is added only when the script has no cooldown input of its own. Every
+    strategy.entry( is gated with `not desk_locked`, like _guard_entries does for the session.
+    """
+    text = source or ""
+    if "strategy(" not in text or has_trade_limits(text):
+        return text
+    block = trade_limits_block(cooldown=not own_cooldown(text))
+    # Right after strategy(), so desk_locked exists before any entry reads it.
+    guarded = _guard_desk_entries(_insert_after_strategy(text, block))
+    return guarded if guarded.endswith("\n") else guarded + "\n"
+
+
+def widen_maxval(source: str, name: str, value: float) -> str:
+    """Raise one input's maxval to at least value, in the copy the engine runs, so a cut can go past it."""
+    pattern = re.compile(
+        rf"(?m)^([ \t]*(?:[\w.]+[ \t]+)*{re.escape(name)}[ \t]*=[ \t]*input(?:\.int|\.float)?[ \t]*\([^\n]*?\bmaxval[ \t]*=[ \t]*)(\d+(?:\.\d+)?)"
+    )
+    found = pattern.search(source or "")
+    if not found:
+        return source
+    try:
+        current = float(found.group(2))
+    except ValueError:
+        return source
+    if current >= float(value):
+        return source
+    wider = max(float(value), current * 2)
+    number = str(int(wider)) if "." not in found.group(2) and float(wider).is_integer() else f"{wider:g}"
+    return source[: found.start(2)] + number + source[found.end(2):]
 
 
 def _closes_before_1645(source: str) -> bool:
@@ -980,9 +1340,7 @@ def pine_problems(source: str) -> list[str]:
         )
     if "strategy.entry" in text and not has_stop(text):
         problems.append("A protective stop is missing. Every entry needs strategy.exit with stop= or loss= so the drawdown is capped.")
-    refused = atr_exit(text)
-    if refused:
-        problems.append(refused)
+    # An ATR exit is not a problem here: prepare_backtest and repair_pine convert it to the dollar stop.
     if re.search(r"\bmaxmax\b", text):
         problems.append("An input uses maxmax. The parameter name is maxval.")
     if re.search(r"\bminmin\b", text):
@@ -1155,6 +1513,19 @@ def mark_library(ids: list[str]) -> None:
     _LIBRARY_SEEN.update(str(item) for item in ids if item)
 
 
+def _input_effect_lines() -> list[str]:
+    """What the inputs of delta volume breakout scripts did when research moved them."""
+    try:
+        from futuresfund.input_effects import desk_lines
+
+        found = desk_lines(core_only=True)
+    except Exception:
+        return []
+    if not found:
+        return []
+    return ["Keep the inputs that move results, and leave out the ones that never changed one. " + " ".join(found)]
+
+
 def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_limit: int = 5200, chart: str | None = None, library_note: str = "", target: str | None = None) -> str:
     """Ask for one new script, written from scratch from successful backtests.
 
@@ -1165,7 +1536,7 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
     from futuresfund.exemplars import brief
     from futuresfund.golden import creation_brief as golden_creation_brief, results_line
     from futuresfund.indicators import creation_context
-    from futuresfund.objective import acceptance_line, account_line, drawdown_share_text
+    from futuresfund.objective import TRADE_SAVE_MAX, acceptance_line, account_line, drawdown_share_text
 
     opening = (
         f"Write one new Pine v5 strategy from scratch for the {chart} chart. "
@@ -1179,7 +1550,8 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         "A backtest is filed on the Not tested on the full dataset list when it clears this bar. "
         f"{acceptance_line()} "
         "No more than 600 trades a year, and no single trade down more than $750. "
-        "A script that takes more than 900 trades cannot be saved, so do not write one. "
+        f"A run with more than {TRADE_SAVE_MAX} trades is never filed. The desk then cuts its trades with daily loss and profit limits, "
+        "a longer cooldown and most trades a day, so write an entry that trades a few times a day at most. "
         "A created script has to be profitable on the last 7 days, the last 30 days, the last 90 days, and the last 365 days. Write toward that bar. "
         f"Engine 4 develops the new script on the last year of the {target or 'ES'} {chart or '5-minute'} chart. "
         "It waits in draftStrategies and enters createdStrategies only after one run clears that bar. "
@@ -1198,6 +1570,7 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
             f"{results_line()} Aim for results like that on {target}."
         ) if target else results_line(),
         "Delta volume breakout results that clear the acceptance, by instrument: " + " ".join(coverage_lines()),
+        *_input_effect_lines(),
         "",
         golden_creation_brief(),
         "",
@@ -1261,8 +1634,8 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         "pv = input.float(50, \"Point Value ($)\"). "
         "On ES the point value is 50. On NQ it is 20. On GC it is 100. The engine writes that value into pv before the backtest. "
         "On MNQ the point value is 2. On MES it is 5. "
-        "stop_dollars = input.int(250, \"Stop ($)\", minval=250, maxval=700). "
-        "tp_dollars = input.int(500, \"Take Profit ($)\", minval=250). "
+        "stop_dollars = input.int(250, \"Stop ($)\", minval=50, maxval=700). "
+        "tp_dollars = input.int(500, \"Take Profit ($)\", minval=50). "
         "use_trail = input.bool(false, \"Enable Trailing Stop\"). "
         "trail_step_amt = input.int(500, \"Trail: Tighten every ($)\"). "
         "trail_min_dollars = input.int(1000, \"Trail: Min Profit ($)\"). "
@@ -1274,12 +1647,13 @@ def prompt_for(cards: list[dict], lessons: list[dict] | None = None, *, brief_li
         "A created script that shows no profit after 20 attempts is scrapped, and a new script is written. "
         "Do not put a created script in the learning folder until one run clears the acceptance. "
         "The stop is not larger than 1.4 percent of the account. The take profit has no maximum. use_trail stays false. "
-        "Do not write atr_len, stop_mult, tp_mult, atr_mult_sl, or atr_mult_tp. Do not write atr * stop_mult. "
-        "A script with those lines is not accepted. ATR times a multiplier is not the exit, and changing the multiplier does not keep the loss inside the dollar stop. "
+        "Write the stop and the take profit in dollars. Do not set the exit with atr_len, stop_mult, tp_mult, atr_mult_sl, or atr_mult_tp, and do not write atr * stop_mult as the stop. "
+        "An exit like that is converted to the dollar stop before the backtest: the ATR distance becomes stop_dollars / pv and the multiplier is removed, because changing a multiplier does not keep the loss inside the dollar stop. "
         "On every bar, if strategy.position_size is not zero and stop_dollars is not na and strategy.openprofit is at or below minus stop_dollars, strategy.close_all(comment=\"Open P&L > SL Risk\"). "
         "The search measures stops of $250, $500, and $700, and the take profit on steps up to $10,000. There is no maximum on the take profit. "
-        "The stop is checked on every price of the bar. One trade cannot lose more than the dollar stop, and not more than $750. "
-        "Do not write a script that takes more than 900 trades. It cannot be saved. "
+        "On a micro contract, MES, MNQ, M2K, MYM, MGC, or MCL, the search starts at a $50 stop and a $100 take profit and measures stops of $50, $100, and $150. "
+        "The stop is checked on every price of the bar. A fill past the stop on a gap or thin volume is accepted while the stop is set at $750 or less. "
+        f"Do not write a script that takes more than {TRADE_SAVE_MAX} trades a year; the desk would have to cut its trades with daily limits and a longer cooldown. "
         "The script has to show a profit on the last 7 days, the last 30 days, the last 90 days, and the last 365 days.",
         "5. An entry needs at least two agreeing conditions: a trend or structure filter and a trigger, built from the indicator library.",
         "6. Only the built-in indicators listed above, plain if/else, and the array rows and for loops of the volume profile; no request.security, tables, plots, or alerts. "
@@ -1529,7 +1903,14 @@ def handoff(board, cards: list[dict], source_name: str, desk: dict, library_note
     )
     if board.cancel.is_set():
         return "stopped"
-    source = repair_pine(extract_pine(reply))
+    written = extract_pine(reply)
+    # repair_pine converts an ATR exit to the dollar stop; the note says so on the board. Both run on this
+    # draft's contract, so a micro draft opens at the micro $50 stop and $100 target, not $250 and $500.
+    from futuresfund.research_rules import chart_root
+
+    with chart_root(root):
+        _converted, atr_note = convert_atr_exit(written)
+        source = repair_pine(written)
     problems = pine_problems(source)
     if source and not problems and not has_core(source):
         problems = [f"It is not a delta volume breakout. Every new script keeps {CORE_TEXT}."]
@@ -1556,7 +1937,8 @@ def handoff(board, cards: list[dict], source_name: str, desk: dict, library_note
         return "sent_back"
     board.post(
         SCRIPT_CHECKER,
-        f"The script for the {label} chart has a version line, an entry, an exit, and a protective stop. Engine 4 will develop it.",
+        f"The script for the {label} chart has a version line, an entry, an exit, and a protective stop. Engine 4 will develop it."
+        + (f" It set its exit with ATR. {atr_note}" if atr_note else ""),
         kind="log",
         channel=SCRIPT_CHECKER,
     )
@@ -1635,7 +2017,6 @@ def _develop_queued(board, pause, name: str) -> str:
     from futuresfund.exemplars import indicator_names
     from futuresfund.learn import (
         ACCOUNT_SIZE,
-        ATTEMPT_LIMIT,
         _engine_execute,
         _in_drafts,
         _load_frames,
@@ -1668,9 +2049,14 @@ def _develop_queued(board, pause, name: str) -> str:
                 channel=CREATION_TESTER,
             )
         if promoted != prepared:
+            from futuresfund.risk_style import point_value as contract_point
+
+            _converted, atr_note = convert_atr_exit(prepared, contract_point(root), root=root)
             board.post(
                 CREATION_TESTER,
-                f"{name} now uses the shared risk block: a $50 stop, a $500 take profit, and the trail off.",
+                f"{name} set its exit with ATR. {atr_note}"
+                if atr_note
+                else f"{name} now uses the shared risk block: a dollar stop, a dollar take profit, and the trail off.",
                 kind="log",
                 channel=CREATION_TESTER,
             )
@@ -1692,7 +2078,8 @@ def _develop_queued(board, pause, name: str) -> str:
             _with_contract_point(_pine_params(facts), root),
             execute,
             ACCOUNT_SIZE,
-            ATTEMPT_LIMIT,
+            # A draft keeps its own attempt count, so the longer chart year search does not slow engine 4.
+            CREATION_ATTEMPTS,
             board,
             path,
             pause,
@@ -1732,6 +2119,15 @@ def _develop_queued(board, pause, name: str) -> str:
         return "scrapped"
     # Engine 4's runs leave the chart, so a chart engine still studies this instrument and chart and can file it.
     _set_chart_record_aside(path, root, timeframe)
+    if getattr(trials, "over_trades", ""):
+        # The trade cut did not get this draft under the trade cap. A draft is not a question for the owner:
+        # it is kept in unprovenStrategies and the creation team writes a new script.
+        verdict = f"{trials.over_trades.split(' What should the desk do?')[0]} It was kept in unprovenStrategies."
+        if _in_drafts(path) or path.parent == CREATED:
+            set_unproven(path, verdict)
+        record_lesson({**lesson, "verdict": verdict, "promoted": "unprovenStrategies"})
+        board.post(CREATION_TESTER, f"{name}: {verdict}", kind="report", channel=CREATION_TESTER)
+        return "unproven"
     if getattr(trials, "skipped", False):
         verdict = f"{name} was skipped on engine 4 before a run cleared the acceptance. It was kept in unprovenStrategies."
         if _in_drafts(path):
@@ -2070,7 +2466,7 @@ def _set_chart_record_aside(path: Path, root: str, timeframe: str) -> None:
         notes["creation"] = {"root": root, "timeframe": timeframe, "trials": chart.get("trials") or [], "best": chart.get("best") or {}}
         notes["trials"] = [row for row in (notes.get("trials") or []) if not (isinstance(row, dict) and row.get("instrument") == root and row.get("timeframe") == timeframe)]
         learn.NOTES.mkdir(parents=True, exist_ok=True)
-        (learn.NOTES / f"{path.stem.replace(' ', '_')}.json").write_text(json.dumps(notes, indent=2, default=str), encoding="utf-8")
+        (learn.NOTES / f"{path.stem.replace(' ', '_')}.json").write_text(json.dumps(notes, default=str), encoding="utf-8")
 
 
 def _promote_draft(path: Path) -> Path:

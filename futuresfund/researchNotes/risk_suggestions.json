@@ -167,8 +167,8 @@
     {
       "id": "drawdown-before-profit-1792293946",
       "issue": "drawdown-before-profit",
-      "proposed": "When a run draws down past 30 percent of the profit once the profit reaches $2,500, try the trail before raising the stop. use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, and tightens by 50 percent every 1 percent of the account. The stop caps at 1.4 percent of the account and the take profit has no maximum.",
-      "justification": "In the last hour, 28 of 63 completed backtests had this problem. Drawdown went past 30 percent of the profit once the profit reaches $2,500.. Hull MA Cross, Delta Volume Breakout Night Shift, ICT Unicorn + ORB 100k, and 25 more. worst profit -20592.0. worst drawdown 48944.5. most trades a year 492.0. largest loss -1500.0.",
+      "proposed": "When a run draws down past $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000, try the trail before raising the stop. use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, and tightens by 50 percent every 1 percent of the account. The stop caps at 1.4 percent of the account and the take profit has no maximum.",
+      "justification": "In the last hour, 28 of 63 completed backtests had this problem. Drawdown went past $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000.. Hull MA Cross, Delta Volume Breakout Night Shift, ICT Unicorn + ORB 100k, and 25 more. worst profit -20592.0. worst drawdown 48944.5. most trades a year 492.0. largest loss -1500.0.",
       "stats": {
         "hour_runs": 63,
         "issue_runs": 28,
@@ -190,7 +190,7 @@
         ]
       },
       "status": "pending",
-      "message": "Suggestion for the research guide: When a run draws down past 30 percent of the profit once the profit reaches $2,500, try the trail before raising the stop. use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, and tightens by 50 percent every 1 percent of the account. The stop caps at 1.4 percent of the account and the take profit has no maximum. In the last hour, 28 of 63 completed backtests had this problem. Drawdown went past 30 percent of the profit once the profit reaches $2,500.. Hull MA Cross, Delta Volume Breakout Night Shift, ICT Unicorn + ORB 100k, and 25 more. worst profit -20592.0. worst drawdown 48944.5. most trades a year 492.0. largest loss -1500.0."
+      "message": "Suggestion for the research guide: When a run draws down past $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000, try the trail before raising the stop. use_trail true keeps 50 percent of the peak, starts after 2 percent of the account, and tightens by 50 percent every 1 percent of the account. The stop caps at 1.4 percent of the account and the take profit has no maximum. In the last hour, 28 of 63 completed backtests had this problem. Drawdown went past $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000.. Hull MA Cross, Delta Volume Breakout Night Shift, ICT Unicorn + ORB 100k, and 25 more. worst profit -20592.0. worst drawdown 48944.5. most trades a year 492.0. largest loss -1500.0."
     },
     {
       "id": "losing-and-too-many-trades-1792305047",
@@ -247,1737 +247,2453 @@
   ],
   "runs": [
     {
-      "at": 1793830682.7734737,
+      "at": 1794037892.9898803,
       "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
         "timeframe": "15m",
         "instrument": "GC",
-        "net_profit": -1532.0,
-        "max_drawdown": 7282.0,
-        "trades": 32,
-        "win_rate": 43.75,
-        "profit_factor": 0.877,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
+        "net_profit": 4035.0,
+        "max_drawdown": 9053.5,
+        "trades": 75,
+        "win_rate": 61.33,
+        "profit_factor": 1.134,
+        "biggest_loser": -3861.0,
+        "held_loser": -3861.0,
         "stop_dollars": 700.0,
         "days": 260,
-        "trades_per_year": 32.0
+        "trades_per_year": 75.0
       }
     },
     {
-      "at": 1793830703.8145707,
+      "at": 1794037918.7612832,
       "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -52.0,
-        "max_drawdown": 7032.0,
-        "trades": 32,
-        "win_rate": 40.62,
-        "profit_factor": 0.996,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 32.0
-      }
-    },
-    {
-      "at": 1793830726.5078938,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
         "timeframe": "5m",
-        "instrument": "ES",
-        "net_profit": -4656.5,
-        "max_drawdown": 18498.5,
-        "trades": 304,
-        "win_rate": 42.43,
-        "profit_factor": 0.956,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 304.0
-      }
-    },
-    {
-      "at": 1793830727.2832687,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
         "instrument": "GC",
-        "net_profit": -3643.0,
-        "max_drawdown": 7503.0,
-        "trades": 33,
-        "win_rate": 30.3,
-        "profit_factor": 0.774,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 33.0
-      }
-    },
-    {
-      "at": 1793830746.0813236,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -1254.0,
-        "max_drawdown": 10194.0,
-        "trades": 34,
-        "win_rate": 26.47,
-        "profit_factor": 0.929,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 34.0
-      }
-    },
-    {
-      "at": 1793830765.1125166,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -4694.0,
-        "max_drawdown": 10194.0,
-        "trades": 34,
-        "win_rate": 20.59,
-        "profit_factor": 0.753,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 34.0
-      }
-    },
-    {
-      "at": 1793830781.7979496,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "5m",
-        "instrument": "ES",
-        "net_profit": 1995.0,
-        "max_drawdown": 6510.5,
-        "trades": 80,
-        "win_rate": 47.5,
-        "profit_factor": 1.084,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 80.0
-      }
-    },
-    {
-      "at": 1793830786.81653,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -3194.0,
-        "max_drawdown": 10194.0,
-        "trades": 34,
-        "win_rate": 20.59,
-        "profit_factor": 0.832,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 34.0
-      }
-    },
-    {
-      "at": 1793830814.0357778,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "2m",
-        "instrument": "ES",
-        "net_profit": 5003.5,
-        "max_drawdown": 18737.5,
-        "trades": 369,
-        "win_rate": 42.55,
-        "profit_factor": 1.049,
-        "biggest_loser": -536.0,
-        "held_loser": -536.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 369.0
-      }
-    },
-    {
-      "at": 1793830818.0414238,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -114.0,
-        "max_drawdown": 6804.0,
-        "trades": 34,
-        "win_rate": 41.18,
-        "profit_factor": 0.992,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 34.0
-      }
-    },
-    {
-      "at": 1793830818.8173704,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": 479.0,
-        "max_drawdown": 65.5,
-        "trades": 1,
-        "win_rate": 100.0,
-        "biggest_loser": 479.0,
-        "held_loser": 479.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 1.0
-      }
-    },
-    {
-      "at": 1793830832.832729,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": 958.0,
-        "max_drawdown": 65.5,
-        "trades": 2,
-        "win_rate": 100.0,
-        "biggest_loser": 479.0,
-        "held_loser": 479.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 2.0
-      }
-    },
-    {
-      "at": 1793830835.9589136,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "2m",
-        "instrument": "ES",
-        "net_profit": 2485.0,
-        "max_drawdown": 1946.5,
-        "trades": 90,
-        "win_rate": 41.11,
-        "profit_factor": 1.164,
-        "biggest_loser": -286.0,
-        "held_loser": -286.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 90.0
-      }
-    },
-    {
-      "at": 1793830839.9327805,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -3542.0,
-        "max_drawdown": 10102.5,
-        "trades": 112,
-        "win_rate": 38.39,
-        "profit_factor": 0.928,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 112.0
-      }
-    },
-    {
-      "at": 1793830845.9670901,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "5m",
-        "instrument": "ES",
-        "net_profit": -9520.5,
-        "max_drawdown": 20636.0,
-        "trades": 303,
-        "win_rate": 46.2,
-        "profit_factor": 0.902,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 303.0
-      }
-    },
-    {
-      "at": 1793830850.2634861,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": 1458.0,
-        "max_drawdown": 65.5,
-        "trades": 2,
-        "win_rate": 100.0,
-        "biggest_loser": 729.0,
-        "held_loser": 729.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 2.0
-      }
-    },
-    {
-      "at": 1793830866.6394556,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -4273.0,
-        "max_drawdown": 4386.0,
-        "trades": 13,
-        "win_rate": 23.08,
-        "profit_factor": 0.323,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 13.0
-      }
-    },
-    {
-      "at": 1793830868.7417536,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": 927.0,
-        "max_drawdown": 531.0,
-        "trades": 3,
+        "net_profit": 3234.0,
+        "max_drawdown": 1166.5,
+        "trades": 6,
         "win_rate": 66.67,
-        "profit_factor": 2.746,
-        "biggest_loser": -531.0,
-        "held_loser": -531.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 3.0
-      }
-    },
-    {
-      "at": 1793830888.2524748,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -5487.0,
-        "max_drawdown": 5521.0,
-        "trades": 17,
-        "win_rate": 23.53,
-        "profit_factor": 0.355,
+        "profit_factor": 3.227,
         "biggest_loser": -731.0,
         "held_loser": -731.0,
         "stop_dollars": 700.0,
         "days": 260,
-        "trades_per_year": 17.0
+        "trades_per_year": 6.0
       }
     },
     {
-      "at": 1793830896.388022,
+      "at": 1794037946.2711747,
       "stats": {
-        "script": "sample",
-        "file": "sample.pine",
-        "timeframe": "5m",
-        "instrument": "",
-        "net_profit": -250.0,
-        "max_drawdown": 80.0,
-        "trades": 20,
-        "win_rate": 40.0,
-        "profit_factor": 0.8,
-        "days": 20,
-        "trades_per_year": 260.0
-      }
-    },
-    {
-      "at": 1793830896.4702892,
-      "stats": {
-        "script": "sample",
-        "file": "sample.pine",
-        "timeframe": "5m",
-        "instrument": "",
-        "net_profit": -500.0,
-        "max_drawdown": 80.0,
-        "trades": 20,
-        "win_rate": 40.0,
-        "profit_factor": 0.8,
-        "days": 20,
-        "trades_per_year": 260.0
-      }
-    },
-    {
-      "at": 1793830908.6253803,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
         "timeframe": "15m",
         "instrument": "GC",
-        "net_profit": 729.0,
-        "max_drawdown": 25.5,
-        "trades": 1,
-        "win_rate": 100.0,
-        "biggest_loser": 729.0,
-        "held_loser": 729.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 1.0
-      }
-    },
-    {
-      "at": 1793830913.9005167,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "5m",
-        "instrument": "ES",
-        "net_profit": 182.5,
-        "max_drawdown": 6586.0,
-        "trades": 80,
-        "win_rate": 50.0,
-        "profit_factor": 1.008,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
+        "net_profit": -6020.0,
+        "max_drawdown": 14890.5,
+        "trades": 140,
+        "win_rate": 57.86,
+        "profit_factor": 0.904,
+        "biggest_loser": -3131.0,
+        "held_loser": -3131.0,
         "stop_dollars": 700.0,
         "days": 260,
-        "trades_per_year": 80.0
+        "trades_per_year": 140.0
       }
     },
     {
-      "at": 1793830927.6194544,
+      "at": 1794037985.2195206,
       "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -6218.0,
-        "max_drawdown": 6218.0,
-        "trades": 18,
-        "win_rate": 22.22,
-        "profit_factor": 0.327,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 18.0
-      }
-    },
-    {
-      "at": 1793830932.866567,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": 198.0,
-        "max_drawdown": 531.0,
-        "trades": 2,
-        "win_rate": 50.0,
-        "profit_factor": 1.373,
-        "biggest_loser": -531.0,
-        "held_loser": -531.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 2.0
-      }
-    },
-    {
-      "at": 1793830957.3246539,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -5032.0,
-        "max_drawdown": 15255.5,
-        "trades": 202,
-        "win_rate": 38.61,
-        "profit_factor": 0.943,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 202.0
-      }
-    },
-    {
-      "at": 1793830969.64405,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "5m",
-        "instrument": "NQ",
-        "net_profit": 910.0,
-        "max_drawdown": 301.5,
-        "trades": 5,
-        "win_rate": 60.0,
-        "profit_factor": 2.679,
-        "biggest_loser": -271.0,
-        "held_loser": -271.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 5.0
-      }
-    },
-    {
-      "at": 1793830984.0353925,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
         "timeframe": "2m",
         "instrument": "ES",
-        "net_profit": 9114.0,
-        "max_drawdown": 17591.5,
-        "trades": 351,
-        "win_rate": 41.31,
-        "profit_factor": 1.092,
-        "biggest_loser": -536.0,
-        "held_loser": -536.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 351.0
-      }
-    },
-    {
-      "at": 1793830984.9419026,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -9945.0,
-        "max_drawdown": 14589.0,
-        "trades": 85,
-        "win_rate": 34.12,
-        "profit_factor": 0.743,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 85.0
-      }
-    },
-    {
-      "at": 1793831006.6107595,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "5m",
-        "instrument": "ES",
-        "net_profit": -17214.5,
-        "max_drawdown": 26022.0,
-        "trades": 307,
-        "win_rate": 47.23,
-        "profit_factor": 0.822,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 307.0
-      }
-    },
-    {
-      "at": 1793831031.9244037,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": -17914.0,
-        "max_drawdown": 20547.5,
-        "trades": 574,
-        "win_rate": 25.78,
-        "profit_factor": 0.849,
-        "biggest_loser": -286.0,
-        "held_loser": -286.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 574.0
-      }
-    },
-    {
-      "at": 1793831035.4922004,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -18394.0,
-        "max_drawdown": 21553.0,
-        "trades": 134,
-        "win_rate": 33.58,
-        "profit_factor": 0.711,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 134.0
-      }
-    },
-    {
-      "at": 1793831037.1386404,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 8441.5,
-        "max_drawdown": 15497.0,
-        "trades": 436,
-        "win_rate": 33.72,
-        "profit_factor": 1.057,
-        "biggest_loser": -536.0,
-        "held_loser": -536.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 436.0
-      }
-    },
-    {
-      "at": 1793831042.634836,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 6530.0,
-        "max_drawdown": 12348.5,
-        "trades": 395,
-        "win_rate": 41.27,
-        "profit_factor": 1.041,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 395.0
-      }
-    },
-    {
-      "at": 1793831044.1136012,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "2m",
-        "instrument": "ES",
-        "net_profit": -1038.0,
-        "max_drawdown": 3028.5,
-        "trades": 33,
-        "win_rate": 33.33,
-        "profit_factor": 0.835,
-        "biggest_loser": -286.0,
-        "held_loser": -286.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 33.0
-      }
-    },
-    {
-      "at": 1793831047.730142,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 32100.5,
-        "max_drawdown": 13366.5,
-        "trades": 367,
-        "win_rate": 35.69,
-        "profit_factor": 1.197,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 367.0
-      }
-    },
-    {
-      "at": 1793831051.473082,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 33442.0,
-        "max_drawdown": 14139.0,
-        "trades": 353,
-        "win_rate": 31.16,
-        "profit_factor": 1.199,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 353.0
-      }
-    },
-    {
-      "at": 1793831055.442939,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 48549.0,
-        "max_drawdown": 13690.5,
-        "trades": 341,
-        "win_rate": 29.03,
-        "profit_factor": 1.29,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 341.0
-      }
-    },
-    {
-      "at": 1793831056.0337632,
-      "stats": {
-        "script": "ICT Unicorn + POC [Profit] Redesign 3",
-        "file": "ICT Unicorn + POC [Profit] ES 5min_redesign3.pine",
-        "timeframe": "5m",
-        "instrument": "NQ",
-        "net_profit": 2415.0,
-        "max_drawdown": 551.5,
-        "trades": 5,
-        "win_rate": 80.0,
-        "profit_factor": 5.635,
-        "biggest_loser": -521.0,
-        "held_loser": -521.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 5.0
-      }
-    },
-    {
-      "at": 1793831056.4528706,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -3750.0,
-        "max_drawdown": 8659.5,
-        "trades": 70,
-        "win_rate": 37.14,
-        "profit_factor": 0.881,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 70.0
-      }
-    },
-    {
-      "at": 1793831059.9551547,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 50455.5,
-        "max_drawdown": 12690.5,
-        "trades": 337,
-        "win_rate": 28.78,
-        "profit_factor": 1.303,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 337.0
-      }
-    },
-    {
-      "at": 1793831066.74025,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 44055.5,
-        "max_drawdown": 11690.5,
-        "trades": 337,
-        "win_rate": 28.49,
-        "profit_factor": 1.264,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 337.0
-      }
-    },
-    {
-      "at": 1793831071.5310423,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": -14298.0,
-        "max_drawdown": 21035.0,
-        "trades": 218,
-        "win_rate": 24.31,
-        "profit_factor": 0.873,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 218.0
-      }
-    },
-    {
-      "at": 1793831076.6514373,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 25922.0,
-        "max_drawdown": 21326.5,
-        "trades": 498,
-        "win_rate": 27.71,
-        "profit_factor": 1.105,
-        "biggest_loser": -1023.5,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 498.0
-      }
-    },
-    {
-      "at": 1793831080.4130971,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 2878.0,
-        "max_drawdown": 15206.0,
-        "trades": 127,
-        "win_rate": 33.07,
-        "profit_factor": 1.049,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 127.0
-      }
-    },
-    {
-      "at": 1793831082.645448,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "GC",
-        "net_profit": -4481.0,
-        "max_drawdown": 9390.5,
-        "trades": 71,
-        "win_rate": 36.62,
-        "profit_factor": 0.861,
-        "biggest_loser": -731.0,
-        "held_loser": -731.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 71.0
-      }
-    },
-    {
-      "at": 1793831085.2743583,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": -16757.5,
-        "max_drawdown": 17037.0,
-        "trades": 45,
-        "win_rate": 20.0,
-        "profit_factor": 0.332,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 45.0
-      }
-    },
-    {
-      "at": 1793831091.2084908,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": -19812.0,
-        "max_drawdown": 19812.0,
-        "trades": 67,
-        "win_rate": 22.39,
-        "profit_factor": 0.431,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 67.0
-      }
-    },
-    {
-      "at": 1793831097.6511545,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 46730.0,
-        "max_drawdown": 21313.0,
-        "trades": 395,
-        "win_rate": 28.86,
-        "profit_factor": 1.24,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 395.0
-      }
-    },
-    {
-      "at": 1793831103.0044982,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "ES",
-        "net_profit": 17710.0,
-        "max_drawdown": 16031.0,
-        "trades": 215,
-        "win_rate": 26.98,
-        "profit_factor": 1.161,
-        "biggest_loser": -736.0,
-        "held_loser": -736.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 215.0
-      }
-    },
-    {
-      "at": 1793832332.5056758,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": -2944.0,
-        "max_drawdown": 8099.5,
-        "trades": 199,
-        "win_rate": 30.65,
-        "profit_factor": 0.918,
-        "biggest_loser": -271.0,
-        "held_loser": -271.0,
-        "stop_dollars": 250.0,
-        "days": 260,
-        "trades_per_year": 199.0
-      }
-    },
-    {
-      "at": 1793832350.3156476,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4190.0,
-        "max_drawdown": 5324.5,
-        "trades": 185,
-        "win_rate": 45.41,
-        "profit_factor": 1.098,
-        "biggest_loser": -521.0,
-        "held_loser": -521.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 185.0
-      }
-    },
-    {
-      "at": 1793832369.6204576,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 5331.0,
-        "max_drawdown": 7595.5,
-        "trades": 169,
-        "win_rate": 47.34,
-        "profit_factor": 1.126,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 169.0
-      }
-    },
-    {
-      "at": 1793832387.9914956,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 10871.0,
-        "max_drawdown": 7345.5,
-        "trades": 169,
-        "win_rate": 47.34,
-        "profit_factor": 1.257,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 169.0
-      }
-    },
-    {
-      "at": 1793832409.9078264,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 10656.0,
-        "max_drawdown": 7095.5,
-        "trades": 169,
-        "win_rate": 47.34,
-        "profit_factor": 1.252,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 169.0
-      }
-    },
-    {
-      "at": 1793832429.3306613,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 7111.0,
-        "max_drawdown": 6845.5,
-        "trades": 169,
-        "win_rate": 47.34,
-        "profit_factor": 1.168,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 169.0
-      }
-    },
-    {
-      "at": 1793832446.164521,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 7331.0,
-        "max_drawdown": 6595.5,
-        "trades": 169,
-        "win_rate": 47.34,
-        "profit_factor": 1.173,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 169.0
-      }
-    },
-    {
-      "at": 1793832464.9551048,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 7323.0,
-        "max_drawdown": 6293.5,
-        "trades": 172,
-        "win_rate": 47.09,
-        "profit_factor": 1.167,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 172.0
-      }
-    },
-    {
-      "at": 1793832488.361632,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 10249.0,
-        "max_drawdown": 7345.5,
-        "trades": 166,
-        "win_rate": 47.59,
-        "profit_factor": 1.25,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 166.0
-      }
-    },
-    {
-      "at": 1793832506.8721476,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 7318.0,
-        "max_drawdown": 6293.5,
-        "trades": 172,
-        "win_rate": 47.09,
-        "profit_factor": 1.167,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 172.0
-      }
-    },
-    {
-      "at": 1793832563.6964777,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 8282.0,
-        "max_drawdown": 5787.5,
-        "trades": 133,
-        "win_rate": 48.12,
-        "profit_factor": 1.229,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 133.0
-      }
-    },
-    {
-      "at": 1793832601.248161,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4863.0,
-        "max_drawdown": 4144.5,
-        "trades": 102,
-        "win_rate": 47.06,
-        "profit_factor": 1.177,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 102.0
-      }
-    },
-    {
-      "at": 1793832619.8112664,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 5460.0,
-        "max_drawdown": 4661.5,
-        "trades": 70,
-        "win_rate": 48.57,
-        "profit_factor": 1.316,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 70.0
-      }
-    },
-    {
-      "at": 1793832637.5290835,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 9207.0,
-        "max_drawdown": 3844.5,
-        "trades": 83,
-        "win_rate": 50.6,
-        "profit_factor": 1.459,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 83.0
-      }
-    },
-    {
-      "at": 1793832658.1433764,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4364.0,
-        "max_drawdown": 6676.5,
-        "trades": 126,
-        "win_rate": 46.03,
-        "profit_factor": 1.125,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 126.0
-      }
-    },
-    {
-      "at": 1793832677.5093184,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 732.0,
-        "max_drawdown": 5105.5,
-        "trades": 53,
-        "win_rate": 45.28,
-        "profit_factor": 1.05,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 53.0
-      }
-    },
-    {
-      "at": 1793832695.7318215,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4256.0,
-        "max_drawdown": 972.5,
-        "trades": 14,
-        "win_rate": 71.43,
-        "profit_factor": 2.962,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 14.0
-      }
-    },
-    {
-      "at": 1793832714.1287332,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 0.0,
-        "max_drawdown": 0.0,
-        "trades": 0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 0.0
-      }
-    },
-    {
-      "at": 1793832752.6649544,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 2235.0,
-        "max_drawdown": 2390.5,
-        "trades": 25,
-        "win_rate": 52.0,
-        "profit_factor": 1.327,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 25.0
-      }
-    },
-    {
-      "at": 1793832788.5199044,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": -2120.0,
-        "max_drawdown": 4691.5,
-        "trades": 35,
-        "win_rate": 42.86,
-        "profit_factor": 0.798,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 35.0
-      }
-    },
-    {
-      "at": 1793832810.8119128,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 9630.0,
-        "max_drawdown": 3931.5,
-        "trades": 85,
-        "win_rate": 50.59,
-        "profit_factor": 1.463,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 85.0
-      }
-    },
-    {
-      "at": 1793832832.7912009,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 9625.0,
-        "max_drawdown": 3931.5,
-        "trades": 85,
-        "win_rate": 50.59,
-        "profit_factor": 1.463,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 85.0
-      }
-    },
-    {
-      "at": 1793832853.21975,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 9167.0,
-        "max_drawdown": 4027.5,
-        "trades": 113,
-        "win_rate": 49.56,
-        "profit_factor": 1.35,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 113.0
-      }
-    },
-    {
-      "at": 1793832872.798802,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 1647.0,
-        "max_drawdown": 3435.5,
-        "trades": 38,
-        "win_rate": 50.0,
-        "profit_factor": 1.193,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 38.0
-      }
-    },
-    {
-      "at": 1793832897.898599,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 1307.0,
-        "max_drawdown": 625.5,
-        "trades": 3,
-        "win_rate": 66.67,
-        "profit_factor": 18.197,
-        "biggest_loser": -76.0,
-        "held_loser": -76.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 3.0
-      }
-    },
-    {
-      "at": 1793832955.417968,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4646.0,
-        "max_drawdown": 1833.5,
-        "trades": 19,
-        "win_rate": 68.42,
-        "profit_factor": 2.98,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 19.0
-      }
-    },
-    {
-      "at": 1793832972.767988,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 8386.0,
-        "max_drawdown": 4216.5,
-        "trades": 94,
-        "win_rate": 48.94,
-        "profit_factor": 1.387,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 94.0
-      }
-    },
-    {
-      "at": 1793832993.1025352,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 5574.0,
-        "max_drawdown": 5076.5,
-        "trades": 151,
-        "win_rate": 47.02,
-        "profit_factor": 1.146,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 151.0
-      }
-    },
-    {
-      "at": 1793833014.1088133,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 8273.0,
-        "max_drawdown": 3824.5,
-        "trades": 92,
-        "win_rate": 51.09,
-        "profit_factor": 1.411,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 92.0
-      }
-    },
-    {
-      "at": 1793833032.648338,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 6622.0,
-        "max_drawdown": 972.5,
-        "trades": 18,
-        "win_rate": 77.78,
-        "profit_factor": 8.325,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 18.0
-      }
-    },
-    {
-      "at": 1793833069.9264898,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 73.0,
-        "max_drawdown": 625.5,
-        "trades": 2,
-        "win_rate": 50.0,
-        "profit_factor": 1.961,
-        "biggest_loser": -76.0,
-        "held_loser": -76.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 2.0
-      }
-    },
-    {
-      "at": 1793833090.7226,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 1081.0,
-        "max_drawdown": 4614.5,
-        "trades": 44,
-        "win_rate": 50.0,
-        "profit_factor": 1.101,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 44.0
-      }
-    },
-    {
-      "at": 1793833109.6972017,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 6096.0,
-        "max_drawdown": 4247.5,
-        "trades": 119,
-        "win_rate": 48.74,
-        "profit_factor": 1.213,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 119.0
-      }
-    },
-    {
-      "at": 1793833129.2379415,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 1579.0,
-        "max_drawdown": 6324.5,
-        "trades": 201,
-        "win_rate": 45.77,
-        "profit_factor": 1.029,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 201.0
-      }
-    },
-    {
-      "at": 1793833155.3341444,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 8790.0,
-        "max_drawdown": 3824.5,
-        "trades": 100,
-        "win_rate": 52.0,
-        "profit_factor": 1.394,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 100.0
-      }
-    },
-    {
-      "at": 1793833168.5324254,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "MNQ",
-        "net_profit": 1854.0,
-        "max_drawdown": 5769.5,
-        "trades": 304,
-        "win_rate": 47.7,
-        "profit_factor": 1.031,
-        "biggest_loser": -512.0,
-        "held_loser": -512.0,
-        "stop_dollars": 500.0,
-        "days": 260,
-        "trades_per_year": 304.0
-      }
-    },
-    {
-      "at": 1793833174.3303764,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "MNQ",
-        "net_profit": 2461.0,
-        "max_drawdown": 5988.5,
-        "trades": 283,
-        "win_rate": 51.59,
-        "profit_factor": 1.041,
-        "biggest_loser": -711.5,
-        "held_loser": -711.5,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 283.0
-      }
-    },
-    {
-      "at": 1793833177.3012967,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 4708.0,
-        "max_drawdown": 1915.5,
-        "trades": 22,
-        "win_rate": 63.64,
-        "profit_factor": 2.671,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 22.0
-      }
-    },
-    {
-      "at": 1793833177.8699992,
-      "stats": {
-        "script": "Day Shift Delta Volume Breakout Redesign 3",
-        "file": "Day Shift Delta Volume Breakout colored Back ground bos no trail 3-4_1793226204_redesign3.pine",
-        "timeframe": "15m",
-        "instrument": "MNQ",
-        "net_profit": 2172.5,
-        "max_drawdown": 5988.5,
-        "trades": 282,
-        "win_rate": 51.42,
-        "profit_factor": 1.036,
-        "biggest_loser": -711.5,
-        "held_loser": -711.5,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 282.0
-      }
-    },
-    {
-      "at": 1793833223.5220568,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 2688.0,
-        "max_drawdown": 972.5,
-        "trades": 7,
-        "win_rate": 71.43,
-        "profit_factor": 4.373,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
-        "stop_dollars": 700.0,
-        "days": 260,
-        "trades_per_year": 7.0
-      }
-    },
-    {
-      "at": 1793833300.8613174,
-      "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
-        "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 1426.0,
-        "max_drawdown": 4820.5,
+        "net_profit": 26018.5,
+        "max_drawdown": 15050.5,
         "trades": 54,
-        "win_rate": 48.15,
-        "profit_factor": 1.107,
-        "biggest_loser": -721.0,
-        "held_loser": -721.0,
+        "win_rate": 20.37,
+        "profit_factor": 1.822,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
         "stop_dollars": 700.0,
         "days": 260,
         "trades_per_year": 54.0
       }
     },
     {
-      "at": 1793833325.879857,
+      "at": 1794038033.6413288,
       "stats": {
-        "script": "Day shift BOS Profitable 17k Delta Volume Breakout",
-        "file": "Day shift BOS Profitable 16k Delta Volume Breakout safe dual time split_1793237253.txt",
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -16482.0,
+        "max_drawdown": 16967.0,
+        "trades": 52,
+        "win_rate": 21.15,
+        "profit_factor": 0.45,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 52.0
+      }
+    },
+    {
+      "at": 1794038035.7786114,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
         "timeframe": "15m",
-        "instrument": "YM",
-        "net_profit": 6063.0,
-        "max_drawdown": 4247.5,
-        "trades": 122,
-        "win_rate": 48.36,
-        "profit_factor": 1.205,
+        "instrument": "GC",
+        "net_profit": -6249.0,
+        "max_drawdown": 15243.5,
+        "trades": 169,
+        "win_rate": 57.99,
+        "profit_factor": 0.916,
+        "biggest_loser": -3131.0,
+        "held_loser": -3131.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 169.0
+      }
+    },
+    {
+      "at": 1794038038.1462753,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 2210.0,
+        "max_drawdown": 3361.5,
+        "trades": 10,
+        "win_rate": 40.0,
+        "profit_factor": 1.579,
         "biggest_loser": -721.0,
         "held_loser": -721.0,
         "stop_dollars": 700.0,
         "days": 260,
-        "trades_per_year": 122.0
+        "trades_per_year": 10.0
+      }
+    },
+    {
+      "at": 1794038123.5789793,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 1406.0,
+        "max_drawdown": 705.5,
+        "trades": 4,
+        "win_rate": 75.0,
+        "profit_factor": 60.83,
+        "biggest_loser": -23.5,
+        "held_loser": -11.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 4.0
+      }
+    },
+    {
+      "at": 1794038165.174897,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -7963.0,
+        "max_drawdown": 17119.5,
+        "trades": 123,
+        "win_rate": 54.47,
+        "profit_factor": 0.849,
+        "biggest_loser": -2531.0,
+        "held_loser": -2531.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 123.0
+      }
+    },
+    {
+      "at": 1794038192.8649666,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 25680.5,
+        "max_drawdown": 16820.0,
+        "trades": 87,
+        "win_rate": 20.69,
+        "profit_factor": 1.485,
+        "biggest_loser": -2861.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 87.0
+      }
+    },
+    {
+      "at": 1794038246.822083,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -16169.0,
+        "max_drawdown": 16654.0,
+        "trades": 49,
+        "win_rate": 20.41,
+        "profit_factor": 0.433,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 49.0
+      }
+    },
+    {
+      "at": 1794038250.0102136,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 729.0,
+        "max_drawdown": 5.5,
+        "trades": 1,
+        "win_rate": 100.0,
+        "biggest_loser": 729.0,
+        "held_loser": 729.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 1.0
+      }
+    },
+    {
+      "at": 1794038256.211178,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": -293.0,
+        "max_drawdown": 16539.5,
+        "trades": 388,
+        "win_rate": 44.59,
+        "profit_factor": 0.998,
+        "biggest_loser": -4536.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 388.0
+      }
+    },
+    {
+      "at": 1794038258.9410434,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -1886.0,
+        "max_drawdown": 20966.5,
+        "trades": 136,
+        "win_rate": 56.62,
+        "profit_factor": 0.967,
+        "biggest_loser": -3411.0,
+        "held_loser": -3411.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 136.0
+      }
+    },
+    {
+      "at": 1794038260.022617,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -456.5,
+        "max_drawdown": 5044.5,
+        "trades": 79,
+        "win_rate": 46.84,
+        "profit_factor": 0.971,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 79.0
+      }
+    },
+    {
+      "at": 1794038326.1968524,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -17201.0,
+        "max_drawdown": 18938.5,
+        "trades": 91,
+        "win_rate": 47.25,
+        "profit_factor": 0.625,
+        "biggest_loser": -3341.0,
+        "held_loser": -3341.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 91.0
+      }
+    },
+    {
+      "at": 1794038329.4713378,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 14379.5,
+        "max_drawdown": 7690.5,
+        "trades": 28,
+        "win_rate": 17.86,
+        "profit_factor": 1.849,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 28.0
+      }
+    },
+    {
+      "at": 1794038364.4649568,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": -2707.0,
+        "max_drawdown": 16242.5,
+        "trades": 227,
+        "win_rate": 44.05,
+        "profit_factor": 0.972,
+        "biggest_loser": -4886.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 227.0
+      }
+    },
+    {
+      "at": 1794038376.8309002,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 8.0,
+        "max_drawdown": 721.0,
+        "trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 1.011,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 2.0
+      }
+    },
+    {
+      "at": 1794038404.770753,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -16430.0,
+        "max_drawdown": 18167.5,
+        "trades": 100,
+        "win_rate": 48.0,
+        "profit_factor": 0.668,
+        "biggest_loser": -3341.0,
+        "held_loser": -3341.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 100.0
+      }
+    },
+    {
+      "at": 1794038447.611819,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -13421.0,
+        "max_drawdown": 13906.0,
+        "trades": 41,
+        "win_rate": 21.95,
+        "profit_factor": 0.426,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 41.0
+      }
+    },
+    {
+      "at": 1794038479.1027262,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 12907.5,
+        "max_drawdown": 7690.5,
+        "trades": 30,
+        "win_rate": 16.67,
+        "profit_factor": 1.701,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 30.0
+      }
+    },
+    {
+      "at": 1794038481.128408,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 11884.0,
+        "max_drawdown": 3160.5,
+        "trades": 56,
+        "win_rate": 66.07,
+        "profit_factor": 1.812,
+        "biggest_loser": -1151.0,
+        "held_loser": -1151.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 56.0
+      }
+    },
+    {
+      "at": 1794038487.7570245,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -205.0,
+        "max_drawdown": 2328.5,
+        "trades": 5,
+        "win_rate": 40.0,
+        "profit_factor": 0.906,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 5.0
+      }
+    },
+    {
+      "at": 1794038576.0596144,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 873.0,
+        "max_drawdown": 2365.5,
+        "trades": 27,
+        "win_rate": 44.44,
+        "profit_factor": 1.081,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 27.0
+      }
+    },
+    {
+      "at": 1794038595.8838239,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -13764.0,
+        "max_drawdown": 15529.0,
+        "trades": 34,
+        "win_rate": 20.59,
+        "profit_factor": 0.303,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 34.0
+      }
+    },
+    {
+      "at": 1794038625.7004716,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -1808.0,
+        "max_drawdown": 7950.5,
+        "trades": 48,
+        "win_rate": 54.17,
+        "profit_factor": 0.914,
+        "biggest_loser": -1831.0,
+        "held_loser": -1831.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 48.0
+      }
+    },
+    {
+      "at": 1794038665.5432065,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 1719.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 2.192,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794038666.12831,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 21847.0,
+        "max_drawdown": 18602.5,
+        "trades": 73,
+        "win_rate": 17.81,
+        "profit_factor": 1.501,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 73.0
+      }
+    },
+    {
+      "at": 1794038700.6787605,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 8221.0,
+        "max_drawdown": 3160.5,
+        "trades": 49,
+        "win_rate": 63.27,
+        "profit_factor": 1.598,
+        "biggest_loser": -1151.0,
+        "held_loser": -1151.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 49.0
+      }
+    },
+    {
+      "at": 1794038796.5153737,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 5198.0,
+        "max_drawdown": 2276.0,
+        "trades": 7,
+        "win_rate": 28.57,
+        "profit_factor": 2.413,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 7.0
+      }
+    },
+    {
+      "at": 1794038873.6027937,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -183.0,
+        "max_drawdown": 8678.5,
+        "trades": 43,
+        "win_rate": 55.81,
+        "profit_factor": 0.989,
+        "biggest_loser": -1991.0,
+        "held_loser": -1991.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 43.0
+      }
+    },
+    {
+      "at": 1794038875.4099896,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": -862.0,
+        "max_drawdown": 9759.5,
+        "trades": 127,
+        "win_rate": 44.88,
+        "profit_factor": 0.984,
+        "biggest_loser": -5251.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 127.0
+      }
+    },
+    {
+      "at": 1794038951.7053447,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 679.5,
+        "max_drawdown": 155.5,
+        "trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 29.915,
+        "biggest_loser": -23.5,
+        "held_loser": -11.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 3.0
+      }
+    },
+    {
+      "at": 1794038979.9912367,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 437.0,
+        "max_drawdown": 5388.0,
+        "trades": 33,
+        "win_rate": 54.55,
+        "profit_factor": 1.034,
+        "biggest_loser": -1711.0,
+        "held_loser": -1711.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 33.0
+      }
+    },
+    {
+      "at": 1794039022.5404823,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 2987.0,
+        "max_drawdown": 4365.5,
+        "trades": 33,
+        "win_rate": 45.45,
+        "profit_factor": 1.23,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 33.0
+      }
+    },
+    {
+      "at": 1794039033.1030478,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -736.0,
+        "max_drawdown": 736.0,
+        "trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 1.0
+      }
+    },
+    {
+      "at": 1794039057.4790382,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 999.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 1.693,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794039059.69279,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 3388.0,
+        "max_drawdown": 6532.5,
+        "trades": 22,
+        "win_rate": 59.09,
+        "profit_factor": 1.442,
+        "biggest_loser": -1291.0,
+        "held_loser": -1291.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 22.0
+      }
+    },
+    {
+      "at": 1794039067.8705578,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -1682.0,
+        "max_drawdown": 3822.5,
+        "trades": 37,
+        "win_rate": 40.54,
+        "profit_factor": 0.726,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 37.0
+      }
+    },
+    {
+      "at": 1794039117.5861492,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -752.0,
+        "max_drawdown": 4430.0,
+        "trades": 42,
+        "win_rate": 57.14,
+        "profit_factor": 0.958,
+        "biggest_loser": -2981.0,
+        "held_loser": -2981.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 42.0
+      }
+    },
+    {
+      "at": 1794039135.3450809,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -30386.0,
+        "max_drawdown": 38847.5,
+        "trades": 166,
+        "win_rate": 22.29,
+        "profit_factor": 0.662,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 166.0
+      }
+    },
+    {
+      "at": 1794039140.6102293,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 4487.0,
+        "max_drawdown": 4641.5,
+        "trades": 43,
+        "win_rate": 39.53,
+        "profit_factor": 1.246,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 43.0
+      }
+    },
+    {
+      "at": 1794039158.6085875,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": -11733.0,
+        "max_drawdown": 11774.5,
+        "trades": 63,
+        "win_rate": 34.92,
+        "profit_factor": 0.579,
+        "biggest_loser": -781.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 63.0
+      }
+    },
+    {
+      "at": 1794039244.2126472,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -7255.0,
+        "max_drawdown": 8593.5,
+        "trades": 35,
+        "win_rate": 45.71,
+        "profit_factor": 0.536,
+        "biggest_loser": -1501.0,
+        "held_loser": -1501.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794039292.8277795,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 2929.0,
+        "max_drawdown": 2100.5,
+        "trades": 11,
+        "win_rate": 45.45,
+        "profit_factor": 1.676,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 11.0
+      }
+    },
+    {
+      "at": 1794039323.1316082,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -18873.0,
+        "max_drawdown": 27334.5,
+        "trades": 103,
+        "win_rate": 23.3,
+        "profit_factor": 0.657,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 103.0
+      }
+    },
+    {
+      "at": 1794039360.265217,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -6824.0,
+        "max_drawdown": 12122.5,
+        "trades": 74,
+        "win_rate": 54.05,
+        "profit_factor": 0.82,
+        "biggest_loser": -3861.0,
+        "held_loser": -3861.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 74.0
+      }
+    },
+    {
+      "at": 1794039374.6781373,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 1451.0,
+        "max_drawdown": 34420.0,
+        "trades": 234,
+        "win_rate": 21.37,
+        "profit_factor": 1.011,
+        "biggest_loser": -2636.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 234.0
+      }
+    },
+    {
+      "at": 1794039461.6744003,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -5694.0,
+        "max_drawdown": 8863.5,
+        "trades": 54,
+        "win_rate": 50.0,
+        "profit_factor": 0.726,
+        "biggest_loser": -1181.0,
+        "held_loser": -1181.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 54.0
+      }
+    },
+    {
+      "at": 1794039472.7723181,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 3641.0,
+        "max_drawdown": 2708.5,
+        "trades": 9,
+        "win_rate": 55.56,
+        "profit_factor": 2.262,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 9.0
+      }
+    },
+    {
+      "at": 1794039526.8831804,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 828.5,
+        "max_drawdown": 14871.0,
+        "trades": 69,
+        "win_rate": 14.49,
+        "profit_factor": 1.019,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 69.0
+      }
+    },
+    {
+      "at": 1794039554.6458902,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -1450.0,
+        "max_drawdown": 8195.5,
+        "trades": 60,
+        "win_rate": 58.33,
+        "profit_factor": 0.937,
+        "biggest_loser": -1701.0,
+        "held_loser": -1701.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 60.0
+      }
+    },
+    {
+      "at": 1794039645.2694812,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -1896.0,
+        "max_drawdown": 5203.5,
+        "trades": 66,
+        "win_rate": 39.39,
+        "profit_factor": 0.932,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 66.0
+      }
+    },
+    {
+      "at": 1794039657.9570327,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 5943.5,
+        "max_drawdown": 752.5,
+        "trades": 4,
+        "win_rate": 50.0,
+        "profit_factor": 9.683,
+        "biggest_loser": -536.0,
+        "held_loser": -536.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 4.0
+      }
+    },
+    {
+      "at": 1794039691.9131086,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 2439.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 2.691,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794039699.7481267,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -34985.0,
+        "max_drawdown": 45518.5,
+        "trades": 255,
+        "win_rate": 23.53,
+        "profit_factor": 0.746,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 255.0
+      }
+    },
+    {
+      "at": 1794039711.4898086,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -619.5,
+        "max_drawdown": 8189.0,
+        "trades": 12,
+        "win_rate": 8.33,
+        "profit_factor": 0.923,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 12.0
+      }
+    },
+    {
+      "at": 1794039711.6088588,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -2929.0,
+        "max_drawdown": 10253.5,
+        "trades": 119,
+        "win_rate": 57.14,
+        "profit_factor": 0.944,
+        "biggest_loser": -4221.0,
+        "held_loser": -4221.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 119.0
+      }
+    },
+    {
+      "at": 1794039748.7767754,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 1749.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 2.213,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794039787.4876692,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 2343.0,
+        "max_drawdown": 10229.5,
+        "trades": 97,
+        "win_rate": 36.08,
+        "profit_factor": 1.056,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 97.0
+      }
+    },
+    {
+      "at": 1794039821.2845974,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 3775.0,
+        "max_drawdown": 3789.5,
+        "trades": 35,
+        "win_rate": 62.86,
+        "profit_factor": 1.285,
+        "biggest_loser": -2071.0,
+        "held_loser": -2071.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794039838.3741086,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 2939.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 3.038,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794039841.5521846,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -203.0,
+        "max_drawdown": 4446.5,
+        "trades": 48,
+        "win_rate": 50.0,
+        "profit_factor": 0.977,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 48.0
+      }
+    },
+    {
+      "at": 1794039857.1250322,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -1353.0,
+        "max_drawdown": 12573.5,
+        "trades": 133,
+        "win_rate": 39.85,
+        "profit_factor": 0.975,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 133.0
+      }
+    },
+    {
+      "at": 1794039926.0785358,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -15218.0,
+        "max_drawdown": 23679.5,
+        "trades": 98,
+        "win_rate": 24.49,
+        "profit_factor": 0.703,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 98.0
+      }
+    },
+    {
+      "at": 1794039926.9140725,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -7364.0,
+        "max_drawdown": 14699.5,
+        "trades": 84,
+        "win_rate": 54.76,
+        "profit_factor": 0.83,
+        "biggest_loser": -3861.0,
+        "held_loser": -3861.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 84.0
+      }
+    },
+    {
+      "at": 1794039938.1571214,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 3859.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 3.676,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794039959.8868055,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 5950.0,
+        "max_drawdown": 29183.5,
+        "trades": 200,
+        "win_rate": 23.0,
+        "profit_factor": 1.054,
+        "biggest_loser": -2636.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 200.0
+      }
+    },
+    {
+      "at": 1794039990.6703134,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 1994.0,
+        "max_drawdown": 5010.5,
+        "trades": 36,
+        "win_rate": 58.33,
+        "profit_factor": 1.124,
+        "biggest_loser": -2071.0,
+        "held_loser": -2071.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 36.0
+      }
+    },
+    {
+      "at": 1794040024.5740016,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 3969.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 3.752,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040040.9994981,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -4182.0,
+        "max_drawdown": 18821.5,
+        "trades": 252,
+        "win_rate": 39.29,
+        "profit_factor": 0.962,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 252.0
+      }
+    },
+    {
+      "at": 1794040072.7976,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -6994.0,
+        "max_drawdown": 9759.5,
+        "trades": 44,
+        "win_rate": 45.45,
+        "profit_factor": 0.619,
+        "biggest_loser": -1501.0,
+        "held_loser": -1501.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 44.0
+      }
+    },
+    {
+      "at": 1794040078.915825,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": 852.5,
+        "max_drawdown": 6717.0,
+        "trades": 10,
+        "win_rate": 10.0,
+        "profit_factor": 1.129,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 10.0
+      }
+    },
+    {
+      "at": 1794040148.459706,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 4429.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 4.071,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040166.8326747,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 1301.0,
+        "max_drawdown": 5379.5,
+        "trades": 29,
+        "win_rate": 55.17,
+        "profit_factor": 1.117,
+        "biggest_loser": -1491.0,
+        "held_loser": -1491.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 29.0
+      }
+    },
+    {
+      "at": 1794040183.8248353,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 5781.0,
+        "max_drawdown": 1166.5,
+        "trades": 4,
+        "win_rate": 50.0,
+        "profit_factor": 7.825,
+        "biggest_loser": -573.5,
+        "held_loser": -573.5,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 4.0
+      }
+    },
+    {
+      "at": 1794040229.1817815,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 4889.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 4.39,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040231.8377013,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 3061.0,
+        "max_drawdown": 5394.5,
+        "trades": 49,
+        "win_rate": 59.18,
+        "profit_factor": 1.194,
+        "biggest_loser": -1501.0,
+        "held_loser": -1501.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 49.0
+      }
+    },
+    {
+      "at": 1794040263.8245044,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -28213.0,
+        "max_drawdown": 38746.5,
+        "trades": 243,
+        "win_rate": 23.46,
+        "profit_factor": 0.785,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 243.0
+      }
+    },
+    {
+      "at": 1794040311.368831,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -1930.5,
+        "max_drawdown": 6266.0,
+        "trades": 63,
+        "win_rate": 46.03,
+        "profit_factor": 0.853,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 63.0
+      }
+    },
+    {
+      "at": 1794040311.7447867,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 9277.0,
+        "max_drawdown": 8702.5,
+        "trades": 143,
+        "win_rate": 40.56,
+        "profit_factor": 1.159,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 143.0
+      }
+    },
+    {
+      "at": 1794040326.2666914,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 1443.0,
+        "max_drawdown": 3033.5,
+        "trades": 27,
+        "win_rate": 59.26,
+        "profit_factor": 1.126,
+        "biggest_loser": -2071.0,
+        "held_loser": -2071.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 27.0
+      }
+    },
+    {
+      "at": 1794040331.3642144,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -7309.0,
+        "max_drawdown": 22993.0,
+        "trades": 144,
+        "win_rate": 18.06,
+        "profit_factor": 0.92,
+        "biggest_loser": -4948.5,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 144.0
+      }
+    },
+    {
+      "at": 1794040335.5806653,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 5349.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 4.709,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040380.3255992,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 1895.0,
+        "max_drawdown": 6324.5,
+        "trades": 35,
+        "win_rate": 57.14,
+        "profit_factor": 1.164,
+        "biggest_loser": -1181.0,
+        "held_loser": -1181.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794040412.283658,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 5809.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 5.028,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040424.240857,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -11777.0,
+        "max_drawdown": 21412.5,
+        "trades": 267,
+        "win_rate": 37.45,
+        "profit_factor": 0.899,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 267.0
+      }
+    },
+    {
+      "at": 1794040447.6050713,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -1647.5,
+        "max_drawdown": 6717.0,
+        "trades": 10,
+        "win_rate": 10.0,
+        "profit_factor": 0.751,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 10.0
+      }
+    },
+    {
+      "at": 1794040470.202549,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -18712.0,
+        "max_drawdown": 27173.5,
+        "trades": 92,
+        "win_rate": 22.83,
+        "profit_factor": 0.619,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 92.0
+      }
+    },
+    {
+      "at": 1794040538.1068904,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -210.0,
+        "max_drawdown": 4651.5,
+        "trades": 20,
+        "win_rate": 50.0,
+        "profit_factor": 0.976,
+        "biggest_loser": -1121.0,
+        "held_loser": -1121.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 20.0
+      }
+    },
+    {
+      "at": 1794040573.9309459,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 6656.0,
+        "max_drawdown": 1291.5,
+        "trades": 4,
+        "win_rate": 75.0,
+        "profit_factor": 10.529,
+        "biggest_loser": -698.5,
+        "held_loser": -698.5,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 4.0
+      }
+    },
+    {
+      "at": 1794040588.4629495,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 13849.0,
+        "max_drawdown": 8117.5,
+        "trades": 171,
+        "win_rate": 40.94,
+        "profit_factor": 1.195,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 171.0
+      }
+    },
+    {
+      "at": 1794040623.3341324,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -11978.0,
+        "max_drawdown": 13194.0,
+        "trades": 38,
+        "win_rate": 21.05,
+        "profit_factor": 0.454,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 38.0
+      }
+    },
+    {
+      "at": 1794040657.8893526,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 2703.0,
+        "max_drawdown": 4801.5,
+        "trades": 27,
+        "win_rate": 59.26,
+        "profit_factor": 1.313,
+        "biggest_loser": -1121.0,
+        "held_loser": -1121.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 27.0
+      }
+    },
+    {
+      "at": 1794040669.296448,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -10210.0,
+        "max_drawdown": 23556.5,
+        "trades": 160,
+        "win_rate": 18.75,
+        "profit_factor": 0.899,
+        "biggest_loser": -4948.5,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 160.0
+      }
+    },
+    {
+      "at": 1794040677.6558092,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -2234.0,
+        "max_drawdown": 18644.5,
+        "trades": 274,
+        "win_rate": 39.05,
+        "profit_factor": 0.981,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 274.0
+      }
+    },
+    {
+      "at": 1794040683.956481,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -2299.0,
+        "max_drawdown": 6585.5,
+        "trades": 84,
+        "win_rate": 51.19,
+        "profit_factor": 0.882,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 84.0
+      }
+    },
+    {
+      "at": 1794040697.033823,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 6269.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 5.347,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040764.7996078,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -2375.0,
+        "max_drawdown": 8199.5,
+        "trades": 35,
+        "win_rate": 48.57,
+        "profit_factor": 0.854,
+        "biggest_loser": -1491.0,
+        "held_loser": -1491.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794040770.7719905,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -2647.5,
+        "max_drawdown": 6717.0,
+        "trades": 10,
+        "win_rate": 10.0,
+        "profit_factor": 0.6,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 10.0
+      }
+    },
+    {
+      "at": 1794040839.8885639,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 6729.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 5.666,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040856.5405624,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 2553.0,
+        "max_drawdown": 13683.5,
+        "trades": 177,
+        "win_rate": 39.55,
+        "profit_factor": 1.034,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 177.0
+      }
+    },
+    {
+      "at": 1794040872.0552018,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -34013.0,
+        "max_drawdown": 42474.5,
+        "trades": 153,
+        "win_rate": 20.92,
+        "profit_factor": 0.599,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 153.0
+      }
+    },
+    {
+      "at": 1794040922.1295595,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 7189.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 5.985,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794040923.579501,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 7153.0,
+        "max_drawdown": 4051.5,
+        "trades": 27,
+        "win_rate": 66.67,
+        "profit_factor": 2.06,
+        "biggest_loser": -1181.0,
+        "held_loser": -1181.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 27.0
+      }
+    },
+    {
+      "at": 1794040956.4902704,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 3679.0,
+        "max_drawdown": 2396.5,
+        "trades": 11,
+        "win_rate": 36.36,
+        "profit_factor": 1.974,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 11.0
+      }
+    },
+    {
+      "at": 1794040998.6548207,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 6095.0,
+        "max_drawdown": 20002.5,
+        "trades": 295,
+        "win_rate": 40.0,
+        "profit_factor": 1.049,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 295.0
+      }
+    },
+    {
+      "at": 1794040999.7426856,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -9785.0,
+        "max_drawdown": 11917.5,
+        "trades": 35,
+        "win_rate": 22.86,
+        "profit_factor": 0.504,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794041025.2609143,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 7649.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 6.304,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041026.0804422,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 875.5,
+        "max_drawdown": 8592.5,
+        "trades": 117,
+        "win_rate": 48.72,
+        "profit_factor": 1.031,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 117.0
+      }
+    },
+    {
+      "at": 1794041027.1651185,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -14073.0,
+        "max_drawdown": 27940.0,
+        "trades": 168,
+        "win_rate": 19.05,
+        "profit_factor": 0.866,
+        "biggest_loser": -4948.5,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 168.0
+      }
+    },
+    {
+      "at": 1794041077.2403846,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 8109.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 6.623,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041091.832937,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -4665.0,
+        "max_drawdown": 8442.5,
+        "trades": 35,
+        "win_rate": 48.57,
+        "profit_factor": 0.707,
+        "biggest_loser": -1701.0,
+        "held_loser": -1701.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 35.0
+      }
+    },
+    {
+      "at": 1794041114.2570903,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 10079.0,
+        "max_drawdown": 7609.5,
+        "trades": 181,
+        "win_rate": 41.99,
+        "profit_factor": 1.138,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 181.0
+      }
+    },
+    {
+      "at": 1794041136.796937,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 8569.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 6.942,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041145.3299007,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": 3605.5,
+        "max_drawdown": 3832.5,
+        "trades": 12,
+        "win_rate": 41.67,
+        "profit_factor": 1.767,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 12.0
+      }
+    },
+    {
+      "at": 1794041180.6149933,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -3647.5,
+        "max_drawdown": 6717.0,
+        "trades": 10,
+        "win_rate": 10.0,
+        "profit_factor": 0.449,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 10.0
+      }
+    },
+    {
+      "at": 1794041202.5000546,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "ES",
+        "net_profit": -8729.5,
+        "max_drawdown": 14076.5,
+        "trades": 172,
+        "win_rate": 45.35,
+        "profit_factor": 0.844,
+        "biggest_loser": -736.0,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 172.0
+      }
+    },
+    {
+      "at": 1794041205.176821,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 9029.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 7.261,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041209.538833,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -23835.0,
+        "max_drawdown": 32296.5,
+        "trades": 135,
+        "win_rate": 22.96,
+        "profit_factor": 0.671,
+        "biggest_loser": -751.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 135.0
+      }
+    },
+    {
+      "at": 1794041237.0597172,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": 13599.0,
+        "max_drawdown": 11739.5,
+        "trades": 271,
+        "win_rate": 41.33,
+        "profit_factor": 1.123,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 271.0
+      }
+    },
+    {
+      "at": 1794041292.2474527,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": 3283.0,
+        "max_drawdown": 3080.5,
+        "trades": 17,
+        "win_rate": 58.82,
+        "profit_factor": 1.754,
+        "biggest_loser": -831.0,
+        "held_loser": -831.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 17.0
+      }
+    },
+    {
+      "at": 1794041357.6400826,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 9489.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 7.58,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041360.5102313,
+      "stats": {
+        "script": "Smart Trail + POC Delta Combined",
+        "file": "Day shift BOS Profitable 23k Delta Volume Breakout + Smart channel combined.txt",
+        "timeframe": "5m",
+        "instrument": "GC",
+        "net_profit": -11461.0,
+        "max_drawdown": 12689.5,
+        "trades": 191,
+        "win_rate": 37.7,
+        "profit_factor": 0.862,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 191.0
+      }
+    },
+    {
+      "at": 1794041371.0286257,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "GC",
+        "net_profit": -11790.0,
+        "max_drawdown": 13336.0,
+        "trades": 30,
+        "win_rate": 20.0,
+        "profit_factor": 0.328,
+        "biggest_loser": -731.0,
+        "held_loser": -731.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 30.0
+      }
+    },
+    {
+      "at": 1794041406.0229962,
+      "stats": {
+        "script": "Day Shift Delta Volume Breakout colored Back ground Good Copy",
+        "file": "Day Shift Delta Volume Breakout colored Back ground No trailing stop Good Copy.txt",
+        "timeframe": "2m",
+        "instrument": "ES",
+        "net_profit": -31754.5,
+        "max_drawdown": 31889.0,
+        "trades": 172,
+        "win_rate": 19.19,
+        "profit_factor": 0.705,
+        "biggest_loser": -4948.5,
+        "held_loser": -736.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 172.0
+      }
+    },
+    {
+      "at": 1794041435.429137,
+      "stats": {
+        "script": "Delta Volume Breakout Night Shift",
+        "file": "Night Shift Delta Volume Breakout colored Back ground bos no trail 3-4.txt",
+        "timeframe": "15m",
+        "instrument": "NQ",
+        "net_profit": 9949.0,
+        "max_drawdown": 1416.5,
+        "trades": 6,
+        "win_rate": 66.67,
+        "profit_factor": 7.899,
+        "biggest_loser": -721.0,
+        "held_loser": -721.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 6.0
+      }
+    },
+    {
+      "at": 1794041466.9579678,
+      "stats": {
+        "script": "Day Shift 9k Smart Trail + POC Delta Combined dual time",
+        "file": "Day shift BOS Profitable 9k Delta Volume Breakout + Smart channel combiined safe dual time.txt",
+        "timeframe": "15m",
+        "instrument": "GC",
+        "net_profit": -7010.0,
+        "max_drawdown": 9266.5,
+        "trades": 30,
+        "win_rate": 43.33,
+        "profit_factor": 0.528,
+        "biggest_loser": -1701.0,
+        "held_loser": -1701.0,
+        "stop_dollars": 700.0,
+        "days": 260,
+        "trades_per_year": 30.0
       }
     }
   ],

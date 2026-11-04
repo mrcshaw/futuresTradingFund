@@ -212,7 +212,7 @@ def _record(subject: str, result: dict) -> None:
             MAIL_LOG.write_text(json.dumps(rows[-200:], indent=1), encoding="utf-8")
         except OSError:
             pass
-    if not entry["sent"] and "SMTP_PASSWORD is empty" not in entry["reason"]:
+    if not entry["sent"] and "SMTP_PASSWORD is empty" not in entry["reason"] and entry["reason"] != MAIL_OFF_REASON:
         # An email the desk tried to send and could not is a workflow error. A desk with no mail set up is not.
         try:
             from futuresfund.errors import record
@@ -289,6 +289,12 @@ def mail_status(*, probe: bool = False) -> list[str]:
             lines.append(f"No email attempt has been logged yet. The last report saved on the desk was {saved[-1].stem} at {stamp}.")
         else:
             lines.append("No email attempt has been logged and no report has been saved yet.")
+    try:
+        from futuresfund.questions import status_lines
+
+        lines.extend(status_lines())
+    except Exception:
+        pass
     if probe:
         check = check_mail()
         lines.append(check["reason"] if check["ok"] else f"Mail check: {check['reason']}")
@@ -317,7 +323,44 @@ def send_report(body: str, subject: str = "Futures desk report") -> dict:
     return result
 
 
-def _send_report(body: str, subject: str) -> dict:
+MAIL_OFF_REASON = "Email is off in this process (FUTURES_MAIL_OFF is set), so nothing was sent."
+
+
+def test_run() -> bool:
+    """True inside a unittest or pytest process."""
+    import sys
+
+    launched = " ".join(str(part) for part in (sys.argv or [])[:1]).replace("\\", "/").lower()
+    if "unittest" in launched or "pytest" in launched:
+        return True
+    main = sys.modules.get("__main__")
+    spec = getattr(main, "__spec__", None)
+    return bool(spec is not None and "unittest" in str(getattr(spec, "name", "") or ""))
+
+
+TEST_SUBJECT = "[TEST RUN - not a real strategy] "
+TEST_BANNER = (
+    "THIS IS A TEST EMAIL. It was sent by the desk's automated tests, not by research.\n"
+    "The strategy, numbers and script below are made-up test data. Nothing here was filed or traded.\n"
+    "------------------------------------------------------------\n\n"
+)
+
+
+def mail_blocked() -> bool:
+    """True when this process must never send email: FUTURES_MAIL_OFF is set. A test run still sends, labelled as a test."""
+    return str(os.environ.get("FUTURES_MAIL_OFF") or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def label_test(body: str, subject: str) -> tuple[str, str]:
+    """In a test run the subject and the first lines say plainly that the email is a test."""
+    if not test_run():
+        return body, subject
+    shown = subject if str(subject).startswith(TEST_SUBJECT) else TEST_SUBJECT + str(subject)
+    text = body if str(body).startswith(TEST_BANNER) else TEST_BANNER + str(body or "")
+    return text, shown
+
+
+def _send_report(body: str, subject: str, headers: dict | None = None) -> dict:
     host, port, user, password, sender = _smtp_settings()
     recipients = report_recipients()
     if not password.strip():
@@ -325,12 +368,18 @@ def _send_report(body: str, subject: str) -> dict:
             "sent": False,
             "reason": f"SMTP_PASSWORD is empty, so the report was kept on the desk and not sent to {', '.join(recipients)}.",
         }
+    if mail_blocked():
+        return {"sent": False, "reason": MAIL_OFF_REASON}
     if not sender:
         return {"sent": False, "reason": "Email needs REPORT_FROM or SMTP_USER."}
+    body, subject = label_test(body, subject)
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = sender
     message["To"] = ", ".join(recipients)
+    for name, value in (headers or {}).items():
+        if value:
+            message[name] = str(value)
     message.set_content(_with_phone(body))
     last_error = "The report was not emailed."
     for attempt in range(3):
@@ -351,6 +400,33 @@ def _send_report(body: str, subject: str) -> dict:
             last_error = f"The report was not emailed: {exc}"
             time.sleep(2)
     return {"sent": False, "reason": last_error}
+
+
+def question_headers() -> dict:
+    """The headers every question email carries: a Message-ID the reply can be matched to, and a Reply-To
+    that reaches the mailbox the desk reads when the visible sender (REPORT_FROM) is another address."""
+    from email.utils import make_msgid
+
+    _, _, user, _, sender = _smtp_settings()
+    domain = (sender or user or "futures-desk.local").rsplit("@", 1)[-1] or "futures-desk.local"
+    headers = {"Message-ID": make_msgid(idstring="ffq", domain=domain)}
+    if user and sender and user.strip().lower() != sender.strip().lower():
+        headers["Reply-To"] = user
+    return headers
+
+
+def send_question(subject: str, body: str, headers: dict | None = None) -> dict:
+    """The one way a question for the owner leaves the desk (questions.py). Logged like every report.
+
+    Nothing is sent while FUTURES_MAIL_OFF is set (mail_blocked), and questions.py never calls this from a
+    test run (questions.mail_allowed). The result carries the Message-ID, so a reply that keeps only
+    In-Reply-To still finds its question.
+    """
+    merged = {**question_headers(), **{key: value for key, value in (headers or {}).items() if value}}
+    result = dict(_send_report(body, subject, merged))
+    result["message_id"] = merged.get("Message-ID") or ""
+    _record(subject, result)
+    return result
 
 
 def trade_email(signal: dict, plan: dict, result: dict, held: int, book: dict) -> tuple[str, str]:

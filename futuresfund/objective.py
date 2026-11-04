@@ -3,9 +3,11 @@
 Every desk that ranks a backtest reads this module, so the researchers, the library, headquarters,
 the meetings, and the creation team all pull in the same direction.
 
-A script is acceptable only when it hits the profit target set on headquarters and the drawdown on a
-one-year test stays within $35,000, and it trades 130 to 600 times a year across
-the tested range. Fewer than 130 is too quiet and more than 600 is too many trades. Two or three trades is not a
+A script passes when it clears the acceptance boxes on the strategy library page (acceptance_misses).
+The proving stages use the same boxes pro-rated to their sessions (stage_bars): a 7-day test is 5 of the
+260 sessions in a year. The trade count that passes is the library count; more than 600 trades a year
+never passes. The search ranking below still aims at 130 to 600 trades a year: that band steers the
+search and passes or fails nothing. Two or three trades is not a
 strategy that can be tried in the market, so it does not count however large the number. Among acceptable
 results the smaller max drawdown wins; drawdowns inside the same band count as equal, and then the larger
 profit decides.
@@ -25,9 +27,9 @@ from zoneinfo import ZoneInfo
 
 BAND_SHARE = 0.05         # a drawdown band is this share of the headquarters drawdown ($125 at $2,500)
 PACE_WEEK_MIN = 4         # left in the objective stamp; the rewarded count is the year band below
-LIBRARY_PACE_WEEK = 3     # 3 a week still files when the year count is inside the band and the factor is strong
+LIBRARY_PACE_WEEK = 3     # read only by library_pace, which no filing gate calls; filing follows acceptance_misses
 PACE_WEEK_MAX = 7         # left in the objective stamp; more than 600 trades a year is not rewarded
-TRADES_YEAR_MIN = 130     # rewarded trade count on a 260-session year
+TRADES_YEAR_MIN = 130     # the search ranking's aim on a 260-session year; it passes or fails nothing (stage_bars does)
 TRADES_YEAR_MAX = 600     # more trades than this are not rewarded
 PACE_SLACK = 0            # under 4 a week does not count; 2 or 3 trades total is not a strategy
 PACE_MIN = 4 / 5          # the same band, in trades a trading day, for older comparisons
@@ -37,7 +39,7 @@ YEAR_DRAWDOWN_CAP = 750.0  # the size of one step on the research scale, on a $5
 FIRM_PROFIT = 50_000.0    # the profit the portfolio manager files and emails
 FIRM_DRAWDOWN = 22_000.0  # the drawdown beside that profit
 FIRM_BUFFER = 10_000.0    # profit may be this much lower and still count
-PROFIT_DRAWDOWN_SHARE = 0.30  # the pro account rule: drawdown may reach this share of the total profit
+PROFIT_DRAWDOWN_SHARE = 0.30  # past the profit target, the drawdown limit grows by this share of each dollar above it
 RATIO_FLOOR = 1 / PROFIT_DRAWDOWN_SHARE  # the same rule as profit over drawdown
 
 TIER_NONE = 0             # error, no trades, or nothing measured
@@ -114,21 +116,192 @@ def band(drawdown: float) -> int:
 
 
 RESEARCH_SESSIONS = 260      # one year: 52 weeks of five futures sessions. The file on disk is still the five-year download.
+WEEKS_PER_YEAR = 52
 # A script proves itself on the last 7, 30, and 90 days before the one-year search. Each stage is
-# (calendar days, futures sessions). A stage passes on the acceptance boxes scaled to its days.
+# (calendar days, futures sessions). A stage passes on the acceptance boxes pro-rated to its sessions.
 PROVING_STAGES = ((7, 5), (30, 21), (90, 64))
-STAGE_TRADES_PER_WEEK = 3   # a stage needs at least 3 trades for every 7 days it covers
+STAGE_SESSIONS = {**{days: sessions for days, sessions in PROVING_STAGES}, 365: RESEARCH_SESSIONS}
+# An optional floor of trades a week on top of the library trade count. 0 is off, and then the
+# fewest trades come from the library count only, pro-rated to the window.
+STAGE_TRADES_PER_WEEK = 0
 
 
 def stage_passed(row: dict | None, days: int, account_size: float = 50_000.0) -> bool:
-    """A short-window run moves to the next stage when it is profitable and clears the saved boxes for its days.
+    """A short-window run moves to the next stage when it is profitable and clears the saved boxes pro-rated to it.
 
-    The run needs at least 3 trades a week: 3 on 7 days, 13 on 30, 39 on 90, 157 on 365. The trade box
-    times days/365 raises that when it asks for more. The profit number is the yearly number times days/365.
-    The drawdown cap, the profit factor, and the win rate are the same as for the year. One trade
-    down more than 1.5 percent of the account never passes.
+    stage_bars(days) holds the numbers: the profit box and the library trade count times the stage's
+    share of a 260-session year (5, 21, and 64 sessions), and at most 600 trades a year at that pace.
+    The drawdown rule, the one-trade stop, the profit factor, and the win rate are the same as for the year.
     """
     return not acceptance_misses(row, days=days)
+
+
+def stage_sessions(days: int | None) -> float:
+    """Futures sessions in a window of this many calendar days. None is the one-year search, 260 sessions.
+
+    The stages are 5, 21, and 64 sessions. Another day count is its trading days, five in every seven.
+    """
+    if days is None:
+        return float(RESEARCH_SESSIONS)
+    try:
+        count = int(days)
+    except (TypeError, ValueError):
+        return float(RESEARCH_SESSIONS)
+    if count in STAGE_SESSIONS:
+        return float(STAGE_SESSIONS[count])
+    return max(1, count) * 5 / 7
+
+
+def stage_share(days: int | None) -> float:
+    """The share of a 260-session year a window covers: 5/260 for 7 days, 21/260, 64/260, and 1 for the year."""
+    if days is None:
+        return 1.0
+    return stage_sessions(days) / RESEARCH_SESSIONS
+
+
+def _window_days(days: int | None) -> int | None:
+    """A stage's day count, or None for the year. 365 days or more is the year search, judged as the year."""
+    try:
+        return None if not days or int(days) >= 365 else int(days)
+    except (TypeError, ValueError):
+        return None
+
+
+def stage_name(days: int | None) -> str:
+    """The window in words: "7-day test", or "year" for the one-year search."""
+    if days is None or int(days) >= 365:
+        return "year"
+    return f"{int(days)}-day test"
+
+
+def _window_words(days: int | None) -> str:
+    if days is None or int(days) >= 365:
+        return "a year"
+    return f"{int(days)} days"
+
+
+def stage_bars(days: int | None = None, limits: dict | None = None) -> dict:
+    """What a run of this length must show. The one source for the checks, the posts, and the library page.
+
+    The numbers come from the boxes saved on the strategy library page (book.strategy_acceptance), pro-rated
+    to the window's share of a 260-session year:
+    profit is the profit box times the share; the fewest trades are the library trade count times the share,
+    rounded up; the most trades are 600 a year at the same pace. The drawdown rule is not scaled: a short
+    window's drawdown can never be larger than the drawdown of the year that holds it. The stop on one trade,
+    the profit factor, and the win rate are not scaled either. Profit above the drawdown and profit that grows
+    from 7 to 365 days are checked on the year only. STAGE_TRADES_PER_WEEK, when it is above 0, is an extra
+    floor of that many trades for every five sessions.
+    """
+    if limits is None:
+        from futuresfund.book import strategy_acceptance
+
+        limits = strategy_acceptance()
+    sessions = stage_sessions(days)
+    share = sessions / RESEARCH_SESSIONS
+    year = _window_days(days) is None
+    try:
+        min_profit = max(0.0, float(limits.get("min_profit") or 0.0))
+    except (TypeError, ValueError):
+        min_profit = 0.0
+    try:
+        library_count = max(0, int(limits.get("min_trades") or 0))
+    except (TypeError, ValueError):
+        library_count = 0
+    use_profit = bool(limits.get("use_profit"))
+    use_trades = bool(limits.get("use_trades"))
+    try:
+        floor_week = max(0.0, float(STAGE_TRADES_PER_WEEK or 0))
+    except (TypeError, ValueError):
+        floor_week = 0.0
+    library_trades = math.ceil(library_count * share - 1e-9) if use_trades else 0
+    # Two or three trades is not a strategy: the year needs at least MIN_TRADES whatever the boxes say,
+    # and a shorter window that share of it.
+    least = math.ceil(MIN_TRADES * share - 1e-9)
+    floor_trades = math.ceil(floor_week * sessions / 5 - 1e-9) if floor_week > 0 else 0
+    fewest = max(library_trades, least, floor_trades)
+    most = math.floor(TRADES_YEAR_MAX * share + 1e-9)
+    use_drawdown = bool(limits.get("use_drawdown", True))
+    try:
+        account = _account_size()
+        start = account * DRAWDOWN_STARTS_PCT / 100.0
+        target = drawdown_target()
+    except Exception:
+        start, target = 2_500.0, ACCOUNT_PROFIT_LOCK
+    try:
+        factor = float(limits.get("profit_factor"))
+    except (TypeError, ValueError):
+        factor = PROFIT_FACTOR_MIN
+    try:
+        rate = float(limits.get("win_rate"))
+    except (TypeError, ValueError):
+        rate = WIN_RATE_GOAL
+    return {
+        "days": 365 if days is None else int(days),
+        "name": stage_name(days),
+        "year": year,
+        "sessions": sessions,
+        "share": round(share, 6),
+        "use_profit": use_profit,
+        "profit": round(min_profit * share, 2) if use_profit else 0.0,
+        "year_profit": min_profit,
+        "weekly_profit": round(min_profit / WEEKS_PER_YEAR, 4),
+        "use_trades": use_trades,
+        "min_trades": fewest,
+        "library_trades": library_trades,
+        "year_trades": library_count,
+        "weekly_trades": round(library_count / WEEKS_PER_YEAR, 4),
+        "floor_week": floor_week,
+        "floor_trades": floor_trades,
+        "least_trades": least,
+        "max_trades": most,
+        "trades_year_max": TRADES_YEAR_MAX,
+        "use_drawdown": use_drawdown,
+        "drawdown_start": round(start, 2),
+        "drawdown_target": round(target, 2),
+        "drawdown_share": PROFIT_DRAWDOWN_SHARE,
+        "trade_loss": round(account_trade_loss_cap(), 2),
+        "use_factor": bool(limits.get("use_factor")),
+        "profit_factor": factor,
+        "use_win_rate": bool(limits.get("use_win_rate")),
+        "win_rate": rate,
+        "under_drawdown": year,
+        "growth": year,
+    }
+
+
+def weekly_trade_floor(limits: dict | None = None) -> float:
+    """The fewest trades a week the year asks for: the library count over 52 weeks, or the optional floor when higher."""
+    bars = stage_bars(None, limits)
+    return round(max(bars["min_trades"] / WEEKS_PER_YEAR, bars["floor_week"]), 4)
+
+
+def _plain_count(value: float) -> str:
+    """A count to one decimal, without a trailing .0: 1.2, 3."""
+    shown = f"{float(value):.1f}"
+    return shown[:-2] if shown.endswith(".0") else shown
+
+
+def stage_bars_text(days: int | None = None, limits: dict | None = None) -> str:
+    """The bars of one window as one plain sentence, for the posts and the researcher's questions."""
+    bars = stage_bars(days, limits)
+    where = "The year" if bars["year"] else f"The {bars['name']}"
+    parts = []
+    if bars["use_profit"]:
+        parts.append(f"more than ${bars['profit']:,.0f} profit")
+    else:
+        parts.append("a profit above $0")
+    parts.append(f"at least {bars['min_trades']} and at most {bars['max_trades']} trades")
+    if bars["use_factor"]:
+        parts.append(f"a profit factor above {bars['profit_factor']:g}")
+    if bars["use_win_rate"]:
+        parts.append(f"a win rate above {bars['win_rate']:g} percent")
+    text = f"{where} needs " + ", ".join(parts[:-1]) + (", and " if len(parts) > 1 else "") + parts[-1] + "."
+    if bars["use_drawdown"]:
+        text += f" The drawdown stays inside {drawdown_share_text()}" + ("." if bars["year"] else ", the same as the year.")
+    if bars["year"]:
+        text += " The profit is larger than the drawdown and grows from the last 7 days to the last 30, 90, and 365 days."
+    text += f" No stop above ${bars['trade_loss']:,.0f}."
+    return text
 
 
 def _session_day(epoch: int):
@@ -316,10 +489,8 @@ def research_drawdown_cap(account_size: float) -> float:
 
 
 def year_allowance(profit: float, account_size: float) -> float:
-    """The pro account rule: no drawdown limit until the profit reaches the allowed drawdown, then 30 percent of the profit."""
-    if float(profit) < max(float(account_size), 0.0) * DRAWDOWN_STARTS_PCT / 100.0:
-        return float("inf")
-    return PROFIT_DRAWDOWN_SHARE * float(profit)
+    """The drawdown allowed once the profit has reached this high. See drawdown_allowance."""
+    return drawdown_allowance(profit, account_size)
 
 
 def profit_grows(spans: dict | None) -> bool:
@@ -395,6 +566,10 @@ def scale_move(previous: dict | None, row: dict | None, account_size: float) -> 
     A single trade that loses more than $750 moves away from the goal.
     When both results report a win rate, the marker uses that reading.
     """
+    before_numbers, after_numbers = numbers(previous), numbers(row)
+    if before_numbers and after_numbers and before_numbers[2] >= 1 and after_numbers[2] < 1:
+        # A run that stopped entering has no drawdown, but it is no closer to the goal.
+        return "farther"
     if trade_loss_ok(previous) and not trade_loss_ok(row):
         return "farther"
     if not trade_loss_ok(previous) and trade_loss_ok(row):
@@ -449,7 +624,7 @@ PROFIT_FACTOR_MIN = 1.1
 DRAWDOWN_STARTS_PCT = 5.0   # the drawdown limit starts when the profit reaches the allowed drawdown, $2,500 on a $50,000 account
 TRADE_LOSS_PCT = 1.5        # one trade, as a share of the account (1.5% of $50,000 is $750)
 MAX_TRADE_LOSS = 750.0      # the same single-trade limit on a $50,000 account
-TRADE_SAVE_MAX = 900        # a run with more trades than this cannot be saved
+TRADE_SAVE_MAX = 900        # a run with more trades than this is never filed; the search cuts trades (learn trade cut)
 CONSISTENCY_DAYS = (7, 30, 90, 365)
 ACCOUNT_LOSS_CAP = 750.0  # 1.5% of a $50,000 account
 ACCOUNT_PROFIT_LOCK = 3_000.0
@@ -554,11 +729,43 @@ def drawdown_start(size: float | None = None) -> float:
     return account * DRAWDOWN_STARTS_PCT / 100.0
 
 
+_target_seen = {"at": 0.0, "value": None}
+
+
+def drawdown_target(size: float | None = None) -> float:
+    """The headquarters profit target, $3,000 on a $50,000 account, for an account of this size.
+
+    Read at most every 5 seconds, because ranking a search checks the drawdown on every row.
+    """
+    import time as _time
+
+    account = _account_size()
+    now = _time.monotonic()
+    target = _target_seen["value"]
+    if target is None or now - _target_seen["at"] > 5.0:
+        try:
+            target = float(profit_target())
+        except Exception:
+            target = ACCOUNT_PROFIT_LOCK * account / 50_000.0
+        _target_seen.update(at=now, value=target)
+    if size is None or not account:
+        return float(target)
+    return float(target) * float(size) / account
+
+
 def drawdown_allowance(profit: float, size: float | None = None) -> float:
-    """The most drawdown this profit may have. No limit until the profit reaches drawdown_start."""
-    if float(profit) < drawdown_start(size):
-        return float("inf")
-    return PROFIT_DRAWDOWN_SHARE * float(profit)
+    """The most drawdown allowed from a profit high.
+
+    A new pro account may only draw down the allowed drawdown, $2,500 on $50,000, so that is the limit
+    until the profit passes the profit target. Past the target the rules set no limit, but the drawdown
+    is kept low: the limit grows by 30 percent of each dollar above the target. $6,000 allows $3,400,
+    $10,000 allows $4,600, and $20,000 allows $7,600 on a $50,000 account.
+    """
+    base = drawdown_start(size)
+    if base == float("inf"):
+        return base
+    target = drawdown_target(size)
+    return base + PROFIT_DRAWDOWN_SHARE * max(0.0, float(profit) - target)
 
 
 def _drawdown_box_on() -> bool:
@@ -581,7 +788,8 @@ def drawdown_share_text() -> str:
     start = drawdown_start()
     if start == float("inf"):
         return "the drawdown box on the strategy library page"
-    return f"30 percent of the profit once the profit reaches ${start:,.0f}"
+    target = drawdown_target()
+    return f"${start:,.0f} until the profit passes ${target:,.0f}, then ${start:,.0f} plus 30 percent of the profit above ${target:,.0f}"
 
 
 def account_line() -> str:
@@ -680,14 +888,45 @@ def acceptance_line() -> str:
         joined = parts[0]
     else:
         joined = ", ".join(parts[:-1]) + ", and " + parts[-1]
+    floor = float(STAGE_TRADES_PER_WEEK or 0)
+    pace = f"trade at least {floor:g} times a week and no more than {TRADES_YEAR_MAX:g} times a year" if floor > 0 else f"trade no more than {TRADES_YEAR_MAX:g} times a year"
     return (
         "A strategy is filed when "
         + joined
         + ". Those are the boxes turned on at the strategy library page. "
-        "It must also make more than its drawdown, trade at least 3 times a week and no more than 600 times a year, "
+        + weekly_line(limits)
+        + f"It must also make more than its drawdown, {pace}, "
         "make more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it, "
         "and the stop may not be set above 1.5 percent of the account. A fill past that stop does not count against it."
     )
+
+
+def weekly_line(limits: dict | None = None) -> str:
+    """The library numbers as a week and as each proving stage at a steady pace. Empty when neither box is on."""
+    bars = {days: stage_bars(days, limits) for days, _sessions in PROVING_STAGES}
+    year = stage_bars(None, limits)
+    week = []
+    if year["use_profit"]:
+        week.append(f"${year['weekly_profit']:,.0f} a week")
+    if year["use_trades"]:
+        week.append(f"about {_plain_count(year['weekly_trades'])} trades a week")
+    if not week:
+        return ""
+    text = "That is " + " and ".join(week) + " at a steady pace. "
+    named = _joined([str(days) for days in bars])
+    needs = []
+    if year["use_profit"]:
+        needs.append("more than " + _joined([f"${bars[days]['profit']:,.0f}" for days in bars]) + " profit")
+    needs.append("at least " + _joined([str(bars[days]["min_trades"]) for days in bars]) + " trades")
+    return text + f"The {named}-day tests need " + " and ".join(needs) + ". "
+
+
+def _joined(items: list[str]) -> str:
+    if len(items) <= 1:
+        return "".join(items)
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return ", ".join(items[:-1]) + ", and " + items[-1]
 
 
 def win_rate_percent(row: dict | None) -> float | None:
@@ -720,12 +959,29 @@ def win_rate_percent(row: dict | None) -> float | None:
 def account_survives(row: dict | None, start: float | None = None) -> bool:
     """The pro account rule on the drawdown.
 
-    There is no limit until the profit reaches start, the allowed drawdown. From there the drawdown
-    may not exceed 30 percent of the profit. There is no maximum on the profit. A missing drawdown is
-    not a breach. One trade down more than 1.5 percent of the account is a separate rule.
+    Each dip is held to the limit at the profit high it fell from (drawdown_allowance): the allowed
+    drawdown, start, until the profit passes the profit target, then more as the profit grows. A run
+    that records its dips is checked dip by dip. An older run without them is checked at its final
+    profit, which is never above its profit high, so it is not let through by mistake.
+    There is no maximum on the profit. A missing drawdown is not a breach. One trade down more than
+    1.5 percent of the account is a separate rule.
     """
     if not isinstance(row, dict) or row.get("max_drawdown") is None:
         return True
+    base = drawdown_start() if start is None else float(start)
+    if base == float("inf"):
+        return True
+    target = drawdown_target()
+
+    def allowed(high: float) -> float:
+        return base + PROFIT_DRAWDOWN_SHARE * max(0.0, high - target)
+
+    dips = row.get("dips")
+    if isinstance(dips, list) and dips:
+        try:
+            return all(float(dip) <= allowed(float(high)) + 1e-6 for high, dip in dips)
+        except (TypeError, ValueError):
+            pass
     try:
         drawdown = float(row["max_drawdown"])
     except (TypeError, ValueError):
@@ -736,13 +992,11 @@ def account_survives(row: dict | None, start: float | None = None) -> bool:
         profit = float(row.get("net_profit"))
     except (TypeError, ValueError):
         return False
-    if profit < (drawdown_start() if start is None else start):
-        return True
-    return profit / drawdown + 1e-9 >= RATIO_FLOOR
+    return drawdown <= allowed(profit) + 1e-6
 
 
 def too_many_to_save(row: dict | None) -> bool:
-    """A run with more than 900 trades cannot be saved, so the script is skipped."""
+    """A run with more than TRADE_SAVE_MAX trades. It is never filed; the search cuts its trades instead."""
     if not isinstance(row, dict):
         return False
     try:
@@ -751,8 +1005,85 @@ def too_many_to_save(row: dict | None) -> bool:
         return False
 
 
+def trade_pace(row: dict | None, days: int | None = None) -> float | None:
+    """A run's trades on a 260-session year. A stage run uses the sessions it covered, or the stage's own."""
+    if not isinstance(row, dict):
+        return None
+    try:
+        trades = int(float(row.get("trades") or 0))
+    except (TypeError, ValueError):
+        return None
+    if not days:
+        return trades_per_year(row)
+    return _stage_yearly(row, trades, {"sessions": stage_sessions(days)})
+
+
+def over_trade_cap(row: dict | None, days: int | None = None) -> bool:
+    """Too many trades to research on: more than TRADE_SAVE_MAX in the run, or on a proving stage a pace
+    over TRADES_YEAR_MAX a year. A run like that is kept but can never pass or be filed, and the search
+    turns to cutting trades (daily limits, a longer cooldown, most trades a day)."""
+    if too_many_to_save(row):
+        return True
+    if not days:
+        return False
+    yearly = trade_pace(row, days)
+    return yearly is not None and yearly > TRADES_YEAR_MAX
+
+
+def trade_cap_text(row: dict | None, days: int | None = None) -> str:
+    """Why a run is over the trade cap, in one plain sentence."""
+    try:
+        count = int(float((row or {}).get("trades") or 0))
+    except (TypeError, ValueError):
+        count = 0
+    if days and not too_many_to_save(row):
+        yearly = trade_pace(row, days) or 0.0
+        return (
+            f"took {count:,} trades in the {days}-day test, about {yearly:,.0f} a year. "
+            f"The library keeps at most {TRADES_YEAR_MAX:,.0f} trades a year"
+        )
+    return f"took {count:,} trades in a year. A run with more than {TRADE_SAVE_MAX:,} trades is never filed"
+
+
+def chart_over_cap(notes: dict | None, root: str = "", timeframe: str = "") -> int:
+    """The largest trade count over TRADE_SAVE_MAX already measured on this one chart, or 0.
+
+    Only that instrument and timeframe count, so a 2m count over the cap does not touch the 15m chart
+    or another instrument. The trade cut starts at once on a chart that already saw one.
+    """
+    if not isinstance(notes, dict) or not root or not timeframe:
+        return 0
+    found = 0
+
+    def take(value) -> None:
+        nonlocal found
+        try:
+            count = int(value or 0)
+        except (TypeError, ValueError):
+            return
+        found = max(found, count)
+
+    charts = notes.get("over_trade_charts")
+    if isinstance(charts, dict):
+        take(charts.get(f"{root}|{timeframe}"))
+    record = ((notes.get("instruments") or {}).get(root) or {}) if isinstance(notes.get("instruments"), dict) else {}
+    chart = ((record.get("charts") or {}).get(timeframe) or {}) if isinstance(record, dict) and isinstance(record.get("charts"), dict) else {}
+    if isinstance(chart, dict):
+        take(chart.get("trades"))
+        best = chart.get("best")
+        if isinstance(best, dict):
+            take(best.get("trades"))
+        for row in chart.get("trials") or []:
+            if isinstance(row, dict):
+                take(row.get("trades"))
+    return found if found > TRADE_SAVE_MAX else 0
+
+
 def trades_already_over_cap(notes: dict | None) -> int:
-    """The trade count already measured when it is over 900. Zero when the script can still be studied."""
+    """The largest trade count over TRADE_SAVE_MAX anywhere in the notes, or 0.
+
+    Information only: no chart refuses a script on it any more. chart_over_cap reads one chart.
+    """
     if not isinstance(notes, dict):
         return 0
     found = 0
@@ -917,19 +1248,36 @@ def profit_factor_of(row: dict | None) -> float | None:
     return value
 
 
+def _stage_yearly(row: dict, trades: int, bars: dict) -> float | None:
+    """A stage run's trades on a 260-session year. The engine records the sessions the run covered; without
+    them the stage's own sessions stand in, never the year chart's."""
+    try:
+        sessions = float(row.get("days")) if row.get("days") is not None else 0.0
+    except (TypeError, ValueError):
+        sessions = 0.0
+    if sessions <= 0:
+        sessions = float(bars["sessions"])
+    if sessions <= 0:
+        return None
+    return round(trades / sessions * RESEARCH_SESSIONS, 2)
+
+
 def acceptance_misses(row: dict | None, *, days: int | None = None, limits: dict | None = None, start: float | None = None, loss_cap: float | None = None) -> dict:
     """The one acceptance check. Every table, filing, email, and count reads its pass or fail from here.
 
     Returns what the result misses, each with its number. Empty means it passes.
     The boxes on the strategy library page turn the drawdown, trades, profit, profit factor, and
-    win rate on and off. A profit and the loss on one trade are always checked.
-    Every result needs at least 3 trades a week. A full result must also make more than its drawdown,
-    take no more than 600 trades a year, and make more profit on each of the last 7, 30, 90, and
-    365 days than on the shorter window before it.
+    win rate on and off. A profit and the loss on one trade are always checked, and so is the
+    most trades: 600 a year at the run's pace. The fewest trades are the library trade count, never
+    fewer than four on a year, plus the optional STAGE_TRADES_PER_WEEK floor when it is above 0.
+    A full result must also make more than its drawdown and make more profit on each of the last
+    7, 30, 90, and 365 days than on the shorter window before it.
 
-    days is a proving stage on that many days. The profit and trade numbers are scaled to it, and
-    the last two rules wait for the full result because a few trades cannot show them. limits,
-    start, and loss_cap let a report over many rows read the book once.
+    days is a proving stage on that many days. stage_bars(days) pro-rates the profit and the trade
+    numbers to it, and the last two rules wait for the full result because a few trades cannot show
+    them. The caller passes days; a row's own stage_days is never read here, so a stage row judged
+    without days is judged as a year. limits, start, and loss_cap let a report over many rows read
+    the book once.
     """
     if not isinstance(row, dict) or any(row.get(name) for name in ("error", "fatal", "stopped", "blocked")):
         return {"error": None}
@@ -937,14 +1285,15 @@ def acceptance_misses(row: dict | None, *, days: int | None = None, limits: dict
         from futuresfund.book import strategy_acceptance
 
         limits = strategy_acceptance()
-    share = max(1, int(days)) / 365.0 if days else 1.0
+    days = _window_days(days)
+    bars = stage_bars(days, limits)
     missed: dict = {}
     try:
         profit = float(row.get("net_profit"))
     except (TypeError, ValueError):
         profit = None
         missed["profit"] = None
-    if profit is not None and (profit <= 0 or (limits.get("use_profit") and profit <= float(limits["min_profit"]) * share)):
+    if profit is not None and (profit <= 0 or (bars["use_profit"] and profit <= bars["profit"])):
         missed["profit"] = profit
     if not trade_loss_ok(row, loss_cap):
         stop = stop_setting(row)
@@ -959,21 +1308,28 @@ def acceptance_misses(row: dict | None, *, days: int | None = None, limits: dict
     except (TypeError, ValueError):
         trades = None
     if trades is None:
-        if limits.get("use_trades") or days:
+        if bars["use_trades"] or days:
             missed["trades"] = None
     elif days:
-        needed = math.ceil(STAGE_TRADES_PER_WEEK * max(1, int(days)) / 7.0)
-        if limits.get("use_trades"):
-            needed = max(needed, math.ceil(float(limits["min_trades"]) * share))
-        if trades < needed:
+        if trades < bars["min_trades"]:
             missed["trades"] = float(trades)
     else:
-        weekly = trades_per_week(row)
-        if (limits.get("use_trades") and trades < int(limits["min_trades"])) or (
-            weekly is not None and weekly + 1e-9 < STAGE_TRADES_PER_WEEK
+        # The year counts the library number (never under four trades). The optional weekly floor is a
+        # rate, so a year measured on more or fewer sessions than 260 is held to the same pace.
+        weekly = None
+        fewest = max(bars["library_trades"], bars["least_trades"])
+        if bars["floor_week"] > 0:
+            sessions = days_for(row)
+            weekly = trades / sessions * 5 if sessions else None
+            if weekly is None:
+                # A year with no session count is held to the floor's count over 260 sessions.
+                fewest = max(fewest, bars["floor_trades"])
+        if trades < fewest or (
+            weekly is not None and weekly + 1e-9 < bars["floor_week"]
         ):
             missed["trades"] = float(trades)
-        yearly = trades_per_year(row)
+    if trades is not None:
+        yearly = trades_per_year(row) if not days else _stage_yearly(row, trades, bars)
         if yearly is not None and yearly > TRADES_YEAR_MAX:
             missed["pace"] = float(yearly)
     if limits.get("use_factor"):
@@ -1001,13 +1357,42 @@ def passes_acceptance(row: dict | None) -> bool:
     return not acceptance_misses(row)
 
 
-def acceptance_reason(row: dict | None) -> str:
-    """The first thing this result misses, as a sentence. Empty when it passes."""
-    from futuresfund.book import strategy_acceptance
+def _dollars(value) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "not measured"
+    sign = "-" if number < 0 else ""
+    return f"{sign}${abs(number):,.0f}"
 
-    missed = acceptance_misses(row)
-    limits = strategy_acceptance()
+
+def _trades_source(bars: dict) -> str:
+    """Where a window's fewest trades come from, in words."""
+    fewest = bars["min_trades"]
+    if bars["floor_trades"] and bars["floor_trades"] >= fewest and bars["floor_trades"] > bars["library_trades"]:
+        return f"{bars['floor_week']:g} a week, the floor set on the Research workflow page"
+    if bars["library_trades"] and bars["library_trades"] >= fewest:
+        return f"{bars['year_trades']} a year at a steady pace"
+    return f"at least {MIN_TRADES} a year, because two or three trades is not a strategy"
+
+
+def acceptance_reason(row: dict | None, days: int | None = None, *, misses: dict | None = None, limits: dict | None = None) -> str:
+    """The first thing this result misses, as a sentence that names the bar it was held to. Empty when it passes.
+
+    days is a proving stage. Its sentence gives that stage's numbers from stage_bars, for example
+    "needs more than $115 profit in 7 days (a $6,000 year at a steady pace)". misses lets a caller that
+    already ran acceptance_misses pass the answer in.
+    """
+    if limits is None:
+        from futuresfund.book import strategy_acceptance
+
+        limits = strategy_acceptance()
+    days = _window_days(days)
+    missed = acceptance_misses(row, days=days, limits=limits) if misses is None else misses
     best = row if isinstance(row, dict) else {}
+    bars = stage_bars(days, limits)
+    if days:
+        return _stage_reason(missed, best, bars)
     if "error" in missed:
         return "The backtest did not finish, so this strategy was not included."
     if "trade_loss" in missed:
@@ -1021,24 +1406,102 @@ def acceptance_reason(row: dict | None) -> str:
     if "pace" in missed:
         return f"The library keeps at most {TRADES_YEAR_MAX:g} trades a year. This run is {missed['pace']:g} trades a year."
     if "trades" in missed:
-        if int(best.get("trades") or 0) < 3:
+        count = int(best.get("trades") or 0)
+        if count < 3:
             return "Two trades is not a strategy that can be tried in the market, so it was not filed."
-        weekly = trades_per_week(best)
-        if weekly is not None and weekly + 1e-9 < STAGE_TRADES_PER_WEEK:
-            return f"The library keeps a strategy that trades at least {STAGE_TRADES_PER_WEEK} times a week. This run trades {weekly:g} times a week, so it was not filed."
-        return f"The library keeps a strategy after at least {int(limits['min_trades'])} trades. This run has {int(best.get('trades') or 0)}, so it was not filed."
+        # The same unrounded rate acceptance_misses tests, so the sentence never names a bar the run clears.
+        sessions = days_for(best) if bars["floor_week"] > 0 else None
+        weekly = count / sessions * 5 if sessions else None
+        if weekly is not None and weekly + 1e-9 < bars["floor_week"]:
+            return f"The library keeps a strategy that trades at least {bars['floor_week']:g} times a week. This run trades {weekly:.2f} times a week, so it was not filed."
+        needed = max(bars["library_trades"], bars["least_trades"], bars["floor_trades"] if weekly is None else 0)
+        return f"The library keeps a strategy after at least {needed} trades. This run has {count}, so it was not filed."
     if "profit" in missed:
-        return f"The library keeps a profit over ${float(limits['min_profit']):,.0f}. This run is under that."
+        if not bars["use_profit"]:
+            return f"The run made {_dollars(best.get('net_profit'))}. The library keeps only a profit above $0, so it was not filed."
+        return f"The library keeps a profit over ${bars['year_profit']:,.0f}. This run is under that."
     if "factor" in missed:
         shown = best.get("profit_factor")
-        return f"The library keeps a profit factor above {float(limits['profit_factor']):g}. This run's profit factor is {shown if shown is not None else 'not measured'}."
+        return f"The library keeps a profit factor above {bars['profit_factor']:g}. This run's profit factor is {shown if shown is not None else 'not measured'}."
     if "win_rate" in missed:
         shown = best.get("win_rate")
-        return f"The library keeps a win rate above {float(limits['win_rate']):g} percent. This run's win rate is {shown if shown is not None else 'not measured'}."
+        return f"The library keeps a win rate above {bars['win_rate']:g} percent. This run's win rate is {shown if shown is not None else 'not measured'}."
     if "growth" in missed:
         return "The profit did not grow from the last 7 days to the last 30, 90, and 365 days, so this strategy was not included."
     return ""
 
+
+def _stage_reason(missed: dict, best: dict, bars: dict) -> str:
+    """The first miss on a proving stage, with that stage's pro-rated number."""
+    lines = _stage_lines(missed, best, bars)
+    return lines[0] if lines else ""
+
+
+def stage_miss_lines(row: dict | None, days: int, limits: dict | None = None, misses: dict | None = None) -> list[str]:
+    """Every bar a stage run missed, one sentence each, with that stage's numbers. Empty when it passes."""
+    if limits is None:
+        from futuresfund.book import strategy_acceptance
+
+        limits = strategy_acceptance()
+    days = _window_days(days)
+    missed = acceptance_misses(row, days=days, limits=limits) if misses is None else misses
+    return _stage_lines(missed, row if isinstance(row, dict) else {}, stage_bars(days, limits))
+
+
+def _stage_lines(missed: dict, best: dict, bars: dict) -> list[str]:
+    name = bars["name"]
+    span = _window_words(bars["days"])
+    try:
+        count = int(float(best.get("trades") or 0))
+    except (TypeError, ValueError):
+        count = 0
+    lines = []
+    if "error" in missed:
+        return [f"The backtest did not finish, so it did not pass the {name}."]
+    if "trade_loss" in missed:
+        if stop_setting(best) is not None:
+            lines.append(f"The stop is set at ${missed['trade_loss']:,.0f}, more than 1.5 percent of the account (${bars['trade_loss']:,.0f}), so it did not pass the {name}.")
+        else:
+            lines.append(f"One trade lost more than 1.5 percent of the account (${bars['trade_loss']:,.0f}), so it did not pass the {name}.")
+    same = "" if bars["year"] else ", the same as the year"
+    if "drawdown" in missed:
+        if bars["year"]:
+            lines.append(f"The drawdown went past the limit, {drawdown_share_text()}, so it did not pass the year.")
+        else:
+            lines.append(
+                f"The drawdown went past the limit, {drawdown_share_text()}. The {name} is held to the same limit as the year, "
+                f"because the drawdown of {span} can never be larger than the drawdown of the year that holds it."
+            )
+    if "under_drawdown" in missed:
+        lines.append(
+            f"The year needs more profit than drawdown. This run made {_dollars(best.get('net_profit'))} "
+            f"with a drawdown of {_dollars(best.get('max_drawdown'))}."
+        )
+    if "pace" in missed:
+        lines.append(
+            f"The {name} allows at most {bars['max_trades']} trades in {span} ({TRADES_YEAR_MAX:g} a year at a steady pace). "
+            f"This run took {count}, about {missed['pace']:,.0f} a year."
+        )
+    if "trades" in missed:
+        lines.append(f"The {name} needs at least {bars['min_trades']} trades in {span} ({_trades_source(bars)}). This run took {count}.")
+    if "profit" in missed:
+        made = _dollars(best.get("net_profit"))
+        if not bars["use_profit"]:
+            lines.append(f"The {name} needs a profit above $0. This run made {made}.")
+        else:
+            lines.append(
+                f"The {name} needs more than ${bars['profit']:,.0f} profit in {span} (a ${bars['year_profit']:,.0f} year at a steady pace). "
+                f"This run made {made}."
+            )
+    if "factor" in missed:
+        shown = best.get("profit_factor")
+        lines.append(f"The {name} needs a profit factor above {bars['profit_factor']:g}{same}. This run's profit factor is {shown if shown is not None else 'not measured'}.")
+    if "win_rate" in missed:
+        shown = best.get("win_rate")
+        lines.append(f"The {name} needs a win rate above {bars['win_rate']:g} percent{same}. This run's win rate is {shown if shown is not None else 'not measured'}.")
+    if "growth" in missed:
+        lines.append("The year needs more profit on each of the last 7, 30, 90, and 365 days than on the shorter window before it. This run's profit did not grow that way.")
+    return lines
 
 MISS_NAMES = {
     "error": "did not finish",
@@ -1254,16 +1717,22 @@ def profit_to_drawdown(row: dict | None) -> float | None:
 def ratio_success(row: dict | None) -> bool:
     """A drawdown no more than 30 percent of the profit, and the trade count is not low.
 
-    Two or three trades do not count. Outside 130 to 600 trades a year does not count
-    when the span is known. Unknown days are not held against the run.
+    The trade count is the year's library count from stage_bars (never under four trades), and more
+    than 600 trades a year does not count when the span is known. Unknown days are not held against
+    the run. The 130-a-year band only steers the search; it does not decide this.
     """
     found = numbers(row)
     if found is None:
         return False
     profit, _drawdown, trades = found
-    if profit <= 0 or trades < MIN_TRADES:
+    try:
+        fewest = max(stage_bars(None)["min_trades"], MIN_TRADES)
+    except Exception:
+        fewest = MIN_TRADES
+    if profit <= 0 or trades < fewest:
         return False
-    if paced(row) is False:
+    yearly = trades_per_year(row)
+    if yearly is not None and yearly > TRADES_YEAR_MAX + 1e-9:
         return False
     ratio = profit_to_drawdown(row)
     return ratio is not None and ratio + 1e-9 >= RATIO_FLOOR
@@ -1402,8 +1871,9 @@ def describe() -> str:
         "A strategy is not included when its stop is set above 1.5 percent of the account. A fill past a stop set inside it does not count. "
         f"The headquarters research target is the ${rules['profit_target']:,.0f} profit target "
         f"set on headquarters and the one-year drawdown is no higher than {drawdown_share_text()} on a ${rules['size']:,.0f} account, "
-        f"while averaging {TRADES_YEAR_MIN:g} to {TRADES_YEAR_MAX:g} trades a year over the tested range. "
-        f"Fewer than {TRADES_YEAR_MIN:g} is too quiet and more than {TRADES_YEAR_MAX:g} is too many trades. "
+        f"while taking at least the library trade count and no more than {TRADES_YEAR_MAX:g} trades a year, pro-rated on the 7, 30, and 90-day tests. "
+        f"More than {TRADES_YEAR_MAX:g} a year is too many trades. "
+        f"The search ranking prefers {TRADES_YEAR_MIN:g} to {TRADES_YEAR_MAX:g} trades a year; that preference steers the search and does not pass or fail a run. "
         "Two or three trades is not a strategy that can be tried in the market, however large the profit. "
         "Among results under that drawdown, the higher win rate wins, then the higher profit factor, then the profit. "
         "Trade count only breaks a tie. "

@@ -1,0 +1,133 @@
+{
+ "sessions": 21,
+ "unread": [],
+ "moved": {
+  "stop_dollars": {
+   "value": 700,
+   "net_profit": 1717.5,
+   "max_drawdown": 2185.5,
+   "trades": 20
+  },
+  "tp_dollars": {
+   "value": 250,
+   "net_profit": -190.5,
+   "max_drawdown": 1758.0,
+   "trades": 23
+  },
+  "profile_lookback": {
+   "value": 30,
+   "net_profit": 3224.5,
+   "max_drawdown": 5831.5,
+   "trades": 58
+  },
+  "profile_rows": {
+   "value": 5,
+   "net_profit": -523.0,
+   "max_drawdown": 3000.0,
+   "trades": 18
+  },
+  "min_delta_pct": {
+   "value": 1.25,
+   "net_profit": 1897.0,
+   "max_drawdown": 1579.5,
+   "trades": 23
+  },
+  "ema_len": {
+   "value": 5,
+   "net_profit": 340.5,
+   "max_drawdown": 1368.5,
+   "trades": 27
+  },
+  "pivot_left": {
+   "value": 1,
+   "net_profit": -2917.0,
+   "max_drawdown": 3674.0,
+   "trades": 22
+  },
+  "use_session": {
+   "value": false,
+   "net_profit": 1644.0,
+   "max_drawdown": 2621.5,
+   "trades": 21
+  },
+  "sess_start_hr": {
+   "value": 4,
+   "net_profit": 928.5,
+   "max_drawdown": 1287.0,
+   "trades": 19
+  },
+  "sess_end_hr": {
+   "value": 4,
+   "net_profit": -1377.0,
+   "max_drawdown": 1809.0,
+   "trades": 7
+  },
+  "sess_end_mn": {
+   "value": 10,
+   "net_profit": 281.5,
+   "max_drawdown": 1571.5,
+   "trades": 21
+  }
+ },
+ "flat": [
+  "pivot_right",
+  "sess_start_mn"
+ ],
+ "untested": [],
+ "baseline": {
+  "params": {
+   "pv": 20.0,
+   "stop_dollars": 700,
+   "tp_dollars": 750,
+   "profile_lookback": 120,
+   "profile_rows": 10,
+   "min_delta_pct": 10.0,
+   "ema_len": 20,
+   "pivot_left": 2,
+   "pivot_right": 2,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 16,
+   "sess_end_mn": 0,
+   "use_skip": true,
+   "skip_start_hr": 21,
+   "skip_start_mn": 30,
+   "skip_end_hr": 23,
+   "skip_end_mn": 30
+  },
+  "net_profit": 2331.0,
+  "max_drawdown": 3252.0,
+  "trades": 14,
+  "win_rate": 50.0,
+  "profit_factor": 1.496,
+  "biggest_winner": 2174.0,
+  "biggest_loser": -721.0,
+  "held_loser": -721.0,
+  "exits": [
+   {
+    "exit": "XL",
+    "trades": 8,
+    "pnl": 1677.0,
+    "favorable": 745.12,
+    "adverse": -434.88
+   },
+   {
+    "exit": "XS",
+    "trades": 5,
+    "pnl": 1050.0,
+    "favorable": 630.5,
+    "adverse": -595.5
+   },
+   {
+    "exit": "Session Close",
+    "trades": 1,
+    "pnl": -396.0,
+    "favorable": 399.5,
+    "adverse": -475.5
+   }
+  ]
+ },
+ "read": true,
+ "version": 3
+}

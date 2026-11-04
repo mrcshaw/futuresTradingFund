@@ -161,7 +161,10 @@
    }
   ]
  },
- "reviewed": [],
+ "reviewed": [
+  "7 ES 15m",
+  "90 GC 15m"
+ ],
  "empty_charts": [],
  "version": 3
 }

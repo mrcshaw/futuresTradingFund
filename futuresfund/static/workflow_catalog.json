@@ -1,0 +1,2404 @@
+{
+  "version": 1,
+  "world": {
+    "width": 2800,
+    "height": 1600
+  },
+  "goal": {
+    "title": "Low drawdown, profit, and the library trade count at a steady pace",
+    "notes": [
+      "Every test needs the library boxes pro-rated to its share of a 260-session year: 5, 21 and 64 sessions for the 7, 30 and 90-day tests (objective.stage_bars, STAGE_SESSIONS). With $6,000 and 60 trades that is $115, $485 and $1,477 of profit and 2, 5 and 15 trades; 100 trades gives 2, 9 and 25.",
+      "A week is 1/52 of the year: $6,000 is $115 a week and 60 trades is about 1.2 a week. The strategy library page shows these numbers live as the owner types, in the table 'What each test needs'.",
+      "The trade count is a count over the window, not distinct trading days: two trades on one Monday pass the 7-day test at 60 a year. Nothing measures distinct trading days (backtrader_engine.py:1150-1162).",
+      "Low drawdown: the pro account rule lets each dip reach $2,500 until profit passes the $3,000 target, then 30% of every dollar above it. It is the same on 7, 30, 90 and 365 days on purpose: a short window's drawdown can never be larger than the year that holds it (objective.py:949-985).",
+      "One trade may not risk more than $750 (1.5% of $50,000); the stop setting is what is checked, so a fill past it on a gap or thin volume still counts (objective.py:1130-1147).",
+      "Most trades: 600 a year at the run's pace on every test (11, 48 and 147 on the stages). The 130-a-year band in research_rank only steers the search; it passes or fails nothing.",
+      "No single score of this goal judges each change. scale_move, _climb_choice, research_rank, the highest profit and the trade count each decide a different part of the search (learn.py:2087, 6382-6398, 2006-2016; objective.py:389-445, 1358-1392; frequency.py:501-510).",
+      "The 'Extra floor of trades a week' setting on the goal node (objective.STAGE_TRADES_PER_WEEK) is 0, off. Above 0 it adds that many trades for every five sessions on top of the library count."
+    ]
+  },
+  "lanes": [
+    {
+      "id": "intake",
+      "title": "Intake",
+      "y": 40,
+      "height": 290,
+      "color": "#38bdf8"
+    },
+    {
+      "id": "prepare",
+      "title": "Prepare",
+      "y": 340,
+      "height": 290,
+      "color": "#fbbf24"
+    },
+    {
+      "id": "prove",
+      "title": "Prove",
+      "y": 640,
+      "height": 290,
+      "color": "#34d399"
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "y": 940,
+      "height": 290,
+      "color": "#f472b6"
+    },
+    {
+      "id": "creation",
+      "title": "Creation",
+      "y": 1240,
+      "height": 290,
+      "color": "#a78bfa"
+    }
+  ],
+  "agents": {
+    "Chart researcher": {
+      "icon": "researcher",
+      "color": "#22d3ee",
+      "role": "One seat for all three charts. Answers queued questions (first read, repair, stall, failed stage); it does not pick each attempt's settings. While it researches a script it converts an ATR exit to the dollar stop, cuts the trades of a script over the trade cap, and writes the question for the owner when a script cannot go on (no compile, no entry rule, a PineTS stop, no trades, too many trades after the cut). When the owner answers, it makes the change to the script itself and the chart developer reruns the backtests."
+    },
+    "2min chart developer": {
+      "icon": "developer",
+      "color": "#4ade80",
+      "role": "Runs the 2m chart of every instrument, one engine each: 1 ES, 5 GC, 8 NQ, 11 MNQ, 14 MES, 17 M2K, 20 YM. Prepares, compiles and backtests scripts, and files year runs that pass. Its seven engines share this one status light."
+    },
+    "5 min chart developer": {
+      "icon": "developer",
+      "color": "#b6f23a",
+      "role": "Runs the 5m chart of every instrument, one engine each: 2 ES, 6 GC, 9 NQ, 12 MNQ, 15 MES, 18 M2K, 21 YM. Its seven engines share this one status light."
+    },
+    "15 min chart developer": {
+      "icon": "developer",
+      "color": "#2ee6c5",
+      "role": "Runs the 15m chart of every instrument, one engine each: 3 ES, 7 GC, 10 NQ, 13 MNQ, 16 MES, 19 M2K, 22 YM. Its seven engines share this one status light."
+    },
+    "Trading Analyst": {
+      "icon": "analyst",
+      "color": "#f5e663",
+      "role": "Writes the 'How this script works' description and posts a line on every year attempt."
+    },
+    "Script checker": {
+      "icon": "checker",
+      "color": "#ff5fa8",
+      "role": "Checks drafts mechanically (compiles, has the delta core) and checks the analyst's descriptions."
+    },
+    "Creation tester": {
+      "icon": "tester",
+      "color": "#d66bff",
+      "role": "Owns engine 4: develops drafts on the one-year search and validates compile repairs. In spare time it studies any instrument's chart no chart engine has claimed."
+    },
+    "2min strategy developer": {
+      "icon": "writer",
+      "color": "#8b8cff",
+      "role": "Writes new delta volume breakout drafts for the 2m chart."
+    },
+    "5 min strategy developer": {
+      "icon": "writer",
+      "color": "#b07bff",
+      "role": "Writes new delta volume breakout drafts for the 5m chart."
+    },
+    "15 min strategy developer": {
+      "icon": "writer",
+      "color": "#ff6bec",
+      "role": "Writes new delta volume breakout drafts for the 15m chart."
+    },
+    "Strategy developer": {
+      "icon": "writer",
+      "color": "#e9b8ff",
+      "role": "The name engine 4's draft searches post under. Not a roster seat, so it has no status light."
+    },
+    "Lesson writer": {
+      "icon": "lesson",
+      "color": "#ff8a3d",
+      "role": "Records each draft's verdict in creation_lessons.json. No model call in research."
+    },
+    "Card keeper": {
+      "icon": "cards",
+      "color": "#e5e7eb",
+      "role": "Receives indicator-library notes. Its card builder has no caller, so the cards stay as saved."
+    },
+    "Risk Manager": {
+      "icon": "risk",
+      "color": "#ff5c5c",
+      "role": "Posts a risk note on every year attempt. Silent during the 7/30/90 stages."
+    },
+    "Systems Administrator": {
+      "icon": "sysadmin",
+      "color": "#5fa8ff",
+      "role": "Gets engine faults and the error journal. Its engine watch is never started."
+    },
+    "Portfolio Manager": {
+      "icon": "pm",
+      "color": "#ffb020",
+      "role": "Writes and emails the research report when a chart result passes acceptance. Carries the researchers' questions to the owner: adds the open questions to one email (a digest when several wait, at most one a minute), reads the replies from the mailbox, the mail webhook or the answer box, and passes each answer to the researcher who asked."
+    },
+    "Ingestion": {
+      "icon": "ingestion",
+      "color": "#ffd6a5",
+      "role": "Records TradingView alert bars, which the research bars append after the download."
+    }
+  },
+  "nodes": [
+    {
+      "id": "learning",
+      "title": "Learning folder",
+      "kind": "folder",
+      "icon": "folder",
+      "badge": "",
+      "x": 80,
+      "y": 110,
+      "lane": "intake",
+      "summary": "Scripts waiting to be studied. A script stays here until all 21 studies (7 instruments x 3 charts) have a result.",
+      "detail": "A file counts as a job when it is a .pine file, or a .txt file with //@version or strategy( in its first 40 lines. Folder listings are cached by the folder's change time. When no chart file has a volume column, every script that mentions volume is left out of every queue for this run, and each chart developer posts that. A Python twin (<stem>.py or <stem>_strategy.py) is studied with its Pine file, not as a second job. The file stays in learningStrategies until every research instrument has a result on 2m, 5m and 15m; then it moves to learnedStrategies. Research also starts again by itself when the desk boots and ~/.futuresfund/research_on exists.",
+      "decisions": [
+        "Not .pine and no //@version or strategy( in the first 40 lines -> not a job",
+        "Charts have no volume and the script mentions volume -> left out for this run",
+        "Every instrument done on all three charts -> learnedStrategies"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/learningStrategies/",
+        "futuresfund/researchNotes/<stem>.json",
+        "~/.futuresfund/research_on"
+      ],
+      "code": [
+        "futuresfund/learn.py:20",
+        "futuresfund/learn.py:985-1034",
+        "futuresfund/learn.py:1037-1044",
+        "futuresfund/learn.py:1099-1114",
+        "futuresfund/learn.py:1400-1416",
+        "futuresfund/server.py:802-821"
+      ],
+      "knobs": [],
+      "issues": [
+        "Each script costs 21 studies (7 instruments x 3 charts) before it leaves this folder, and no early result cuts that short, even when every chart so far failed the 7-day stage (learn.py:143-146, 166-216, 4314).",
+        "A script that mentions volume is skipped for the whole run when no chart file has a volume column (learn.py:1099-1114)."
+      ],
+      "live": "learning"
+    },
+    {
+      "id": "queue",
+      "title": "Queue order",
+      "kind": "process",
+      "icon": "queue",
+      "badge": "",
+      "x": 420,
+      "y": 110,
+      "lane": "intake",
+      "summary": "Sorts the jobs: names in queue_first.json first, then delta-core scripts, then redesigns. created_ scripts sort last inside their group.",
+      "detail": "The sort key is: the index in researchNotes/queue_first.json (unlisted names after), not delta core, not a redesign, the name starts with created_, then the lowercase name. Delta core means delta_core.has_core: the text has a POC, a delta and a volume-profile pattern. 'Created scripts last' holds only inside one group, so a created_ delta-core script sorts ahead of a non-core original. jobs_for_chart(timeframe) first returns learning scripts that still have an open instrument on this chart and are not held or claimed. Only when none are left does it return createdStrategies scripts that engine 4 is not developing and whose notes hold a run that passes acceptance. You can edit the queue_first list from this node.",
+      "decisions": [
+        "Named in queue_first.json -> first, in file order",
+        "Delta core -> ahead of non-core",
+        "Redesign -> ahead inside its group",
+        "created_ prefix -> behind inside its group",
+        "No learning script open on this chart -> passed createdStrategies scripts"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/queue_first.json",
+        "futuresfund/learningStrategies/",
+        "futuresfund/createdStrategies/"
+      ],
+      "code": [
+        "futuresfund/learn.py:1037-1058",
+        "futuresfund/learn.py:1061-1080",
+        "futuresfund/learn.py:792-813",
+        "futuresfund/learn.py:373-397",
+        "futuresfund/learn.py:130-133",
+        "futuresfund/learn.py:710-719",
+        "futuresfund/delta_core.py:44-48",
+        "futuresfund/redesign.py:46-47"
+      ],
+      "knobs": [],
+      "issues": [
+        "The order uses only names and text. No past result, drawdown or trade pace moves a script up or down (learn.py:1037-1058).",
+        "A created_ delta-core script sorts ahead of a non-core original, so 'created scripts last' holds only inside one group (learn.py:1052-1055)."
+      ],
+      "live": "queue"
+    },
+    {
+      "id": "claim",
+      "title": "Engines claim a script",
+      "kind": "engine",
+      "icon": "engine",
+      "badge": "E1-E22",
+      "x": 760,
+      "y": 110,
+      "lane": "intake",
+      "summary": "Every instrument has three chart engines, 2m, 5m and 15m: E1-E3 ES, E5-E7 GC, E8-E10 NQ, E11-E13 MNQ, E14-E16 MES, E17-E19 M2K, E20-E22 YM. E4 is the creation engine. Each engine takes the next script its own instrument still needs on its chart. The backtests run on a pool of worker processes, at most engines_at_once at a time.",
+      "detail": "roster.ENGINE_DESKS is generated from ENGINE_ROOTS = (ES, GC, NQ, MNQ, MES, M2K, YM) x (2m, 5m, 15m), with the creation engine kept at id 4, so engine numbers never shift while the desk runs. Each of the 21 chart engines runs developer_loop on its own thread with desk['root'] and desk['timeframe']; the three chart developers keep their timeframe, so each owns seven engines and every post names the engine and its instrument. Every pass first runs file_completed_soon, which files scripts that finished every chart at most once a minute across all 21 loops (a shared timestamp and lock). JobClaims.take(root, timeframe) then claims, under one lock, the first script from jobs_for_chart(timeframe, root=...) whose root is still pending on that chart and that is not held, parked or claimed for this (file, chart, root). So two instruments' engines on one timeframe can study the same file at the same time, and _study(..., root=) studies only that instrument (it returns at once if the root is no longer pending) and loads only that chart's bars. Holds and parks are keyed (file, chart, root); a compile failure holds the whole file and is counted once per file, and its repair (one per file, not per developer) is picked up by the engine that started it. The study's outcome decides what happens next: 'repairing' holds the file, 'busy' holds this instrument's chart; 'skipped', 'engine', 'failed' and 'blocked' park it on this instrument's chart until research restarts; 'cannot_run' and 'awaiting' mean the file left the queue. With no job, the loop picks up a validated repair, gives a held script one more turn (fewer than 2 failures for that file), or sleeps 20 s. Engine 4 also takes learning jobs, as the Creation tester, after a Restart of engine 4, while Hold is on, or when no draft is queued: it goes through every (instrument, chart) pair, an instrument without engines of its own first. The 22 logical engines run their backtests on engine_workers' bounded pool: at most engines_at_once worker processes (default one per core but one, at least 2), started only when a backtest needs one, each keeping the bars of two charts, and a job goes to a free worker that already holds its chart first. An engine waiting for a worker shows 'Waiting for a free worker (N running at once)'. A chart engine sends a worker only the last year plus the 2000 warm-up bars (backtrader_engine.research_window); tests prove the result is the same as with the whole series. Skip of a waiting engine drops its queued job; Skip or Restart of a running one ends the worker that runs it. At 8:00am and 5:00pm the meetings pause every search.",
+      "decisions": [
+        "(file, chart, root) held, parked or claimed -> skip it",
+        "Root no longer pending on this chart -> the engine takes the next script",
+        "No job -> validated repair, retry a held script, or sleep 20 s",
+        "repairing -> hold the whole file; busy -> hold this instrument's chart",
+        "skipped, engine, failed or blocked -> park on this instrument's chart until research restarts",
+        "All workers busy -> wait for a free worker"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Chart researcher",
+        "Creation tester"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/learningStrategies/",
+        "futuresfund/createdStrategies/"
+      ],
+      "code": [
+        "futuresfund/roster.py:277-345",
+        "futuresfund/learn.py:1905-1937",
+        "futuresfund/learn.py:1599-1903",
+        "futuresfund/learn.py:1462-1522",
+        "futuresfund/learn.py:5330-5360",
+        "futuresfund/engine_workers.py:189-584",
+        "futuresfund/backtrader_engine.py:560-650",
+        "futuresfund/backtrader_engine.py:1126-1180",
+        "futuresfund/strategy_team.py:1892-1951",
+        "futuresfund/session.py:513-531"
+      ],
+      "knobs": [
+        "engines_at_once"
+      ],
+      "issues": [
+        "Fixed: every instrument now has its own 2m, 5m and 15m engine, so 2m no longer waits on one engine for all seven instruments (roster.py:277-300).",
+        "The engine list is fixed (ENGINE_ROOTS). An instrument that research_instruments() adds later has no engines of its own; only engine 4's spare-time study covers it (learn.py:1462-1472).",
+        "The three chart developers each own seven engines and share one status light and one activity line, so the light shows the last engine that posted.",
+        "The 'waiting -> sleep 60 s' branch is dead code: _study_chart never returns that value.",
+        "With engines_at_once below 21, most chart engines wait for a worker most of the time; the pool, not the engine count, sets the research speed (engine_workers.py:328-393).",
+        "The desk process still builds and keeps every series it loads (research_bars._SERIES), so 21 charts stay in its memory even though workers get only the last year."
+      ],
+      "live": "claim"
+    },
+    {
+      "id": "prechecks",
+      "title": "Early checks",
+      "kind": "gate",
+      "icon": "gate",
+      "badge": "",
+      "x": 1100,
+      "y": 110,
+      "lane": "intake",
+      "summary": "Checks the file before any backtest. Nothing is refused for its trade count or an ATR exit any more: a chart that already measured more than 900 trades starts its study in the trade cut.",
+      "detail": "Checks run in this order. Not a strategy file -> stop. An ATR exit is not checked here: Prepare the working copy converts it to the dollar stop (strategy_team.convert_atr_exit). The file left learning or created (another chart moved it) -> leave it. Nothing pending on this chart -> file the script if every chart is done, else stop. Instruments another copy of the same script already finished are dropped. The old refusal of a script whose notes showed more than 900 trades anywhere is gone: objective.chart_over_cap reads only this instrument and timeframe (notes over_trade_charts and that chart's trials), and when it is over 900 the study starts in the trade cut (learn._start_cut_from_notes). The file may also have left because it waits for the owner's answer in awaitingAnswerStrategies; the chart says where it went (learn._left_text). A script whose own settings raise in PineTS on attempt 1, or that PineTS cannot run, makes the chart researcher ask the owner (kind unrunnable) instead of parking it.",
+      "decisions": [
+        "ATR exit -> not refused; converted to the dollar stop in Prepare the working copy",
+        "More than 900 trades already on this chart -> not refused; the study starts in the trade cut",
+        "Nothing pending on this chart -> file if every chart is done, else stop",
+        "Passes -> pick the instrument",
+        "The script stops in PineTS on its first attempt -> the researcher asks the owner, awaitingAnswerStrategies"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/<stem>.json"
+      ],
+      "code": [
+        "futuresfund/learn.py _study_chart",
+        "futuresfund/learn.py _start_cut_from_notes",
+        "futuresfund/objective.py chart_over_cap",
+        "futuresfund/strategy_team.py convert_atr_exit"
+      ],
+      "knobs": [],
+      "issues": [
+        "Fixed: an ATR exit used to park the script without a single backtest. It is now converted to the dollar stop, with the script's own exit kept (strategy_team.convert_atr_exit; learn.py _study_chart).",
+        "Fixed: one run with more than 900 trades on any chart used to park the whole script for every chart and instrument. The count is now kept per chart (notes over_trade_charts) and starts the trade cut on that chart only.",
+        "Fixed: a chart whose file another chart moved always said it was 'in cannotRunStrategies'. It now says where the file went (learn._left_text)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "instrument",
+      "title": "Pick the instrument",
+      "kind": "process",
+      "icon": "queue",
+      "badge": "",
+      "x": 1440,
+      "y": 110,
+      "lane": "intake",
+      "summary": "Each chart engine has its own instrument, so the instrument is the engine's: engine 8 studies only NQ 2m. A study without a root (an older caller) picks the first pending instrument.",
+      "detail": "research_instruments() lists ES, then GC (QO when GC has no download), NQ (always listed), MNQ and MES when their chart folders exist, then every other chart folder such as M2K and YM. The engines are fixed to ENGINE_ROOTS = (ES, GC, NQ, MNQ, MES, M2K, YM). A chart engine passes its root to _study and _study_chart; when that root is no longer pending on this chart (another copy or run finished it) the study returns at once. Only a study without a root picks one: for a delta-core script, uncovered_first moves instruments with no accepted delta volume breakout result to the front, then root = pending[0]. Engine 4's spare-time study passes the root of the (instrument, chart) pair it took. The Chart researcher posts 'Testing <file> on the <chart> <root> chart'.",
+      "decisions": [
+        "Chart engine -> its own root; not pending -> return, take the next script",
+        "No root given, delta-core script -> instruments without an accepted delta result first",
+        "No root given -> research order ES, GC, NQ, MNQ, MES, then the others"
+      ],
+      "agents": [
+        "Chart researcher"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "chartData/<root>/",
+        "futuresfund/researchNotes/*.json (coverage scan)"
+      ],
+      "code": [
+        "futuresfund/learn.py:149-163",
+        "futuresfund/learn.py:4973-5010",
+        "futuresfund/delta_core.py:81-148"
+      ],
+      "knobs": [],
+      "issues": [
+        "The coverage scoreboard keeps the highest-profit accepted run per instrument, not the lowest drawdown, so 'covered' can mean a risky result (delta_core.py:106-117).",
+        "Each script still needs 7 instruments x 3 charts = 21 studies before it is filed, but the 21 engines can run them at the same time, limited by engines_at_once."
+      ],
+      "live": ""
+    },
+    {
+      "id": "goal",
+      "title": "Acceptance goal",
+      "kind": "mission",
+      "icon": "mission",
+      "badge": "1.2/wk",
+      "x": 2120,
+      "y": 110,
+      "lane": "intake",
+      "summary": "The one acceptance check that every stage, filing and email reads: profit, the pro-account drawdown rule, a $750 stop cap, and the library trade count, each pro-rated to the test's share of the year where it is a total.",
+      "detail": "objective.acceptance_misses is the single check, and objective.stage_bars(days) holds its numbers. The boxes come from book.strategy_acceptance in ~/.futuresfund/futures_fund.json: minimum profit, profit factor, win rate and minimum trades, each with an on/off flag, plus a 'goal' box that steers scale_move. A save is live at once. A test's share of the year is its sessions out of 260 (STAGE_SESSIONS = 7: 5, 30: 21, 90: 64, 365: 260; another day count uses its trading days). Profit: above $0 always, and with the box on above min_profit x share ($115, $485, $1,477 and $6,000 with a $6,000 box; $115 a week). Fewest trades: ceil(min_trades x share) with the box on (60 gives 2, 5, 15 and 60; 100 gives 2, 9, 25 and 100), never under ceil(4 x share), plus the optional STAGE_TRADES_PER_WEEK floor (0 = off) as ceil(floor x sessions / 5). Most trades: 600 a year at the run's pace on every test (11, 48, 147 and 600). Not scaled: the drawdown rule (each dip may reach $2,500 until profit passes the $3,000 target, then grows by 30% of every dollar above it, because a window's drawdown is never larger than the year that holds it), the $750 stop (1.5% of $50,000), the profit factor and the win rate. Year only: more profit than drawdown, and more profit on each of the last 7, 30, 90 and 365 days than on the window before. acceptance_reason(row, days) and the stage posts name the missed bar with the stage's numbers. book.snapshot sends acceptance_stages (stage_bars on 7, 30, 90 and 365 days) to the library page and the Mission bar.",
+      "decisions": [
+        "Misses nothing on a stage window (its pro-rated bars) -> stage passed",
+        "Misses nothing on the year -> filing and email allowed",
+        "Under the library trade count for the window, or over 600 a year at its pace -> fails, whatever the profit"
+      ],
+      "agents": [
+        "Portfolio Manager"
+      ],
+      "engines": [],
+      "files": [
+        "~/.futuresfund/futures_fund.json (strategy_acceptance)"
+      ],
+      "code": [
+        "futuresfund/objective.py:118-300",
+        "futuresfund/objective.py:1164-1280",
+        "futuresfund/objective.py:1284-1400",
+        "futuresfund/objective.py:855-930",
+        "futuresfund/objective.py:949-985",
+        "futuresfund/objective.py:1130-1147",
+        "futuresfund/book.py:705-806",
+        "futuresfund/server.py:304-339"
+      ],
+      "knobs": [
+        "stage_trades_per_week"
+      ],
+      "issues": [
+        "The trade count is counted over the window, not distinct trading days: two trades on one Monday pass the 7-day test at 60 a year. Nothing measures distinct trading days (objective.py:410-415; backtrader_engine.py:1150-1162).",
+        "The pace targets disagree: research_rank and the climb still call 130 to 600 trades a year on pace, while acceptance needs the library count (60 a year, about 1.2 a week), so a run between 60 and 130 a year passes but ranks as off pace (objective.py:30, 427-440, research_rank).",
+        "result_scale and scale_move compare a stage row with the unscaled scale_min_profit and scale_min_trades, so with the goal box on profit or trades a stage row never reads 1.0 (objective.py:result_scale, scale_move).",
+        "No single score of low drawdown, profit and the library trade count judges each change: direction uses scale_move, the fallback uses _climb_choice, 'best' uses research_rank (win rate first), the indicator anchor uses the highest profit, and the pace moves use the trade count (learn.py:2087, 6382-6398, 2006-2016; objective.py:389-445, 1358-1392; frequency.py:501-510).",
+        "With the goal box on profit_factor, scale_move tops out at 1.0 once PF > 1.1 and drawdown is inside the limit, so profit size and trades a week stop counting and a better run reads as 'flat' (objective.py:1149-1160, 1219-1229; learn.py:1752-1756)."
+      ],
+      "live": "goal"
+    },
+    {
+      "id": "golden",
+      "title": "Golden strategy",
+      "kind": "star",
+      "icon": "star",
+      "badge": "",
+      "x": 2460,
+      "y": 110,
+      "lane": "intake",
+      "summary": "The owner's reference strategy. Its idea and script are written into the researcher's questions and the strategy developers' prompts.",
+      "detail": "The owner enters the idea, a Pine script that shows it, and its TradingView List-of-trades export on the Golden page (POST /api/golden). The desk runs the script and compares every trade with the export; it counts as confirmed when at least 20 trades are covered and 95% of them match. The active row's idea line is added to every Chart researcher question (read, repair, stall and stage reviews). The creation brief (idea, results and the full script, with 'write a new script from the same idea, do not copy it') is added to every strategy developer prompt. The delta volume breakout core that every draft must contain is described as the golden strategy's core. The mechanical search never reads it, and its numbers are not an acceptance bar.",
+      "decisions": [
+        "No golden strategy set -> the prompt lines are blank",
+        "At least 20 trades covered and 95% matched -> confirmed"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min strategy developer",
+        "5 min strategy developer",
+        "15 min strategy developer"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/researchNotes/golden/golden.json",
+        "futuresfund/researchNotes/golden/<id>/<export>.csv"
+      ],
+      "code": [
+        "futuresfund/golden.py:1-9",
+        "futuresfund/golden.py:64-121",
+        "futuresfund/golden.py:188-235",
+        "futuresfund/attempt_reason.py:462",
+        "futuresfund/attempt_reason.py:498-501",
+        "futuresfund/strategy_team.py:1243",
+        "futuresfund/strategy_team.py:1280",
+        "futuresfund/delta_core.py:1",
+        "futuresfund/delta_core.py:38",
+        "futuresfund/server.py:546-590"
+      ],
+      "knobs": [],
+      "issues": [
+        "The golden strategy reaches only the model prompts. The search that picks every attempt's settings and the acceptance check never read it, so 'results like the golden strategy' is never measured (golden.py:188-235; attempt_reason.py:498-501; objective.py:970-1046)."
+      ],
+      "live": "golden"
+    },
+    {
+      "id": "copy",
+      "title": "Prepare the working copy",
+      "kind": "process",
+      "icon": "files",
+      "badge": "",
+      "x": 1440,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Builds the copy the engine runs: fixes a dead entry, turns fixed exits and pivots into inputs, converts an ATR exit to the dollar stop, adds the session inputs and a risk exit.",
+      "detail": "The run uses prepare_backtest(promote_fixed_pivots(promote_fixed_exits(repair_dead_entry(source)))). repair_dead_entry fixes ta.highest(volume, ...) to volume[1] and fixes cooldown stamps. promote_fixed_exits and promote_fixed_pivots turn fixed numbers into inputs the search can move. prepare_backtest calls ensure_session, which adds the standard session inputs (use_session, sess_start_hr 18, sess_end_hr 16 and others, all searchable) and wraps entries in 'if in_session'. Next convert_atr_exit replaces an exit distance set with ATR by the dollar stop: stop_dist = atr * stop_mult becomes stop_dollars / pv, an ATR take profit becomes tp_dollars / pv, and a target that is a ratio of the stop stays. Only ATR that feeds a strategy.exit stop, target or trail changes; ATR in a signal (SuperTrend bands, a Keltner channel, a gap size) is left alone. It declares pv and stop_dollars (input.int, $250 on a full contract and $50 on a micro, minval 50, maxval 700, step 10) and tp_dollars when a target needs it ($500 or $100), adds the open-loss close so the stop always holds, and removes the multiplier inputs, the ATR length and ta.atr when nothing else reads them. A multiplier a label still reads becomes a fixed value, so the search never ladders it as a dollar stop. The developer posts what changed, and the notes keep it under exit_conversion. A fill past the stop on a gap or thin volume is accepted while the stop is $750 or less (objective.trade_loss_ok). The converted script keeps its own exit (break-even, trail, re-sent exits) or takes the dollar-stop branch with its converted stop; it never takes the shared-block strip. Then ensure_risk_management has three branches: a script with its own exit keeps it and gets an open-loss close at stop_dollars; a script that already has a dollar stop keeps it; any other script gets the shared RISK block ($250 stop, $500 take profit, trail off). The developer posts each change. The Trading Analyst writes a 'How this script works' description on a side thread; once the Script checker accepts it, it is written above the script in the file on disk, if the file has not changed since. The script's indicators are filed in the indicator library. The ATR conversion is the chart researcher's step: its post and the notes read 'Chart researcher converted the ATR exit to ...'.",
+      "decisions": [
+        "ATR exit -> converted to the dollar stop, own exit kept",
+        "Own exit -> keep it, plus an open-loss backstop",
+        "Already has a dollar stop -> keep it",
+        "Else -> shared $250 stop, $500 take profit, trail off"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Trading Analyst",
+        "Script checker",
+        "Card keeper",
+        "Chart researcher"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/learningStrategies/<file> (description written above the script)",
+        "futuresfund/researchNotes/indicator_library.json"
+      ],
+      "code": [
+        "futuresfund/learn.py:4321-4368",
+        "futuresfund/entry_rules.py:339-357",
+        "futuresfund/learn.py:4615-4695",
+        "futuresfund/strategy_team.py:997-1007",
+        "futuresfund/strategy_team.py:302-314",
+        "futuresfund/strategy_team.py:352-363",
+        "futuresfund/strategy_team.py:918-994",
+        "futuresfund/strategy_team.py:376-397",
+        "futuresfund/learn.py:4192-4227",
+        "futuresfund/learn.py:4833-4847",
+        "futuresfund/strategy_team.py:601-760",
+        "futuresfund/atr_exits.py"
+      ],
+      "knobs": [],
+      "issues": [
+        "ensure_session wraps entries in 'if in_session' and strips futures gates, which changes the script's logic before the first test, despite values-only research (strategy_team.py:302-312, 352-363).",
+        "The file on disk is changed: the Trading Analyst's description is written above the script, so 'the original is never touched' is not true (learn.py:4208-4219).",
+        "The converted stop starts at the desk's opening value ($250, or $50 on a micro), not at a dollar amount sized from the script's own ATR on that chart. The search then measures $250, $500 and $700 (strategy_team.convert_atr_exit).",
+        "Research accepts a fill past the converted stop on a gap, but the live and paper broker still clamp a gap loss at the dollar stop (tv_broker._loss_floor), so live results can lose less than research on a gap."
+      ],
+      "live": ""
+    },
+    {
+      "id": "bars",
+      "title": "Load the chart bars",
+      "kind": "process",
+      "icon": "bars",
+      "badge": "",
+      "x": 1100,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Builds this engine's one chart for its instrument from Databento minutes, TradingView exports and the alert candles.",
+      "detail": "_load_frames(root, timeframes=(timeframe,)) builds only this engine's chart with research_bars.research_series (the other two timeframes are not read). With a Databento download, its minutes are folded to the chart width, TradingView export bars replace the bars they cover, and alert candles after the download's last bar are appended up to the last closed bar. That alert tail is rebuilt at most every LIVE_REFRESH = 900 s. Without a download, TradingView exports are used, filled from 1-minute export and alert candles where every minute exists. Fewer than 80 bars on this chart -> the developer posts it and the study returns 'skipped', so this chart sets the script aside for this run. The backtest later cuts its window: the last 260 sessions for the year, or the stage's 5, 21 or 64 sessions with 2000 warm-up bars, where only trades that enter inside the window count. A chart engine's run sends a worker only the last year and the 2000 bars before it (research_window), which gives the same result as the whole series; the creation engine's five-year runs send everything.",
+      "decisions": [
+        "Databento present -> folded download + TradingView exports + alert tail",
+        "No download -> TradingView exports + 1-minute fill",
+        "80 bars or more -> compile",
+        "Under 80 bars -> skipped on this chart for this run"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Ingestion"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "Databento minute files and cache (historical_bars)",
+        "chartData/<root>/ (TradingView exports)",
+        "~/.futuresfund/live_bars/ (alert candles)"
+      ],
+      "code": [
+        "futuresfund/learn.py:5616-5625",
+        "futuresfund/learn.py:5060-5075",
+        "futuresfund/research_bars.py:29",
+        "futuresfund/research_bars.py:47-105",
+        "futuresfund/research_bars.py:107-136",
+        "futuresfund/backtrader_engine.py:1126-1180",
+        "futuresfund/objective.py:116-119"
+      ],
+      "knobs": [
+        "use_alert_bars",
+        "live_refresh"
+      ],
+      "issues": [
+        "Year runs get no warm-up bars: only stage runs get the 2000 warm-up bars, so year indicators start cold at the window edge (backtrader_engine.py:39, 1093-1094).",
+        "Under 80 bars gives no result, only a park until research restarts, so that script cannot reach learnedStrategies until the bars exist (learn.py:4369-4379, 143-146)."
+      ],
+      "live": "bars"
+    },
+    {
+      "id": "compile",
+      "title": "Compile and repair",
+      "kind": "gate",
+      "icon": "compile",
+      "badge": "",
+      "x": 760,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "The desk Pine compiler checks the copy. A failure goes to the developer's model for a repair, up to 3 times, while the chart researcher emails the error; then the researcher asks the owner.",
+      "detail": "repair_for_pine first declares missing names and replaces math.min and math.max, up to 12 passes, on the copy. compile_error runs tv_problems and compile_pine (the desk compiler, not PineTS), and pine_runtime.supported must be true. A failure calls send_to_repair. When this script already had COMPILE_REPAIR_TRIES = 3 repairs, the chart researcher asks the owner (question kind compile) and the script waits in awaitingAnswerStrategies. Otherwise one background repair starts per file (whichever engine found the error), and the researcher emails the error at once (kind repair, the file stays put): a fixed script from the owner replaces the file, and other words go to the developer as a hint for the next repair (questions.repair_hint). Another engine that meets the same file while it is being repaired does not start a second repair; the whole file is held, so none of the 21 engines opens it, and the failure is counted once for the file. The engine that started the repair picks up the validated script on its own instrument's chart, and the hold is released for every chart. The repair runs repair_for_pine, an LLM rewrite (repair_with_developer) and _legal_defaults, then validates with compile_error plus a 600-bar PineTS dry run. A valid repair saves the original to researchNotes/script_originals and writes the repaired copy over the file in learningStrategies; the Creation tester posts the check. The engine moves on, and pickup_validated tests the script later. The repair count lives in memory, so it resets on restart.",
+      "decisions": [
+        "Compiles -> entry rule",
+        "Fails, fewer than 3 repairs -> developer repair thread, the error is emailed; the engine takes the next script",
+        "Fails after 3 repairs -> the researcher asks the owner, awaitingAnswerStrategies"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Creation tester"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/learningStrategies/<file> (overwritten by a valid repair)",
+        "futuresfund/researchNotes/script_originals/",
+        "cannotRunStrategies/"
+      ],
+      "code": [
+        "futuresfund/learn.py:4380-4400",
+        "futuresfund/strategy_team.py:476-543",
+        "futuresfund/learn.py:430-460",
+        "futuresfund/learn.py:463-540",
+        "futuresfund/learn.py:543-597",
+        "futuresfund/attempt_reason.py:569-575"
+      ],
+      "knobs": [
+        "compile_repair_tries"
+      ],
+      "issues": [
+        "A valid repair is an LLM rewrite written over the file on disk, and it is checked only for compiling and a dry run, not for its effect on profit, drawdown or trades (learn.py:463-540).",
+        "The repair dry run always uses ES 5m bars and lets non-script PineTS errors through (strategy_team.py:491-506).",
+        "The repair count is kept in memory only, so every restart gives a broken script 3 more model rewrites (learn.py:430-433)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "entry",
+      "title": "Entry rule",
+      "kind": "gate",
+      "icon": "rule",
+      "badge": "",
+      "x": 420,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Makes sure the engine can find the entries. A script PineTS can run passes at once; otherwise the developer's model writes a Python entry rule.",
+      "detail": "ensure_entry_rule counts the rule as ready when pine_runtime.supported(source) is true, when the title is a built-in or has a saved entryRules file, or when the generic parser resolves the long and short condition names. Otherwise the developer's model writes a Python entry function, with 2 tries. The lock is per title and does not wait: when another chart is writing that rule, the study returns 'busy' and the script is held. A failed write makes the chart researcher ask the owner (kind entry_rule), and the script waits in awaitingAnswerStrategies. Because the compile step already requires pine_runtime.supported, this gate passes at once on the research path today.",
+      "decisions": [
+        "Ready -> read before testing",
+        "Another chart is writing the rule -> busy, hold the script",
+        "The model could not write it -> the researcher asks the owner, awaitingAnswerStrategies"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/entryRules/<title>.py"
+      ],
+      "code": [
+        "futuresfund/learn.py:4401-4419",
+        "futuresfund/entry_rules.py:36-81",
+        "futuresfund/entry_rules.py:117-155",
+        "futuresfund/entry_rules.py:181-218"
+      ],
+      "knobs": [],
+      "issues": [
+        "The compile step already requires pine_runtime.supported, and _ready returns True on that same test, so the rule writer and the 'no entry rule' park are effectively never reached on the research path (learn.py:4397-4402; entry_rules.py:117-122)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "read",
+      "title": "Read before testing",
+      "kind": "agent",
+      "icon": "agent",
+      "badge": "",
+      "x": 80,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Measures which inputs matter on 21 sessions, removes the ones that change nothing, and asks the Chart researcher a question that is answered later.",
+      "detail": "The step locks one record per script (the key ignores comments and pv, so every chart and instrument shares it); when another chart holds the lock, this chart uses the saved record. A waiting researcher answer is applied once: its settings are merged into the starting settings without being measured, and an answer script is installed only if it holds. When the record has no baseline with trades, measure_response runs 21 sessions: one baseline, then each searchable input at about 0.25x and 4x (exits first, session inputs last), up to 40 runs. Inputs whose profit, drawdown and trades never change are 'flat', and inputs nothing reads are 'unread'; both are removed from every later search of this script. A first read or a repair question goes to the researcher queue and the engine does not wait; the answer is used by the next chart that opens the script. VALUES_ONLY = True limits read and stall answers to a SETTING or KEEP, but a 'repair' answer may still rewrite the script while the allow_repair_rewrites setting is on (the default). An error in this step is swallowed and the study goes on from the defaults.",
+      "decisions": [
+        "Another chart holds the lock -> use the saved record",
+        "Answer waiting -> apply it now (settings not measured first)",
+        "No traded baseline -> measure every input on 21 sessions",
+        "Already read and faults remain (fewer than 3 repairs) -> ask for a repair (may rewrite)",
+        "No trades and fewer than 3 empty charts -> wait",
+        "Else -> ask for a read (values only)"
+      ],
+      "agents": [
+        "Chart researcher"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/script_diagnosis/<key>.json",
+        "futuresfund/researchNotes/script_diagnosis/decisions.jsonl",
+        "futuresfund/researchNotes/before_repair/<slug>_<n>.json"
+      ],
+      "code": [
+        "futuresfund/learn.py:4422-4433",
+        "futuresfund/learn.py:3864-3927",
+        "futuresfund/learn.py:3930-3963",
+        "futuresfund/script_diagnosis.py:24-25",
+        "futuresfund/script_diagnosis.py:69-74",
+        "futuresfund/script_diagnosis.py:99-123",
+        "futuresfund/script_diagnosis.py:133-186",
+        "futuresfund/script_diagnosis.py:189-230",
+        "futuresfund/learn.py:3754-3764",
+        "futuresfund/learn.py:2388-2414",
+        "futuresfund/learn.py:2417-2474",
+        "futuresfund/learn.py:2477-2499"
+      ],
+      "knobs": [
+        "read_before_testing",
+        "response_sessions",
+        "empty_charts",
+        "allow_repair_rewrites"
+      ],
+      "issues": [
+        "VALUES_ONLY does not cover 'repair' answers: a REWRITE that fixes an exit is kept whenever it still trades, is measured on 21 sessions only, and is written over the file on disk (learn.py:2426, 3767-3783, 3827; attempt_reason.py:610-630).",
+        "Researcher answers are applied without being measured, and become the start of whichever chart opens the script next, possibly another instrument or chart (learn.py:3957-3962).",
+        "The input test runs once per script at its default settings; an input found flat there is removed on every chart and instrument, because the record is keyed by script text only (script_diagnosis.py:69-74, 99-123, 133-186; learn.py:3921-3922, 2581-2584).",
+        "Stall questions read the unprepared file from disk, so their answers are filed under a key this step never loads; the answer is never used, but every chart is still reopened (learn.py:2394, 2471-2474, 2602-2607, 3872-3880).",
+        "The researcher prompt says every search starts at a $250 stop and a $500 take profit; that is true only for the shared risk block (attempt_reason.py:404; research_rules.py:219-221).",
+        "An error here is swallowed and the study continues from the defaults with no note (learn.py:4427-4433)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "awaiting",
+      "title": "awaitingAnswerStrategies",
+      "kind": "folder",
+      "icon": "folder",
+      "badge": "email",
+      "x": 1780,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Scripts waiting for the owner's emailed answer. The chart researcher asked, the Portfolio Manager emailed it, and the engine took the next script.",
+      "detail": "questions.ask_owner is called where the desk used to park a script on its own: compile repairs that still fail (kind compile), no entry rule (entry_rule), a PineTS stop or an unsupported script on the first attempt (unrunnable), 20 no-trade runs by a script that never traded (no_trades, with the _flat_reason text), and a trade cut that stayed over the cap (over_trades). The chart researcher on that chart writes the question: its model words it on the researcher's decision queue, with a plain template when the model is slow or unreachable, and code builds the numbered options so a reply stays parseable. A blocking question moves the script and its Python twin here, next to cannotRunStrategies, writes <stem>.question.txt, and the study returns 'awaiting'; developer_loop and engine 4 take the next script. A compile repair that starts also emails the error (kind repair) without moving the file, while the developer's own repair runs. Records are researchNotes/questions/<qid>.json (qid FFQ- plus 6 hex), kept in memory once loaded, one open question per file and kind. The Portfolio Manager's outbox thread emails at most one message a minute (mailer.send_question: Message-ID, Reply-To), a digest when several wait. Its inbox thread reads IMAP every inbox_poll_seconds (UNSEEN SUBJECT \"FFQ-\" and In-Reply-To), accepts only the report address or QUESTION_FROM with DKIM, SPF or DMARC passing, strips the quoted mail and marks it seen. The /hooks/mail webhook and this node's answer box use the same parser. A number picks an option; park, retry, name = value lines (checked against the script's input bounds; desk_ trade limits install the desk block) and a pasted //@version script are read by code; other words go to the researcher's model as SETTING lines, and when nothing usable comes out one follow-up email asks for a number or name = value. The researcher who asked applies the answer on its worker: values go to the notes under owner_answers and start every chart's search after prepare_research, the file moves back to its own folder, holds and repair and zero-trade counts are cleared, and a finished script's charts run again (notes archived in researchNotes/before_repair). Nothing is emailed from a test run or with FUTURES_MAIL_OFF set.",
+      "decisions": [
+        "Researcher asked a blocking question -> waits here, the engine takes the next script",
+        "Owner answered with a number, values, retry or a script -> the researcher applies it, back to the queue",
+        "Owner answered park -> cannotRunStrategies",
+        "Answer not understood -> one follow-up email, then it waits on this node"
+      ],
+      "agents": [
+        "Chart researcher",
+        "Portfolio Manager"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "awaitingAnswerStrategies/<name>",
+        "awaitingAnswerStrategies/<stem>.question.txt",
+        "researchNotes/questions/<qid>.json",
+        "researchNotes/questions/_inbox.json"
+      ],
+      "code": [
+        "futuresfund/questions.py ask_owner, send_pending, poll_inbox, accept_answer, apply_answer",
+        "futuresfund/mailer.py send_question, question_headers",
+        "futuresfund/learn.py _ask_owner, _with_owner_answers, _reopen_for_owner, release_file",
+        "futuresfund/server.py /api/questions, /api/questions/{qid}/answer, /hooks/mail/{token}"
+      ],
+      "knobs": [
+        "email_questions",
+        "inbox_poll_seconds"
+      ],
+      "issues": [
+        "Answers are applied automatically, so the sender allow-list and the DKIM, SPF or DMARC check are the only guard; a reply from another address is ignored.",
+        "Gmail needs IMAP turned on for the mailbox, or IMAP_PASSWORD set; until then the inbox reader tells the Systems Administrator once and only the answer box works.",
+        "An answer with values for a blocking question applies to the charts still to run; charts that finished before the question keep their results."
+      ],
+      "live": "awaiting"
+    },
+    {
+      "id": "park",
+      "title": "cannotRunStrategies",
+      "kind": "hazard",
+      "icon": "hazard",
+      "badge": "",
+      "x": 2120,
+      "y": 410,
+      "lane": "prepare",
+      "summary": "Scripts the owner parked. The desk no longer parks a script on its own: it asks the owner first.",
+      "detail": "leave_unrunnable moves the file and its Python twin to cannotRunStrategies at the project root and writes <stem>.reason.txt. It is reached when the owner answers park to a question (questions.apply_answer), when Email the researchers' questions is off (then the old reasons park here again: failed compile repairs, no entry rule, a PineTS stop, 20 no-trade runs, a failed trade cut), and for an engine 4 draft after 20 no-trade runs. Nothing in the folder is brought back. Nothing moves a script back automatically.",
+      "decisions": [
+        "Owner answered park -> parked here with the owner's reason",
+        "Questions by email off -> the old reasons park here",
+        "Engine 4 draft never traded in 20 runs -> parked here"
+      ],
+      "agents": [
+        "Chart researcher",
+        "Portfolio Manager",
+        "Creation tester"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "cannotRunStrategies/<name>",
+        "cannotRunStrategies/<stem>.reason.txt"
+      ],
+      "code": [
+        "futuresfund/learn.py CANNOT_RUN, leave_unrunnable, set_aside",
+        "futuresfund/questions.py _park",
+        "futuresfund/strategy_team.py _develop_queued"
+      ],
+      "knobs": [],
+      "issues": [
+        "A parked script is never retried, even after the rule that parked it changes or the compiler is fixed."
+      ],
+      "live": "cannot_run"
+    },
+    {
+      "id": "stage7",
+      "title": "7-day stage",
+      "kind": "stage",
+      "icon": "stage",
+      "badge": "7D",
+      "x": 80,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Searches the last 5 sessions for a run that passes the acceptance boxes pro-rated to 5 of 260 sessions ($115 and 2 trades with $6,000 and 60), up to 100 different results (STAGE_7_ATTEMPTS). A pass does not end the stage: it keeps searching for more profit with less drawdown, and its best pass carries its settings to 30 days.",
+      "detail": "PROVING_STAGES = (7 days, 5 sessions), (30, 21), (90, 64). The ledger marks the 7-day stage 'testing', which clears passes from an earlier study. _search runs with stage_attempts(7) = STAGE_7_ATTEMPTS = 100 different results (at most 200 engine runs) on the 5-session window, with 2000 warm-up bars; only trades that enter inside the window count. Each attempt's settings are picked mechanically, not by the model: the exit sweep first (the stop up the ladder to $700, then the target rung by rung), then the pace plan under the weekly floor (the library count over 52 weeks, at most 2 a week), then the scale climb judged by scale_move, then the nearest unused value of the best row. Attempt 1 runs the starting settings. Every search start zeroes the daily loss and profit limits and, on a micro, resets exits to a $50 stop and a $100 target. A row passes on objective.stage_bars(7): profit above zero and above min_profit x 5/260 ($115 with a $6,000 profit box), at least ceil(min_trades x 5/260) trades (2 with 60 or 100), at most 11 trades (600 a year at that pace), a stop no larger than $750, the drawdown rule and the other saved boxes. A pass does not end the stage: it keeps searching for the pass with the most profit after drawdown (profit minus max drawdown, ties to the lower drawdown) and stops when its attempts are spent or STAGE_PATIENCE = 25 runs in a row, repeats included, found no better pass. Every attempt post says 'attempt N of 100' and which pass is still the best. The post names each missed bar with these numbers, and a failed stage's review question carries them. The best pass is saved with a Pine copy in proving/7_day/, and the ledger keeps the attempts used, the budget and the best attempt's number. A cut-off search (Skip, Restart, file moved) is not a failure. A cut-off search after a pass does not start the 30-day stage. A stage with no pass spends its whole budget, then fails: the skip-window retry is off because VALUES_ONLY = True.",
+      "decisions": [
+        "A row passes -> keep searching for a better pass",
+        "Cut off (Skip, Restart, file moved) -> 'skipped', no fail mark",
+        "100 attempts, or 25 in a row without a better pass -> the best pass starts the 30-day stage",
+        "100 different results, no pass -> stage failed -> review",
+        "Every run had no trades -> ends early and the chart counts as finished",
+        "Over the trade cap (a stage pace over 600 a year) -> trade cut"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/proving/stages.json",
+        "futuresfund/researchNotes/proving/7_day/<script>_<root>_<tf>.pine",
+        "futuresfund/researchNotes/input_effects/<stem>.json"
+      ],
+      "code": [
+        "futuresfund/objective.py:116-131",
+        "futuresfund/learn.py:3797-3874",
+        "futuresfund/learn.py:4066-4135",
+        "futuresfund/learn.py:2558-2620",
+        "futuresfund/learn.py:3020-3068",
+        "futuresfund/learn.py:2030-2040",
+        "futuresfund/learn.py:1878-1883",
+        "futuresfund/proving.py:111-146",
+        "futuresfund/learn.py:4013-4025",
+        "futuresfund/backtrader_engine.py:1077-1110"
+      ],
+      "knobs": [
+        "stage_7_on",
+        "stage_7_attempts",
+        "stage_patience",
+        "stage_trades_per_week"
+      ],
+      "issues": [
+        "The 7-day test is 5 sessions and passes on 2 trades and about $115 of profit (with $6,000 and 60), while the drawdown limit stays $2,500 because a window's drawdown is never larger than the year's, so one lucky or risky week can pass (objective.py:175-262, 949-985).",
+        "The exit sweep runs first because _opening_is_best compares a 7-day profit with the unscaled $6,000; it raises the stop to $700 and the target rung by rung whatever each step did, about 17 of the 100 attempts (learn.py:1878-1883, 1991-2003, 2030-2040).",
+        "Fixed: the stage no longer stops at its first pass. It keeps the pass with the most profit after drawdown and the next stage builds on that one (learn.py:3020-3068, 4193-4290).",
+        "Stage attempts are not saved to the notes, so a study cut off inside a stage starts again at the 7-day stage from the script defaults (learn.py:1283-1315, 4097-4099; proving.py:122-123).",
+        "A failed 7-day stage (100 results on 5 sessions) finishes that chart for good and counts toward filing; there is no second chance (learn.py:196-216, 4510-4518, 4023-4025).",
+        "Turning this stage off also skips the 'testing' mark that clears old passes from the ledger (proving.py:122-123).",
+        "Longer stages cost run time: a script that never passes now spends 100, 150 and 200 attempts where it spent 20, and a stage that passes keeps going until 25 attempts in a row find nothing better (learn.py:3797-3874)."
+      ],
+      "live": "stage7"
+    },
+    {
+      "id": "stage30",
+      "title": "30-day stage",
+      "kind": "stage",
+      "icon": "stage",
+      "badge": "30D",
+      "x": 420,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Starts from the best 7-day pass and searches the last 21 sessions, up to 150 different results, and keeps searching after a pass. Needs about $485 profit and 5 trades (with $6,000 and 60 trades), at most 48 trades.",
+      "detail": "Runs only after the 7-day stage passed. It starts from the settings of the best 7-day pass merged into the base; the trials and the input tracker start fresh. The same mechanical search runs with STAGE_30_ATTEMPTS = 150 different results (at most 300 engine runs) on 21 sessions. A row passes on objective.stage_bars(30): profit above min_profit x 21/260, at least ceil(min_trades x 21/260) trades, at most 48 trades, the $750 stop cap and the drawdown rule. A pass does not end the stage: it keeps searching for the pass with the most profit after drawdown (profit minus max drawdown, ties to the lower drawdown) and stops when its attempts are spent or STAGE_PATIENCE = 25 runs in a row, repeats included, found no better pass. The best pass is saved in proving/30_day/ and carried to the 90-day stage. A failure is marked in the ledger, the researcher is asked to review it, and the chart is finished as 'stopped at the 30-day stage'.",
+      "decisions": [
+        "A row passes -> keep searching; 150 attempts or 25 without a better pass -> the best pass starts the 90-day stage",
+        "Cut off -> 'skipped', no fail mark",
+        "150 different results, no pass -> stage failed -> review",
+        "Over the trade cap (a stage pace over 600 a year) -> trade cut"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/proving/stages.json",
+        "futuresfund/researchNotes/proving/30_day/<script>_<root>_<tf>.pine"
+      ],
+      "code": [
+        "futuresfund/learn.py:4066-4135",
+        "futuresfund/learn.py:4122",
+        "futuresfund/learn.py:2573-2575",
+        "futuresfund/research_rules.py:115-150",
+        "futuresfund/research_rules.py:200-228",
+        "futuresfund/research_rules.py:289-300"
+      ],
+      "knobs": [
+        "stage_30_on",
+        "stage_30_attempts",
+        "stage_patience",
+        "stage_trades_per_week"
+      ],
+      "issues": [
+        "Proven settings are partly thrown away: every search start resets micro stops and targets to $50/$100 and zeroes the daily loss and profit limits (research_rules.py:115-127, 200-228; learn.py:2574-2575).",
+        "Daily limits never come back after the 7-day stage: the passed settings carry daily = 0, and the restore probe needs a starting value above 0 (learn.py:2573-2574, 4122; research_rules.py:289-300).",
+        "The exit sweep runs again from the 7-day settings, so the stop and target that just passed are moved before anything else (learn.py:1878-1883, 2030-2040)."
+      ],
+      "live": "stage30"
+    },
+    {
+      "id": "stage90",
+      "title": "90-day stage",
+      "kind": "stage",
+      "icon": "stage",
+      "badge": "90D",
+      "x": 760,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Starts from the best 30-day pass and searches the last 64 sessions, up to 200 different results, and keeps searching after a pass. Needs about $1,477 profit and 15 trades (with $6,000 and 60 trades), at most 147 trades.",
+      "detail": "Runs only after the 30-day stage passed, from its settings. Same search, STAGE_90_ATTEMPTS = 200 different results (at most 400 engine runs) on 64 sessions, and the best pass wins. A row passes on objective.stage_bars(90): profit above min_profit x 64/260, at least ceil(min_trades x 64/260) trades, at most 147 trades, the $750 stop cap and the drawdown rule. A pass does not end the stage: it keeps searching for the pass with the most profit after drawdown (profit minus max drawdown, ties to the lower drawdown) and stops when its attempts are spent or STAGE_PATIENCE = 25 runs in a row, repeats included, found no better pass. The best pass is saved in proving/90_day/, the ledger marks 365 'testing' with its 300-attempt budget, and the year search starts from the merged settings of the three best passes. A failure goes to review and ends the chart as 'stopped at the 90-day stage'.",
+      "decisions": [
+        "A row passes -> keep searching; 200 attempts or 25 without a better pass -> one-year search from the best pass",
+        "Cut off -> 'skipped', no fail mark",
+        "200 different results, no pass -> stage failed -> review",
+        "Over the trade cap (a stage pace over 600 a year) -> trade cut"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/proving/stages.json",
+        "futuresfund/researchNotes/proving/90_day/<script>_<root>_<tf>.pine"
+      ],
+      "code": [
+        "futuresfund/learn.py:4066-4135",
+        "futuresfund/objective.py:119-131",
+        "futuresfund/proving.py:111-146",
+        "futuresfund/proving.py:62-73"
+      ],
+      "knobs": [
+        "stage_90_on",
+        "stage_90_attempts",
+        "stage_patience",
+        "stage_trades_per_week"
+      ],
+      "issues": [
+        "A pass found with the session widened to 18:00-16:00 is saved with a script that does not reproduce it: session_window is applied only inside the executor, and the saved Pine ignores it (learn.py:4748-4752; proving.py:62-73).",
+        "The best 90-day pass starts the year, but the year search then moves away from it starting with the exit sweep, so the 90-day proof is not protected (learn.py:4196-4293, 2030-2040)."
+      ],
+      "live": "stage90"
+    },
+    {
+      "id": "year",
+      "title": "One-year search",
+      "kind": "stage",
+      "icon": "stage",
+      "badge": "1Y",
+      "x": 1100,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Searches the last 260 sessions from the stage-proven settings, up to 300 different results (ATTEMPT_LIMIT). Every accepted run is offered for filing. It does not stop at 10 accepted runs.",
+      "detail": "_search(proven, limit stage_attempts(None) = ATTEMPT_LIMIT = 300, year=True) runs on the last 260 sessions, with no warm-up bars. The same planner picks each change: the exit sweep, the pace plan, the scale climb judged by scale_move, then the climb fallback (which ends a direction when profit falls IMPACT_PERCENT = 5% or more), then the nearest unused value of the research_rank-best row. Each counted row is documented: the Risk Manager and the Trading Analyst post on it, it is written into the notes at once, and an accepted row is offered for filing. It stops on: 300 different results; LOSS_LOOK, after 40 results with the best profit still at or below zero (chart engines only, and only on the search marked year=True, whatever the limit is); 3 identical results in a row (chart engines only); every input removed; no plan left; more than 40 dead plans in a row; 20 zero-trade runs in a row (FLAT_RUNS); Skip, Restart or the file leaving; more than 900 trades; a compile or engine fault. SUCCESS_COUNT = 10 only posts a count; the search keeps going to 300. Each attempt post says 'attempt N of 300', and the ledger keeps the attempts the year used. A 365-day review is queued when no row passes.",
+      "decisions": [
+        "Accepted row -> offered for filing (recheck, then the Not-tested list)",
+        "40 results and still a loss -> leave the chart",
+        "3 identical results -> leave the chart",
+        "20 zero-trade runs -> zero-trade park check",
+        "300 results or nothing left to try -> chart finished",
+        "10 accepted runs -> post only, keep searching",
+        "Over 900 trades -> trade cut"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Risk Manager",
+        "Trading Analyst"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/<stem>.json",
+        "futuresfund/researchNotes/input_effects/<stem>.json",
+        "futuresfund/researchNotes/proving/stages.json"
+      ],
+      "code": [
+        "futuresfund/learn.py:4444-4457",
+        "futuresfund/learn.py:32-37",
+        "futuresfund/learn.py:2621-2701",
+        "futuresfund/learn.py:2826-2881",
+        "futuresfund/learn.py:3013-3034",
+        "futuresfund/learn.py:3035-3063",
+        "futuresfund/learn.py:5189-5257",
+        "futuresfund/learn.py:6200-6215",
+        "futuresfund/learn.py:6382-6398",
+        "futuresfund/objective.py:389-445",
+        "futuresfund/objective.py:1358-1392"
+      ],
+      "knobs": [
+        "attempt_limit",
+        "loss_look",
+        "impact_percent"
+      ],
+      "issues": [
+        "SUCCESS_COUNT does not stop the search: after 10 accepted runs the inputs keep moving to 300 results, and later changes need not stay accepted (learn.py:3069-3091).",
+        "The year search moves away from the stage-proven settings, starting with the exit sweep again (learn.py:2030-2040, 2574-2575).",
+        "scale_move calls a change 'closer' when it only pulls drawdown under the goal, so a profit that turns into a small loss with drawdown under $750 counts as progress and the climb keeps going that way (objective.py:410-421, 1205-1216; learn.py:2092-2097).",
+        "research_rank picks the stored best by pace, then the drawdown rule yes/no, then win rate, before profit factor and profit; drawdown size is not ranked, so a high-win-rate, low-profit run can be 'best' (objective.py:1358-1392; learn.py:5962-5966).",
+        "_climb_choice keeps going on any profit change smaller than a 5% drop and drops a direction on any $0.50 drawdown rise, even when profit rose a lot (learn.py:6200-6215, 6382-6398).",
+        "frequency_plan judges only the trade count (it acts under the weekly floor, at most 2 a week), and can widen a day session to 18:00-16:00 by rewriting the script's time() strings, a logic change under values-only research (frequency.py:40-50, 437-449, 501-510; learn.py:4748).",
+        "The indicator phase starts from the highest-profit exit pair, ignoring drawdown and pace (learn.py:2006-2027).",
+        "input_effects records only the profit change of each move, and one no-effect move removes a bool or choice input for the rest of the search (input_effects.py:79-81, 138-156).",
+        "Year runs start indicators cold: only stage runs get the 2000 warm-up bars (backtrader_engine.py:39, 1093-1094).",
+        "LOSS_LOOK applies only to chart developers on the year search, so engine 4 studying a learning script never stops on a loss and runs a losing year search to its full limit (learn.py:3053, 5260-5270)."
+      ],
+      "live": "year"
+    },
+    {
+      "id": "recheck",
+      "title": "Recheck before filing",
+      "kind": "gate",
+      "icon": "gate",
+      "badge": "",
+      "x": 1440,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Meant to re-run an accepted year run on the last 7, 30 and 90 days before filing. It was dead code; its setting (off by default) turns it on.",
+      "detail": "_offer_library reads _stage_gate.check, but before the recheck_before_filing setting nothing in research assigned it, and _stage_checks and _mark_checks were called only from tests. With the setting off (the default), an accepted year run is still filed without being re-checked on the latest 7, 30 and 90 days. It is not fully unguarded: every accepted year row must pass profit_grows, which needs the last 7 days in profit and 30 > 7, 90 > 30 and 365 > 90 within the same run. The stage trade, profit factor and win-rate minimums are not re-applied. With recheck_before_filing on, _study_chart sets _stage_gate.check = _stage_checks(execute) before the year search and clears it afterwards. Each new set of accepted settings is then run on 7, 30 and 90 days, shortest first, and is not filed when one window fails stage_passed.",
+      "decisions": [
+        "Gate off (the default) -> straight to the Not-tested list",
+        "Gate on and a recent window fails -> not filed, the search goes on",
+        "Gate on and all three pass -> filed"
+      ],
+      "agents": [
+        "Chart researcher",
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/proving/stages.json"
+      ],
+      "code": [
+        "futuresfund/learn.py:4138",
+        "futuresfund/learn.py:4141-4189",
+        "futuresfund/learn.py:5307-5318",
+        "futuresfund/objective.py:323-342",
+        "futuresfund/objective.py:1044-1045"
+      ],
+      "knobs": [
+        "recheck_before_filing"
+      ],
+      "issues": [
+        "Off by default: with recheck_before_filing off, _stage_gate.check is never assigned, so a year run that would fail the latest 30 or 90 days is still filed (learn.py:4138, 5307-5318).",
+        "When turned on, it adds up to 3 backtests for each new set of accepted settings, on the same chart engine (learn.py:4141-4177)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "filing",
+      "title": "Not tested on full dataset",
+      "kind": "library",
+      "icon": "library",
+      "badge": "",
+      "x": 1780,
+      "y": 710,
+      "lane": "prove",
+      "summary": "Every accepted year row from a chart developer is filed on the 'Not tested on the full dataset' list, one row per name, contract and chart.",
+      "detail": "Each counted year row goes through _document and _offer_library. _offer_library refuses a row when the developer is not one of the three chart developers (so engine 4 never files), when TradingView would refuse the script, when the engine is not PineTS, when the run has more than 900 trades, when a created script's spans are not consistent, or when it fails acceptance (library_ready). The 7/30/90 recheck sits just before this step and is off by default. record_profitable then refuses the row, because it covers one year, not five. record_untested files it on the Not-tested list: one row per name, contract and timeframe, and the highest profit wins. When profit divided by drawdown is at least 3.33 (the 30% drawdown share), the Portfolio Manager emails it; that ratio check counts trades by the library count, not the old 130-a-year band. The opening run is also offered when its profit is above $6,000.",
+      "decisions": [
+        "Not a chart developer (engine 4) -> not filed",
+        "Fails acceptance -> not filed",
+        "Passes -> Not-tested list (the highest profit per name, contract and chart is kept)",
+        "Profit / drawdown of 3.33 or more -> email"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Chart researcher",
+        "Risk Manager",
+        "Trading Analyst",
+        "Portfolio Manager"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/untested_library.json",
+        "futuresfund/researchNotes/<stem>.json",
+        "futuresfund/researchNotes/script_versions/<sha>.pine",
+        "futuresfund/researchNotes/mail/<title>.txt"
+      ],
+      "code": [
+        "futuresfund/learn.py:3045-3050",
+        "futuresfund/learn.py:5189-5257",
+        "futuresfund/learn.py:5267-5394",
+        "futuresfund/library.py:156-189",
+        "futuresfund/library.py:287-311",
+        "futuresfund/library.py:788-808",
+        "futuresfund/objective.py:41",
+        "futuresfund/objective.py:1304-1319"
+      ],
+      "knobs": [],
+      "issues": [
+        "The list keeps the highest-profit version per name, contract and chart, not the lowest drawdown (library.py:788-808).",
+        "A row found with the session widened to 18:00-16:00 is filed with a script that does not reproduce it, because session_window is not saved (learn.py:2951, 4748-4752; proving.py:62-73).",
+        "The library email text says a ratio of 1.5 or more counts, but the real gate is 3.33 (learn.py:5392, 5851; objective.py:41, 1312-1314).",
+        "Engine 4 never files: 'Creation tester' is not a chart developer, so its accepted runs on learning scripts are not filed (learn.py:5260-5270)."
+      ],
+      "live": "waiting"
+    },
+    {
+      "id": "shelf",
+      "title": "Five-year library shelf",
+      "kind": "locked",
+      "icon": "lock",
+      "badge": "5Y",
+      "x": 2120,
+      "y": 710,
+      "lane": "prove",
+      "summary": "The five-year shelf. No research path can reach it today.",
+      "detail": "record_profitable files a row only when it was measured on the full dataset: full_dataset true, window 'five years', or 1040 days or more. Research never makes such a row: _offer_library passes one-year runs, strategy_team.confirm(full=True) is never called, and recheck_library at desk start re-measures shelf rows on the one-year window. So accepted rows wait on the Not-tested list.",
+      "decisions": [
+        "One-year entry -> refused"
+      ],
+      "agents": [
+        "Portfolio Manager",
+        "Systems Administrator"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/researchNotes/library_index.json",
+        "futuresfund/researchNotes/untested_library.json"
+      ],
+      "code": [
+        "futuresfund/library.py:149-215",
+        "futuresfund/learn.py:5358-5363",
+        "futuresfund/strategy_team.py:1955-1965",
+        "futuresfund/library.py:619-668",
+        "futuresfund/server.py:1290-1305"
+      ],
+      "knobs": [],
+      "issues": [
+        "Not reachable: record_profitable refuses every one-year entry and nothing runs the five-year test (library.py:149-163, 192-215; strategy_team.py:1955-1965).",
+        "recheck_library re-measures shelf rows on one year, not five (library.py:619-668)."
+      ],
+      "live": "shelf"
+    },
+    {
+      "id": "review",
+      "title": "Failed-stage review",
+      "kind": "agent",
+      "icon": "review",
+      "badge": "",
+      "x": 420,
+      "y": 1010,
+      "lane": "results",
+      "summary": "A failed stage, or a year with no winner, is sent to the Chart researcher as a question. The answer arrives later and can reopen every chart.",
+      "detail": "On a failed stage the ledger marks it 'failed' and _review_failed_stage asks the researcher. No question is sent for skipped, held, flat-stopped or repeat-stopped searches, error rows, or trials with no trades at all, nor when this '<days> <root> <chart>' was already reviewed, the script already had STAGE_REVIEWS = 6 reviews, or REVIEW_BACKLOG = 12 or more reviews are waiting. The question holds the last 5 rows plus the best by research_rank and goes to the top of the queue. One 'chart-researcher' thread answers questions one at a time; VALUES_ONLY limits the answer to a SETTING or KEEP. The answer is saved on the script_diagnosis record, and _reopen_for_answer archives and clears every chart's results and sends the script back to learning, at most REOPEN_LIMIT = 3 times. The same review runs for a year with no accepted row (365 days). The chart itself is finished as 'stopped at the N-day stage'.",
+      "decisions": [
+        "Already reviewed, 6 reviews, or 12 or more waiting -> no question",
+        "Answer with settings -> reopen every chart (at most 3 times)",
+        "KEEP -> nothing changes"
+      ],
+      "agents": [
+        "Chart researcher"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/researchNotes/proving/stages.json",
+        "futuresfund/researchNotes/script_diagnosis/<key>.json",
+        "futuresfund/researchNotes/script_diagnosis/decisions.jsonl",
+        "futuresfund/researchNotes/before_repair/"
+      ],
+      "code": [
+        "futuresfund/learn.py:4113-4121",
+        "futuresfund/learn.py:3721-3723",
+        "futuresfund/learn.py:3976-4010",
+        "futuresfund/learn.py:2348-2385",
+        "futuresfund/learn.py:2417-2474",
+        "futuresfund/learn.py:2477-2499",
+        "futuresfund/learn.py:4560-4564"
+      ],
+      "knobs": [
+        "stage_review",
+        "stage_reviews",
+        "review_backlog",
+        "reopen_for_answers",
+        "reopen_limit"
+      ],
+      "issues": [
+        "An answer reopens every chart: _reopen_for_answer archives and clears all results, up to 3 times, so finished work is thrown away for a setting nobody measured (learn.py:2471-2474, 2477-2499).",
+        "The researcher sees only the last 6 attempts, without trades a week or window length; a failed-stage question now names the stage's bars and what the best attempt missed (attempt_reason.py:441-496, 528-539; learn.py:3976-4020).",
+        "Part of an answer is undone: its daily limits and micro exits are reset by prepare_research and _start_on_the_ladder at the next search start (learn.py:2574-2575, 3957-3962).",
+        "The question queue, its open keys and the running job are not exposed by any API, so a waiting review cannot be seen (learn.py:2348-2352)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "tradecut",
+      "title": "Trade cut",
+      "kind": "gate",
+      "icon": "gate",
+      "badge": "12",
+      "x": 760,
+      "y": 1010,
+      "lane": "results",
+      "summary": "A run with more than 900 trades, or on a stage a pace over 600 a year, is kept but can never pass. The chart researcher cuts the trades, one step per attempt.",
+      "detail": "objective.over_trade_cap flags a run with more than TRADE_SAVE_MAX (900) trades, or on a 7, 30 or 90-day stage a pace over TRADES_YEAR_MAX (600) a year at that stage's sessions. The row stays in the trials with over_cap: True (it never passes, counts as a success or is filed), the script is not set aside, and the chart enters the trade cut (learn._track_trade_cut, trade_cut.plan_step). Each cut is one attempt, measured: (1) the script's own daily loss limit, daily profit cap and max-trades-a-day inputs are turned on (their own values, about 2x the stop, the weekly target, 3 a day); (2) the cooldown doubles, and when that is past the input's maxval the maxval is widened in the copy the chart runs, so the clamps keep it and the filed script carries it; a script with no cooldown input gets desk_cooldown_bars; (3) the desk trade limits (strategy_team.ensure_trade_limits, marker // ===== DESK TRADE LIMITS =====) go into the run copy with a daily loss limit of about 2x the stop and a daily profit limit from the weekly target, never under one take profit; (4) the desk's most trades a day is set to 3. Then the steps tighten in turn: the cooldown doubles, most trades a day drops by one, the loss limit halves toward the stop and the profit limit halves. The desk block resets at 6 pm New York, reads strategy.netprofit + strategy.openprofit against a snapshot taken when the day starts (no loop over closed trades), closes the open trade with strategy.close_all(comment=\"Daily Limit\") when a loss or profit limit is hit and gates every strategy.entry( with not desk_locked; it does not use strategy.risk.*, which PineTS does not run like TradingView. prepare_research never zeroes the desk_ inputs, and on a chart whose cut turned on the script's own daily limits it keeps them on at the next stage. A run under the cap ends the cut and the values-only search goes on from those settings. After trade_cut_attempts (12) cut attempts in a row still over the cap, or when no cut is left, the chart researcher writes a question for the owner (kind over_trades) and the script waits in awaitingAnswerStrategies; an answer such as desk_max_trades_day = 2 installs the desk block and starts every chart's search with it. Engine 4 keeps such a draft in unprovenStrategies. Each search starts the cut from its own settings (the stage before's best pass) with its own trade_cut_attempts, and reads its bounds from the run copy, so a widened cooldown maxval is not snapped back at the next stage. Once a stage has a pass, a run over the cap does not start the cut: it counts toward the stage's patience and the next attempt goes back to the best pass, which the next stage starts from.",
+      "decisions": [
+        "Over 900 trades, or a stage pace over 600 a year -> keep the row (over_cap), cut trades on this chart",
+        "A cut run under the cap -> leave the cut, the search goes on from those settings",
+        "12 cut attempts in a row still over the cap, or no cut left -> the chart researcher asks the owner, awaitingAnswerStrategies",
+        "Engine 4 draft still over the cap -> unprovenStrategies"
+      ],
+      "agents": [
+        "Chart researcher"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/<stem>.json (over_trade_charts)"
+      ],
+      "code": [
+        "futuresfund/trade_cut.py",
+        "futuresfund/learn.py _track_trade_cut, _next_cut, _over_trades_question, _ask_over_trades",
+        "futuresfund/strategy_team.py ensure_trade_limits, widen_maxval",
+        "futuresfund/objective.py over_trade_cap, trade_cap_text, chart_over_cap",
+        "futuresfund/research_rules.py is_daily_limit"
+      ],
+      "knobs": [
+        "trade_cut_attempts"
+      ],
+      "issues": [
+        "A cooldown counted in bars cuts a different share of trades on 2m, 5m and 15m, so the same step can be enough on one chart and not on another."
+      ],
+      "live": ""
+    },
+    {
+      "id": "zero",
+      "title": "Zero-trade park",
+      "kind": "gate",
+      "icon": "gate",
+      "badge": "20",
+      "x": 1100,
+      "y": 1010,
+      "lane": "results",
+      "summary": "20 runs in a row with no trades and no profit. A script that traded or passed a stage only ends the search; for one that never traded the researcher asks the owner.",
+      "detail": "Each chart and instrument keeps its own in-memory count of finished year runs in a row with no trades and no profit (_zero_streak). At FLAT_RUNS = 20, a script that traded earlier in this search, or that passed a proving stage, only ends the search and keeps its best result; the file stays for the other charts. Chart engines reach the year only after the stages that are on pass, so the park is not reached there, unless all three stages are turned off. For a script that never traded and passed no stage, the chart researcher asks the owner (_park_flat, question kind no_trades with the _flat_reason text) and the script waits in awaitingAnswerStrategies. An engine 4 draft, which has no stages, is still parked in cannotRunStrategies. Inside the stages, 20 no-trade repeats in a row break the search instead.",
+      "decisions": [
+        "Traded earlier or passed a stage -> stop the search, keep the best",
+        "Never traded, no stage passed -> the researcher asks the owner, awaitingAnswerStrategies",
+        "Engine 4 draft never traded -> cannotRunStrategies"
+      ],
+      "agents": [
+        "2min chart developer",
+        "5 min chart developer",
+        "15 min chart developer",
+        "Creation tester",
+        "Chart researcher"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "cannotRunStrategies/<name> + <stem>.reason.txt"
+      ],
+      "code": [
+        "futuresfund/learn.py:36",
+        "futuresfund/learn.py:2826-2847",
+        "futuresfund/learn.py:2864-2869",
+        "futuresfund/learn.py:3215-3244",
+        "futuresfund/learn.py:4081",
+        "futuresfund/learn.py:4123"
+      ],
+      "knobs": [
+        "flat_runs"
+      ],
+      "issues": [
+        "The count lives in memory and resets on every restart (learn.py:3215-3230).",
+        "If all three stages are turned off, stage_runs stays empty, so a year search that has not traded yet can park a script that would trade at other settings again: the old zero-trade park bug (learn.py:2830, 4081)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "finished",
+      "title": "Chart finished",
+      "kind": "process",
+      "icon": "trophy",
+      "badge": "",
+      "x": 1780,
+      "y": 1010,
+      "lane": "results",
+      "summary": "Writes the chart's best result to the notes, marks the 365 ledger, emails a passing result, then files the script or moves to the next chart.",
+      "detail": "If the search stopped as held, flat-stopped, skipped, cancelled, unrunnable, faulted or blocked, _study_chart returns before writing notes. Otherwise best = the top row by research_rank, stamped with the contract and chart, and _save_notes writes instruments[root].charts[tf], recomputes the instrument and overall best, and appends a lesson to LESSONS.md. After a failed stage the best is marked 'stopped at the N-day stage' and the Chart researcher posts that the year was not run. Otherwise the Trading Analyst posts the library notice, the ledger marks 365 'passed' with the highest-ranked accepted row or 'failed' with the best, and a year with no winner gets a 365-day review. When the rank-best row passes acceptance, the Portfolio Manager's model writes the report on this chart's thread and the email goes out on the PM's own thread. Then the script is filed if every chart is done; otherwise it stays for the other charts.",
+      "decisions": [
+        "Stopped early (held, skipped, fault...) -> no notes written",
+        "A passing row -> 365 passed, else 365 failed plus review",
+        "Rank-best row passes -> email the report",
+        "All 21 studies done -> learnedStrategies, else the next chart or instrument"
+      ],
+      "agents": [
+        "Chart researcher",
+        "Trading Analyst",
+        "Portfolio Manager"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E4 creation",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/researchNotes/<stem>.json",
+        "futuresfund/researchNotes/LESSONS.md",
+        "futuresfund/researchNotes/proving/stages.json",
+        "futuresfund/researchNotes/mail/<title>.txt"
+      ],
+      "code": [
+        "futuresfund/learn.py:4458-4509",
+        "futuresfund/learn.py:4510-4588",
+        "futuresfund/learn.py:5649-5724",
+        "futuresfund/learn.py:5727-5778",
+        "futuresfund/learn.py:5800-5804",
+        "futuresfund/learn.py:5884-5915"
+      ],
+      "knobs": [],
+      "issues": [
+        "The stored best, the email decision and the order of 365 winners all use research_rank, which puts win rate before profit factor and profit and ignores drawdown size (learn.py:4511, 4534, 4573; objective.py:1358-1392).",
+        "The Portfolio Manager's report is written by the model on the chart thread, so the engine waits for the model before its next study (learn.py:4573-4574).",
+        "A restart during the year search leaves partial year trials in the notes that count as finished: no 365 mark, no final notes, no email and no review (learn.py:5245, 5585-5646, 196-216).",
+        "Desk boot runs rerank_notes, which can re-pick the stored bests after the fact (server.py:1232-1266)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "learned",
+      "title": "learnedStrategies",
+      "kind": "folder",
+      "icon": "archive",
+      "badge": "",
+      "x": 2120,
+      "y": 1010,
+      "lane": "results",
+      "summary": "Scripts with a result on every instrument and all three charts. A researcher answer can send one back to learning.",
+      "detail": "ready_to_file(notes) holds when every research instrument has 2m, 5m and 15m attempted. A chart counts as attempted when it has trials or attempts and no error or blocked flag, unless every row had no trades; a skipped row counts, and so does a failed 7-day stage. _file_ready moves only the Pine or txt file to futuresfund/learnedStrategies, adding a timestamp on a name clash; the Python twin stays behind. Every developer_loop pass also files finished scripts (file_completed_scripts). _reopen_for_answer can move a filed script back to learning.",
+      "decisions": [
+        "All instruments x 3 charts attempted -> learnedStrategies",
+        "Else -> stays in learningStrategies",
+        "Researcher answer with settings -> back to learning (at most 3 times)"
+      ],
+      "agents": [
+        "Chart researcher"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/learnedStrategies/"
+      ],
+      "code": [
+        "futuresfund/learn.py:120-146",
+        "futuresfund/learn.py:166-216",
+        "futuresfund/learn.py:4577-4588",
+        "futuresfund/learn.py:4591-4612",
+        "futuresfund/learn.py:5918-5930"
+      ],
+      "knobs": [],
+      "issues": [
+        "A script can be filed while its last chart is still in the year search: the first year row already makes the chart count as attempted, and file_completed_scripts does not check running studies, so that search is cut short before its 365 mark, notes, email and review (learn.py:1513, 4591-4598, 5245, 2647-2658).",
+        "'Filed' does not mean 'good': a script whose every chart failed the 7-day stage is filed too (learn.py:196-216).",
+        "A timestamp rename on a name clash detaches the notes, which are keyed by the file stem (learn.py:5459-5461, 5926-5929)."
+      ],
+      "live": "learned"
+    },
+    {
+      "id": "writers",
+      "title": "Strategy developers write drafts",
+      "kind": "agent",
+      "icon": "agent",
+      "badge": "",
+      "x": 80,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "One writer per chart writes a new delta volume breakout script for an instrument that has no accepted delta result yet.",
+      "detail": "One run_chart_creation thread runs per chart (the 2min, 5 min and 15 min strategy developers) and pauses while Hold is on (~/.futuresfund/hold_new.json). Each pass builds measured cards and library lines, and handoff picks the target with delta_core.next_target: a round-robin over instruments with no accepted delta result, offset per chart. The prompt holds the golden strategy's creation brief, the delta core text, the acceptance line and input-effect lines. The reply is cleaned (extract_pine, repair_pine) and sent to the Script checker. After 3 send-backs in a row the developer pauses 60 s and tries a different script.",
+      "decisions": [
+        "Hold on -> no writing",
+        "Draft written -> Script checker"
+      ],
+      "agents": [
+        "2min strategy developer",
+        "5 min strategy developer",
+        "15 min strategy developer",
+        "Lesson writer",
+        "Card keeper"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/researchNotes/creation_targets.json",
+        "futuresfund/researchNotes/creation_lessons.json",
+        "futuresfund/researchNotes/strategy_cards.json",
+        "~/.futuresfund/hold_new.json"
+      ],
+      "code": [
+        "futuresfund/strategy_team.py:1532-1588",
+        "futuresfund/strategy_team.py:1591-1669",
+        "futuresfund/strategy_team.py:1235-1388",
+        "futuresfund/strategy_team.py:1222-1232",
+        "futuresfund/delta_core.py:151-167"
+      ],
+      "knobs": [],
+      "issues": [
+        "Hold pauses only the writers; the chart engines keep studying and engine 4 switches to learning scripts (strategy_team.py:1923-1941).",
+        "The strategy cards are static: build_cards and write_cards have no production caller, so the Card keeper never updates them (strategy_team.py:53-116, 1560).",
+        "The target round-robin uses the coverage scoreboard, which keeps the highest profit, not the lowest drawdown (delta_core.py:106-117, 151-167)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "checker",
+      "title": "Script checker",
+      "kind": "gate",
+      "icon": "gate",
+      "badge": "",
+      "x": 420,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "A mechanical check of every draft: it must compile for TradingView and contain the delta volume breakout core.",
+      "detail": "pine_problems must find nothing, and delta_core.has_core must find the POC, delta and volume-profile parts. A failure sends the draft back to its writer and the Lesson writer records it; after 3 send-backs in a row the writer pauses 60 s. A passing draft is saved in draftStrategies, queued in creation_queue.json with its target instrument and chart, its indicators are filed, and the Lesson writer records it. The same agent also checks the Trading Analyst's script descriptions during chart study.",
+      "decisions": [
+        "Compile problem or no delta core -> sent back to the writer",
+        "Passes -> draftStrategies and the creation queue"
+      ],
+      "agents": [
+        "Script checker",
+        "Lesson writer"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/draftStrategies/",
+        "futuresfund/researchNotes/creation_queue.json",
+        "futuresfund/researchNotes/creation_lessons.json"
+      ],
+      "code": [
+        "futuresfund/strategy_team.py:1611-1669",
+        "futuresfund/strategy_team.py:1573-1585",
+        "futuresfund/delta_core.py:44-48",
+        "futuresfund/strategy_team.py:1409-1417"
+      ],
+      "knobs": [],
+      "issues": [
+        "The check is mechanical only and runs no backtest, so nothing about drawdown, profit or pace is known until engine 4 runs the draft (strategy_team.py:1611-1641)."
+      ],
+      "live": ""
+    },
+    {
+      "id": "drafts",
+      "title": "Draft queue",
+      "kind": "folder",
+      "icon": "draft",
+      "badge": "",
+      "x": 760,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "Checked drafts wait in draftStrategies, in creation_queue.json order, for engine 4.",
+      "detail": "take_queued_script pops the next name from creation_queue.json, and the draft is marked developing so the chart engines leave it alone. After a Restart of engine 4, the engine-4 learning flag stays on until Make new strategies is pressed, so engine 4 studies learning scripts on every pass and drafts pile up. A research stop during development leaves the popped draft in draftStrategies with no queue entry; a Skip or Restart sends it to unprovenStrategies.",
+      "decisions": [
+        "Engine 4 free and the learning flag off -> pop the next draft",
+        "Research stopped mid-draft -> left in draftStrategies, off the queue"
+      ],
+      "agents": [
+        "Creation tester"
+      ],
+      "engines": [
+        "E4 creation"
+      ],
+      "files": [
+        "futuresfund/draftStrategies/",
+        "futuresfund/researchNotes/creation_queue.json"
+      ],
+      "code": [
+        "futuresfund/strategy_team.py:1508-1529",
+        "futuresfund/strategy_team.py:1690-1702",
+        "futuresfund/learn.py:1292",
+        "futuresfund/learn.py:1216-1217",
+        "futuresfund/strategy_team.py:1915-1921"
+      ],
+      "knobs": [],
+      "issues": [
+        "A Restart of engine 4 leaves the learning flag on until Make new strategies is pressed, so no drafts are developed while the queue keeps growing (learn.py:1292, 1216-1217; strategy_team.py:1915-1921).",
+        "A research stop mid-development orphans the popped draft: it stays in draftStrategies but is no longer queued (strategy_team.py:1519-1529, 1790-1791)."
+      ],
+      "live": "drafts"
+    },
+    {
+      "id": "engine4",
+      "title": "Engine 4 develops the draft",
+      "kind": "engine",
+      "icon": "engine",
+      "badge": "E4",
+      "x": 1100,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "Engine 4 runs the draft straight on the one-year search and stops at the first accepted run. There are no 7/30/90 stages.",
+      "detail": "develop_one pops the next draft, and _develop_queued prepares it in place (fixed pivots and exits turned into inputs, prepare_backtest written into the draft). It runs _search on the target instrument and chart's last 260 sessions with limit CREATION_ATTEMPTS = 100 (its own count, so the 300-attempt chart year does not slow drafts), accept = passes_acceptance, and posts under the 'Strategy developer' label. There are no proving stages, no loss stop and no repeat stop, and nothing is filed on the Not-tested list. 20 zero-trade runs in a row park the draft in cannotRunStrategies (reachable here); 20 results without profit scrap it (CREATED_PROFIT_ATTEMPTS). Its chart record is set aside so the chart engines still study that chart later. An accepted run moves the file unchanged into createdStrategies; the accepted settings are not written in. Otherwise the draft goes to unprovenStrategies with a reason. With no draft queued, Hold on, or after a Restart, engine 4 studies a learning script with the full chart pipeline instead.",
+      "decisions": [
+        "First accepted run -> createdStrategies (script defaults kept)",
+        "20 results without profit -> scrapped to unprovenStrategies",
+        "20 zero-trade runs -> cannotRunStrategies",
+        "Skipped, or no accepted run -> unprovenStrategies",
+        "Over 900 trades -> trade cut; still over after 12 cuts -> unprovenStrategies"
+      ],
+      "agents": [
+        "Creation tester",
+        "Strategy developer",
+        "Lesson writer"
+      ],
+      "engines": [
+        "E4 creation"
+      ],
+      "files": [
+        "futuresfund/draftStrategies/",
+        "futuresfund/createdStrategies/",
+        "futuresfund/unprovenStrategies/ + .reason.txt",
+        "futuresfund/researchNotes/<stem>.json (creation block)"
+      ],
+      "code": [
+        "futuresfund/strategy_team.py:1690-1702",
+        "futuresfund/strategy_team.py:1705-1862",
+        "futuresfund/strategy_team.py:1892-1951",
+        "futuresfund/learn.py:3035-3046",
+        "futuresfund/learn.py:3064-3101",
+        "futuresfund/strategy_team.py:2155-2165",
+        "futuresfund/strategy_team.py:1997-2034",
+        "futuresfund/learn.py:722-734"
+      ],
+      "knobs": [
+        "creation_attempts",
+        "flat_runs"
+      ],
+      "issues": [
+        "Drafts skip the 7/30/90 stages and stop at the first accepted year run, so nothing checks recent weeks or looks for a lower-drawdown pass (strategy_team.py:1770-1783; learn.py:3035-3046).",
+        "The accepted settings are thrown away: _promote_draft moves the file unchanged and promote() with _apply_inputs is unused, so the charts start the created script from its defaults (strategy_team.py:2155-2165, 1997-2034).",
+        "The draft message says 'a $50 stop', but the shared risk block starts at a $250 stop and a $500 take profit (strategy_team.py:1752, 382-383).",
+        "When engine 4 studies a learning script it never files a result and has no loss or repeat stop, because 'Creation tester' is not a chart developer (learn.py:5260-5270, 3053, 2871)."
+      ],
+      "live": "engine4"
+    },
+    {
+      "id": "created",
+      "title": "createdStrategies",
+      "kind": "folder",
+      "icon": "folder",
+      "badge": "",
+      "x": 1440,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "Drafts with one accepted year run. The chart engines take them when no learning script is open on their chart.",
+      "detail": "jobs_for_chart returns createdStrategies scripts only when no learning script is open on this chart, and only those engine 4 is not developing and whose notes hold a run that passes acceptance (_created_passed). From there each one follows the full learning path, from the script defaults, on every instrument and chart. The Systems Administrator's engine watch was meant to move created scripts into learning and press Make new strategies, but start_engine_watch is never called, so that never happens.",
+      "decisions": [
+        "No learning script open on this chart and a passed run in the notes -> study it",
+        "Renamed, or no passed run in the notes -> never studied"
+      ],
+      "agents": [
+        "Creation tester",
+        "Systems Administrator"
+      ],
+      "engines": [
+        "E1 ES 2m",
+        "E2 ES 5m",
+        "E3 ES 15m",
+        "E5 GC 2m",
+        "E6 GC 5m",
+        "E7 GC 15m",
+        "E8 NQ 2m",
+        "E9 NQ 5m",
+        "E10 NQ 15m",
+        "E11 MNQ 2m",
+        "E12 MNQ 5m",
+        "E13 MNQ 15m",
+        "E14 MES 2m",
+        "E15 MES 5m",
+        "E16 MES 15m",
+        "E17 M2K 2m",
+        "E18 M2K 5m",
+        "E19 M2K 15m",
+        "E20 YM 2m",
+        "E21 YM 5m",
+        "E22 YM 15m"
+      ],
+      "files": [
+        "futuresfund/createdStrategies/"
+      ],
+      "code": [
+        "futuresfund/learn.py:710-719",
+        "futuresfund/learn.py:773-813",
+        "futuresfund/engine_watch.py:184-260",
+        "futuresfund/engine_watch.py:511-521"
+      ],
+      "knobs": [],
+      "issues": [
+        "The engine watch never runs (start_engine_watch has no caller), so created scripts are never restocked into learning and Make new strategies is never pressed for you (engine_watch.py:511-521).",
+        "A created script renamed with a timestamp on a name clash loses its notes, fails _created_passed and is never studied (strategy_team.py:2160-2161; learn.py:710-719, 5459-5461).",
+        "Created scripts start from their defaults on the charts, not from engine 4's accepted settings (learn.py:4421; strategy_team.py:2155-2165)."
+      ],
+      "live": "created"
+    },
+    {
+      "id": "unproven",
+      "title": "unprovenStrategies",
+      "kind": "folder",
+      "icon": "archive",
+      "badge": "",
+      "x": 1780,
+      "y": 1310,
+      "lane": "creation",
+      "summary": "Drafts with no accepted year run. They are not tested again.",
+      "detail": "set_unproven moves a draft here with a .reason.txt when engine 4 ends without an accepted run, scraps it after 20 results without profit, or the draft was skipped or restarted on engine 4. The Lesson writer records each verdict in creation_lessons.json. Nothing studies this folder again.",
+      "decisions": [
+        "No accepted run, 20 results without profit, or Skip/Restart on engine 4 -> here for good"
+      ],
+      "agents": [
+        "Creation tester",
+        "Lesson writer"
+      ],
+      "engines": [],
+      "files": [
+        "futuresfund/unprovenStrategies/",
+        "futuresfund/unprovenStrategies/<stem>.reason.txt",
+        "futuresfund/researchNotes/creation_lessons.json"
+      ],
+      "code": [
+        "futuresfund/learn.py:722-734",
+        "futuresfund/learn.py:3064-3101",
+        "futuresfund/strategy_team.py:1813-1819",
+        "futuresfund/strategy_team.py:1836-1860"
+      ],
+      "knobs": [],
+      "issues": [
+        "Pressing Skip or Restart on engine 4 sends the draft here for good, even though its search did not finish (strategy_team.py:1813-1819).",
+        "A draft is judged on one instrument and one chart only and never gets a try elsewhere (strategy_team.py:1705-1790)."
+      ],
+      "live": "unproven"
+    }
+  ],
+  "edges": [
+    {
+      "from": "learning",
+      "to": "queue",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "queue",
+      "to": "claim",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "claim",
+      "to": "prechecks",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "prechecks",
+      "to": "instrument",
+      "label": "passes",
+      "kind": "main"
+    },
+    {
+      "from": "instrument",
+      "to": "copy",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "copy",
+      "to": "bars",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "bars",
+      "to": "compile",
+      "label": "80+ bars",
+      "kind": "main"
+    },
+    {
+      "from": "bars",
+      "to": "claim",
+      "label": "under 80 bars: set aside",
+      "kind": "loop"
+    },
+    {
+      "from": "compile",
+      "to": "entry",
+      "label": "compiles",
+      "kind": "main"
+    },
+    {
+      "from": "compile",
+      "to": "claim",
+      "label": "repairing",
+      "kind": "loop"
+    },
+    {
+      "from": "entry",
+      "to": "read",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "read",
+      "to": "stage7",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "stage7",
+      "to": "stage30",
+      "label": "pass",
+      "kind": "main"
+    },
+    {
+      "from": "stage30",
+      "to": "stage90",
+      "label": "pass",
+      "kind": "main"
+    },
+    {
+      "from": "stage90",
+      "to": "year",
+      "label": "pass",
+      "kind": "main"
+    },
+    {
+      "from": "stage7",
+      "to": "review",
+      "label": "100 tries, no pass",
+      "kind": "fail"
+    },
+    {
+      "from": "stage30",
+      "to": "review",
+      "label": "150 tries, no pass",
+      "kind": "fail"
+    },
+    {
+      "from": "stage90",
+      "to": "review",
+      "label": "200 tries, no pass",
+      "kind": "fail"
+    },
+    {
+      "from": "review",
+      "to": "finished",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "year",
+      "to": "recheck",
+      "label": "accepted run",
+      "kind": "main"
+    },
+    {
+      "from": "recheck",
+      "to": "filing",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "stage7",
+      "to": "tradecut",
+      "label": "over 600 a year",
+      "kind": "loop"
+    },
+    {
+      "from": "stage30",
+      "to": "tradecut",
+      "label": "over 600 a year",
+      "kind": "loop"
+    },
+    {
+      "from": "stage90",
+      "to": "tradecut",
+      "label": "over 600 a year",
+      "kind": "loop"
+    },
+    {
+      "from": "year",
+      "to": "tradecut",
+      "label": "over 900 trades",
+      "kind": "loop"
+    },
+    {
+      "from": "tradecut",
+      "to": "year",
+      "label": "under the cap: search goes on",
+      "kind": "loop"
+    },
+    {
+      "from": "year",
+      "to": "zero",
+      "label": "20 no-trade runs",
+      "kind": "fail"
+    },
+    {
+      "from": "year",
+      "to": "finished",
+      "label": "search ends",
+      "kind": "main"
+    },
+    {
+      "from": "filing",
+      "to": "finished",
+      "label": "",
+      "kind": "main"
+    },
+    {
+      "from": "filing",
+      "to": "shelf",
+      "label": "five-year test (not reachable)",
+      "kind": "locked"
+    },
+    {
+      "from": "finished",
+      "to": "claim",
+      "label": "next chart or instrument",
+      "kind": "loop"
+    },
+    {
+      "from": "finished",
+      "to": "learned",
+      "label": "all 21 studies done",
+      "kind": "main"
+    },
+    {
+      "from": "goal",
+      "to": "stage7",
+      "label": "",
+      "kind": "rule"
+    },
+    {
+      "from": "goal",
+      "to": "stage30",
+      "label": "",
+      "kind": "rule"
+    },
+    {
+      "from": "goal",
+      "to": "stage90",
+      "label": "",
+      "kind": "rule"
+    },
+    {
+      "from": "goal",
+      "to": "year",
+      "label": "",
+      "kind": "rule"
+    },
+    {
+      "from": "goal",
+      "to": "filing",
+      "label": "",
+      "kind": "rule"
+    },
+    {
+      "from": "golden",
+      "to": "writers",
+      "label": "",
+      "kind": "golden"
+    },
+    {
+      "from": "golden",
+      "to": "read",
+      "label": "",
+      "kind": "golden"
+    },
+    {
+      "from": "writers",
+      "to": "checker",
+      "label": "",
+      "kind": "creation"
+    },
+    {
+      "from": "checker",
+      "to": "writers",
+      "label": "sent back",
+      "kind": "loop"
+    },
+    {
+      "from": "checker",
+      "to": "drafts",
+      "label": "passed",
+      "kind": "creation"
+    },
+    {
+      "from": "drafts",
+      "to": "engine4",
+      "label": "",
+      "kind": "creation"
+    },
+    {
+      "from": "engine4",
+      "to": "created",
+      "label": "accepted run",
+      "kind": "creation"
+    },
+    {
+      "from": "engine4",
+      "to": "unproven",
+      "label": "no profit",
+      "kind": "fail"
+    },
+    {
+      "from": "engine4",
+      "to": "park",
+      "label": "20 no-trade runs",
+      "kind": "fail"
+    },
+    {
+      "from": "created",
+      "to": "queue",
+      "label": "when learning is empty",
+      "kind": "creation"
+    },
+    {
+      "from": "compile",
+      "to": "awaiting",
+      "label": "3 repairs failed: owner asked",
+      "kind": "fail"
+    },
+    {
+      "from": "entry",
+      "to": "awaiting",
+      "label": "no entry rule: owner asked",
+      "kind": "fail"
+    },
+    {
+      "from": "prechecks",
+      "to": "awaiting",
+      "label": "PineTS stop: owner asked",
+      "kind": "fail"
+    },
+    {
+      "from": "zero",
+      "to": "awaiting",
+      "label": "never traded: owner asked",
+      "kind": "fail"
+    },
+    {
+      "from": "tradecut",
+      "to": "awaiting",
+      "label": "12 cuts still over: owner asked",
+      "kind": "fail"
+    },
+    {
+      "from": "awaiting",
+      "to": "queue",
+      "label": "answered: back to the queue",
+      "kind": "loop"
+    },
+    {
+      "from": "awaiting",
+      "to": "park",
+      "label": "owner answered park",
+      "kind": "fail"
+    }
+  ]
+}

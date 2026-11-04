@@ -339,6 +339,8 @@ class EngineLifetimeTests(unittest.TestCase):
     def test_the_engines_end_when_their_desk_is_gone(self):
         script = textwrap.dedent('''
             import os
+            import threading
+            from futuresfund import engine_workers
             from futuresfund.engine_workers import EngineDesk
             from futuresfund.trading_engine import TradingEngines
 
@@ -346,7 +348,14 @@ class EngineLifetimeTests(unittest.TestCase):
             engines.start()
             research = EngineDesk()
             research.start()
-            pids = [engines.ping("Floor Trader")["pid"]] + [proc.pid for proc in research._proc]
+            # The research workers start when a backtest needs one: three engines at once start a pool of three.
+            engine_workers.ENGINES_AT_ONCE = 3
+            holds = [threading.Thread(target=research.hold, args=(slot, 1.5)) for slot in (0, 4, 7)]
+            for hold in holds:
+                hold.start()
+            for hold in holds:
+                hold.join()
+            pids = [engines.ping("Floor Trader")["pid"]] + research.pids()
             print(" ".join(str(pid) for pid in pids), flush=True)
             os._exit(0)
         ''')
@@ -360,7 +369,8 @@ class EngineLifetimeTests(unittest.TestCase):
         )
         self.assertEqual(done.returncode, 0, done.stderr)
         pids = [int(value) for value in done.stdout.split()]
-        self.assertEqual(len(pids), 7)
+        # The floor trader's engine and the three research pool workers.
+        self.assertEqual(len(pids), 4)
         deadline = time.time() + 30
         while time.time() < deadline and any(_alive(pid) for pid in pids):
             time.sleep(0.25)

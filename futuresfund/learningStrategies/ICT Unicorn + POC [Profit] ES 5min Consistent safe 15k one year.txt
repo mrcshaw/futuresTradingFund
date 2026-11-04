@@ -1,11 +1,4 @@
 //@version=5
-// How this script works
-// The script is a strategy that waits for an opening-range breakout after a gather period and then uses the opening range high and low as the trade trigger.
-// It opens a long when price breaks above the opening range high by the breakout margin and the POC/delta filter supports buying, and it opens a short when price breaks below the opening range low by the breakout margin and the POC/delta filter supports selling.
-// The entry is an opening-range breakout, not a moving-average signal.
-// Each position has a dollar stop set by stop_dollars, with the long stop below entry and the short stop above entry.
-// An optional trailing stop can tighten the stop after profit, and the strategy also exits on the take-profit level or session filter.
-
 // ICT Unicorn + Delta Volume POC — PROFIT MODE
 // Combines: ORB breakout + FVG (optional) + POC directional filter + Delta confirmation
 // More trades, wider TP, trailing stop
@@ -16,8 +9,8 @@ strategy("ICT Unicorn + POC [Profit]", overlay=true,
   max_bars_back=5000)
 // ===== RISK =====
 pv                = input.float(2, "Point Value ($)")
-stop_dollars      = input.int(250, "Stop ($)", minval=250, maxval=750)
-tp_dollars        = input.int(500, "Take Profit ($)", minval=250)
+stop_dollars      = input.int(250, "Stop ($)", minval=50, maxval=700)
+tp_dollars        = input.int(500, "Take Profit ($)", minval=50)
 use_trail         = input.bool(false, "Enable Trailing Stop")
 trail_pct         = input.float(50, "Trail keep (%)", minval=0, maxval=100)
 trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
@@ -30,7 +23,6 @@ short_limit = close - tp_dollars / pv
 if strategy.position_size != 0 and not na(stop_dollars)
     if strategy.openprofit <= -stop_dollars
         strategy.close_all(comment="Open P&L > SL Risk")
-
 // ===== SESSION =====
 use_session   = input.bool(true, "Use Session Filter")
 sess_start_hr = input.int(18, "Session Start Hour (ET)")
@@ -72,6 +64,17 @@ min_slope        = input.float(0.0, "Min EMA Slope (pts)", minval=0.0, group="PO
 
 // ===== POC FILTER =====
 poc_filter_mode = input.string("Off", "POC Filter Mode", options=["Off","Reject","Confirm"], group="POC", tooltip="Off: pure ICT. Reject: skip when POC contradicts. Confirm: require POC+delta+EMA align.")
+
+i_tp         = input.float(1000.0, "Take Profit ($)", group="Risk")
+i_trail_act  = input.float(350.0, "Trail Activate ($)", group="Risk")
+i_trail_pct  = input.float(45.0, "Trail Keep %", group="Risk")
+i_be_trigger = input.float(150.0, "Breakeven Trigger ($)", minval=0, step=50, group="Risk", tooltip="0 = disabled. Move stop to entry after this much profit.")
+max_stop     = input.float(750.0, "Max Stop Cap ($)", minval=0, step=50, group="Risk")
+
+float tp_pts        = i_tp / pv
+float trail_act_pts = i_trail_act / pv
+float be_trigger_pts = i_be_trigger > 0 ? i_be_trigger / pv : 0.0
+float max_stop_pts  = max_stop / pv
 
 // ===== TIME =====
 is_new_day = ta.change(time("D")) != 0
@@ -204,24 +207,23 @@ if is_new_day
 // ===== TRAILING STOP STATE =====
 var float peak_profit   = 0.0
 var float current_stop  = na
-var float plot_stop     = na
-var float tp_price      = na
-
+var float plot_stop    = na
+var float entry_stop_px = na
+var bool  close_pending = false
 if is_new_day
     peak_profit   := 0.0
     current_stop  := na
     plot_stop     := na
-    tp_price      := na
+    entry_stop_px := na
+    close_pending := false
 
 // ===== EOD FLATTEN =====
 if at_eod and strategy.position_size != 0
     strategy.close_all(comment="EOD")
-    strategy.cancel(id="Long Exit")
-    strategy.cancel(id="Short Exit")
     peak_profit   := 0.0
     current_stop  := na
-    plot_stop     := na
-    tp_price      := na
+    entry_stop_px := na
+    close_pending := false
 
 // ===== ENTRY SIGNALS (ORB + optional POC) =====
 bool can_trade = in_entry_window and or_built and or_valid and day_attempts < max_attempts
@@ -252,51 +254,34 @@ bool entry_ok = barstate.isconfirmed
 if long_sig and entry_ok
     day_attempts += 1
     peak_profit   := 0.0
-    current_stop  := close - stop_dollars / pv
-    tp_price      := close + tp_dollars / pv
+    current_stop  := or_low
+    close_pending := false
+    entry_stop_px := close - stop_dollars / pv
     if in_session
         strategy.entry("Long", strategy.long)
-        strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit, comment_loss="SL", comment_profit="TP")
+        strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
 else if short_sig and entry_ok
     day_attempts += 1
     peak_profit   := 0.0
-    current_stop  := close + stop_dollars / pv
-    tp_price      := close - tp_dollars / pv
+    current_stop  := or_high
+    close_pending := false
+    entry_stop_px := close + stop_dollars / pv
     if in_session
         strategy.entry("Short", strategy.short)
-        strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit, comment_loss="SL", comment_profit="TP")
+        strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
 else if strategy.position_size > 0
-    float avg = strategy.position_avg_price
-    float profit_now = high - avg
-    if profit_now > peak_profit
-        peak_profit := profit_now
-    
-    if use_trail and peak_profit >= trail_min_dollars / pv
-        float lock = peak_profit * (trail_pct / 100.0)
-        current_stop := math.max(current_stop, avg + lock)
-    
-    strategy.exit("Long Exit", from_entry="Long", stop=long_stop, limit=long_limit, comment_loss="SL", comment_profit="TP")
-    plot_stop := current_stop
+    plot_stop := long_stop
+    strategy.exit("Long Exit", "Long", stop=long_stop, limit=long_limit)
 else if strategy.position_size < 0
-    float avg = strategy.position_avg_price
-    float profit_now = avg - low
-    if profit_now > peak_profit
-        peak_profit := profit_now
-    
-    if use_trail and peak_profit >= trail_min_dollars / pv
-        float lock = peak_profit * (trail_pct / 100.0)
-        current_stop := math.min(current_stop, avg - lock)
-    
-    strategy.exit("Short Exit", from_entry="Short", stop=short_stop, limit=short_limit, comment_loss="SL", comment_profit="TP")
-    plot_stop := current_stop
+    plot_stop := short_stop
+    strategy.exit("Short Exit", "Short", stop=short_stop, limit=short_limit)
 
 if strategy.position_size == 0 and strategy.position_size[1] != 0
     peak_profit   := 0.0
     current_stop  := na
     plot_stop     := na
-    tp_price      := na
-    strategy.cancel(id="Long Exit")
-    strategy.cancel(id="Short Exit")
+    entry_stop_px := na
+    close_pending := false
 
 // ===== PLOTS =====
 plot(ema_val, "EMA", ema_up ? color.lime : ema_dn ? color.red : color.gray, linewidth=2)

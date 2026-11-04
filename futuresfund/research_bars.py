@@ -5,7 +5,8 @@ the front-month series for the whole file, 2021-10-04 through 2026-10-03.
 A higher timeframe is folded from those minutes. A minute with no trade is
 absent, and the bar is built from the minutes that did trade. A TradingView
 export of that same timeframe replaces those bars, because that is the chart
-the Strategy Tester ran on.
+the Strategy Tester ran on. After the download's last bar, the TradingView
+alert candles carry the chart forward to the last closed bar.
 
 Without that download, the TradingView export for the timeframe is used.
 Outside it, bars are folded from 1-minute candles, and a bar is built only
@@ -15,6 +16,7 @@ when every minute of it is there. Yahoo is not used.
 from __future__ import annotations
 
 import threading
+import time
 
 _WIDTH = {"1m": 60, "2m": 120, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600}
 # A Databento series is folded once and kept until a download or an export changes.
@@ -22,6 +24,10 @@ _WIDTH = {"1m": 60, "2m": 120, "3m": 180, "5m": 300, "15m": 900, "30m": 1800, "1
 # own thread each time, while six charts did the same.
 _SERIES: dict[tuple, tuple] = {}
 _BUILD = threading.Lock()
+# The alert candles after the download are read again at most this often. A study loads its
+# bars once at the start, so a refresh never changes the bars under a search that is running.
+LIVE_REFRESH = 900
+_LIVE_TAIL: dict[tuple, tuple] = {}
 
 
 def _sources(root: str, timeframe: str) -> tuple:
@@ -53,17 +59,47 @@ def research_series(root: str, timeframe: str, *, include_live: bool = True) -> 
     stamp = _sources(root, timeframe)
     kept = _SERIES.get(key)
     if kept is not None and kept[0] == stamp:
-        return list(kept[1])
+        return _with_live_tail(root, timeframe, width, kept[1]) if include_live else list(kept[1])
     with _BUILD:
         kept = _SERIES.get(key)
         if kept is not None and kept[0] == stamp:
-            return list(kept[1])
+            return _with_live_tail(root, timeframe, width, kept[1]) if include_live else list(kept[1])
         historical = _historical(root)
         if historical:
             rows = _databento_series(root, timeframe, width, historical)
             _SERIES[key] = (_sources(root, timeframe), rows)
-            return list(rows)
+            return _with_live_tail(root, timeframe, width, rows) if include_live else list(rows)
     return _export_series(root, timeframe, width, include_live)
+
+
+def _with_live_tail(root: str, timeframe: str, width: int, rows: list[dict]) -> list[dict]:
+    """The download, then the TradingView alert candles that came in after its last bar.
+
+    The download stops on the day it was taken. The alerts keep arriving each minute, so
+    without them the 7-day stage tests the same old week until someone downloads again.
+    Only minutes after the download's last bar are added, so no alert minute replaces a
+    download or export bar. The bar still forming is left out.
+    """
+    if not rows:
+        return []
+    after = int(rows[-1]["t"]) + width
+    key = (str(root or "").upper(), timeframe, after)
+    bucket = int(time.time() // LIVE_REFRESH)
+    kept = _LIVE_TAIL.get(key)
+    if kept is None or kept[0] != bucket:
+        try:
+            minutes = {epoch: row for epoch, row in _live(root).items() if epoch >= after}
+        except (OSError, ValueError, TypeError, KeyError):
+            minutes = {}
+        now = time.time()
+        tail = [
+            {"t": epoch, "o": row[0], "h": row[1], "l": row[2], "c": row[3], "v": row[4], "source": "alert"}
+            for epoch, row in sorted(_fold(minutes, width, partial=True).items())
+            if epoch + width <= now
+        ]
+        kept = (bucket, tail)
+        _LIVE_TAIL[key] = kept
+    return list(rows) + list(kept[1])
 
 
 def _databento_series(root: str, timeframe: str, width: int, historical: dict[int, tuple]) -> list[dict]:

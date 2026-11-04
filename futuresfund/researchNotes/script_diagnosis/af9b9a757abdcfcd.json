@@ -1,0 +1,41 @@
+{
+ "stalled": true,
+ "answer": {
+  "because": "The last run\u2019s stop exits show the miss is entry timing, and the 4\u21922 confirm_candles step moved farther; the measured best confirm_candles value is 1, which raised profit to 3782 and win rate to 61.54.",
+  "script": null,
+  "params": {
+   "profile_lookback": 135,
+   "profile_rows": 15,
+   "min_delta_pct": 10.0,
+   "min_slope": 0.0,
+   "confirm_candles": 1,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "stop_dollars": 700.0,
+   "tp_dollars": 2500.0,
+   "use_breakeven": false
+  },
+  "settings": {
+   "profile_lookback": 135,
+   "profile_rows": 15,
+   "min_delta_pct": 10.0,
+   "min_slope": 0.0,
+   "confirm_candles": 2,
+   "cooldown_bars": 10,
+   "use_session": true,
+   "sess_start_hr": 18,
+   "sess_start_mn": 0,
+   "sess_end_hr": 8,
+   "sess_end_mn": 0,
+   "stop_dollars": 700.0,
+   "tp_dollars": 2500.0,
+   "use_breakeven": false
+  },
+  "redesign": false
+ },
+ "version": 3
+}

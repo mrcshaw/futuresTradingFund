@@ -1,0 +1,1 @@
+This script exits with ATR times a multiplier. atr_len, stop_mult, and tp_mult are not accepted. atr * stop_mult is the loss, and changing the multiplier does not keep the loss inside the dollar stop. The exit is the dollar amount. While the trade is open, if that loss reaches the stop, the trade closes.

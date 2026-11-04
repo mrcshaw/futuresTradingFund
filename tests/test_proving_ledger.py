@@ -65,7 +65,8 @@ class ProvingLedgerTests(unittest.TestCase):
         def execute(params):
             sessions = execute.source["sessions"]
             profit = 900 if sessions in (5, 21) else -100
-            return {"net_profit": profit, "max_drawdown": 100, "trades": 40, "win_rate": 60, "profit_factor": 2, "biggest_loser": -100}
+            # Two trades a session: the library count on every window, and inside 600 a year at that pace.
+            return {"net_profit": profit, "max_drawdown": 100, "trades": 2 * sessions, "win_rate": 60, "profit_factor": 2, "biggest_loser": -100}
 
         execute.source = {"text": SCRIPT, "stamp": 0, "sessions": None}
         path = Path(self.home.name) / "ledger.pine"

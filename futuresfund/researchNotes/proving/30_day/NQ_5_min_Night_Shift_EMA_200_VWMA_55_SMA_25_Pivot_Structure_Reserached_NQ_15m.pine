@@ -1,0 +1,205 @@
+//@version=5
+strategy("NQ 5 min Night Shift EMA 200 + VWMA 55 + SMA 25 Pivot Structure", overlay=true,
+  initial_capital=50000, default_qty_type=strategy.fixed, default_qty_value=1,
+  commission_type=strategy.commission.cash_per_contract, commission_value=5.50,
+  slippage=1, pyramiding=0, process_orders_on_close=true, calc_on_every_tick=false,
+  max_bars_back=5000)
+// ===== RISK =====
+pv                = input.float(20, "Point Value ($)")
+stop_dollars      = input.int(700, "Stop ($)", minval=50, maxval=1500)
+tp_dollars        = input.int(750, "Take Profit ($)", minval=50, maxval=2000)
+long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv
+long_limit = close + tp_dollars / pv
+short_stop = strategy.position_size < 0 ? strategy.position_avg_price + stop_dollars / pv : close + stop_dollars / pv
+short_limit = close - tp_dollars / pv
+use_trail         = input.bool(false, "Enable Trailing Stop")
+trail_step_amt    = input.int(500, "Trail: Tighten every ($)", minval=0, maxval=2000)
+trail_min_dollars = input.int(1000, "Trail: Min Profit ($)", minval=0, maxval=2000)
+trail_pct         = input.float(50, "Trail: Keep % of Peak Profit")
+trail_step_pct    = input.float(50, "Trail: Tighten by X% per step")
+if strategy.position_size != 0 and not na(stop_dollars)
+    if strategy.openprofit <= -stop_dollars
+        strategy.close_all(comment="Open P&L > SL Risk")
+
+// 200 EMA + 55 EMA + 25 SMA — trade only in the direction of the 55 EMA
+// Long: 25 SMA crosses above 55 EMA AND higher highs AND 55 EMA slope > min
+// Short: 25 SMA crosses below 55 EMA AND lower lows AND 55 EMA slope < -min
+
+// ===== INDICATORS =====
+ema_len  = input.int(200, "200 EMA Length", minval=1, group="Indicators")
+ema55_len = input.int(23, "55 EMA Length", minval=1, group="Indicators")
+sma_len  = input.int(4, "25 SMA Length", minval=1, group="Indicators")
+ema55_slope_len = input.int(15, "55 EMA Slope Lookback", minval=1, maxval=20, group="Indicators", tooltip="Bars to measure 55 EMA slope.")
+min_slope = input.float(0.9376, "Min 55 EMA Slope (pts)", minval=0.0, step=0.5, group="Indicators", tooltip="Long: slope > this. Short: slope < -this. 0 = any rise/fall.")
+
+// ===== PIVOT =====
+pivot_left  = input.int(5, "Pivot Left Bars", minval=2, maxval=21, step=1, group="Pivot")
+pivot_right = input.int(5, "Pivot Right Bars", minval=2, maxval=21, step=1, group="Pivot")
+
+// ===== SESSION — Night 18:00–8:00 ET =====
+use_session   = input.bool(true, "Use Session Filter")
+sess_start_hr = input.int(18, "Session Start Hour (ET)")
+sess_start_mn = input.int(0,  "Session Start Minute")
+sess_end_hr   = input.int(8,  "Session End Hour (ET)")
+sess_end_mn   = input.int(0,  "Session End Minute")
+
+// ===== FILTERS =====
+cooldown_bars  = input.int(5, "Cooldown (bars)", minval=0, maxval=100, step=1)
+
+use_breakeven = input.bool(false, "Enable Breakeven", group="Breakeven")
+be_trigger_dollars = input.float(150, "BE Trigger ($)", minval=50, group="Breakeven")
+
+float stop_pts = stop_dollars / pv
+float tp_pts   = tp_dollars / pv
+float be_trigger_pts = be_trigger_dollars / pv
+
+// ===== SESSION LOGIC =====
+bar_hr = hour(time, "America/New_York")
+bar_mn = minute(time, "America/New_York")
+in_session = false
+if use_session
+    if bar_hr >= sess_start_hr and bar_hr < 24
+        in_session := true
+    else if bar_hr >= 0 and bar_hr < sess_end_hr
+        in_session := true
+    else if bar_hr == sess_end_hr and bar_mn < sess_end_mn
+        in_session := true
+
+// Flatten at 16:45 New York
+if bar_hr == 16 and bar_mn >= 45 and strategy.position_size != 0
+    strategy.close_all(comment="Flatten 16:45")
+
+// ===== INDICATOR CALCULATIONS =====
+ema200 = ta.ema(close, ema_len)
+ema55  = ta.ema(close, ema55_len)
+sma25  = ta.sma(close, sma_len)
+
+// Slope of 55 EMA
+ema55_slope = ta.change(ema55, ema55_slope_len)
+
+// Pivot Points
+p_high = ta.pivothigh(high, pivot_left, pivot_right)
+p_low  = ta.pivotlow(low, pivot_left, pivot_right)
+
+// Track last pivot high and low
+var float last_p_high = na
+var float last_p_low  = na
+if not na(p_high)
+    last_p_high := p_high
+if not na(p_low)
+    last_p_low  := p_low
+
+// Higher Highs / Lower Lows relative to last pivot
+higher_highs = not na(last_p_high) and high > last_p_high
+lower_lows   = not na(last_p_low) and low < last_p_low
+
+// ===== ENTRY LOGIC =====
+// Original: SMA cross + Pivot + Slope
+// New: Simplified to SMA cross + Slope to increase trade frequency
+// Long: SMA 25 crosses above EMA 55 AND 55 EMA slope > min_slope
+// Short: SMA 25 crosses below EMA 55 AND 55 EMA slope < -min_slope
+
+sma_cross_up   = ta.crossover(sma25, ema55)
+sma_cross_down = ta.crossunder(sma25, ema55)
+
+long_sig  = in_session and sma_cross_up and ema55_slope > min_slope
+short_sig = in_session and sma_cross_down and ema55_slope < -min_slope
+
+// Cooldown
+var int last_trade_bar = 0
+if long_sig or short_sig
+    if bar_index - last_trade_bar >= cooldown_bars
+        if long_sig and strategy.position_size <= 0
+            strategy.entry("Long", strategy.long)
+            strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+            last_trade_bar := bar_index
+        else if short_sig and strategy.position_size >= 0
+            strategy.entry("Short", strategy.short)
+            strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+            last_trade_bar := bar_index
+
+// ===== EXIT LOGIC =====
+var float current_stop = na
+var float peak_profit_pts = 0.0
+var bool be_active = false
+
+if strategy.position_size > 0
+    if na(current_stop)
+        current_stop := long_stop
+        peak_profit_pts := 0.0
+        be_active := false
+    // Update peak profit
+    if high - strategy.position_avg_price > peak_profit_pts
+        peak_profit_pts := high - strategy.position_avg_price
+    // Breakeven
+    if use_breakeven and not be_active
+        if peak_profit_pts >= be_trigger_pts
+            be_active := true
+            current_stop := strategy.position_avg_price + 0.25
+            strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+    // Normal exit
+    if not be_active
+        strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+    else
+        strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+
+if strategy.position_size < 0
+    if na(current_stop)
+        current_stop := short_stop
+        peak_profit_pts := 0.0
+        be_active := false
+    // Update peak profit
+    if strategy.position_avg_price - low > peak_profit_pts
+        peak_profit_pts := strategy.position_avg_price - low
+    // Breakeven
+    if use_breakeven and not be_active
+        if peak_profit_pts >= be_trigger_pts
+            be_active := true
+            current_stop := strategy.position_avg_price - 0.25
+            strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+    // Normal exit
+    if not be_active
+        strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+    else
+        strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+if strategy.position_size == 0
+    be_active := false
+
+// ===== TRAILING STOP =====
+if use_trail and strategy.position_size != 0
+    if strategy.position_size > 0
+        float avg        = strategy.position_avg_price
+        float profit_now = high - avg
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct    = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop    = avg + peak_profit_pts * (keep_pct / 100.0)
+            if new_stop > current_stop
+                current_stop := new_stop
+                strategy.exit("XL", "Long", stop=long_stop, limit=long_limit)
+    else if strategy.position_size < 0
+        float avg        = strategy.position_avg_price
+        float profit_now = avg - low
+        if profit_now > peak_profit_pts
+            peak_profit_pts := profit_now
+        if peak_profit_pts >= trail_min_dollars / pv
+            float peak_dollars = peak_profit_pts * pv
+            int   steps        = math.floor(peak_dollars / trail_step_amt)
+            float keep_pct    = math.min(trail_pct + steps * trail_step_pct, 95.0)
+            float new_stop    = avg - peak_profit_pts * (keep_pct / 100.0)
+            if new_stop < current_stop
+                current_stop := new_stop
+                strategy.exit("XS", "Short", stop=short_stop, limit=short_limit)
+
+// ===== PLOT =====
+plot(ema200, "200 EMA", color.purple, linewidth=2)
+plot(ema55, "55 EMA", color.blue, linewidth=2)
+plot(sma25, "25 SMA", color.orange, linewidth=2)
+plot(strategy.position_size != 0 ? current_stop : na, "Stop", color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+plotshape(long_sig, "Long", shape.triangleup, location.belowbar, color.lime, size=size.small)
+plotshape(short_sig, "Short", shape.triangledown, location.abovebar, color.red, size=size.small)
