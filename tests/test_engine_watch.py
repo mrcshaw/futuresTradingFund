@@ -167,12 +167,15 @@ class EngineWatchTests(unittest.TestCase):
         path = Path("learningStrategies") / "created_sample.pine"
         taken = []
 
-        def take(timeframe):
+        def take(root, timeframe):
             taken.append(timeframe)
+            roots.append(root)
             return path if timeframe == "2m" and path not in taken else None
 
-        def release(file, timeframe):
+        def release(file, root, timeframe):
             return None
+
+        roots = []
 
         previous = (learn._job_take, learn._job_release)
         learn._job_take = take
@@ -182,11 +185,14 @@ class EngineWatchTests(unittest.TestCase):
                 found = learn.study_learning_on_engine_4(self.board, None)
             self.assertEqual(found, "studied")
             self.assertEqual(taken[0], "2m")
+            # Engine 4's spare time goes through every (instrument, chart) pair, ES first.
+            self.assertEqual(roots[0], "ES")
             study.assert_called_once()
+            self.assertEqual(study.call_args.kwargs["root"], "ES")
             self.assertEqual(_ENGINE_STATUS[CREATION_ENGINE]["study"], path.name)
             self.assertEqual(self.board.agent_status[CREATION_TESTER], "working")
             self.assertIn(path.name, self.board.agent_tasks[CREATION_TESTER])
-            learn._job_take = lambda timeframe: None
+            learn._job_take = lambda root, timeframe: None
             self.assertEqual(learn.study_learning_on_engine_4(self.board, None), "none")
             self.assertEqual(self.board.agent_status[CREATION_TESTER], "idle")
         finally:

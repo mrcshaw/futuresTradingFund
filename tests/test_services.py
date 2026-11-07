@@ -756,7 +756,11 @@ class LibraryTests(unittest.TestCase):
         gold = search_library("GC1!")
         titles = {row["title"] for row in es["strategies"]}
         self.assertNotIn("delta_vol_night_strategy", titles)
-        self.assertTrue(all(row["contract_label"] == "Gold" and row["net_profit"] > 0 for row in gold["strategies"]))
+        # A script added by hand can be on the shelf before it has a measured profit.
+        self.assertTrue(all(
+            row["contract_label"] == "Gold" and (row.get("kind") == "Added" or row["net_profit"] > 0)
+            for row in gold["strategies"]
+        ))
 
     def test_every_library_strategy_still_has_its_script(self):
         from futuresfund.library import library_script, search_library

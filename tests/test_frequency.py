@@ -65,7 +65,66 @@ class SessionRewriteTests(unittest.TestCase):
         self.assertNotIn("0930-1600", captured["source"])
 
 
+def _book_with(test, **values):
+    """Acceptance boxes for this test only: the code defaults (100 trades a year) with these values on top."""
+    from unittest import mock
+
+    from futuresfund import book
+
+    limits = {**book.ACCEPTANCE_DEFAULTS, **values}
+    patcher = mock.patch("futuresfund.book.strategy_acceptance", lambda *args, **kwargs: dict(limits))
+    patcher.start()
+    test.addCleanup(patcher.stop)
+
+
+class FloorTests(unittest.TestCase):
+    """Far under follows the weekly floor: the library count over 52 weeks, never above 2 a week."""
+
+    def _week(self, trades_a_week):
+        return {"net_profit": 1, "max_drawdown": 100, "trades": int(round(trades_a_week * 52)), "days": 260}
+
+    def test_60_a_year_is_a_floor_of_about_1_2_a_week(self):
+        from futuresfund.frequency import far_under, far_under_text, far_under_week
+
+        _book_with(self, min_trades=60, use_trades=True)
+        self.assertAlmostEqual(far_under_week(), 60 / 52, places=3)
+        self.assertEqual(far_under_text(), "1.2 trades a week")
+        self.assertTrue(far_under(self._week(1.0)))
+        # 1.5 a week already clears 60 a year, so its entries are left to the ordinary search.
+        self.assertFalse(far_under(self._week(1.5)))
+
+    def test_the_floor_never_rises_above_2_a_week(self):
+        from futuresfund.frequency import FAR_UNDER_WEEK, far_under, far_under_week
+
+        _book_with(self, min_trades=300, use_trades=True)
+        self.assertEqual(far_under_week(), FAR_UNDER_WEEK)
+        self.assertTrue(far_under(self._week(1.9)))
+        self.assertFalse(far_under(self._week(2.1)))
+
+    def test_the_optional_floor_counts_when_it_is_higher(self):
+        from unittest import mock
+
+        from futuresfund import objective
+        from futuresfund.frequency import far_under_week
+
+        _book_with(self, min_trades=60, use_trades=True)
+        with mock.patch.object(objective, "STAGE_TRADES_PER_WEEK", 1.5):
+            self.assertEqual(far_under_week(), 1.5)
+
+    def test_the_reason_names_the_floor_not_4_a_week(self):
+        from futuresfund.frequency import frequency_reason
+
+        _book_with(self, min_trades=60, use_trades=True)
+        reason = frequency_reason({"emaLength": 25}, {"emaLength": 25, "session_window": "1800-1600"}, CASH)
+        self.assertIn("far under 1.2 trades a week", reason)
+        self.assertNotIn("4 trades a week", reason)
+
+
 class FrequencyPlanTests(unittest.TestCase):
+    def setUp(self):
+        # The code defaults ask for 100 trades a year, a floor of about 1.9 a week; the saved desk book is left alone.
+        _book_with(self)
+
     def _row(self, params, trades, days=1291):
         return {"params": params, "trades": trades, "days": days, "net_profit": 1, "max_drawdown": 100}
 

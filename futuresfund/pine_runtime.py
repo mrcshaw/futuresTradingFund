@@ -656,8 +656,12 @@ def _simple_statement(tokens, number: int, types: set):
     if mode or typed:
         raise PineUnsupported(f"Line {number}: cannot read the declaration.")
     p.k = start
-    target = _postfix(p)
-    if p.peek()[0] == "op" and p.peek()[1] in (":=", "+=", "-=", "*=", "/=", "%="):
+    try:
+        target = _postfix(p)
+    except PineUnsupported:
+        # A line such as -y * math.log(p) has no target: it is a value, read as an expression below.
+        target = None
+    if target is not None and p.peek()[0] == "op" and p.peek()[1] in (":=", "+=", "-=", "*=", "/=", "%="):
         op = p.take()[1]
         value = _expr(p)
         p.end()
@@ -736,6 +740,8 @@ _TA_PARAMS = {
     "rising": ["source", "length"], "falling": ["source", "length"], "vwap": ["source", "anchor", "stdev_mult"],
     "macd": ["source", "fastlen", "slowlen", "siglen"], "bb": ["series", "length", "mult"],
     "stoch": ["source", "high", "low", "length"], "tr": ["handle_na"],
+    "supertrend": ["factor", "atrPeriod"], "linreg": ["source", "length", "offset"], "hma": ["source", "length"],
+    "percentile_nearest_rank": ["source", "length", "percentage"],
 }
 
 
@@ -1300,10 +1306,12 @@ class _Compiler:
                 return f"_meth({self._c(func[1], scope)}, '{func[2]}'{', ' if args else ''}{self._args(args, {}, scope)})"
             raise PineUnsupported("Calling this value is not supported yet.")
         head = chain[0]
-        if self._is_value(head, scope):
-            base = self._c(func[1], scope)
+        # loss = loss(y, p): a value cannot be called, so a plain call to a function's name is that function.
+        calls_function = len(chain) == 1 and func[0] == "name" and head in self.funcs
+        if self._is_value(head, scope) and not calls_function:
             if func[0] != "attr":
                 raise PineUnsupported(f"{head} is not a function.")
+            base = self._c(func[1], scope)
             return f"_meth({base}, '{func[2]}'{', ' if args else ''}{self._args(args, {}, scope)})"
         if len(chain) == 1:
             return self._plain_call(head, args, kwargs, scope, site)

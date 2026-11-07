@@ -44,28 +44,64 @@ class BacktraderEngineTests(unittest.TestCase):
         self.assertIsNotNone(result.get("net_profit"))
 
     def test_each_chart_has_its_own_engine(self):
+        from futuresfund import roster
         from futuresfund.backtrader_engine import _ENGINE_SLOTS, engine_status
         from futuresfund.engine_workers import _SLOTS
-        from futuresfund.roster import EXTRA_CHART_ENGINES
 
+        # The one-argument form is still the ES chart; the creation engine takes anything else.
         self.assertEqual(slot_for("2m"), 0)
         self.assertEqual(slot_for("5m"), 1)
         self.assertEqual(slot_for("15m"), 2)
         self.assertEqual(slot_for("1h"), 3)
-        self.assertEqual(_ENGINE_SLOTS, 6)
-        self.assertEqual(_SLOTS, 6)
+        self.assertEqual(slot_for("5m", "NQ"), 8)
+        self.assertEqual(slot_for("15m", "YM"), 21)
+        self.assertEqual(slot_for("2m", "ZZ"), 3)
+        self.assertEqual(_ENGINE_SLOTS, 22)
+        self.assertEqual(_SLOTS, 22)
+        self.assertFalse(hasattr(roster, "EXTRA_CHART_ENGINES"))
         rows = engine_status()
-        self.assertEqual([row["developer"] for row in rows], [
-            "2min chart developer",
-            "5 min chart developer",
-            "15 min chart developer",
-            "Creation tester",
-            "5 min chart developer",
-            "15 min chart developer",
+        self.assertEqual(len(rows), 22)
+        self.assertEqual([row["id"] for row in rows], list(range(1, 23)))
+        creation = [row for row in rows if row["creation"]]
+        self.assertEqual([row["id"] for row in creation], [4])
+        self.assertEqual(creation[0]["developer"], "Creation tester")
+        self.assertEqual(creation[0]["root"], "")
+        charts = [row for row in rows if not row["creation"]]
+        expected = [(root, timeframe) for root in roster.ENGINE_ROOTS for timeframe in ("2m", "5m", "15m")]
+        self.assertEqual([(row["root"], row["timeframe"]) for row in charts], expected)
+        self.assertEqual([(row["id"], row["root"], row["timeframe"]) for row in charts[:6]], [
+            (1, "ES", "2m"), (2, "ES", "5m"), (3, "ES", "15m"), (5, "GC", "2m"), (6, "GC", "5m"), (7, "GC", "15m"),
         ])
-        self.assertEqual(rows[4]["timeframe"], "5m")
-        self.assertEqual(rows[5]["timeframe"], "15m")
-        self.assertEqual([item["engine"] for item in EXTRA_CHART_ENGINES], [5, 6])
+        self.assertEqual(charts[-1]["id"], 22)
+        developers = {"2m": "2min chart developer", "5m": "5 min chart developer", "15m": "15 min chart developer"}
+        for row in charts:
+            self.assertEqual(row["developer"], developers[row["timeframe"]])
+            self.assertEqual(row["instrument"], row["root"])
+        # Each developer owns seven engines, one per instrument.
+        self.assertEqual(roster.engines_of("2min chart developer"), [1, 5, 8, 11, 14, 17, 20])
+        self.assertEqual(roster.chart_engine(9)["root"], "NQ")
+        self.assertIsNone(roster.chart_engine(4))
+
+    def test_every_instrument_has_a_2m_5m_and_15m_engine_that_keeps_its_root(self):
+        from futuresfund import backtrader_engine as engine
+        from futuresfund.roster import ENGINE_DESKS, ENGINE_ROOTS, engine_for
+
+        for root in ENGINE_ROOTS:
+            for timeframe in ("2m", "5m", "15m"):
+                desk = engine_for(root, timeframe)
+                self.assertIsNotNone(desk, (root, timeframe))
+                self.assertEqual(engine.slot_for(timeframe, root), desk["engine"] - 1)
+        self.assertEqual(len(ENGINE_DESKS), 21)
+        index = engine.slot_for("5m", "MES")
+        engine._acquire_engine("run.pine", "5m", "MES", index)
+        self.assertEqual(engine.engine_status()[index]["instrument"], "MES")
+        engine._release_engine(index)
+        # A chart engine keeps its instrument between runs; the creation engine has none until its next draft.
+        self.assertEqual(engine.engine_status()[index]["instrument"], "MES")
+        engine._acquire_engine("draft.pine", "15m", "NQ", engine._CREATION_SLOT)
+        self.assertEqual(engine.engine_status()[engine._CREATION_SLOT]["instrument"], "NQ")
+        engine._release_engine(engine._CREATION_SLOT)
+        self.assertEqual(engine.engine_status()[engine._CREATION_SLOT]["instrument"], "")
 
     def test_a_default_outside_the_input_range_is_pulled_back_inside(self):
         from futuresfund.strategy import _legal_defaults

@@ -26,6 +26,24 @@ def reset_incidents() -> None:
         _supply_sent.clear()
 
 
+def _creation_id() -> int:
+    from futuresfund.roster import CREATION_ENGINE_ID
+
+    return CREATION_ENGINE_ID
+
+
+def _engine_count() -> int:
+    from futuresfund.backtrader_engine import _ENGINE_SLOTS
+
+    return _ENGINE_SLOTS
+
+
+def _layout() -> str:
+    from futuresfund.roster import engine_layout
+
+    return engine_layout()
+
+
 def gaps(engines, agent_status, *, research_running: bool, hold_new: bool) -> list[dict]:
     """Engines marked working that have no script open."""
     if not research_running:
@@ -40,15 +58,15 @@ def gaps(engines, agent_status, *, research_running: bool, hold_new: bool) -> li
         developer = str(row.get("developer") or "")
         engine_marked = bool(row.get("busy") or row.get("studying"))
         agent_marked = status.get(developer) == "working"
-        if engine_id == 4 and hold_new and agent_marked and not engine_marked:
+        if engine_id == _creation_id() and hold_new and agent_marked and not engine_marked:
             found.append({
-                "engine": 4,
+                "engine": engine_id,
                 "developer": developer or "Creation tester",
                 "fault": False,
                 "action": "idle",
                 "immediate": True,
                 "reason": (
-                    "Engine 4 is not processing a file because Hold is on. "
+                    f"Engine {engine_id} is not processing a file because Hold is on. "
                     "The strategy team is not writing a new script. It was marked working anyway."
                 ),
             })
@@ -86,7 +104,7 @@ def resolve(board, issue: dict, clear) -> str:
     if issue["action"] == "idle":
         if developer:
             board.set_task(developer, "Not developing a new script.", working=False)
-        return "Hold is on, so engine 4 is idle. It is not processing a file, and it is not writing one."
+        return f"Hold is on, so engine {_creation_id()} is idle. It is not processing a file, and it is not writing one."
     if developer:
         board.set_task(developer, "Waiting for the next script.", working=False)
     if cleared:
@@ -325,7 +343,7 @@ def explain_engines(
     unknown = _unknown_engines(message)
     if unknown:
         listed = ", ".join(str(item) for item in unknown)
-        lines.append(f"There is no engine {listed}. The engines are 1, 2, 3, and 4.")
+        lines.append(f"There is no engine {listed}. The engines are 1 to {_engine_count()}. {_layout()}")
     tasks = dict(getattr(board, "agent_tasks", None) or {})
     for engine_id in _engine_ids(message):
         row = rows.get(engine_id) or {}
@@ -397,7 +415,7 @@ def explain_engines(
             continue
         lines.append(
             f"Engine {engine_id} is idle between scripts. Research is running"
-            + (" and Hold is on." if hold_new and engine_id == 4 else ".")
+            + (" and Hold is on." if hold_new and engine_id == _creation_id() else ".")
         )
     if not lines:
         lines.append("No engine number was in the question.")
@@ -428,13 +446,15 @@ def answer_engines(board, message: str, *, apply: bool) -> str | None:
     from futuresfund.mailer import send_report
 
     engines = engine_status()
+    # Every engine: the 21 chart engines and the creation engine.
+    ids = [int(row.get("id") or 0) for row in engines if row.get("id")] or list(range(1, _engine_count() + 1))
     if _engine_threads:
         threads = {
             engine_id: (_engine_threads.get(engine_id) is not None and _engine_threads[engine_id].is_alive())
-            for engine_id in (1, 2, 3, 4)
+            for engine_id in ids
         }
     else:
-        threads = {engine_id: True for engine_id in (1, 2, 3, 4)}
+        threads = {engine_id: True for engine_id in ids}
     view = board.watch_view()
     return explain_engines(
         message,

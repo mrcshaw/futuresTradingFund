@@ -57,7 +57,7 @@ class AcceptanceGapTests(unittest.TestCase):
             [
                 "Profit. The typical miss made $100 versus acceptance above $8,000. That is $7,900 under the line. 6 of 14 backtests miss it.",
                 "Profit factor. The typical miss is 0.5 versus acceptance above 1.05. That is 0.48 times the bar. 4 of 14 backtests miss it.",
-                "Drawdown. The typical miss is $20,000, over 30 percent of the profit once the profit reaches $2,500. 3 of 14 backtests miss it.",
+                "Drawdown. The typical miss is $20,000, over the limit of $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000. 3 of 14 backtests miss it.",
             ],
         )
         self.assertEqual(
@@ -65,7 +65,7 @@ class AcceptanceGapTests(unittest.TestCase):
             [
                 {"reason": "Profit", "typical": "$100", "acceptance": "Above $8,000", "compared": "$7,900 under the line", "misses": "6 of 14"},
                 {"reason": "Profit factor", "typical": "0.5", "acceptance": "Above 1.05", "compared": "0.48 times the bar", "misses": "4 of 14"},
-                {"reason": "Drawdown", "typical": "$20,000", "acceptance": "Under 30 percent of the profit once the profit reaches $2,500", "compared": "Over 30 percent of the profit", "misses": "3 of 14"},
+                {"reason": "Drawdown", "typical": "$20,000", "acceptance": "Inside $2,500 until the profit passes $3,000, then $2,500 plus 30 percent of the profit above $3,000", "compared": "Over the limit at its profit high", "misses": "3 of 14"},
             ],
         )
 
@@ -78,7 +78,7 @@ class AcceptanceGapTests(unittest.TestCase):
         self.assertIn("function renderGaps(report)", js)
         self.assertIn("renderGaps(lab.acceptance_report)", js)
         self.assertIn("Compared with the bar", js)
-        self.assertIn("app.js?v=161", html)
+        self.assertIn("app.js?v=165", html)
 
     def test_asking_the_portfolio_manager_publishes_the_table(self):
         from futuresfund.desk_chat import answer

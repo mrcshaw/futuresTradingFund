@@ -110,10 +110,13 @@ def remember_research(row: dict, filename: str, title: str) -> None:
         return
     if "price rule" in note or "not substituted" in note or "cannot enter" in note:
         return
+    current = book.get("headquarters_research")
+    # The score reads only the numbers, so a run that does not beat headquarters is not rendered as a script.
+    if isinstance(current, dict) and _score(current) >= _score(_candidate_numbers(row, filename, title)):
+        return
     candidate = _candidate(row, filename, title)
     if not candidate or not candidate.get("pine"):
         return
-    current = book.get("headquarters_research")
     if isinstance(current, dict) and _score(current) >= _score(candidate):
         return
     book["headquarters_research"] = candidate
@@ -383,22 +386,29 @@ def _candidate(row: dict, filename: str, title: str) -> dict | None:
     if not pine:
         return None
     names = {"5m": "5-minute", "2m": "2-minute", "15m": "15-minute"}
-    timeframe = row.get("timeframe") or "5m"
-    take_profit = row.get("take_profit")
+    found = _candidate_numbers(row, filename, title)
+    timeframe = found["timeframe"]
+    take_profit = found["take_profit"]
     target = f" Take profit ${float(take_profit):,.0f}." if isinstance(take_profit, (int, float)) and float(take_profit) > 0 else ""
-    from futuresfund.objective import pace
-
-    rate = pace(row)
+    rate = found["trades_per_day"]
     paced = f", {rate:g} a day" if rate is not None else ""
     formula = (
         f"PineTS ran this Pine script on the {names.get(timeframe, timeframe)} chart. "
         f"Profit {row.get('net_profit')}, drawdown {row.get('max_drawdown')}, trades {row.get('trades')}{paced}.{target}"
     )
+    return {"id": filename, "title": title, "formula": formula, "pine": pine, **{key: value for key, value in found.items() if key not in {"id", "title"}}}
+
+
+def _candidate_numbers(row: dict, filename: str, title: str) -> dict:
+    """The candidate without its script: everything _score reads."""
+    from futuresfund.objective import pace
+
+    timeframe = row.get("timeframe") or "5m"
+    take_profit = row.get("take_profit")
+    rate = pace(row)
     return {
         "id": filename,
         "title": title,
-        "formula": formula,
-        "pine": pine,
         "net_profit": row.get("net_profit"),
         "max_drawdown": row.get("max_drawdown"),
         "trades": row.get("trades"),
@@ -486,7 +496,12 @@ def _read_pine(filename: str) -> str:
         candidates.append(f"created_{name.name}")
         candidates.append(f"created_{stem}.txt")
     # draftStrategies and unprovenStrategies come last, so a filed row still finds a script the creation team moved.
-    for folder in (root / "learningStrategies", root / "learnedStrategies", root / "createdStrategies", root / "draftStrategies", root / "unprovenStrategies"):
+    # awaitingAnswerStrategies (project root) holds a script while the owner's emailed answer is awaited.
+    folders = (
+        root / "learningStrategies", root / "learnedStrategies", root / "createdStrategies", root / "draftStrategies",
+        root / "unprovenStrategies", root.parent / "awaitingAnswerStrategies",
+    )
+    for folder in folders:
         for candidate in candidates:
             path = folder / candidate
             if not path.is_file() or path.suffix.lower() not in {".pine", ".txt"}:
@@ -499,12 +514,17 @@ def _read_pine(filename: str) -> str:
 
 
 def _apply_inputs(text: str, params: dict) -> str:
+    from futuresfund.pine_report import set_text_input
+
     for key, value in params.items():
         if isinstance(value, bool):
             literal = "true" if value else "false"
         elif isinstance(value, (int, float)):
             literal = _literal(_clamp_default(text, key, value))
         else:
+            if isinstance(value, str):
+                # An input.session, or an input.string with no option list, that the owner set by email.
+                text = set_text_input(text, key, value)
             continue
         text = re.sub(
             rf"({re.escape(key)}\s*=\s*input\.(?:int|float|bool)\s*\()\s*[^,\)]+",

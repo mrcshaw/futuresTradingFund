@@ -65,7 +65,8 @@ class ProvingLedgerTests(unittest.TestCase):
         def execute(params):
             sessions = execute.source["sessions"]
             profit = 900 if sessions in (5, 21) else -100
-            return {"net_profit": profit, "max_drawdown": 100, "trades": 40, "win_rate": 60, "profit_factor": 2, "biggest_loser": -100}
+            # Two trades a session: the library count on every window, and inside 600 a year at that pace.
+            return {"net_profit": profit, "max_drawdown": 100, "trades": 2 * sessions, "win_rate": 60, "profit_factor": 2, "biggest_loser": -100}
 
         execute.source = {"text": SCRIPT, "stamp": 0, "sessions": None}
         path = Path(self.home.name) / "ledger.pine"
@@ -121,7 +122,9 @@ class ProvingLedgerTests(unittest.TestCase):
         with mock.patch("futuresfund.learn._study_chart", side_effect=finishes):
             learn._study(None, path, {}, None, timeframe="5m")
         two, five = sorted(rows(), key=lambda row: row["timeframe"])
-        self.assertEqual(two["label"], "Stopped at 365 days")
+        # An engine fault is not the script's result, so that stage resumes there on its next study.
+        self.assertEqual(two["label"], "Stopped at 365 days, resumes there")
+        self.assertTrue(two["resume"])
         self.assertEqual(two["reason"], "The engine stopped. PineTS did not finish within 10 minutes.")
         self.assertEqual(five["label"], "Failed 365 days")
 

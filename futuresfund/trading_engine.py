@@ -2,7 +2,7 @@
 
 The floor trader's engine and the quantitative trader's engine read the chart
 and run the active strategy's Pine script there, apart from the desk and from
-the four research engines. The trader's thread in the desk sends the card's
+the research engines. The trader's thread in the desk sends the card's
 script, waits on that trader's engine only, and then books what the script
 did, on paper or live. An engine starts the first time its trader checks a
 script, and it stops when the desk that started it is gone.
@@ -38,7 +38,8 @@ def _engine_process(trader: str, inbound, outbound, stop) -> None:
 
     live._CHART_SECONDS = _CHART_SECONDS
     desk = mp.parent_process()
-    while not stop.is_set():
+    # stop is a lock-free shared byte, so an engine terminated mid-check cannot leave the other trader's engine stuck.
+    while not stop.value:
         try:
             job = inbound.get(timeout=0.5)
         except queue.Empty:
@@ -142,7 +143,7 @@ class TradingEngines:
             if self.online:
                 return
             self._ctx = mp.get_context("spawn")
-            self._stop = self._ctx.Event()
+            self._stop = self._ctx.RawValue("b", 0)
             self._engines = {}
             self.online = True
 
@@ -150,7 +151,7 @@ class TradingEngines:
         with self._lock:
             self.online = False
             if self._stop is not None:
-                self._stop.set()
+                self._stop.value = 1
             engines, self._engines = list(self._engines.values()), {}
         for engine in engines:
             engine.close()

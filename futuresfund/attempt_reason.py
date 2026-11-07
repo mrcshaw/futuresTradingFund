@@ -61,7 +61,7 @@ def reasoned_change(script: str, trials: list[dict], bounds: dict | None = None,
     if found and found.get("redesign"):
         found["redesigned"] = _write_redesign(script, found["redesign"], found["because"])
         if not found["redesigned"]:
-            found["because"] += " The redesign could not be written, so nothing was filed."
+            found["because"] += " The redesign could not be written, so the script is unchanged."
     if found and found.get("rewrite"):
         found["script"] = _write_script(script, found["rewrite"], found["because"])
         if not found["script"]:
@@ -116,10 +116,10 @@ def _write_redesign(script: str, plan: str, because: str) -> str | None:
                 "The old script is there to read. Change anything the plan changes: the entries, the filters, the sessions, the exits, and the inputs. Leave out whatever the plan drops. "
                 "Reply with the whole script after a line that says SCRIPT:, closed by a line that says END. Never leave part of it out or write a placeholder. "
                 "Keep these risk rules. "
-                'Stop and take profit are dollar inputs: stop_dollars = input.int(500, "Stop ($)", minval=250, maxval=700) and tp_dollars = input.int(1000, "Take Profit ($)", minval=250), with the take profit larger than the stop. '
+                'Stop and take profit are dollar inputs: stop_dollars = input.int(500, "Stop ($)", minval=50, maxval=700) and tp_dollars = input.int(1000, "Take Profit ($)", minval=50), with the take profit larger than the stop. '
                 "The stop holds at the entry price for the whole trade: long_stop = strategy.position_size > 0 ? strategy.position_avg_price - stop_dollars / pv : close - stop_dollars / pv, and the same for the short side. "
                 "The take profit reads the last close: long_limit = close + tp_dollars / pv and short_limit = close - tp_dollars / pv. Every entry has a strategy.exit with stop= and limit=. "
-                "Do not use ATR for a stop or a target. "
+                "Set the stop and the target in dollars, not with ATR. An ATR stop or target is converted to the dollar stop before the backtest, so its multiplier is removed. "
                 "Every trade is closed with strategy.close_all when the session ends at 16:00 New York. "
                 "Give each new input a default, a minval, and a maxval, so the search can move it. "
                 "TradingView has to compile it: plot, plotshape, bgcolor, fill, hline, and input calls stay at the left margin, never inside an if, a for, or a function. "
@@ -403,6 +403,7 @@ def _ask(prompt: str) -> str:
                 "KEEP means the script is sound and the search should carry on. "
                 "A SETTING changes one existing input. The search starts at a $250 stop and a $500 take profit. "
                 "The stop rises through $250, $500, and $700, then the take profit rises with no maximum. "
+                "On a micro contract (MES, MNQ, M2K, MYM, MGC, MCL) the search starts at a stop of $50, a take profit of $100, and the stop rises through $50, $100, and $150. "
                 "Indicator changes start from the most profitable pair. Do not move the stop or the take profit away from that pair. "
                 "A win rate under the line can shorten a length. "
                 "Read the comment that starts How this script works and follow that description of this script. "
@@ -432,7 +433,7 @@ def _redesign_lines() -> list[str]:
     return [
         "A REDESIGN is open on this script. Use it when the idea of the script is why it loses, so a setting or a few lines will not fix it. The goal is a script that makes money consistently without losing more than the drawdown rule allows.",
         "A REDESIGN can change the entries, the filters, the sessions, and the exits, add inputs, or replace the logic completely. The one-change rule above is for a SETTING or a REWRITE.",
-        "It is saved as a new script and this one stays as it was, so nothing is lost. The new script gets its own search over its settings before it is judged, so it does not have to beat this result at these settings.",
+        "It replaces this script in place. It is measured at these settings, and it stays only when it does better than this script did. Otherwise this script is put back as it was, so nothing is lost and no extra script is filed.",
         "It keeps the risk rules: the dollar stop held at the entry price, the take profit larger than the stop, and flat when the session ends.",
     ]
 
@@ -452,6 +453,7 @@ def _brief(script: str, trials: list[dict], current: dict, why: str = "", respon
         "More than 600 trades a year stays off the list.",
         "Change one thing. If an input or an exit is not connected, repair that first. If the last run took no trades, or the win rate and the profit factor cannot move by another length, replace the entry. Otherwise change the one input that the last result says is the miss.",
         "The stop starts at $250 and the take profit at $500. A profitable opening is kept. A losing opening raises the stop through $500 and $700, then raises the take profit. Indicator changes start from the most profitable pair.",
+        "On a micro contract (MES, MNQ, M2K, MYM, MGC, MCL) the stop starts at $50 and the take profit at $100, and a losing opening raises the stop through $100 and $150.",
         "A win rate under the line can shorten a length.",
         "Read the comment that starts How this script works and follow that description of this script. A small stop needs a short trade only when that description says the entry is an average cross. Then a smaller length tracks price more closely and crosses sooner, so the trade can finish before that stop.",
         "Do not invent an input, unless this is a REDESIGN. Do not change the point value. The instrument roots are ES, GC, NQ, MNQ, MES, M2K, and YM. MNQ is $2 a point. MES, M2K, and YM are $5 a point. Gold is GC. Never write GOLD.",
@@ -488,7 +490,7 @@ def _brief(script: str, trials: list[dict], current: dict, why: str = "", respon
     if redesign:
         lines.append("or, when the idea of the script is the problem:")
         lines.append("REDESIGN:")
-        lines.append("The whole plan for the new script: its entries, its filters, its sessions, its exits, and each new input. Do not write the script.")
+        lines.append("The whole plan for the redesigned script: its entries, its filters, its sessions, its exits, and each new input. Do not write the script.")
         lines.append("END")
     return "\n".join(lines)
 

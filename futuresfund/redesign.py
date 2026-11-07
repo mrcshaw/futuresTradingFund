@@ -1,9 +1,10 @@
-"""A researcher's redesign is a new script. The script it came from stays as it was.
+"""A researcher's redesign replaces the script it answers, in place.
 
-It goes in the learning folder under its own name and title, so it gets its own search, its own
-stages, and its own notes, and it is judged only after that search has tuned it. The ledger is
-researchNotes/redesigns/ledger.json. It keeps the plan behind each one, so the next redesign of
-that script does not repeat it.
+No new script is filed. The redesign is measured at the same settings as the script it replaces
+and kept only when it does better; otherwise the script is put back (learn._install_checked).
+The ledger is researchNotes/redesigns/ledger.json. It keeps the plan behind each one, so the next
+redesign of that script does not repeat it. Rows from before 2026-11-05 name the separate
+_redesignN scripts the desk used to file; they still count as ideas tried, not against LIMIT.
 """
 
 from __future__ import annotations
@@ -14,11 +15,10 @@ import threading
 import time
 from pathlib import Path
 
-LIMIT = 3  # redesigns of one original script, counting redesigns of its redesigns
+LIMIT = 3  # in-place redesigns of one script
 _LOCK = threading.Lock()
 _MARK = re.compile(r"_redesign\d+$", re.IGNORECASE)
 _TITLE = re.compile(r'(\bstrategy\(\s*(?:title\s*=\s*)?)"([^"\n]*)"')
-_TITLE_MARK = re.compile(r"\s+Redesign \d+$")
 
 
 def _ledger() -> Path:
@@ -53,50 +53,45 @@ def original_of(path: Path) -> str:
 
 
 def room(path: Path) -> bool:
-    """True while this script's original has a redesign left."""
-    with _LOCK:
-        return len(_load().get(original_of(path)) or []) < LIMIT
-
-
-def earlier_lines(path: Path) -> list[str]:
-    """What was already tried, for the researcher."""
+    """True while this script has an in-place redesign left."""
     with _LOCK:
         rows = _load().get(original_of(path)) or []
-    return [f"{row.get('file')} already tried this as a redesign, so do not repeat it: {row.get('because')}" for row in rows]
+    return sum(1 for row in rows if row.get("in_place")) < LIMIT
 
 
-def _titled(source: str, parent: str, original: str, number: int) -> str:
-    """The new script's own title, so a table or a chart can never mistake it for the original."""
+def keep_title(source: str, parent: str) -> str:
+    """The redesign keeps the title of the script it replaces, so tables and charts still name it."""
     found = _TITLE.search(parent or "")
-    base = _TITLE_MARK.sub("", found.group(2)) if found and found.group(2).strip() else original
-    return _TITLE.sub(lambda match: f'{match.group(1)}"{base} Redesign {number}"', source, count=1)
+    if not found or not found.group(2).strip():
+        return source
+    return _TITLE.sub(lambda match: f'{match.group(1)}"{found.group(2)}"', source, count=1)
 
 
-def file_redesign(path: Path, parent: str, source: str, because: str, plan: str = "") -> Path | None:
-    """Write the redesign as a new script and enter it on the ledger. None when the original has no redesign left."""
-    from futuresfund import learn
-    from futuresfund.attempt_reason import keep_version
-
+def note_redesign(path: Path, because: str, plan: str = "") -> bool:
+    """Enter an in-place redesign on the ledger. False when this script has none left."""
     original = original_of(path)
     with _LOCK:
         data = _load()
         rows = list(data.get(original) or [])
-        if len(rows) >= LIMIT:
-            return None
-        number = len(rows) + 1
-        target = Path(learn.LEARNING) / f"{original}_redesign{number}.pine"
-        text = _titled(source, parent, original, number)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8")
+        if sum(1 for row in rows if row.get("in_place")) >= LIMIT:
+            return False
         rows.append({
-            "file": target.name,
-            "from": Path(path).name,
-            "from_sha": keep_version(target, parent),
-            "source_sha": keep_version(target, text),
+            "file": Path(path).name,
+            "in_place": True,
             "because": because,
             "plan": plan,
             "at": time.strftime("%Y-%m-%d %H:%M:%S"),
         })
         data[original] = rows
         _write(data)
-    return target
+    return True
+
+
+def earlier_lines(path: Path) -> list[str]:
+    """What was already tried, for the researcher."""
+    with _LOCK:
+        rows = _load().get(original_of(path)) or []
+    return [
+        f"{row.get('file')} already tried this as a redesign, so do not repeat it: {row.get('because')} {row.get('plan') or ''}".strip()
+        for row in rows
+    ]

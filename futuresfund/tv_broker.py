@@ -112,13 +112,15 @@ def sharpe_ratio(pnls: list[float], days: float | None = None) -> float | None:
     return round(ratio, 3)
 
 
-def mark_price_jumps(trades: list[dict], bars, point: float, tick: float) -> None:
+def mark_price_jumps(trades: list[dict], bars, point: float, tick: float, where: dict | None = None) -> None:
     """Record on each losing trade how much of its loss came from price jumping past the exit.
 
     A stop can only fill at the next price that trades. When a bar opens past the last close
     against the trade and the exit fills at that open, the jump is in dollars under "jump".
+    where is each bar's New York minute to its index, when the caller already has it.
     """
-    where = {bar.when.strftime("%Y-%m-%d %H:%M"): index for index, bar in enumerate(bars)}
+    if where is None:
+        where = {bar.when.strftime("%Y-%m-%d %H:%M"): index for index, bar in enumerate(bars)}
     for trade in trades:
         index = where.get(str(trade.get("exit_time") or ""))
         if not index or trade.get("pnl") is None or float(trade["pnl"]) >= 0 or trade.get("exit_price") is None:
@@ -127,6 +129,22 @@ def mark_price_jumps(trades: list[dict], bars, point: float, tick: float) -> Non
         jump = before.c - bar.o if trade.get("side") == "long" else bar.o - before.c
         if jump > 0 and abs(float(trade["exit_price"]) - bar.o) <= 2 * tick:
             trade["jump"] = round(jump * point * abs(float(trade.get("size") or 1)), 2)
+
+
+def deepest_dips(dips: dict[float, float]) -> list[list[float]]:
+    """[profit high, deepest drawdown from it] pairs, keeping only the ones a drawdown rule could fail on.
+
+    The allowed drawdown never shrinks as the profit high rises, so a dip is left out when a dip at
+    the same or a lower high was at least as deep.
+    """
+    kept: list[list[float]] = []
+    deepest = 0.0
+    for high in sorted(dips):
+        dip = dips[high]
+        if dip > deepest + 0.005:
+            deepest = dip
+            kept.append([round(high, 2), round(dip, 2)])
+    return kept
 
 
 def tv_metrics(trades: list[dict]) -> dict:
@@ -140,6 +158,8 @@ def tv_metrics(trades: list[dict]) -> dict:
     realized = 0.0
     peak = 0.0
     drawdown = 0.0
+    # The deepest dip below each profit high, so the drawdown rule can allow more once more has been made.
+    dips: dict[float, float] = {}
     gross_profit = 0.0
     gross_loss = 0.0
     wins = 0
@@ -151,10 +171,13 @@ def tv_metrics(trades: list[dict]) -> dict:
         held.append(pnl + float(trade.get("jump") or 0.0))
         adverse = trade.get("adverse")
         if adverse is not None:
-            drawdown = max(drawdown, peak - (realized + min(float(adverse), 0.0)))
+            dip = peak - (realized + min(float(adverse), 0.0))
+            drawdown = max(drawdown, dip)
+            dips[peak] = max(dips.get(peak, 0.0), dip)
         realized += pnl
         peak = max(peak, realized)
         drawdown = max(drawdown, peak - realized)
+        dips[peak] = max(dips.get(peak, 0.0), peak - realized)
         if pnl > 0:
             wins += 1
             gross_profit += pnl
@@ -168,6 +191,7 @@ def tv_metrics(trades: list[dict]) -> dict:
     return {
         "net_profit": round(realized, 2),
         "max_drawdown": round(drawdown, 2),
+        "dips": deepest_dips(dips),
         "trades": len(closed),
         "wins": wins,
         "win_rate": round(100.0 * wins / len(closed), 2) if closed else None,

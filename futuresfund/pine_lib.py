@@ -599,6 +599,81 @@ def ta_fixnan(st, i, rt, source):
     return st.cur
 
 
+
+def ta_supertrend(st, i, rt, factor, atr_period):
+    """[supertrend, direction] with TradingView's formula: hl2 bands on ta.atr, direction -1 in an up trend."""
+    if _begin(st, i):
+        if st.extra is None:
+            st.extra = {"atr": _Average(), "lower": nan, "upper": nan, "line": nan, "atr_prev": nan}
+        memo = st.extra
+        atr = memo["atr"].update(true_range(rt, i, True), atr_period, True)
+        middle = (rt.H[i] + rt.L[i]) / 2.0
+        upper = middle + factor * atr if not isna(atr) else nan
+        lower = middle - factor * atr if not isna(atr) else nan
+        prev_lower = nz(memo["lower"])
+        prev_upper = nz(memo["upper"])
+        prior_close = rt.C[i - 1] if i > 0 else nan
+        lower = lower if (lower > prev_lower or prior_close < prev_lower) else prev_lower
+        upper = upper if (upper < prev_upper or prior_close > prev_upper) else prev_upper
+        if isna(memo["atr_prev"]):
+            direction = 1
+        elif memo["line"] == prev_upper:
+            direction = -1 if rt.C[i] > upper else 1
+        else:
+            direction = 1 if rt.C[i] < lower else -1
+        line = lower if direction == -1 else upper
+        memo.update(lower=lower, upper=upper, line=line, atr_prev=atr)
+        st.cur = (line, direction)
+    return st.cur
+
+
+def ta_linreg(st, i, rt, source, length, offset=0):
+    """The least squares line through the last length values, read offset bars back from its end."""
+    if _begin(st, i):
+        window = _window(st, source, length)
+        n = 0 if window is None else len(window)
+        mean_x = (n - 1) / 2.0
+        spread = sum((k - mean_x) ** 2 for k in range(n))
+        # A one-bar line has no slope: na, as in PineTS and the request.security linreg.
+        if window is None or not spread or any(isna(v) for v in window):
+            st.cur = nan
+        else:
+            mean_y = sum(window) / n
+            slope = sum((k - mean_x) * (window[k] - mean_y) for k in range(n)) / spread
+            intercept = mean_y - slope * mean_x
+            st.cur = intercept + slope * (n - 1 - (0 if isna(offset) else int(offset)))
+    return st.cur
+
+
+def ta_hma(st, i, rt, source, length):
+    """Hull average: ta.wma(2 * ta.wma(source, length / 2) - ta.wma(source, length), floor(sqrt(length)))."""
+    if _begin(st, i):
+        if st.extra is None:
+            st.extra = (Site(), Site(), Site())
+        n = _length(length)
+        if n is None:
+            st.cur = nan
+            return st.cur
+        half = ta_wma(st.extra[0], i, rt, source, int(n / 2))
+        full = ta_wma(st.extra[1], i, rt, source, n)
+        diff = nan if isna(half) or isna(full) else 2.0 * half - full
+        st.cur = ta_wma(st.extra[2], i, rt, diff, int(math.floor(math.sqrt(n))))
+    return st.cur
+
+
+def ta_percentile_nearest_rank(st, i, rt, source, length, percentage):
+    """The value at that percentile of the last length values, by nearest rank (na values left out)."""
+    if _begin(st, i):
+        window = _window(st, source, length)
+        values = sorted(v for v in (window or []) if not isna(v))
+        if window is None or not values or isna(percentage):
+            st.cur = nan
+        else:
+            rank = max(int(math.ceil(float(percentage) / 100.0 * len(values))), 1)
+            st.cur = values[min(rank, len(values)) - 1]
+    return st.cur
+
+
 TA = {
     "sma": ta_sma, "ema": ta_ema, "rma": ta_rma, "wma": ta_wma, "vwma": ta_vwma, "atr": ta_atr,
     "tr": ta_tr, "rsi": ta_rsi, "stdev": ta_stdev, "highest": ta_highest, "lowest": ta_lowest,
@@ -607,6 +682,8 @@ TA = {
     "pivothigh": ta_pivothigh, "pivotlow": ta_pivotlow, "valuewhen": ta_valuewhen,
     "barssince": ta_barssince, "cum": ta_cum, "rising": ta_rising, "falling": ta_falling,
     "vwap": ta_vwap, "macd": ta_macd, "bb": ta_bb, "stoch": ta_stoch,
+    "supertrend": ta_supertrend, "linreg": ta_linreg, "hma": ta_hma,
+    "percentile_nearest_rank": ta_percentile_nearest_rank,
 }
 BOOL_TA = {"crossover", "crossunder", "cross", "rising", "falling"}
 
@@ -837,8 +914,26 @@ def a_reverse(a):
     a.reverse()
 
 
+def _sort_order(a, order):
+    """Indices in sort order, as PineTS and TradingView give them: ascending and stable, na last
+    (first in a string array), and the whole list reversed for order.descending, so equal values
+    and na come out reversed too."""
+    strings = any(isinstance(v, str) for v in a)
+    present = sorted((k for k in range(len(a)) if not isna(a[k])), key=lambda k: a[k])
+    missing = [k for k in range(len(a)) if isna(a[k])]
+    out = missing + present if strings else present + missing
+    if str(order).endswith("descending"):
+        out.reverse()
+    return out
+
+
 def a_sort(a, order="ascending"):
-    a.sort(reverse=str(order).endswith("descending"))
+    a[:] = [a[k] for k in _sort_order(a, order)]
+
+
+def a_sort_indices(a, order="ascending"):
+    """The indices that would sort the array, as array.sort_indices returns them."""
+    return PineArray(_sort_order(a, order))
 
 
 def a_concat(a, b):
@@ -908,7 +1003,7 @@ ARRAY = {
     "shift": a_shift, "unshift": a_unshift, "insert": a_insert, "remove": a_remove, "clear": a_clear,
     "size": a_size, "first": a_first, "last": a_last, "sum": a_sum, "avg": a_avg, "max": a_max,
     "min": a_min, "indexof": a_indexof, "lastindexof": a_lastindexof, "includes": a_includes,
-    "copy": a_copy, "slice": a_slice, "reverse": a_reverse, "sort": a_sort, "concat": a_concat,
+    "copy": a_copy, "slice": a_slice, "reverse": a_reverse, "sort": a_sort, "sort_indices": a_sort_indices, "concat": a_concat,
     "fill": a_fill, "join": a_join, "stdev": a_stdev, "median": a_median,
 }
 
